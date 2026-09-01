@@ -1,0 +1,127 @@
+'use client';
+import React, { useState } from 'react';
+import Link from 'next/link';
+import type { PartnerSection } from '../page';
+import { LayoutDashboard, ShoppingBag, ClipboardCheck, DollarSign, Users, BarChart3, Settings, Bell, Menu, ChevronLeft, ChevronRight, Store, MessageSquare, UserCircle } from 'lucide-react';
+
+interface NavItem { id: PartnerSection; icon: React.ElementType; label: string; badge?: number; }
+
+const navItems: NavItem[] = [
+  { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { id: 'orders', icon: ShoppingBag, label: 'Orders', badge: 8 },
+  { id: 'inspection', icon: ClipboardCheck, label: 'Inspection', badge: 3 },
+  { id: 'payouts', icon: DollarSign, label: 'Payouts' },
+  { id: 'customers', icon: Users, label: 'Customers' },
+  { id: 'reports', icon: BarChart3, label: 'Reports' },
+  { id: 'support', icon: MessageSquare, label: 'Support Tickets', badge: 2 },
+  { id: 'profile', icon: UserCircle, label: 'My Profile' },
+  { id: 'settings', icon: Settings, label: 'Settings' },
+];
+
+interface Props { activeSection: PartnerSection; onSectionChange: (s: PartnerSection) => void; children: React.ReactNode; }
+
+export default function PartnerLayout({ activeSection, onSectionChange, children }: Props) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const SidebarContent = () => (
+    <>
+      <div className={`flex items-center h-16 border-b border-gray-100 flex-shrink-0 ${collapsed ? 'justify-center px-0' : 'px-4 gap-3'}`}>
+        <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
+          <span className="text-white font-black text-sm">C</span>
+        </div>
+        {!collapsed && (
+          <div>
+            <p className="font-black text-gray-900 text-sm leading-none">CASMIK</p>
+            <p className="text-xs text-gray-400 leading-none mt-0.5">Partner Portal</p>
+          </div>
+        )}
+      </div>
+      <nav className="flex-1 overflow-y-auto py-3 scrollbar-hide">
+        {navItems.map((item) => {
+          const active = activeSection === item.id;
+          return (
+            <button key={item.id} onClick={() => { onSectionChange(item.id); setMobileOpen(false); }}
+              className={`w-full flex items-center mx-2 rounded-xl transition-all duration-150 mb-0.5 ${collapsed ? 'justify-center w-12 h-10 p-0' : 'gap-2.5 px-3 py-2.5'} ${active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
+              style={{ width: collapsed ? '3rem' : 'calc(100% - 1rem)' }}
+            >
+              <item.icon size={17} className="flex-shrink-0" />
+              {!collapsed && (
+                <>
+                  <span className="text-sm font-medium flex-1 text-left truncate">{item.label}</span>
+                  {item.badge !== undefined && (
+                    <span className="text-xs font-bold px-1.5 py-0.5 rounded-md bg-red-500 text-white">{item.badge}</span>
+                  )}
+                </>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+      {/* Refer & Earn */}
+      {!collapsed && (
+        <div className="mx-3 mb-3 bg-gradient-to-br from-primary/10 to-green-100 rounded-2xl p-3 text-center">
+          <p className="text-lg mb-1">🎁</p>
+          <p className="text-xs font-bold text-gray-900">Refer & Earn More</p>
+          <p className="text-xs text-gray-500 mb-2">Refer new partners and earn extra commission.</p>
+          <button className="w-full py-1.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90">Refer Now</button>
+        </div>
+      )}
+      <div className={`border-t border-gray-100 p-3 flex items-center flex-shrink-0 ${collapsed ? 'justify-center' : 'gap-3'}`}>
+        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">M</div>
+        {!collapsed && (
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-gray-900 truncate">MobileHub Store</p>
+            <p className="text-xs text-gray-400 truncate">Partner ID: CFN12345</p>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
+  return (
+    <div className="flex h-screen bg-[#f8f9fb] overflow-hidden font-sans">
+      {/* Desktop sidebar */}
+      <aside className={`relative flex-shrink-0 bg-white border-r border-gray-100 flex flex-col transition-all duration-300 hidden md:flex ${collapsed ? 'w-16' : 'w-56'}`}>
+        <SidebarContent />
+        <button onClick={() => setCollapsed(c => !c)}
+          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-500 hover:text-gray-800 z-10">
+          {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+        </button>
+      </aside>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+          <aside className="absolute left-0 top-0 bottom-0 w-56 bg-white flex flex-col">
+            <SidebarContent />
+          </aside>
+        </div>
+      )}
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="h-16 bg-white border-b border-gray-100 flex items-center px-4 lg:px-6 gap-4 flex-shrink-0">
+          <button onClick={() => setMobileOpen(true)} className="md:hidden p-2 rounded-lg hover:bg-gray-100"><Menu size={20} /></button>
+          <div className="flex-1" />
+          <div className="flex items-center gap-3">
+            <button className="relative p-2 rounded-xl hover:bg-gray-100">
+              <Bell size={18} className="text-gray-600" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+            </button>
+            <Link href="/admin" className="text-xs font-medium text-gray-500 hover:text-primary">Admin Panel</Link>
+            <Link href="/partner/login" className="text-xs font-semibold text-primary border border-primary/30 rounded-lg px-2.5 py-1.5 hover:bg-primary/5 transition-colors">Sign In / Register</Link>
+            <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-1.5">
+              <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">M</div>
+              <div>
+                <p className="text-xs font-bold text-gray-900 leading-none">MobileHub Store</p>
+                <p className="text-xs text-gray-400 leading-none">Partner ID: CFN12345</p>
+              </div>
+            </div>
+          </div>
+        </header>
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+      </div>
+    </div>
+  );
+}
