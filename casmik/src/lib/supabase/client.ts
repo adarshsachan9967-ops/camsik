@@ -76,10 +76,17 @@ if (typeof window !== 'undefined' && !(window as any).__sb_patched__) {
   };
 }
 
+const DEFAULT_SUPABASE_URL = 'https://vyzdfzcxsuhcbjfpdmjh.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5emRmemN4c3VoY2JqZnBkbWpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1OTMzNzksImV4cCI6MjEwMzE2OTM3OX0.kyWIAqBRda2ZEAp6RwefpVQfYcTngVxqe0EZevPxYRI';
+
 export function createClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+
   return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    anonKey,
     {
       cookies: {
         getAll: () => canUseCookies() ? fromCookies() : fromStorage(),
