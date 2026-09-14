@@ -90,7 +90,7 @@ const reasons = [
 
 export default function WhyCamsik() {
   return (
-    <section className="py-16 lg:py-24 bg-white relative overflow-hidden">
+    <section id="why-us" className="py-16 lg:py-24 bg-white relative overflow-hidden">
       {/* Subtle background decoration */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-10 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
