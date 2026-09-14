@@ -298,14 +298,14 @@ export default function CamsikFaqSection() {
 
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               <a
-                href="tel:1800226745"
+                href="tel:+918976000010"
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs sm:text-sm backdrop-blur-sm transition-all"
               >
                 <PhoneCall size={16} className="text-emerald-400" />
-                Toll Free: 1800-CAMSIK
+                Call: +91 8976000010
               </a>
               <a
-                href="https://wa.me/919845012345?text=Hi%20Camsik%20team,%20I%20have%20a%20question%20about%20selling%20my%20camera"
+                href="https://wa.me/918976000010?text=Hi%20Camsik%20team,%20I%20have%20a%20question%20about%20selling%20my%20camera"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-md transition-all"

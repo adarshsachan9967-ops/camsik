@@ -52,6 +52,7 @@ const footerLinks = {
     { label: 'Frequently Asked Questions', href: '#faq' },
   ],
   'Support & Policies': [
+    { label: 'Contact Us', href: '/contact-us' },
     { label: 'Track Camera Order', href: '/track-order' },
     { label: 'Doorstep Pickup Policy', href: '#how-it-works' },
     { label: 'Privacy & Data Protection', href: '#privacy' },
@@ -139,16 +140,18 @@ export default function CustomerFooter() {
             <div className="space-y-2.5 text-xs text-slate-400 mb-6">
               <div className="flex items-start gap-2.5">
                 <MapPin size={15} className="text-purple-400 flex-shrink-0 mt-0.5" />
-                <span>Camsik Electronics Pvt. Ltd., Outer Ring Road, Bengaluru, Karnataka 560103</span>
+                <span>A-315, Shanti Shopping Center, Near Mira Road Station, Mumbai, Maharashtra - 401107</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Phone size={15} className="text-purple-400 flex-shrink-0" />
-                <span>Toll Free: 1800-CAMSIK (Mon–Sun 9 AM – 9 PM)</span>
+                <a href="tel:+918976000010" className="hover:text-white transition-colors">
+                  +91 8976000010 (Mon–Sun 9 AM – 9 PM)
+                </a>
               </div>
               <div className="flex items-center gap-2.5">
                 <Mail size={15} className="text-purple-400 flex-shrink-0" />
-                <a href="mailto:support@camsik.com" className="hover:text-white transition-colors">
-                  support@camsik.com
+                <a href="mailto:sellatcamsik@gmail.com" className="hover:text-white transition-colors">
+                  sellatcamsik@gmail.com
                 </a>
               </div>
             </div>

@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   LogIn,
   ShieldCheck,
+  Phone,
 } from 'lucide-react';
 import { deviceModels, brands, categories } from '@/lib/casmikData';
 
@@ -456,6 +457,12 @@ export default function CustomerHeader() {
               >
                 FAQ
               </Link>
+              <Link
+                href="/contact-us"
+                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
+              >
+                Contact Us
+              </Link>
             </nav>
 
             {/* Help & Support pill */}
@@ -464,7 +471,12 @@ export default function CustomerHeader() {
                 <ShieldCheck size={14} /> 100% Secure Valuation
               </span>
               <span>•</span>
-              <span className="font-semibold text-slate-700">Toll Free: 1800-CAMSIK</span>
+              <a
+                href="tel:+918976000010"
+                className="font-bold text-slate-700 hover:text-primary transition-colors inline-flex items-center gap-1"
+              >
+                <Phone size={12} className="text-primary" /> +91 8976000010
+              </a>
             </div>
           </div>
         </div>
@@ -643,6 +655,13 @@ export default function CustomerHeader() {
                   className="flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-purple-50"
                 >
                   Track Order
+                </Link>
+                <Link
+                  href="/contact-us"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-purple-50"
+                >
+                  Contact Us
                 </Link>
               </nav>
             </div>

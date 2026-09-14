@@ -63,11 +63,11 @@ export default function AdminSettings() {
                 {[
                   { label: 'Company Name', value: 'CAMSIK Technologies Pvt Ltd' },
                   { label: 'Brand Name', value: 'CAMSIK' },
-                  { label: 'Support Email', value: 'support@camsik.com' },
-                  { label: 'Support Phone', value: '+91 9967000000' },
+                  { label: 'Support Email', value: 'sellatcamsik@gmail.com' },
+                  { label: 'Support Phone', value: '+91 8976000010' },
                   { label: 'GST Number', value: '27AABCC1234D1Z5' },
                   { label: 'PAN Number', value: 'AABCC1234D' },
-                  { label: 'Registered Address', value: '123 Tech Park, Bangalore 560001' },
+                  { label: 'Registered Address', value: 'A-315, Shanti Shopping Center, Near Mira Road Station, Mumbai, Maharashtra - 401107' },
                   { label: 'Currency', value: 'INR (₹)' },
                 ].map(field => (
                   <div key={field.label}>
