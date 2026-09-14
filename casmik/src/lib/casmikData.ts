@@ -1,5 +1,5 @@
-// CASMIK Shared Data Store — All panels use this data
-// In production, this would be fetched from /api/v1/* endpoints
+// CAMSIK Shared Data Store — Camera-Exclusive Buyback, Exchange & Certified Sales
+// Aligned with https://camsik.com/
 
 export interface Category {
   id: string;
@@ -67,7 +67,7 @@ export interface QuestionOption {
 export interface Order {
   id: string;
   orderNumber: string;
-  type: 'sell' | 'buy' | 'exchange' | 'repair';
+  type: 'sell' | 'buy' | 'exchange';
   status: OrderStatus;
   customerId: string;
   customerName: string;
@@ -97,7 +97,21 @@ export interface Order {
 }
 
 export type OrderStatus =
-'created' | 'assigned' | 'accepted' | 'pickup_scheduled' | 'picked_up' | 'inspection' | 'inspection_completed' | 'final_price' | 'customer_accepted' | 'payment_processing' | 'paid' | 'completed' | 'rejected' | 'cancelled' | 'rescheduled';
+  | 'created'
+  | 'assigned'
+  | 'accepted'
+  | 'pickup_scheduled'
+  | 'picked_up'
+  | 'inspection'
+  | 'inspection_completed'
+  | 'final_price'
+  | 'customer_accepted'
+  | 'payment_processing'
+  | 'paid'
+  | 'completed'
+  | 'rejected'
+  | 'cancelled'
+  | 'rescheduled';
 
 export interface Partner {
   id: string;
@@ -154,436 +168,1028 @@ export interface Customer {
   avatar: string;
 }
 
-// ─── CATEGORIES ───────────────────────────────────────────────────────────────
+// ─── CAMERA-EXCLUSIVE CATEGORIES ─────────────────────────────────────────────
 
 export const categories: Category[] = [
-{
-  id: 'cat-smartphone',
-  name: 'Smartphones',
-  slug: 'smartphones',
-  icon: '📱',
-  image: "https://img.rocket.new/generatedImages/rocket_gen_img_1a6bbc97c-1766486052960.png",
-  alt: 'Various smartphones displayed on a white surface',
-  description: 'Sell, buy or exchange your smartphone',
-  brandCount: 15,
-  modelCount: 180,
-  active: true,
-  sortOrder: 1
-},
-{
-  id: 'cat-laptop',
-  name: 'Laptops',
-  slug: 'laptops',
-  icon: '💻',
-  image: "https://img.rocket.new/generatedImages/rocket_gen_img_1fbe29315-1773056140933.png",
-  alt: 'Open laptop on a desk with clean workspace',
-  description: 'Get the best value for your laptop',
-  brandCount: 10,
-  modelCount: 95,
-  active: true,
-  sortOrder: 2
-},
-{
-  id: 'cat-tablet',
-  name: 'Tablets',
-  slug: 'tablets',
-  icon: '📟',
-  image: "https://images.unsplash.com/photo-1688296526355-c25c44c97d3e",
-  alt: 'iPad tablet with Apple Pencil on wooden table',
-  description: 'Sell or buy certified refurbished tablets',
-  brandCount: 6,
-  modelCount: 42,
-  active: true,
-  sortOrder: 3
-},
-{
-  id: 'cat-smartwatch',
-  name: 'Smartwatches',
-  slug: 'smartwatches',
-  icon: '⌚',
-  image: "https://img.rocket.new/generatedImages/rocket_gen_img_14071888e-1772305512168.png",
-  alt: 'Modern smartwatch with fitness tracking display',
-  description: 'Trade in your smartwatch for instant cash',
-  brandCount: 5,
-  modelCount: 28,
-  active: true,
-  sortOrder: 4
-},
-{
-  id: 'cat-gaming',
-  name: 'Gaming Consoles',
-  slug: 'gaming-consoles',
-  icon: '🎮',
-  image: "https://images.unsplash.com/photo-1598618929236-8c5dbf91c97f",
-  alt: 'Gaming console controller on dark background',
-  description: 'Sell your gaming console at best price',
-  brandCount: 4,
-  modelCount: 18,
-  active: true,
-  sortOrder: 5
-},
-{
-  id: 'cat-earbuds',
-  name: 'Earbuds & Headphones',
-  slug: 'earbuds',
-  icon: '🎧',
-  image: "https://images.unsplash.com/photo-1606741965359-946075e4d550",
-  alt: 'Wireless earbuds in charging case on white background',
-  description: 'Get cash for your earbuds and headphones',
-  brandCount: 8,
-  modelCount: 35,
-  active: true,
-  sortOrder: 6
-},
-{
-  id: 'cat-camera',
-  name: 'Cameras',
-  slug: 'cameras',
-  icon: '📷',
-  image: "https://images.unsplash.com/photo-1585704273201-354f62ad1eea",
-  alt: 'DSLR camera with lens on wooden surface',
-  description: 'Sell your DSLR, mirrorless or point-and-shoot',
-  brandCount: 6,
-  modelCount: 30,
-  active: true,
-  sortOrder: 7
-},
-{
-  id: 'cat-tws',
-  name: 'TWS Earphones',
-  slug: 'tws',
-  icon: '🎵',
-  image: "https://img.rocket.new/generatedImages/rocket_gen_img_173e92f06-1772945973361.png",
-  alt: 'True wireless earphones with charging case',
-  description: 'Sell your TWS earphones instantly',
-  brandCount: 7,
-  modelCount: 22,
-  active: true,
-  sortOrder: 8
-},
-{
-  id: 'cat-smarttv',
-  name: 'Smart TVs',
-  slug: 'smart-tvs',
-  icon: '📺',
-  image: "https://img.rocket.new/generatedImages/rocket_gen_img_19e4abe17-1772730729933.png",
-  alt: 'Modern smart TV mounted on wall in living room',
-  description: 'Upgrade your TV and sell the old one',
-  brandCount: 8,
-  modelCount: 45,
-  active: true,
-  sortOrder: 9
-},
-{
-  id: 'cat-accessories',
-  name: 'Accessories',
-  slug: 'accessories',
-  icon: '🔌',
-  image: "https://img.rocket.new/generatedImages/rocket_gen_img_128c680c7-1779446750100.png",
-  alt: 'Various phone accessories including cases and chargers',
-  description: 'Sell phone accessories and peripherals',
-  brandCount: 12,
-  modelCount: 60,
-  active: true,
-  sortOrder: 10
-}];
+  {
+    id: 'cat-dslr',
+    name: 'DSLR & Mirrorless',
+    slug: 'sell-old-dslr-camera',
+    icon: '📷',
+    image: 'https://camsik.com/img/Category/2934193f-3a83-4616-8326-7f2097c8b09f.png',
+    alt: 'Sell Old DSLR & Mirrorless Camera',
+    description: 'Sell Canon, Nikon, Sony, LUMIX, Fujifilm cameras for top cash with doorstep pickup.',
+    brandCount: 5,
+    modelCount: 45,
+    active: true,
+    sortOrder: 1,
+  },
+  {
+    id: 'cat-lens',
+    name: 'Camera Lenses',
+    slug: 'sell-old-dslr-mirrorless-lens',
+    icon: '🔍',
+    image: 'https://camsik.com/img/Category/808ecde1-f8e7-45b3-ab62-8ec69183b2b7.png',
+    alt: 'Sell Old DSLR & Mirrorless Lens',
+    description: 'Instant valuation for prime, zoom, macro, G Master, RF & Z-mount camera lenses.',
+    brandCount: 8,
+    modelCount: 60,
+    active: true,
+    sortOrder: 2,
+  },
+  {
+    id: 'cat-video-camera',
+    name: 'Video Cameras',
+    slug: 'sell-old-video-camera',
+    icon: '📹',
+    image: 'https://camsik.com/img/Category/209c7dc4-2916-40fe-b812-723f5c0b6a0b.png',
+    alt: 'Sell Old Video Camera & Camcorders',
+    description: 'Sell 4K broadcast camcorders, cinematic cameras from Canon, Sony & Panasonic.',
+    brandCount: 3,
+    modelCount: 20,
+    active: true,
+    sortOrder: 3,
+  },
+  {
+    id: 'cat-action-camera',
+    name: 'Action Cameras',
+    slug: 'sell-old-action-camera',
+    icon: '🎥',
+    image: 'https://camsik.com/img/Category/c23faa43-58ba-4df1-8dac-38ee21d4839f.png',
+    alt: 'Sell Old Action Camera',
+    description: 'Get top resale value for GoPro Hero, DJI Osmo Pocket & Insta360 cameras.',
+    brandCount: 3,
+    modelCount: 25,
+    active: true,
+    sortOrder: 4,
+  },
+  {
+    id: 'cat-gimbal',
+    name: 'Gimbals & Stabilizers',
+    slug: 'sell-old-gimbal',
+    icon: '🕹️',
+    image: 'https://camsik.com/img/Category/e230f26f-df03-498a-a87b-30b02172b183.png',
+    alt: 'Sell Old Gimbal & Stabilizers',
+    description: 'Turn your DJI Ronin, Zhiyun Crane & FeiyuTech 3-axis gimbals into instant money.',
+    brandCount: 3,
+    modelCount: 18,
+    active: true,
+    sortOrder: 5,
+  },
+];
 
-
-// ─── BRANDS ───────────────────────────────────────────────────────────────────
+// ─── CAMERA BRANDS ────────────────────────────────────────────────────────────
 
 export const brands: Brand[] = [
-// Smartphones
-{ id: 'brand-apple', categoryId: 'cat-smartphone', name: 'Apple', slug: 'apple', logo: "https://img.rocket.new/generatedImages/rocket_gen_img_17770e405-1787593576108.png", alt: 'Apple logo', modelCount: 24, active: true },
-{ id: 'brand-samsung', categoryId: 'cat-smartphone', name: 'Samsung', slug: 'samsung', logo: 'https://img.rocket.new/generatedImages/rocket_gen_img_1f9249e7a-1787485872587.png', alt: 'Samsung logo', modelCount: 38, active: true },
-{ id: 'brand-oneplus', categoryId: 'cat-smartphone', name: 'OnePlus', slug: 'oneplus', logo: 'https://img.rocket.new/generatedImages/rocket_gen_img_12b42f3b3-1773054280340.png', alt: 'OnePlus logo', modelCount: 16, active: true },
-{ id: 'brand-google', categoryId: 'cat-smartphone', name: 'Google', slug: 'google', logo: 'https://img.rocket.new/generatedImages/rocket_gen_img_1f0bc1df9-1787485872354.png', alt: 'Google logo', modelCount: 8, active: true },
-{ id: 'brand-xiaomi', categoryId: 'cat-smartphone', name: 'Xiaomi', slug: 'xiaomi', logo: 'https://img.rocket.new/generatedImages/rocket_gen_img_1877c99bb-1787485873555.png', alt: 'Xiaomi logo', modelCount: 22, active: true },
-{ id: 'brand-realme', categoryId: 'cat-smartphone', name: 'Realme', slug: 'realme', logo: 'https://img.rocket.new/generatedImages/rocket_gen_img_1bd9882e8-1787485873026.png', alt: 'Realme logo', modelCount: 19, active: true },
-{ id: 'brand-oppo', categoryId: 'cat-smartphone', name: 'Oppo', slug: 'oppo', logo: 'https://img.rocket.new/generatedImages/rocket_gen_img_18430dfae-1787485873533.png', alt: 'Oppo logo', modelCount: 14, active: true },
-{ id: 'brand-vivo', categoryId: 'cat-smartphone', name: 'Vivo', slug: 'vivo', logo: 'https://img.rocket.new/generatedImages/rocket_gen_img_1d388f91b-1787485872512.png', alt: 'Vivo logo', modelCount: 17, active: true },
-{ id: 'brand-nothing', categoryId: 'cat-smartphone', name: 'Nothing', slug: 'nothing', logo: 'https://img.rocket.new/generatedImages/rocket_gen_img_14f59b360-1787485873756.png', alt: 'Nothing logo', modelCount: 4, active: true },
-{ id: 'brand-motorola', categoryId: 'cat-smartphone', name: 'Motorola', slug: 'motorola', logo: 'https://img.rocket.new/generatedImages/rocket_gen_img_15e536822-1787485873806.png', alt: 'Motorola logo', modelCount: 11, active: true },
-{ id: 'brand-iqoo', categoryId: 'cat-smartphone', name: 'iQOO', slug: 'iqoo', logo: "https://img.rocket.new/generatedImages/rocket_gen_img_115e97c2a-1787576861158.png", alt: 'iQOO logo', modelCount: 9, active: true },
-{ id: 'brand-poco', categoryId: 'cat-smartphone', name: 'Poco', slug: 'poco', logo: "https://img.rocket.new/generatedImages/rocket_gen_img_1997e39f3-1787576861139.png", alt: 'Poco logo', modelCount: 12, active: true },
-// Laptops
-{ id: 'brand-dell', categoryId: 'cat-laptop', name: 'Dell', slug: 'dell', logo: 'https://img.rocket.new/generatedImages/rocket_gen_img_17c14fe97-1787485873667.png', alt: 'Dell logo', modelCount: 9, active: true },
-{ id: 'brand-hp', categoryId: 'cat-laptop', name: 'HP', slug: 'hp', logo: 'https://img.rocket.new/generatedImages/rocket_gen_img_194bf1756-1787485872504.png', alt: 'HP logo', modelCount: 12, active: true },
-{ id: 'brand-lenovo', categoryId: 'cat-laptop', name: 'Lenovo', slug: 'lenovo', logo: "https://img.rocket.new/generatedImages/rocket_gen_img_1332ca9a3-1787576860528.png", alt: 'Lenovo logo', modelCount: 15, active: true },
-{ id: 'brand-asus-laptop', categoryId: 'cat-laptop', name: 'Asus', slug: 'asus', logo: "https://img.rocket.new/generatedImages/rocket_gen_img_15f9c2d6b-1787576860322.png", alt: 'Asus logo', modelCount: 10, active: true },
-{ id: 'brand-apple-mac', categoryId: 'cat-laptop', name: 'Apple MacBook', slug: 'apple-macbook', logo: "https://img.rocket.new/generatedImages/rocket_gen_img_17f46a8f4-1787593576505.png", alt: 'Apple MacBook logo', modelCount: 8, active: true }];
+  // DSLR / Mirrorless Brands
+  { id: 'brand-canon', categoryId: 'cat-dslr', name: 'Canon', slug: 'canon', logo: 'https://camsik.com/img/productBrand/4bd0ce5a-6914-4263-9f81-6b0127bec025.png', alt: 'Canon Camera Brand', modelCount: 16, active: true },
+  { id: 'brand-nikon', categoryId: 'cat-dslr', name: 'Nikon', slug: 'nikon', logo: 'https://camsik.com/img/productBrand/9f533d3d-4304-48e9-8a0d-a7c8fdd7318c.png', alt: 'Nikon Camera Brand', modelCount: 14, active: true },
+  { id: 'brand-sony', categoryId: 'cat-dslr', name: 'Sony', slug: 'sony', logo: 'https://camsik.com/img/productBrand/bbd3f7f8-4909-43fd-85c9-7191a3b64dcd.png', alt: 'Sony Camera Brand', modelCount: 18, active: true },
+  { id: 'brand-fujifilm', categoryId: 'cat-dslr', name: 'Fujifilm', slug: 'fujifilm', logo: 'https://camsik.com/img/productBrand/ccd22eff-5208-4a76-9b0f-8d1a1bca00a2.png', alt: 'Fujifilm Camera Brand', modelCount: 8, active: true },
+  { id: 'brand-lumix', categoryId: 'cat-dslr', name: 'LUMIX', slug: 'lumix', logo: 'https://camsik.com/img/productBrand/378fcf74-3103-45f4-b195-82c32e575075.png', alt: 'LUMIX Camera Brand', modelCount: 9, active: true },
 
+  // Lens Brands
+  { id: 'brand-sigma', categoryId: 'cat-lens', name: 'Sigma', slug: 'sigma', logo: 'https://camsik.com/img/productBrand/6a7e9cc4-ef20-4afd-8258-478d2f860f12.png', alt: 'Sigma Lens Brand', modelCount: 12, active: true },
+  { id: 'brand-tamron', categoryId: 'cat-lens', name: 'Tamron', slug: 'tamron', logo: 'https://camsik.com/img/productBrand/8e522ebd-f7e0-407c-81dc-d19510321cae.png', alt: 'Tamron Lens Brand', modelCount: 10, active: true },
+  { id: 'brand-samyang', categoryId: 'cat-lens', name: 'Samyang', slug: 'samyang', logo: 'https://camsik.com/img/productBrand/8b1ef337-0491-492b-a3b2-517fe787160e.png', alt: 'Samyang Lens Brand', modelCount: 6, active: true },
 
-// ─── MODELS ───────────────────────────────────────────────────────────────────
+  // Video Camera Brands
+  { id: 'brand-panasonic', categoryId: 'cat-video-camera', name: 'Panasonic', slug: 'panasonic', logo: 'https://camsik.com/img/productBrand/ed216802-37df-4f15-96cb-9ed34b42006b.png', alt: 'Panasonic Video Cameras', modelCount: 6, active: true },
+
+  // Action Camera Brands
+  { id: 'brand-gopro', categoryId: 'cat-action-camera', name: 'GoPro', slug: 'gopro', logo: 'https://camsik.com/img/productBrand/17a259cc-2f9c-4bfe-82f9-8143df8cb30d.png', alt: 'GoPro Action Cameras', modelCount: 10, active: true },
+  { id: 'brand-dji', categoryId: 'cat-action-camera', name: 'DJI', slug: 'dji', logo: 'https://camsik.com/img/productBrand/6e8121dd-49f6-4df5-b458-7990f5d11eae.png', alt: 'DJI Cameras & Gimbals', modelCount: 12, active: true },
+  { id: 'brand-insta360', categoryId: 'cat-action-camera', name: 'Insta 360', slug: 'insta360', logo: 'https://camsik.com/img/productBrand/2a349fb4-1de7-4f51-a2be-f4d60f909eaf.png', alt: 'Insta 360 Cameras', modelCount: 8, active: true },
+
+  // Gimbal Brands
+  { id: 'brand-zhiyun', categoryId: 'cat-gimbal', name: 'ZHIYUN', slug: 'zhiyun', logo: 'https://camsik.com/img/productBrand/1898d608-4b2f-4448-b9c8-72498f0ebf30.png', alt: 'ZHIYUN Gimbals', modelCount: 6, active: true },
+  { id: 'brand-feiyutech', categoryId: 'cat-gimbal', name: 'FeiyuTech', slug: 'feiyutech', logo: 'https://camsik.com/img/productBrand/427d8103-5927-4055-be99-91a21d32d4e8.png', alt: 'FeiyuTech Gimbals', modelCount: 5, active: true },
+];
+
+// ─── CAMERA PRODUCTS CATALOG ─────────────────────────────────────────────────
 
 export const deviceModels: DeviceModel[] = [
-// Apple iPhones
-{ id: 'iphone-17-pro-max', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 17 Pro Max', slug: 'iphone-17-pro-max', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1ac872aa5-1772414311954.png", alt: 'iPhone 17 Pro Max in titanium finish', basePrice: 105000, storages: ['256GB', '512GB', '1TB'], colors: ['Black Titanium', 'White Titanium', 'Desert Titanium', 'Natural Titanium'], specs: { display: '6.9" Super Retina XDR', chip: 'A19 Pro', camera: '48MP + 48MP + 12MP', battery: '4685 mAh' }, active: true },
-{ id: 'iphone-17-pro', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 17 Pro', slug: 'iphone-17-pro', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1461344c3-1766499917621.png", alt: 'iPhone 17 Pro in titanium', basePrice: 92000, storages: ['256GB', '512GB', '1TB'], colors: ['Space Black', 'Silver', 'Gold', 'Desert Titanium'], specs: { display: '6.3" Super Retina XDR', chip: 'A19 Pro', camera: '48MP + 48MP + 12MP', battery: '3274 mAh' }, active: true },
-{ id: 'iphone-17', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 17', slug: 'iphone-17', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_12539e762-1784129887409.png', alt: 'iPhone 17 in blue color', basePrice: 72000, storages: ['128GB', '256GB', '512GB'], colors: ['Ultramarine', 'Black', 'White', 'Pink'], specs: { display: '6.1" Super Retina XDR', chip: 'A19', camera: '48MP + 12MP', battery: '3279 mAh' }, active: true },
-{ id: 'iphone-16-pro-max', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 16 Pro Max', slug: 'iphone-16-pro-max', image: "https://images.unsplash.com/photo-1676353410356-867313a96ed4", alt: 'iPhone 16 Pro Max in black titanium', basePrice: 85000, storages: ['256GB', '512GB', '1TB'], colors: ['Black Titanium', 'White Titanium', 'Desert Titanium'], specs: { display: '6.9" OLED', chip: 'A18 Pro', camera: '48MP Triple', battery: '4685 mAh' }, active: true },
-{ id: 'iphone-16-pro', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 16 Pro', slug: 'iphone-16-pro', image: "https://img.rocket.new/generatedImages/rocket_gen_img_11ce4ee67-1764738511529.png", alt: 'iPhone 16 Pro in natural titanium', basePrice: 75000, storages: ['128GB', '256GB', '512GB', '1TB'], colors: ['Black Titanium', 'White Titanium', 'Natural Titanium', 'Desert Titanium'], specs: { display: '6.3" OLED', chip: 'A18 Pro', camera: '48MP Triple', battery: '3274 mAh' }, active: true },
-{ id: 'iphone-16', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 16', slug: 'iphone-16', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1642b5cb5-1771887530981.png", alt: 'iPhone 16 in ultramarine color', basePrice: 62000, storages: ['128GB', '256GB', '512GB'], colors: ['Ultramarine', 'Teal', 'Pink', 'White', 'Black'], specs: { display: '6.1" OLED', chip: 'A18', camera: '48MP + 12MP', battery: '3561 mAh' }, active: true },
-{ id: 'iphone-15-pro-max', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 15 Pro Max', slug: 'iphone-15-pro-max', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_17b82fb7a-1772960574407.png', alt: 'iPhone 15 Pro Max in natural titanium', basePrice: 75000, storages: ['256GB', '512GB', '1TB'], colors: ['Black Titanium', 'Natural Titanium', 'Blue Titanium', 'White Titanium'], specs: { display: '6.7" OLED', chip: 'A17 Pro', camera: '48MP Triple', battery: '4422 mAh' }, active: true },
-{ id: 'iphone-15-pro', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 15 Pro', slug: 'iphone-15-pro', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_17e528213-1771903425581.png', alt: 'iPhone 15 Pro in natural titanium', basePrice: 65000, storages: ['128GB', '256GB', '512GB'], colors: ['Black Titanium', 'Natural Titanium', 'Blue Titanium', 'White Titanium'], specs: { display: '6.1" OLED', chip: 'A17 Pro', camera: '48MP Triple', battery: '3274 mAh' }, active: true },
-{ id: 'iphone-15', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 15', slug: 'iphone-15', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1c95f6d14-1775058099616.png", alt: 'iPhone 15 in pink color', basePrice: 52000, storages: ['128GB', '256GB', '512GB'], colors: ['Pink', 'Yellow', 'Green', 'Blue', 'Black'], specs: { display: '6.1" OLED', chip: 'A16', camera: '48MP + 12MP', battery: '3349 mAh' }, active: true },
-{ id: 'iphone-14-pro-max', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 14 Pro Max', slug: 'iphone-14-pro-max', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_103da8441-1770037000517.png', alt: 'iPhone 14 Pro Max in deep purple', basePrice: 58000, storages: ['128GB', '256GB', '512GB', '1TB'], colors: ['Deep Purple', 'Gold', 'Silver', 'Space Black'], specs: { display: '6.7" OLED', chip: 'A16', camera: '48MP Triple', battery: '4323 mAh' }, active: true },
-{ id: 'iphone-14-pro', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 14 Pro', slug: 'iphone-14-pro', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_17e528213-1771903425581.png', alt: 'iPhone 14 Pro in deep purple', basePrice: 48000, storages: ['128GB', '256GB', '512GB', '1TB'], colors: ['Deep Purple', 'Gold', 'Silver', 'Space Black'], specs: { display: '6.1" OLED', chip: 'A16', camera: '48MP Triple', battery: '3200 mAh' }, active: true },
-{ id: 'iphone-14', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 14', slug: 'iphone-14', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1a592c0ab-1773089370920.png", alt: 'iPhone 14 in midnight color', basePrice: 38000, storages: ['128GB', '256GB', '512GB'], colors: ['Midnight', 'Starlight', 'Blue', 'Purple', 'Red'], specs: { display: '6.1" OLED', chip: 'A15', camera: '12MP + 12MP', battery: '3279 mAh' }, active: true },
-{ id: 'iphone-13-pro-max', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 13 Pro Max', slug: 'iphone-13-pro-max', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_17b82fb7a-1772960574407.png', alt: 'iPhone 13 Pro Max in sierra blue', basePrice: 42000, storages: ['128GB', '256GB', '512GB', '1TB'], colors: ['Sierra Blue', 'Silver', 'Gold', 'Graphite', 'Alpine Green'], specs: { display: '6.7" OLED', chip: 'A15', camera: '12MP Triple', battery: '4352 mAh' }, active: true },
-{ id: 'iphone-13', brandId: 'brand-apple', categoryId: 'cat-smartphone', name: 'iPhone 13', slug: 'iphone-13', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_10e238774-1772285499687.png', alt: 'iPhone 13 in blue color', basePrice: 32000, storages: ['128GB', '256GB', '512GB'], colors: ['Midnight', 'Starlight', 'Blue', 'Pink', 'Red', 'Green'], specs: { display: '6.1" OLED', chip: 'A15', camera: '12MP + 12MP', battery: '3227 mAh' }, active: true },
-// Samsung
-{ id: 's25-ultra', brandId: 'brand-samsung', categoryId: 'cat-smartphone', name: 'Galaxy S25 Ultra', slug: 'galaxy-s25-ultra', image: "https://img.rocket.new/generatedImages/rocket_gen_img_122e5667e-1772368533819.png", alt: 'Samsung Galaxy S25 Ultra in titanium gray', basePrice: 78000, storages: ['256GB', '512GB', '1TB'], colors: ['Titanium Gray', 'Titanium Black', 'Titanium Violet', 'Titanium Yellow'], specs: { display: '6.9" Dynamic AMOLED', chip: 'Snapdragon 8 Elite', camera: '200MP + 50MP + 10MP', battery: '5000 mAh' }, active: true },
-{ id: 's25-plus', brandId: 'brand-samsung', categoryId: 'cat-smartphone', name: 'Galaxy S25+', slug: 'galaxy-s25-plus', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1c8292dfe-1772328371986.png", alt: 'Samsung Galaxy S25 Plus in navy blue', basePrice: 62000, storages: ['256GB', '512GB'], colors: ['Navy', 'Icy Blue', 'Mint', 'Silver Shadow'], specs: { display: '6.7" Dynamic AMOLED', chip: 'Snapdragon 8 Elite', camera: '50MP + 10MP + 12MP', battery: '4900 mAh' }, active: true },
-{ id: 's25', brandId: 'brand-samsung', categoryId: 'cat-smartphone', name: 'Galaxy S25', slug: 'galaxy-s25', image: "https://img.rocket.new/generatedImages/rocket_gen_img_175e093df-1771887531027.png", alt: 'Samsung Galaxy S25 in navy blue', basePrice: 52000, storages: ['128GB', '256GB'], colors: ['Navy', 'Icy Blue', 'Mint', 'Silver Shadow'], specs: { display: '6.2" Dynamic AMOLED', chip: 'Snapdragon 8 Elite', camera: '50MP + 10MP + 12MP', battery: '4000 mAh' }, active: true },
-{ id: 's24-ultra', brandId: 'brand-samsung', categoryId: 'cat-smartphone', name: 'Galaxy S24 Ultra', slug: 'galaxy-s24-ultra', image: "https://images.unsplash.com/photo-1692647494155-ee2df7cf2869", alt: 'Samsung Galaxy S24 Ultra in titanium gray', basePrice: 68000, storages: ['256GB', '512GB', '1TB'], colors: ['Titanium Gray', 'Titanium Black', 'Titanium Violet', 'Titanium Yellow'], specs: { display: '6.8" Dynamic AMOLED', chip: 'Snapdragon 8 Gen 3', camera: '200MP + 50MP + 10MP', battery: '5000 mAh' }, active: true },
-{ id: 's24-plus', brandId: 'brand-samsung', categoryId: 'cat-smartphone', name: 'Galaxy S24+', slug: 'galaxy-s24-plus', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1d0c22c0d-1775384135526.png", alt: 'Samsung Galaxy S24 Plus in cobalt violet', basePrice: 52000, storages: ['256GB', '512GB'], colors: ['Cobalt Violet', 'Onyx Black', 'Marble Gray', 'Sandstone Orange'], specs: { display: '6.7" Dynamic AMOLED', chip: 'Snapdragon 8 Gen 3', camera: '50MP + 10MP + 12MP', battery: '4900 mAh' }, active: true },
-{ id: 's24', brandId: 'brand-samsung', categoryId: 'cat-smartphone', name: 'Galaxy S24', slug: 'galaxy-s24', image: "https://img.rocket.new/generatedImages/rocket_gen_img_122e5667e-1772368533819.png", alt: 'Samsung Galaxy S24 in cobalt violet', basePrice: 42000, storages: ['128GB', '256GB'], colors: ['Cobalt Violet', 'Onyx Black', 'Marble Gray', 'Amber Yellow'], specs: { display: '6.2" Dynamic AMOLED', chip: 'Exynos 2400', camera: '50MP + 10MP + 12MP', battery: '4000 mAh' }, active: true },
-{ id: 's23-ultra', brandId: 'brand-samsung', categoryId: 'cat-smartphone', name: 'Galaxy S23 Ultra', slug: 'galaxy-s23-ultra', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1294d2923-1771486444013.png", alt: 'Samsung Galaxy S23 Ultra in phantom black', basePrice: 52000, storages: ['256GB', '512GB', '1TB'], colors: ['Phantom Black', 'Cream', 'Green', 'Lavender'], specs: { display: '6.8" Dynamic AMOLED', chip: 'Snapdragon 8 Gen 2', camera: '200MP + 10MP + 10MP', battery: '5000 mAh' }, active: true },
-{ id: 's23', brandId: 'brand-samsung', categoryId: 'cat-smartphone', name: 'Galaxy S23', slug: 'galaxy-s23', image: "https://img.rocket.new/generatedImages/rocket_gen_img_113618263-1765970693224.png", alt: 'Samsung Galaxy S23 in phantom black', basePrice: 32000, storages: ['128GB', '256GB'], colors: ['Phantom Black', 'Cream', 'Green', 'Lavender'], specs: { display: '6.1" Dynamic AMOLED', chip: 'Snapdragon 8 Gen 2', camera: '50MP + 10MP + 12MP', battery: '3900 mAh' }, active: true },
-{ id: 'fold-5', brandId: 'brand-samsung', categoryId: 'cat-smartphone', name: 'Galaxy Z Fold 5', slug: 'galaxy-z-fold-5', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_1d40efa47-1773056836850.png', alt: 'Samsung Galaxy Z Fold 5 in phantom black', basePrice: 72000, storages: ['256GB', '512GB', '1TB'], colors: ['Phantom Black', 'Cream', 'Icy Blue'], specs: { display: '7.6" Foldable AMOLED', chip: 'Snapdragon 8 Gen 2', camera: '50MP + 10MP + 12MP', battery: '4400 mAh' }, active: true },
-{ id: 'flip-5', brandId: 'brand-samsung', categoryId: 'cat-smartphone', name: 'Galaxy Z Flip 5', slug: 'galaxy-z-flip-5', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_190f3b871-1772624438215.png', alt: 'Samsung Galaxy Z Flip 5 in mint color', basePrice: 48000, storages: ['256GB', '512GB'], colors: ['Mint', 'Graphite', 'Cream', 'Lavender'], specs: { display: '6.7" Foldable AMOLED', chip: 'Snapdragon 8 Gen 2', camera: '12MP + 12MP', battery: '3700 mAh' }, active: true },
-{ id: 'a55', brandId: 'brand-samsung', categoryId: 'cat-smartphone', name: 'Galaxy A55', slug: 'galaxy-a55', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_12f2039d9-1772329997056.png', alt: 'Samsung Galaxy A55 in awesome navy', basePrice: 22000, storages: ['128GB', '256GB'], colors: ['Awesome Navy', 'Awesome Iceblue', 'Awesome Lilac'], specs: { display: '6.6" Super AMOLED', chip: 'Exynos 1480', camera: '50MP + 12MP + 5MP', battery: '5000 mAh' }, active: true },
-// OnePlus
-{ id: 'oneplus-13', brandId: 'brand-oneplus', categoryId: 'cat-smartphone', name: 'OnePlus 13', slug: 'oneplus-13', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1bec49e58-1772994604500.png", alt: 'OnePlus 13 in silky black', basePrice: 55000, storages: ['256GB', '512GB'], colors: ['Midnight Ocean', 'Arctic Dawn', 'Black Eclipse'], specs: { display: '6.82" AMOLED', chip: 'Snapdragon 8 Elite', camera: '50MP + 50MP + 50MP', battery: '6000 mAh' }, active: true },
-{ id: 'oneplus-12', brandId: 'brand-oneplus', categoryId: 'cat-smartphone', name: 'OnePlus 12', slug: 'oneplus-12', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1b76fef53-1765861644627.png", alt: 'OnePlus 12 in silky black', basePrice: 48000, storages: ['256GB', '512GB'], colors: ['Silky Black', 'Flowy Emerald'], specs: { display: '6.82" AMOLED', chip: 'Snapdragon 8 Gen 3', camera: '50MP + 48MP + 64MP', battery: '5400 mAh' }, active: true },
-{ id: 'oneplus-12r', brandId: 'brand-oneplus', categoryId: 'cat-smartphone', name: 'OnePlus 12R', slug: 'oneplus-12r', image: "https://img.rocket.new/generatedImages/rocket_gen_img_17de8509d-1772994602317.png", alt: 'OnePlus 12R in iron gray', basePrice: 32000, storages: ['128GB', '256GB'], colors: ['Iron Gray', 'Cool Blue'], specs: { display: '6.78" AMOLED', chip: 'Snapdragon 8 Gen 1', camera: '50MP + 8MP + 2MP', battery: '5500 mAh' }, active: true },
-{ id: 'oneplus-nord-4', brandId: 'brand-oneplus', categoryId: 'cat-smartphone', name: 'OnePlus Nord 4', slug: 'oneplus-nord-4', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1c9a7c7b6-1767529494953.png", alt: 'OnePlus Nord 4 in mercurial silver', basePrice: 22000, storages: ['128GB', '256GB'], colors: ['Mercurial Silver', 'Obsidian Midnight', 'Oasis Green'], specs: { display: '6.74" AMOLED', chip: 'Snapdragon 7+ Gen 3', camera: '50MP + 8MP', battery: '5500 mAh' }, active: true },
-{ id: 'oneplus-nord-ce4', brandId: 'brand-oneplus', categoryId: 'cat-smartphone', name: 'OnePlus Nord CE 4', slug: 'oneplus-nord-ce4', image: "https://img.rocket.new/generatedImages/rocket_gen_img_141089125-1767743696819.png", alt: 'OnePlus Nord CE 4 in celadon marble', basePrice: 18000, storages: ['128GB', '256GB'], colors: ['Celadon Marble', 'Dark Chrome'], specs: { display: '6.67" AMOLED', chip: 'Snapdragon 7 Gen 3', camera: '50MP + 8MP', battery: '5500 mAh' }, active: true },
-{ id: 'oneplus-11', brandId: 'brand-oneplus', categoryId: 'cat-smartphone', name: 'OnePlus 11', slug: 'oneplus-11', image: "https://img.rocket.new/generatedImages/rocket_gen_img_117b4c359-1772270618657.png", alt: 'OnePlus 11 in titan black', basePrice: 38000, storages: ['128GB', '256GB'], colors: ['Titan Black', 'Eternal Green'], specs: { display: '6.7" AMOLED', chip: 'Snapdragon 8 Gen 2', camera: '50MP + 48MP + 32MP', battery: '5000 mAh' }, active: true },
-{ id: 'oneplus-10-pro', brandId: 'brand-oneplus', categoryId: 'cat-smartphone', name: 'OnePlus 10 Pro', slug: 'oneplus-10-pro', image: "https://img.rocket.new/generatedImages/rocket_gen_img_105ddfb08-1773070438946.png", alt: 'OnePlus 10 Pro in volcanic black', basePrice: 28000, storages: ['128GB', '256GB'], colors: ['Volcanic Black', 'Emerald Forest'], specs: { display: '6.7" AMOLED', chip: 'Snapdragon 8 Gen 1', camera: '48MP + 50MP + 8MP', battery: '5000 mAh' }, active: true },
-// Google Pixel
-{ id: 'pixel-9-pro-xl', brandId: 'brand-google', categoryId: 'cat-smartphone', name: 'Pixel 9 Pro XL', slug: 'pixel-9-pro-xl', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1e439c8ea-1772089098053.png", alt: 'Google Pixel 9 Pro XL in obsidian', basePrice: 62000, storages: ['128GB', '256GB', '512GB', '1TB'], colors: ['Obsidian', 'Porcelain', 'Hazel', 'Rose Quartz'], specs: { display: '6.8" OLED', chip: 'Tensor G4', camera: '50MP + 48MP + 48MP', battery: '5060 mAh' }, active: true },
-{ id: 'pixel-9-pro', brandId: 'brand-google', categoryId: 'cat-smartphone', name: 'Pixel 9 Pro', slug: 'pixel-9-pro', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1aede3fd6-1773089372093.png", alt: 'Google Pixel 9 Pro in obsidian', basePrice: 52000, storages: ['128GB', '256GB', '512GB', '1TB'], colors: ['Obsidian', 'Porcelain', 'Hazel', 'Rose Quartz'], specs: { display: '6.3" OLED', chip: 'Tensor G4', camera: '50MP + 48MP + 48MP', battery: '4700 mAh' }, active: true },
-{ id: 'pixel-9', brandId: 'brand-google', categoryId: 'cat-smartphone', name: 'Pixel 9', slug: 'pixel-9', image: "https://img.rocket.new/generatedImages/rocket_gen_img_182eccfbd-1765101833319.png", alt: 'Google Pixel 9 in obsidian', basePrice: 42000, storages: ['128GB', '256GB'], colors: ['Obsidian', 'Porcelain', 'Wintergreen', 'Peony'], specs: { display: '6.3" OLED', chip: 'Tensor G4', camera: '50MP + 10.5MP', battery: '4700 mAh' }, active: true },
-{ id: 'pixel-8-pro', brandId: 'brand-google', categoryId: 'cat-smartphone', name: 'Pixel 8 Pro', slug: 'pixel-8-pro', image: "https://img.rocket.new/generatedImages/rocket_gen_img_14a858280-1773070440800.png", alt: 'Google Pixel 8 Pro in obsidian', basePrice: 38000, storages: ['128GB', '256GB', '512GB', '1TB'], colors: ['Obsidian', 'Porcelain', 'Bay', 'Mint'], specs: { display: '6.7" OLED', chip: 'Tensor G3', camera: '50MP + 48MP + 48MP', battery: '5050 mAh' }, active: true },
-{ id: 'pixel-8', brandId: 'brand-google', categoryId: 'cat-smartphone', name: 'Pixel 8', slug: 'pixel-8', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_1d4bb2939-1773063468643.png', alt: 'Google Pixel 8 in obsidian', basePrice: 32000, storages: ['128GB', '256GB'], colors: ['Obsidian', 'Hazel', 'Rose'], specs: { display: '6.2" OLED', chip: 'Tensor G3', camera: '50MP + 12MP', battery: '4575 mAh' }, active: true },
-// Xiaomi
-{ id: 'xiaomi-14-ultra', brandId: 'brand-xiaomi', categoryId: 'cat-smartphone', name: 'Xiaomi 14 Ultra', slug: 'xiaomi-14-ultra', image: "https://img.rocket.new/generatedImages/rocket_gen_img_114245ef2-1773066531873.png", alt: 'Xiaomi 14 Ultra in titanium gray', basePrice: 45000, storages: ['256GB', '512GB'], colors: ['Titanium Gray', 'Titanium White', 'Titanium Blue'], specs: { display: '6.73" AMOLED', chip: 'Snapdragon 8 Gen 3', camera: '50MP + 50MP + 50MP + 50MP', battery: '5300 mAh' }, active: true },
-{ id: 'xiaomi-14', brandId: 'brand-xiaomi', categoryId: 'cat-smartphone', name: 'Xiaomi 14', slug: 'xiaomi-14', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1c19d9064-1772285498505.png", alt: 'Xiaomi 14 in black', basePrice: 38000, storages: ['256GB', '512GB'], colors: ['Black', 'White', 'Jade Green'], specs: { display: '6.36" AMOLED', chip: 'Snapdragon 8 Gen 3', camera: '50MP + 50MP + 50MP', battery: '4610 mAh' }, active: true },
-{ id: 'xiaomi-13-pro', brandId: 'brand-xiaomi', categoryId: 'cat-smartphone', name: 'Xiaomi 13 Pro', slug: 'xiaomi-13-pro', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1a1740c00-1773054280551.png", alt: 'Xiaomi 13 Pro in ceramic black', basePrice: 32000, storages: ['256GB', '512GB'], colors: ['Ceramic Black', 'Ceramic White', 'Mountain Blue'], specs: { display: '6.73" AMOLED', chip: 'Snapdragon 8 Gen 2', camera: '50MP + 50MP + 50MP', battery: '4820 mAh' }, active: true },
-{ id: 'redmi-note-13-pro-plus', brandId: 'brand-xiaomi', categoryId: 'cat-smartphone', name: 'Redmi Note 13 Pro+', slug: 'redmi-note-13-pro-plus', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1a1740c00-1773054280551.png", alt: 'Redmi Note 13 Pro Plus in midnight black', basePrice: 22000, storages: ['256GB', '512GB'], colors: ['Midnight Black', 'Aurora Purple', 'Fusion White'], specs: { display: '6.67" AMOLED', chip: 'Dimensity 7200 Ultra', camera: '200MP + 8MP + 2MP', battery: '5000 mAh' }, active: true },
-{ id: 'redmi-note-13-pro', brandId: 'brand-xiaomi', categoryId: 'cat-smartphone', name: 'Redmi Note 13 Pro', slug: 'redmi-note-13-pro', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_137629e57-1765615226355.png', alt: 'Redmi Note 13 Pro in midnight black', basePrice: 18000, storages: ['128GB', '256GB'], colors: ['Midnight Black', 'Arctic White', 'Coral Purple'], specs: { display: '6.67" AMOLED', chip: 'Snapdragon 7s Gen 2', camera: '200MP + 8MP + 2MP', battery: '5100 mAh' }, active: true },
-// Laptops - Dell
-{ id: 'dell-xps-15', brandId: 'brand-dell', categoryId: 'cat-laptop', name: 'Dell XPS 15', slug: 'dell-xps-15', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1fbe29315-1773056140933.png", alt: 'Dell XPS 15 laptop in platinum silver', basePrice: 85000, storages: ['512GB SSD', '1TB SSD', '2TB SSD'], colors: ['Platinum Silver', 'Graphite'], specs: { processor: 'Intel Core i7-13700H', ram: '16GB DDR5', display: '15.6" OLED 3.5K', gpu: 'NVIDIA RTX 4060' }, active: true },
-{ id: 'dell-xps-13', brandId: 'brand-dell', categoryId: 'cat-laptop', name: 'Dell XPS 13', slug: 'dell-xps-13', image: "https://img.rocket.new/generatedImages/rocket_gen_img_113ea010f-1775181994070.png", alt: 'Dell XPS 13 laptop in platinum silver', basePrice: 72000, storages: ['512GB SSD', '1TB SSD'], colors: ['Platinum Silver', 'Sky'], specs: { processor: 'Intel Core i7-1360P', ram: '16GB LPDDR5', display: '13.4" OLED FHD+', gpu: 'Intel Iris Xe' }, active: true },
-{ id: 'dell-inspiron-15', brandId: 'brand-dell', categoryId: 'cat-laptop', name: 'Dell Inspiron 15', slug: 'dell-inspiron-15', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1facacf56-1772089094540.png", alt: 'Dell Inspiron 15 laptop in carbon black', basePrice: 45000, storages: ['512GB SSD', '1TB SSD'], colors: ['Carbon Black', 'Platinum Silver'], specs: { processor: 'Intel Core i5-1335U', ram: '8GB DDR4', display: '15.6" FHD IPS', gpu: 'Intel UHD' }, active: true },
-// MacBook
-{ id: 'macbook-pro-16-m4', brandId: 'brand-apple-mac', categoryId: 'cat-laptop', name: 'MacBook Pro 16" M4 Pro', slug: 'macbook-pro-16-m4', image: "https://img.rocket.new/generatedImages/rocket_gen_img_179123d6d-1772091920622.png", alt: 'MacBook Pro 16 inch M4 Pro in space black', basePrice: 195000, storages: ['512GB SSD', '1TB SSD', '2TB SSD'], colors: ['Space Black', 'Silver'], specs: { processor: 'Apple M4 Pro', ram: '24GB Unified', display: '16.2" Liquid Retina XDR', gpu: 'M4 Pro GPU' }, active: true },
-{ id: 'macbook-pro-14-m4', brandId: 'brand-apple-mac', categoryId: 'cat-laptop', name: 'MacBook Pro 14" M4', slug: 'macbook-pro-14-m4', image: "https://img.rocket.new/generatedImages/rocket_gen_img_11ad868de-1766607648821.png", alt: 'MacBook Pro 14 inch M4 in space gray', basePrice: 145000, storages: ['512GB SSD', '1TB SSD'], colors: ['Space Gray', 'Silver', 'Space Black'], specs: { processor: 'Apple M4', ram: '16GB Unified', display: '14.2" Liquid Retina XDR', gpu: 'M4 GPU' }, active: true },
-{ id: 'macbook-air-m3', brandId: 'brand-apple-mac', categoryId: 'cat-laptop', name: 'MacBook Air M3', slug: 'macbook-air-m3', image: "https://img.rocket.new/generatedImages/rocket_gen_img_11003c8b0-1773211912290.png", alt: 'MacBook Air M3 in midnight color', basePrice: 95000, storages: ['256GB SSD', '512GB SSD', '1TB SSD', '2TB SSD'], colors: ['Midnight', 'Starlight', 'Space Gray', 'Silver'], specs: { processor: 'Apple M3', ram: '8GB Unified', display: '13.6" Liquid Retina', gpu: 'M3 GPU' }, active: true }];
+  // ── DSLR & Mirrorless Cameras ──
+  {
+    id: 'cam-nikon-z30',
+    brandId: 'brand-nikon',
+    categoryId: 'cat-dslr',
+    name: 'Nikon Z30',
+    slug: 'used-nikon-z30',
+    image: 'https://camsik.com/img/purchaseProducts/e64c0084-b1ab-422f-8e7b-0be0c886e194.jpg',
+    alt: 'Nikon Z30 Mirrorless Camera Body',
+    basePrice: 42000,
+    storages: ['Body Only', 'Kit 16-50mm', 'Vlogger Kit'],
+    colors: ['Black'],
+    specs: { 'Sensor': '20.9 MP DX CMOS', 'Video': '4K UHD 30p', 'Screen': 'Vari-angle Touchscreen', 'Mount': 'Nikon Z Mount' },
+    active: true,
+  },
+  {
+    id: 'cam-canon-rp',
+    brandId: 'brand-canon',
+    categoryId: 'cat-dslr',
+    name: 'Canon EOS RP',
+    slug: 'used-canon-eos-rp',
+    image: 'https://camsik.com/img/purchaseProducts/69fc16e8-5130-49fa-a502-5bf8ce6ec682.jpg',
+    alt: 'Canon EOS RP Full Frame Mirrorless',
+    basePrice: 58000,
+    storages: ['Body Only', 'Kit 24-105mm'],
+    colors: ['Black'],
+    specs: { 'Sensor': '26.2 MP Full-Frame CMOS', 'Video': '4K UHD 24p', 'Autofocus': 'Dual Pixel CMOS AF', 'Mount': 'Canon RF' },
+    active: true,
+  },
+  {
+    id: 'cam-sony-a7',
+    brandId: 'brand-sony',
+    categoryId: 'cat-dslr',
+    name: 'Sony Alpha A7',
+    slug: 'used-sony-alpha-a7',
+    image: 'https://camsik.com/img/purchaseProducts/8fb56062-5fab-4cdc-8716-7fa56f4e8fc6.jpg',
+    alt: 'Sony Alpha A7 Full-Frame Camera',
+    basePrice: 38000,
+    storages: ['Body Only', 'Kit 28-70mm'],
+    colors: ['Black'],
+    specs: { 'Sensor': '24.3 MP Exmor CMOS', 'Video': 'Full HD 1080 60p', 'ISO': '100-25600', 'Mount': 'Sony E-Mount' },
+    active: true,
+  },
+  {
+    id: 'cam-lumix-s5ii',
+    brandId: 'brand-lumix',
+    categoryId: 'cat-dslr',
+    name: 'Lumix DC-S5II',
+    slug: 'used-lumix-dc-s5ii',
+    image: 'https://camsik.com/img/purchaseProducts/36ef751b-cc4d-4dd3-9aa9-bd43a0006a5e.jpg',
+    alt: 'Panasonic Lumix DC-S5II Camera',
+    basePrice: 115000,
+    storages: ['Body Only', 'Kit 20-60mm'],
+    colors: ['Black'],
+    specs: { 'Sensor': '24.2 MP Full-Frame', 'AF': 'Phase Hybrid AF', 'Video': '6K 30p 10-bit', 'Mount': 'L-Mount' },
+    active: true,
+  },
+  {
+    id: 'cam-nikon-z50',
+    brandId: 'brand-nikon',
+    categoryId: 'cat-dslr',
+    name: 'Nikon Z 50',
+    slug: 'used-nikon-z-50',
+    image: 'https://camsik.com/img/purchaseProducts/cf90160d-7994-402a-9c77-dc15e6c45dbf.webp',
+    alt: 'Nikon Z 50 Mirrorless Camera',
+    basePrice: 48000,
+    storages: ['Body Only', 'Kit 16-50mm', 'Dual Lens Kit'],
+    colors: ['Black'],
+    specs: { 'Sensor': '20.9 MP DX', 'Burst': '11 fps', 'Video': '4K UHD without crop', 'Mount': 'Nikon Z' },
+    active: true,
+  },
+  {
+    id: 'cam-sony-a7ii',
+    brandId: 'brand-sony',
+    categoryId: 'cat-dslr',
+    name: 'Sony Alpha A7 II',
+    slug: 'used-sony-alpha-a7-ii',
+    image: 'https://camsik.com/img/purchaseProducts/774659dc-bd05-421d-8658-c28994ea325c.jpg',
+    alt: 'Sony Alpha A7 II Camera',
+    basePrice: 52000,
+    storages: ['Body Only', 'Kit 28-70mm'],
+    colors: ['Black'],
+    specs: { 'Sensor': '24.3 MP Full-Frame', 'Stabilization': '5-Axis In-Body IBIS', 'Video': 'Full HD XAVC S', 'Mount': 'Sony E' },
+    active: true,
+  },
+  {
+    id: 'cam-canon-eos-r',
+    brandId: 'brand-canon',
+    categoryId: 'cat-dslr',
+    name: 'Canon EOS R',
+    slug: 'used-canon-eos-r',
+    image: 'https://camsik.com/img/purchaseProducts/b23d6149-e618-4779-8ce5-62d923b9576c.webp',
+    alt: 'Canon EOS R Mirrorless Camera',
+    basePrice: 78000,
+    storages: ['Body Only', 'Kit 24-105mm USM'],
+    colors: ['Black'],
+    specs: { 'Sensor': '30.3 MP Full-Frame', 'AF Points': '5,655 Points Dual Pixel', 'Video': '4K 30p C-Log', 'Mount': 'Canon RF' },
+    active: true,
+  },
+  {
+    id: 'cam-lumix-s1',
+    brandId: 'brand-lumix',
+    categoryId: 'cat-dslr',
+    name: 'Lumix S1',
+    slug: 'used-lumix-s1',
+    image: 'https://camsik.com/img/purchaseProducts/f9459508-f41c-4ba1-a105-230b468bb9e0.jpg',
+    alt: 'Panasonic Lumix S1 Full-Frame Camera',
+    basePrice: 92000,
+    storages: ['Body Only', 'Kit 24-105mm'],
+    colors: ['Black'],
+    specs: { 'Sensor': '24.2 MP Full-Frame', 'EVF': '5.76M-dot OLED', 'Stabilization': '6.0 stops Dual IS 2', 'Mount': 'L-Mount' },
+    active: true,
+  },
+  {
+    id: 'cam-nikon-z50ii',
+    brandId: 'brand-nikon',
+    categoryId: 'cat-dslr',
+    name: 'Nikon Z50 II',
+    slug: 'used-z50-ii',
+    image: 'https://camsik.com/img/purchaseProducts/bef8b2d1-db31-478b-9325-75a2cdaabdf8.png',
+    alt: 'Nikon Z50 II Camera',
+    basePrice: 62000,
+    storages: ['Body Only', 'Kit 16-50mm VR'],
+    colors: ['Black'],
+    specs: { 'Processor': 'EXPEED 7', 'Sensor': '20.9 MP DX', 'AF': 'AI Subject Detection 9 types', 'Mount': 'Nikon Z' },
+    active: true,
+  },
+  {
+    id: 'cam-sony-a7iii',
+    brandId: 'brand-sony',
+    categoryId: 'cat-dslr',
+    name: 'Sony Alpha A7 III',
+    slug: 'used-sony-alpha-a7-iii',
+    image: 'https://camsik.com/img/purchaseProducts/19b88e40-342c-4465-9824-f1d8ab63d944.jpg',
+    alt: 'Sony Alpha A7 III Full-Frame Camera',
+    basePrice: 85000,
+    storages: ['Body Only', 'Kit 28-70mm OSS'],
+    colors: ['Black'],
+    specs: { 'Sensor': '24.2 MP BSI Exmor R', 'AF': '693 Phase Detection AF Points', 'Video': '4K HDR HLG', 'Battery': 'NP-FZ100' },
+    active: true,
+  },
+  {
+    id: 'cam-fuji-xt4',
+    brandId: 'brand-fujifilm',
+    categoryId: 'cat-dslr',
+    name: 'Fujifilm X-T4',
+    slug: 'used-fujifilm-x-t4',
+    image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&q=80',
+    alt: 'Fujifilm X-T4 Mirrorless Camera',
+    basePrice: 79000,
+    storages: ['Body Only', 'Kit 18-55mm'],
+    colors: ['Black', 'Silver'],
+    specs: { 'Sensor': '26.1 MP X-Trans CMOS 4', 'Stabilization': '6.5-stop IBIS', 'Video': '4K 60p 10-bit', 'Mount': 'Fuji X' },
+    active: true,
+  },
+  {
+    id: 'cam-fuji-xt5',
+    brandId: 'brand-fujifilm',
+    categoryId: 'cat-dslr',
+    name: 'Fujifilm X-T5',
+    slug: 'used-fujifilm-x-t5',
+    image: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da8d?w=600&q=80',
+    alt: 'Fujifilm X-T5 Mirrorless Camera',
+    basePrice: 110000,
+    storages: ['Body Only', 'Kit 16-80mm'],
+    colors: ['Black', 'Silver'],
+    specs: { 'Sensor': '40.2 MP X-Trans CMOS 5 HR', 'Stabilization': '7.0-stop 5-axis IBIS', 'Video': '6.2K 30p', 'Mount': 'Fuji X' },
+    active: true,
+  },
 
+  // ── Camera Lenses ──
+  {
+    id: 'lens-sony-1655',
+    brandId: 'brand-sony',
+    categoryId: 'cat-lens',
+    name: 'Sony FE 16-55mm f/2.8 G Lens',
+    slug: 'used-sony-fe-16-55mm-f-2.8-g-lens',
+    image: 'https://camsik.com/img/purchaseProducts/1b699108-9e87-4fcc-9347-5e74d698df85.webp',
+    alt: 'Sony FE 16-55mm f/2.8 G Lens',
+    basePrice: 62000,
+    storages: ['Lens with Caps & Hood'],
+    colors: ['Black'],
+    specs: { 'Aperture': 'Constant f/2.8', 'Mount': 'Sony E (APS-C)', 'Filter': '67 mm', 'Motor': 'XD Linear Motor' },
+    active: true,
+  },
+  {
+    id: 'lens-sony-20mm',
+    brandId: 'brand-sony',
+    categoryId: 'cat-lens',
+    name: 'Sony FE 20mm f/1.8 G Lens',
+    slug: 'used-sony-fe-20mm-f-1.8-g-lens',
+    image: 'https://camsik.com/img/purchaseProducts/abc42b28-ef30-4571-aa6e-56ead0ebc6c6.jpg',
+    alt: 'Sony FE 20mm f/1.8 G Prime Lens',
+    basePrice: 48000,
+    storages: ['Lens with Caps'],
+    colors: ['Black'],
+    specs: { 'Aperture': 'f/1.8 to f/22', 'Mount': 'Sony FE Full-Frame', 'Elements': 'Two AA & 3 ED glass', 'Weight': '373 g' },
+    active: true,
+  },
+  {
+    id: 'lens-lumix-2460',
+    brandId: 'brand-lumix',
+    categoryId: 'cat-lens',
+    name: 'LUMIX S 24-60mm f/3.5-5.6',
+    slug: 'used-lumix-s-24-60mm-f-3.5-5.6',
+    image: 'https://camsik.com/img/purchaseProducts/884bd4fb-a27f-424d-97f8-11a5db0089da.jpg',
+    alt: 'Panasonic LUMIX S Zoom Lens',
+    basePrice: 28000,
+    storages: ['Standard Lens'],
+    colors: ['Black'],
+    specs: { 'Focal Length': '24-60mm', 'Mount': 'L-Mount', 'Design': 'Compact & Weather Sealed' },
+    active: true,
+  },
+  {
+    id: 'lens-lumix-1840',
+    brandId: 'brand-lumix',
+    categoryId: 'cat-lens',
+    name: 'LUMIX S 18-40mm f/4.5-6.3',
+    slug: 'used-lumix-s-18-40mm-f-4.5-6.3',
+    image: 'https://camsik.com/img/purchaseProducts/83fcbf12-9f83-4666-ba6d-4e32fb5e03c0.jpg',
+    alt: 'Panasonic LUMIX S Pancake Zoom Lens',
+    basePrice: 32000,
+    storages: ['Standard Lens'],
+    colors: ['Black'],
+    specs: { 'Weight': '115 g Ultra-light', 'Mount': 'L-Mount', 'Focal Length': 'Ultra-wide to standard 18-40mm' },
+    active: true,
+  },
+  {
+    id: 'lens-sony-1635gm',
+    brandId: 'brand-sony',
+    categoryId: 'cat-lens',
+    name: 'Sony FE 16-35mm f/2.8 GM Lens',
+    slug: 'used-sony-fe-16-35mm-f-2.8-gm-lens',
+    image: 'https://camsik.com/img/purchaseProducts/427263ea-08e9-4d8c-baa1-a3fc173163fe.jpg',
+    alt: 'Sony G Master 16-35mm f/2.8 Lens',
+    basePrice: 94000,
+    storages: ['Lens with Case & Hood'],
+    colors: ['Black'],
+    specs: { 'Series': 'G Master Flagship', 'Aperture': 'Constant f/2.8', 'Diaphragm': '11-blade circular', 'Filter': '82 mm' },
+    active: true,
+  },
+  {
+    id: 'lens-sigma-2470',
+    brandId: 'brand-sigma',
+    categoryId: 'cat-lens',
+    name: 'Sigma 24-70mm f/2.8 DG DN Art',
+    slug: 'used-sigma-24-70mm-f-2.8-art',
+    image: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=600&q=80',
+    alt: 'Sigma 24-70mm f/2.8 DG DN Art Lens',
+    basePrice: 65000,
+    storages: ['Sony E-Mount', 'L-Mount'],
+    colors: ['Black'],
+    specs: { 'Series': 'Art Series Pro', 'Aperture': 'f/2.8', 'Blades': '11 Rounded Blades', 'Coating': 'Super Multi-Layer' },
+    active: true,
+  },
+  {
+    id: 'lens-tamron-2875',
+    brandId: 'brand-tamron',
+    categoryId: 'cat-lens',
+    name: 'Tamron 28-75mm f/2.8 Di III VXD G2',
+    slug: 'used-tamron-28-75mm-f-2.8-g2',
+    image: 'https://images.unsplash.com/photo-1590291152079-de6884393604?w=600&q=80',
+    alt: 'Tamron 28-75mm f/2.8 G2 Lens',
+    basePrice: 48000,
+    storages: ['Sony E-Mount', 'Nikon Z-Mount'],
+    colors: ['Black'],
+    specs: { 'Generation': 'G2 VXD Linear Focus', 'MOD': '0.18m Wide Angle', 'Filter': '67 mm' },
+    active: true,
+  },
 
+  // ── Video Cameras / Camcorders ──
+  {
+    id: 'vid-canon-xa75',
+    brandId: 'brand-canon',
+    categoryId: 'cat-video-camera',
+    name: 'Canon XA75 Camcorder 4K',
+    slug: 'used-canon-xa75-camcorder-4k',
+    image: 'https://camsik.com/img/purchaseProducts/860b49d2-7e43-4d2d-a0d9-fae897f63a51.jpg',
+    alt: 'Canon XA75 4K Professional Camcorder',
+    basePrice: 165000,
+    storages: ['Camcorder with Handle Unit & Battery'],
+    colors: ['Black'],
+    specs: { 'Sensor': '1.0-inch Type CMOS', 'Zoom': '15x Optical Zoom', 'Output': '3G-SDI & HDMI', 'Audio': 'Dual XLR Inputs' },
+    active: true,
+  },
+  {
+    id: 'vid-canon-xa11',
+    brandId: 'brand-canon',
+    categoryId: 'cat-video-camera',
+    name: 'Canon XA11 Camcorder',
+    slug: 'used-canon-xa11-camcorder',
+    image: 'https://camsik.com/img/purchaseProducts/609e3607-4b1a-42a0-9b88-0da8f53b5017.jpg',
+    alt: 'Canon XA11 Full HD Camcorder',
+    basePrice: 62000,
+    storages: ['Camcorder with Handle'],
+    colors: ['Black'],
+    specs: { 'Sensor': 'HD CMOS Pro Sensor', 'Zoom': '20x Optical Zoom', 'Stabilization': 'Dynamic 5-Axis IS' },
+    active: true,
+  },
+  {
+    id: 'vid-canon-xa40',
+    brandId: 'brand-canon',
+    categoryId: 'cat-video-camera',
+    name: 'Canon XA40 4K Camcorder',
+    slug: 'used-canon-xa40',
+    image: 'https://camsik.com/img/purchaseProducts/23e6b7c9-2000-4d8c-8caa-4df3da2f793d.jpg',
+    alt: 'Canon XA40 Ultra Compact 4K Camcorder',
+    basePrice: 88000,
+    storages: ['Complete Unit'],
+    colors: ['Black'],
+    specs: { 'Sensor': '1/2.3-inch 4K UHD CMOS', 'Recording': '4K UHD 25P XF-AVC & MP4', 'Zoom': '20x Optical' },
+    active: true,
+  },
+  {
+    id: 'vid-canon-xa50',
+    brandId: 'brand-canon',
+    categoryId: 'cat-video-camera',
+    name: 'Canon XA50 4K Camcorder',
+    slug: 'used-canon-xa50',
+    image: 'https://camsik.com/img/purchaseProducts/7674cb49-cf55-4791-ac55-8a1256feca69.jpg',
+    alt: 'Canon XA50 4K Camcorder with Dual Pixel AF',
+    basePrice: 118000,
+    storages: ['Complete Unit'],
+    colors: ['Black'],
+    specs: { 'Sensor': '1.0-inch 4K UHD CMOS', 'AF': 'Dual Pixel CMOS AF with Touch Focus', 'Zoom': '15x Optical 4K Zoom' },
+    active: true,
+  },
+  {
+    id: 'vid-panasonic-hcx2000',
+    brandId: 'brand-panasonic',
+    categoryId: 'cat-video-camera',
+    name: 'Panasonic HC-X2000 4K',
+    slug: 'used-panasonic-hc-x2000',
+    image: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=600&q=80',
+    alt: 'Panasonic HC-X2000 4K Broadcast Camcorder',
+    basePrice: 135000,
+    storages: ['Professional Unit with XLR Handle'],
+    colors: ['Black'],
+    specs: { 'Video': '4K 60p 10-bit 200Mbps', 'Zoom': '24x Optical Leica Dicomar', 'Output': '3G-SDI, HDMI, Built-in Wi-Fi' },
+    active: true,
+  },
 
-// ─── QUESTIONS ────────────────────────────────────────────────────────────────
+  // ── Action Cameras ──
+  {
+    id: 'action-gopro-hero',
+    brandId: 'brand-gopro',
+    categoryId: 'cat-action-camera',
+    name: 'GoPro Hero',
+    slug: 'used-gopro-hero',
+    image: 'https://camsik.com/img/purchaseProducts/30582070-165e-410d-83d7-b77f0f339488.webp',
+    alt: 'GoPro Hero Action Camera',
+    basePrice: 14000,
+    storages: ['Camera + Battery'],
+    colors: ['Black'],
+    specs: { 'Video': '4K 30fps Ultra-Compact', 'Waterproof': '16ft (5m)', 'Weight': '86 g' },
+    active: true,
+  },
+  {
+    id: 'action-gopro-12',
+    brandId: 'brand-gopro',
+    categoryId: 'cat-action-camera',
+    name: 'GoPro Hero 12 Black',
+    slug: 'used-gopro-hero-12-black',
+    image: 'https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=600&q=80',
+    alt: 'GoPro Hero 12 Black Action Camera',
+    basePrice: 28000,
+    storages: ['Single Battery Kit', 'Creator Edition'],
+    colors: ['Black'],
+    specs: { 'Video': '5.3K 60fps HDR', 'Stabilization': 'HyperSmooth 6.0', 'Audio': 'Bluetooth Audio Support' },
+    active: true,
+  },
+  {
+    id: 'action-dji-osmo-pocket',
+    brandId: 'brand-dji',
+    categoryId: 'cat-action-camera',
+    name: 'DJI Osmo Pocket',
+    slug: 'used-dji-osmo-pocket',
+    image: 'https://camsik.com/img/purchaseProducts/073e116e-2a11-4ff7-9be4-d5222daaf044.jpg',
+    alt: 'DJI Osmo Pocket Handheld Gimbal Camera',
+    basePrice: 12000,
+    storages: ['Unit with Case'],
+    colors: ['Black'],
+    specs: { 'Gimbal': '3-Axis Mechanical Gimbal', 'Video': '4K 60fps at 100Mbps', 'Weight': '116 g' },
+    active: true,
+  },
+  {
+    id: 'action-dji-pocket2',
+    brandId: 'brand-dji',
+    categoryId: 'cat-action-camera',
+    name: 'DJI Osmo Pocket 2',
+    slug: 'used-dji-osmo-pocket-2',
+    image: 'https://camsik.com/img/purchaseProducts/992a4965-2522-4705-9e1d-76012cc5035b.jpeg',
+    alt: 'DJI Pocket 2 Creator Camera',
+    basePrice: 21000,
+    storages: ['Standard Unit', 'Creator Combo'],
+    colors: ['Black'],
+    specs: { 'Sensor': '64 MP 1/1.7-inch', 'Audio': 'DJI Matrix Stereo 4-Mic', 'Tracking': 'ActiveTrack 3.0' },
+    active: true,
+  },
+  {
+    id: 'action-insta-x2',
+    brandId: 'brand-insta360',
+    categoryId: 'cat-action-camera',
+    name: 'Insta360 X2',
+    slug: 'used-insta360-x2',
+    image: 'https://camsik.com/img/purchaseProducts/8f60de09-074e-4f46-a5c8-614c2d937725.jpg',
+    alt: 'Insta360 ONE X2 360 Degree Camera',
+    basePrice: 18000,
+    storages: ['Standard Bundle'],
+    colors: ['Black'],
+    specs: { 'Video': '5.7K 360-Degree Capture', 'Stabilization': 'FlowState Stabilization', 'Waterproof': 'IPX8 10m' },
+    active: true,
+  },
+  {
+    id: 'action-insta-x3',
+    brandId: 'brand-insta360',
+    categoryId: 'cat-action-camera',
+    name: 'Insta360 X3',
+    slug: 'used-insta360-x3',
+    image: 'https://camsik.com/img/purchaseProducts/ba0292f7-431b-444a-8289-fbf7c1f39eaf.webp',
+    alt: 'Insta360 X3 360 Action Camera',
+    basePrice: 28000,
+    storages: ['Standard Pack', 'Motorcycle / Dive Kit'],
+    colors: ['Black'],
+    specs: { 'Screen': '2.29-inch Touchscreen', 'Photo': '72 MP 360 Photos', 'Video': '5.7K Active HDR 360' },
+    active: true,
+  },
 
-export const sellQuestions: Question[] = [
-{
-  id: 'q-power',
-  categoryId: 'cat-smartphone',
-  question: 'Does the device turn on?',
-  subtext: 'Press the power button to check if the device powers on normally.',
-  sortOrder: 1,
-  active: true,
-  options: [
-  { id: 'q-power-yes', questionId: 'q-power', label: 'Yes, turns on', description: 'Device powers on and works normally', icon: '✅', illustration: '📱', priceAdjustment: 0, adjustmentType: 'fixed', conditionGrade: 'good', bulletPoints: ['Powers on normally', 'Reaches home screen', 'All basic functions work'] },
-  { id: 'q-power-no', questionId: 'q-power', label: 'No, does not turn on', description: 'Device is completely dead or stuck', icon: '❌', illustration: '📵', priceAdjustment: -20000, adjustmentType: 'fixed', conditionGrade: 'poor', bulletPoints: ['Device is dead', 'Does not boot', 'May need motherboard repair'] }]
+  // ── Gimbals & Stabilizers ──
+  {
+    id: 'gimbal-feiyu-scorp3',
+    brandId: 'brand-feiyutech',
+    categoryId: 'cat-gimbal',
+    name: 'FeiyuTech SCORP 3',
+    slug: 'used-scorp-3',
+    image: 'https://camsik.com/img/purchaseProducts/c9264ec9-324f-4709-ae3f-8daaf8c6fb24.png',
+    alt: 'FeiyuTech SCORP 3 Camera Gimbal',
+    basePrice: 24000,
+    storages: ['Standard Kit'],
+    colors: ['Black'],
+    specs: { 'Payload': '2.5 kg Max Payload', 'Handle': 'Integrated Underslung Grip', 'Screen': '1.3-inch OLED Touchscreen' },
+    active: true,
+  },
+  {
+    id: 'gimbal-dji-rs3pro',
+    brandId: 'brand-dji',
+    categoryId: 'cat-gimbal',
+    name: 'DJI RS 3 Pro Gimbal',
+    slug: 'used-dji-rs-3-pro',
+    image: 'https://images.unsplash.com/photo-1589872589574-8840c11d2797?w=600&q=80',
+    alt: 'DJI RS 3 Pro Commercial Gimbal Stabilizer',
+    basePrice: 46000,
+    storages: ['Standard Package', 'Combo Package with Focus Motor'],
+    colors: ['Carbon Black'],
+    specs: { 'Arms': 'Carbon Fiber Extended Arms', 'Payload': '4.5 kg Tested Payload', 'Focus': 'LiDAR Range Finder Support' },
+    active: true,
+  },
+  {
+    id: 'gimbal-zhiyun-weebill3s',
+    brandId: 'brand-zhiyun',
+    categoryId: 'cat-gimbal',
+    name: 'Zhiyun Weebill 3S',
+    slug: 'used-zhiyun-weebill-3s',
+    image: 'https://images.unsplash.com/photo-1542744094-3a31f272c490?w=600&q=80',
+    alt: 'Zhiyun Weebill 3S Handheld Gimbal',
+    basePrice: 22000,
+    storages: ['Standard Kit', 'Combo with Wrist Rest'],
+    colors: ['Black'],
+    specs: { 'Switch': 'Native Portrait/Landscape Quick Switch', 'Light': 'Built-in 1000 Lux Fill Light', 'Battery': 'Up to 11.5 hours' },
+    active: true,
+  },
+];
 
-},
-{
-  id: 'q-display',
-  categoryId: 'cat-smartphone',
-  question: 'How is your display?',
-  subtext: 'Check for cracks, scratches, dead pixels or discolouration.',
-  sortOrder: 2,
-  active: true,
-  options: [
-  { id: 'q-display-perfect', questionId: 'q-display', label: 'Perfect', description: 'No scratches, no marks at all', icon: '✨', illustration: '🖥️', priceAdjustment: 0, adjustmentType: 'fixed', conditionGrade: 'excellent', bulletPoints: ['No scratches visible', 'No dead pixels', 'Perfect display quality'] },
-  { id: 'q-display-good', questionId: 'q-display', label: 'Good', description: 'Minor hairline scratches, not visible during use', icon: '👍', illustration: '📱', priceAdjustment: -1500, adjustmentType: 'fixed', conditionGrade: 'good', bulletPoints: ['Minor hairline scratches', 'Not visible during use', 'Display fully functional'] },
-  { id: 'q-display-damaged', questionId: 'q-display', label: 'Damaged', description: 'Visible scratches or minor crack on screen', icon: '⚠️', illustration: '📱', priceAdjustment: -5000, adjustmentType: 'fixed', conditionGrade: 'fair', bulletPoints: ['Visible scratches', 'Minor crack present', 'Display still functional'] },
-  { id: 'q-display-broken', questionId: 'q-display', label: 'Broken', description: 'Screen cracked or not displaying properly', icon: '💔', illustration: '📵', priceAdjustment: -12000, adjustmentType: 'fixed', conditionGrade: 'poor', bulletPoints: ['Screen cracked badly', 'Display issues present', 'Touch may not work'] }]
+// ─── CAMERA SPECIFIC CONDITION QUESTIONS ───────────────────────────────────────
 
-},
-{
-  id: 'q-body',
-  categoryId: 'cat-smartphone',
-  question: 'How is the body condition?',
-  subtext: 'Dents, deep scratches, loose frame, heavy wear.',
-  sortOrder: 3,
-  active: true,
-  options: [
-  { id: 'q-body-likenew', questionId: 'q-body', label: 'Like New', description: 'No scratches, dents or marks on body', icon: '✨', illustration: '📱', priceAdjustment: 1000, adjustmentType: 'fixed', conditionGrade: 'excellent', bulletPoints: ['No scratches on body', 'No dents or marks', 'Looks brand new'] },
-  { id: 'q-body-good', questionId: 'q-body', label: 'Good', description: 'Minor scratches, not easily visible', icon: '👍', illustration: '📱', priceAdjustment: 0, adjustmentType: 'fixed', conditionGrade: 'good', bulletPoints: ['Minor scratches only', 'No dents', 'Normal wear and tear'] },
-  { id: 'q-body-average', questionId: 'q-body', label: 'Average', description: 'Visible scratches on body, minor dents possible', icon: '😐', illustration: '📱', priceAdjustment: -2000, adjustmentType: 'fixed', conditionGrade: 'fair', bulletPoints: ['Visible scratches on body', 'Minor dents possible', 'Signs of normal wear and tear'] },
-  { id: 'q-body-below', questionId: 'q-body', label: 'Below Average', description: 'Deep scratches, multiple dents or cracks', icon: '😟', illustration: '📵', priceAdjustment: -6000, adjustmentType: 'fixed', conditionGrade: 'poor', bulletPoints: ['Deep scratches present', 'Multiple dents or cracks', 'Heavy wear and tear'] }]
+export const questions: Question[] = [
+  {
+    id: 'q-functional',
+    categoryId: 'cat-dslr',
+    question: 'Does the camera power ON, focus, and capture photos flawlessly?',
+    subtext: 'Check sensor readout, shutter mechanism, electronic viewfinder, and card writing.',
+    sortOrder: 1,
+    active: true,
+    options: [
+      {
+        id: 'opt-func-flawless',
+        questionId: 'q-functional',
+        label: 'Yes, 100% Functional',
+        description: 'Autofocus is fast, shutter fires cleanly, EVF/LCD works, no system errors.',
+        icon: 'CheckCircle',
+        illustration: 'camera-flawless',
+        priceAdjustment: 0,
+        adjustmentType: 'percentage',
+        conditionGrade: 'A',
+        bulletPoints: ['No card read/write errors', 'Sensor and EVF work smoothly', 'Autofocus tracks accurately'],
+      },
+      {
+        id: 'opt-func-minor',
+        questionId: 'q-functional',
+        label: 'Minor Issue (e.g. Loose Dial / Weak Battery)',
+        description: 'Camera shoots and saves photos, but battery drains quickly or rubber grip is loose.',
+        icon: 'AlertCircle',
+        illustration: 'camera-minor',
+        priceAdjustment: -12,
+        adjustmentType: 'percentage',
+        conditionGrade: 'B',
+        bulletPoints: ['Battery health below 75%', 'Minor sticky dial or loose port flap'],
+      },
+      {
+        id: 'opt-func-major',
+        questionId: 'q-functional',
+        label: 'Major Functional Defect (e.g. Shutter Jam / Sensor Spot)',
+        description: 'Shutter error occurs intermittently or permanent sensor dead pixel/scratch.',
+        icon: 'XCircle',
+        illustration: 'camera-defect',
+        priceAdjustment: -35,
+        adjustmentType: 'percentage',
+        conditionGrade: 'C',
+        bulletPoints: ['Shutter error code', 'Physical sensor scratch or dead row'],
+      },
+    ],
+  },
+  {
+    id: 'q-shutter-count',
+    categoryId: 'cat-dslr',
+    question: 'What is the estimated shutter count of the camera?',
+    subtext: 'Lower shutter actuations preserve maximum resale value.',
+    sortOrder: 2,
+    active: true,
+    options: [
+      {
+        id: 'opt-shutter-low',
+        questionId: 'q-shutter-count',
+        label: 'Under 10,000 actuations (Like New)',
+        description: 'Lightly used, mostly studio or hobby photography.',
+        icon: 'Zap',
+        illustration: 'shutter-low',
+        priceAdjustment: 5,
+        adjustmentType: 'percentage',
+        conditionGrade: 'A+',
+        bulletPoints: ['Very low mechanical wear', 'Shutter life > 90% remaining'],
+      },
+      {
+        id: 'opt-shutter-medium',
+        questionId: 'q-shutter-count',
+        label: '10,000 – 40,000 actuations (Normal Use)',
+        description: 'Regular enthusiast or occasional event use.',
+        icon: 'Clock',
+        illustration: 'shutter-med',
+        priceAdjustment: 0,
+        adjustmentType: 'percentage',
+        conditionGrade: 'A',
+        bulletPoints: ['Standard expected usage', 'Clean shutter operation'],
+      },
+      {
+        id: 'opt-shutter-high',
+        questionId: 'q-shutter-count',
+        label: 'Over 50,000 actuations (Heavy / Wedding Use)',
+        description: 'Used extensively for commercial or wedding shoots.',
+        icon: 'Sliders',
+        illustration: 'shutter-high',
+        priceAdjustment: -15,
+        adjustmentType: 'percentage',
+        conditionGrade: 'B',
+        bulletPoints: ['High actuation count', 'Cosmetic wear around mount and grips'],
+      },
+    ],
+  },
+  {
+    id: 'q-cosmetic',
+    categoryId: 'cat-dslr',
+    question: 'What is the physical cosmetic condition of the body & display?',
+    subtext: 'Inspect body corners, tripod mount base, rubber grip, and LCD glass.',
+    sortOrder: 3,
+    active: true,
+    options: [
+      {
+        id: 'opt-cosmetic-flawless',
+        questionId: 'q-cosmetic',
+        label: 'Flawless / Mint (Zero Scratches)',
+        description: 'Looks straight out of the box with screen protector applied.',
+        icon: 'Sparkles',
+        illustration: 'cosmetic-mint',
+        priceAdjustment: 0,
+        adjustmentType: 'percentage',
+        conditionGrade: 'A',
+        bulletPoints: ['No scratches, dents, or paint chipping', 'Rubber grips intact and tight'],
+      },
+      {
+        id: 'opt-cosmetic-good',
+        questionId: 'q-cosmetic',
+        label: 'Good (Minor Paint Rubbing / Micro-scratches)',
+        description: 'Light signs of normal handling, no deep dents or cracks.',
+        icon: 'Check',
+        illustration: 'cosmetic-good',
+        priceAdjustment: -8,
+        adjustmentType: 'percentage',
+        conditionGrade: 'B',
+        bulletPoints: ['Slight corner shine or baseplate scuff', 'Screen has hairline marks visible only under light'],
+      },
+      {
+        id: 'opt-cosmetic-fair',
+        questionId: 'q-cosmetic',
+        label: 'Heavy Wear / Dents / Cracked Screen',
+        description: 'Noticeable drop marks, peeling rubber or cracked protective glass.',
+        icon: 'AlertTriangle',
+        illustration: 'cosmetic-fair',
+        priceAdjustment: -25,
+        adjustmentType: 'percentage',
+        conditionGrade: 'C',
+        bulletPoints: ['Visible drop dent on prism/housing', 'Cracked LCD glass or peeling grip'],
+      },
+    ],
+  },
+  {
+    id: 'q-accessories',
+    categoryId: 'cat-dslr',
+    question: 'Which original accessories are included with the camera?',
+    subtext: 'Having original charger, battery, and packaging increases your valuation.',
+    sortOrder: 4,
+    active: true,
+    options: [
+      {
+        id: 'opt-acc-full',
+        questionId: 'q-accessories',
+        label: 'Full Box + OEM Charger + Original Battery',
+        description: 'Everything that came in the retail box is available.',
+        icon: 'Package',
+        illustration: 'acc-full',
+        priceAdjustment: 5,
+        adjustmentType: 'percentage',
+        conditionGrade: 'A',
+        bulletPoints: ['Original retail box', 'Genuine camera charger & strap', 'Original OEM battery'],
+      },
+      {
+        id: 'opt-acc-basic',
+        questionId: 'q-accessories',
+        label: 'Camera + Genuine Battery + Charger (No Box)',
+        description: 'Original power accessories are present, but box is missing.',
+        icon: 'BatteryCharging',
+        illustration: 'acc-basic',
+        priceAdjustment: 0,
+        adjustmentType: 'percentage',
+        conditionGrade: 'A',
+        bulletPoints: ['Original battery included', 'Original or certified wall charger'],
+      },
+      {
+        id: 'opt-acc-bodyonly',
+        questionId: 'q-accessories',
+        label: 'Camera Body Only (No Charger / Third-Party Battery)',
+        description: 'Only the camera body is provided without original power gear.',
+        icon: 'ShieldAlert',
+        illustration: 'acc-none',
+        priceAdjustment: -10,
+        adjustmentType: 'percentage',
+        conditionGrade: 'B',
+        bulletPoints: ['Missing charger or non-OEM battery', 'Valid ID proof required'],
+      },
+    ],
+  },
+];
 
-},
-{
-  id: 'q-battery',
-  categoryId: 'cat-smartphone',
-  question: 'Is the battery health above 90%?',
-  subtext: 'Check Settings → Battery → Battery Health on iPhone.',
-  sortOrder: 4,
-  active: true,
-  options: [
-  { id: 'q-battery-yes', questionId: 'q-battery', label: 'Yes, above 90%', description: 'Battery is in great health', icon: '🔋', illustration: '🔋', priceAdjustment: 2000, adjustmentType: 'fixed', conditionGrade: 'excellent', bulletPoints: ['Battery health > 90%', 'Long battery life', 'No degradation'] },
-  { id: 'q-battery-80', questionId: 'q-battery', label: '80% – 90%', description: 'Battery is decent', icon: '🔋', illustration: '🔋', priceAdjustment: 0, adjustmentType: 'fixed', conditionGrade: 'good', bulletPoints: ['Battery health 80-90%', 'Decent battery life', 'Slight degradation'] },
-  { id: 'q-battery-below', questionId: 'q-battery', label: 'Below 80%', description: 'Battery needs replacement soon', icon: '⚠️', illustration: '🪫', priceAdjustment: -3000, adjustmentType: 'fixed', conditionGrade: 'fair', bulletPoints: ['Battery health < 80%', 'Needs replacement soon', 'Reduced battery life'] },
-  { id: 'q-battery-unknown', questionId: 'q-battery', label: "Don't Know", description: "I haven't checked", icon: '❓', illustration: '❓', priceAdjustment: -500, adjustmentType: 'fixed', conditionGrade: 'unknown', bulletPoints: ["Haven't checked battery health", 'Will be verified during inspection'] }]
+export const sellQuestions = questions;
 
-},
-{
-  id: 'q-functional',
-  categoryId: 'cat-smartphone',
-  question: 'Is the device fully functional?',
-  subtext: 'Check Face ID, cameras, speakers, microphone and charging.',
-  sortOrder: 5,
-  active: true,
-  options: [
-  { id: 'q-func-yes', questionId: 'q-functional', label: 'Everything Works', description: 'All features working perfectly', icon: '✅', illustration: '✅', priceAdjustment: 0, adjustmentType: 'fixed', conditionGrade: 'excellent', bulletPoints: ['All features functional', 'Camera works', 'Face ID / fingerprint works', 'Speakers & mic work'] },
-  { id: 'q-func-minor', questionId: 'q-functional', label: 'Minor Issue', description: 'One feature not working (e.g. Face ID)', icon: '⚠️', illustration: '⚠️', priceAdjustment: -3500, adjustmentType: 'fixed', conditionGrade: 'fair', bulletPoints: ['One feature not working', 'Rest of device functional', 'Repairable issue'] },
-  { id: 'q-func-major', questionId: 'q-functional', label: 'Major Issue', description: 'Multiple features not working', icon: '❌', illustration: '❌', priceAdjustment: -8000, adjustmentType: 'fixed', conditionGrade: 'poor', bulletPoints: ['Multiple features broken', 'Significant repair needed', 'Reduced functionality'] }]
-
-},
-{
-  id: 'q-water',
-  categoryId: 'cat-smartphone',
-  question: 'Has the device had water damage?',
-  subtext: 'Check if the device has ever been submerged or heavily wet.',
-  sortOrder: 6,
-  active: true,
-  options: [
-  { id: 'q-water-no', questionId: 'q-water', label: 'No Water Damage', description: 'Device has never been water damaged', icon: '✅', illustration: '✅', priceAdjustment: 0, adjustmentType: 'fixed', conditionGrade: 'excellent', bulletPoints: ['No water exposure', 'No corrosion', 'All ports clean'] },
-  { id: 'q-water-yes', questionId: 'q-water', label: 'Yes, Water Damage', description: 'Device was exposed to water', icon: '💧', illustration: '💧', priceAdjustment: -15000, adjustmentType: 'fixed', conditionGrade: 'poor', bulletPoints: ['Water damage present', 'Possible corrosion', 'May have internal damage'] }]
-
-},
-{
-  id: 'q-charger',
-  categoryId: 'cat-smartphone',
-  question: 'Do you have the original charger?',
-  subtext: 'Original Apple/Samsung/OEM charger that came with the device.',
-  sortOrder: 7,
-  active: true,
-  options: [
-  { id: 'q-charger-yes', questionId: 'q-charger', label: 'Yes, Original Charger', description: 'Original charger included', icon: '🔌', illustration: '🔌', priceAdjustment: 500, adjustmentType: 'fixed', conditionGrade: 'good', bulletPoints: ['Original charger included', 'Genuine OEM accessory', 'Adds value to device'] },
-  { id: 'q-charger-no', questionId: 'q-charger', label: 'No Charger', description: 'Charger not available', icon: '❌', illustration: '❌', priceAdjustment: 0, adjustmentType: 'fixed', conditionGrade: 'neutral', bulletPoints: ['No charger available', 'Common situation', 'Does not significantly affect price'] }]
-
-},
-{
-  id: 'q-box',
-  categoryId: 'cat-smartphone',
-  question: 'Do you have the original box?',
-  subtext: 'Original retail box the device came in.',
-  sortOrder: 8,
-  active: true,
-  options: [
-  { id: 'q-box-yes', questionId: 'q-box', label: 'Yes, Original Box', description: 'Box and accessories included', icon: '📦', illustration: '📦', priceAdjustment: 300, adjustmentType: 'fixed', conditionGrade: 'good', bulletPoints: ['Original box available', 'Complete packaging', 'Adds resale value'] },
-  { id: 'q-box-no', questionId: 'q-box', label: 'No Box', description: 'Box not available', icon: '❌', illustration: '❌', priceAdjustment: 0, adjustmentType: 'fixed', conditionGrade: 'neutral', bulletPoints: ['No original box', 'Very common', 'Minimal price impact'] }]
-
-}];
-
-
-// ─── ORDERS ───────────────────────────────────────────────────────────────────
+// ─── INITIAL ORDERS & DATA ───────────────────────────────────────────────────
 
 export const orders: Order[] = [
-{ id: 'ord-001', orderNumber: 'CSM-2024-001', type: 'sell', status: 'completed', customerId: 'cust-001', customerName: 'Rahul Sharma', customerPhone: '9876543210', customerEmail: 'rahul@email.com', customerAddress: '42 MG Road, Koramangala', pinCode: '560034', city: 'Bangalore', deviceName: 'iPhone 16 Pro Max 256GB', deviceBrand: 'Apple', deviceModel: 'iPhone 16 Pro Max', deviceStorage: '256GB', deviceColor: 'Black Titanium', quotedPrice: 78000, finalPrice: 76500, partnerId: 'partner-001', partnerName: 'TechHub Store', deliveryAgentId: 'delivery-001', deliveryAgentName: 'Ravi Kumar', pickupDate: '2024-12-15', pickupSlot: '10:00 AM - 12:00 PM', createdAt: '2024-12-14T09:30:00Z', updatedAt: '2024-12-16T14:20:00Z', paymentStatus: 'paid', inspectionScore: 88, notes: 'Device in excellent condition' },
-{ id: 'ord-002', orderNumber: 'CSM-2024-002', type: 'sell', status: 'inspection', customerId: 'cust-002', customerName: 'Priya Patel', customerPhone: '9765432109', customerEmail: 'priya@email.com', customerAddress: '15 Bandra West, Near Station', pinCode: '400050', city: 'Mumbai', deviceName: 'Samsung Galaxy S24 Ultra 512GB', deviceBrand: 'Samsung', deviceModel: 'Galaxy S24 Ultra', deviceStorage: '512GB', deviceColor: 'Titanium Black', quotedPrice: 65000, finalPrice: 0, partnerId: 'partner-002', partnerName: 'MobileHub Store', deliveryAgentId: 'delivery-002', deliveryAgentName: 'Suresh Nair', pickupDate: '2024-12-20', pickupSlot: '2:00 PM - 4:00 PM', createdAt: '2024-12-19T11:00:00Z', updatedAt: '2024-12-20T15:30:00Z', paymentStatus: 'pending', inspectionScore: null, notes: '' },
-{ id: 'ord-003', orderNumber: 'CSM-2024-003', type: 'buy', status: 'completed', customerId: 'cust-003', customerName: 'Amit Singh', customerPhone: '9654321098', customerEmail: 'amit@email.com', customerAddress: '8 Sector 18, Noida', pinCode: '201301', city: 'Noida', deviceName: 'iPhone 15 Pro 128GB', deviceBrand: 'Apple', deviceModel: 'iPhone 15 Pro', deviceStorage: '128GB', deviceColor: 'Natural Titanium', quotedPrice: 58000, finalPrice: 58000, partnerId: 'partner-001', partnerName: 'TechHub Store', deliveryAgentId: 'delivery-003', deliveryAgentName: 'Deepak Verma', pickupDate: '2024-12-10', pickupSlot: '11:00 AM - 1:00 PM', createdAt: '2024-12-09T10:00:00Z', updatedAt: '2024-12-11T16:00:00Z', paymentStatus: 'paid', inspectionScore: 92, notes: 'Refurbished device - Grade A' },
-{ id: 'ord-004', orderNumber: 'CSM-2024-004', type: 'exchange', status: 'assigned', customerId: 'cust-004', customerName: 'Sneha Reddy', customerPhone: '9543210987', customerEmail: 'sneha@email.com', customerAddress: '22 Jubilee Hills, Road 36', pinCode: '500033', city: 'Hyderabad', deviceName: 'OnePlus 12 256GB → iPhone 16 256GB', deviceBrand: 'OnePlus → Apple', deviceModel: 'OnePlus 12 → iPhone 16', deviceStorage: '256GB', deviceColor: 'Silky Black → Ultramarine', quotedPrice: 42000, finalPrice: 0, partnerId: 'partner-003', partnerName: 'GadgetZone', deliveryAgentId: null, deliveryAgentName: null, pickupDate: '2024-12-22', pickupSlot: '9:00 AM - 11:00 AM', createdAt: '2024-12-21T08:00:00Z', updatedAt: '2024-12-21T12:00:00Z', paymentStatus: 'pending', inspectionScore: null, notes: 'Exchange order - old device pickup + new device delivery' },
-{ id: 'ord-005', orderNumber: 'CSM-2024-005', type: 'repair', status: 'picked_up', customerId: 'cust-005', customerName: 'Vikram Joshi', customerPhone: '9432109876', customerEmail: 'vikram@email.com', customerAddress: '5 Anna Nagar, Block B', pinCode: '600040', city: 'Chennai', deviceName: 'iPhone 14 Pro - Screen Replacement', deviceBrand: 'Apple', deviceModel: 'iPhone 14 Pro', deviceStorage: '256GB', deviceColor: 'Space Black', quotedPrice: 8500, finalPrice: 0, partnerId: 'partner-004', partnerName: 'iRepair Center', deliveryAgentId: 'delivery-001', deliveryAgentName: 'Ravi Kumar', pickupDate: '2024-12-20', pickupSlot: '3:00 PM - 5:00 PM', createdAt: '2024-12-19T14:00:00Z', updatedAt: '2024-12-20T16:00:00Z', paymentStatus: 'pending', inspectionScore: null, notes: 'Screen cracked - needs replacement' },
-{ id: 'ord-006', orderNumber: 'CSM-2024-006', type: 'sell', status: 'created', customerId: 'cust-006', customerName: 'Meera Krishnan', customerPhone: '9321098765', customerEmail: 'meera@email.com', customerAddress: '18 Indiranagar, 100ft Road', pinCode: '560038', city: 'Bangalore', deviceName: 'MacBook Pro 14" M3 512GB', deviceBrand: 'Apple', deviceModel: 'MacBook Pro 14"', deviceStorage: '512GB', deviceColor: 'Space Gray', quotedPrice: 95000, finalPrice: 0, partnerId: null, partnerName: null, deliveryAgentId: null, deliveryAgentName: null, pickupDate: '2024-12-25', pickupSlot: '10:00 AM - 12:00 PM', createdAt: '2024-12-22T09:00:00Z', updatedAt: '2024-12-22T09:00:00Z', paymentStatus: 'pending', inspectionScore: null, notes: '' },
-{ id: 'ord-007', orderNumber: 'CSM-2024-007', type: 'sell', status: 'pickup_scheduled', customerId: 'cust-007', customerName: 'Arjun Mehta', customerPhone: '9210987654', customerEmail: 'arjun@email.com', customerAddress: '33 Powai, Hiranandani', pinCode: '400076', city: 'Mumbai', deviceName: 'Samsung Galaxy S23 Ultra 256GB', deviceBrand: 'Samsung', deviceModel: 'Galaxy S23 Ultra', deviceStorage: '256GB', deviceColor: 'Phantom Black', quotedPrice: 52000, finalPrice: 0, partnerId: 'partner-002', partnerName: 'MobileHub Store', deliveryAgentId: 'delivery-002', deliveryAgentName: 'Suresh Nair', pickupDate: '2024-12-23', pickupSlot: '1:00 PM - 3:00 PM', createdAt: '2024-12-21T10:00:00Z', updatedAt: '2024-12-22T11:00:00Z', paymentStatus: 'pending', inspectionScore: null, notes: '' },
-{ id: 'ord-008', orderNumber: 'CSM-2024-008', type: 'sell', status: 'payment_processing', customerId: 'cust-008', customerName: 'Kavya Nair', customerPhone: '9109876543', customerEmail: 'kavya@email.com', customerAddress: '7 Whitefield, ITPL Road', pinCode: '560066', city: 'Bangalore', deviceName: 'Google Pixel 8 Pro 256GB', deviceBrand: 'Google', deviceModel: 'Pixel 8 Pro', deviceStorage: '256GB', deviceColor: 'Obsidian', quotedPrice: 38000, finalPrice: 36500, partnerId: 'partner-001', partnerName: 'TechHub Store', deliveryAgentId: 'delivery-003', deliveryAgentName: 'Deepak Verma', pickupDate: '2024-12-18', pickupSlot: '11:00 AM - 1:00 PM', createdAt: '2024-12-17T09:00:00Z', updatedAt: '2024-12-19T14:00:00Z', paymentStatus: 'processing', inspectionScore: 85, notes: 'Minor scratches on back panel' },
-{ id: 'ord-009', orderNumber: 'CSM-2024-009', type: 'buy', status: 'completed', customerId: 'cust-009', customerName: 'Rohit Gupta', customerPhone: '9098765432', customerEmail: 'rohit@email.com', customerAddress: '12 DLF Phase 2, Gurgaon', pinCode: '122002', city: 'Gurgaon', deviceName: 'OnePlus 11 256GB', deviceBrand: 'OnePlus', deviceModel: 'OnePlus 11', deviceStorage: '256GB', deviceColor: 'Titan Black', quotedPrice: 32000, finalPrice: 32000, partnerId: 'partner-003', partnerName: 'GadgetZone', deliveryAgentId: 'delivery-001', deliveryAgentName: 'Ravi Kumar', pickupDate: '2024-12-12', pickupSlot: '2:00 PM - 4:00 PM', createdAt: '2024-12-11T11:00:00Z', updatedAt: '2024-12-13T15:00:00Z', paymentStatus: 'paid', inspectionScore: 90, notes: 'Refurbished - Grade B' },
-{ id: 'ord-010', orderNumber: 'CSM-2024-010', type: 'repair', status: 'inspection', customerId: 'cust-010', customerName: 'Ananya Sharma', customerPhone: '8987654321', customerEmail: 'ananya@email.com', customerAddress: '25 Koramangala 5th Block', pinCode: '560095', city: 'Bangalore', deviceName: 'Samsung S22 - Battery Replacement', deviceBrand: 'Samsung', deviceModel: 'Galaxy S22', deviceStorage: '128GB', deviceColor: 'Phantom White', quotedPrice: 3500, finalPrice: 0, partnerId: 'partner-004', partnerName: 'iRepair Center', deliveryAgentId: 'delivery-002', deliveryAgentName: 'Suresh Nair', pickupDate: '2024-12-20', pickupSlot: '10:00 AM - 12:00 PM', createdAt: '2024-12-19T08:00:00Z', updatedAt: '2024-12-20T11:00:00Z', paymentStatus: 'pending', inspectionScore: null, notes: 'Battery draining fast' },
-{ id: 'ord-011', orderNumber: 'CSM-2024-011', type: 'sell', status: 'accepted', customerId: 'cust-011', customerName: 'Kiran Rao', customerPhone: '8876543210', customerEmail: 'kiran@email.com', customerAddress: '9 Banjara Hills, Road 12', pinCode: '500034', city: 'Hyderabad', deviceName: 'Xiaomi 14 Ultra 512GB', deviceBrand: 'Xiaomi', deviceModel: 'Xiaomi 14 Ultra', deviceStorage: '512GB', deviceColor: 'Titanium Gray', quotedPrice: 45000, finalPrice: 0, partnerId: 'partner-003', partnerName: 'GadgetZone', deliveryAgentId: null, deliveryAgentName: null, pickupDate: '2024-12-24', pickupSlot: '9:00 AM - 11:00 AM', createdAt: '2024-12-22T10:00:00Z', updatedAt: '2024-12-22T14:00:00Z', paymentStatus: 'pending', inspectionScore: null, notes: '' },
-{ id: 'ord-012', orderNumber: 'CSM-2024-012', type: 'sell', status: 'created', customerId: 'cust-012', customerName: 'Divya Menon', customerPhone: '8765432109', customerEmail: 'divya@email.com', customerAddress: '14 T Nagar, Chennai', pinCode: '600017', city: 'Chennai', deviceName: 'iPad Pro 12.9" M2 256GB', deviceBrand: 'Apple', deviceModel: 'iPad Pro 12.9"', deviceStorage: '256GB', deviceColor: 'Space Gray', quotedPrice: 55000, finalPrice: 0, partnerId: null, partnerName: null, deliveryAgentId: null, deliveryAgentName: null, pickupDate: '2024-12-26', pickupSlot: '11:00 AM - 1:00 PM', createdAt: '2024-12-23T09:00:00Z', updatedAt: '2024-12-23T09:00:00Z', paymentStatus: 'pending', inspectionScore: null, notes: '' },
-{ id: 'ord-013', orderNumber: 'CSM-2024-013', type: 'exchange', status: 'completed', customerId: 'cust-013', customerName: 'Suresh Kumar', customerPhone: '8654321098', customerEmail: 'suresh@email.com', customerAddress: '6 Marathahalli, Outer Ring Road', pinCode: '560037', city: 'Bangalore', deviceName: 'Realme GT 5 Pro → OnePlus 12', deviceBrand: 'Realme → OnePlus', deviceModel: 'GT 5 Pro → OnePlus 12', deviceStorage: '256GB', deviceColor: 'Titanium Gray → Silky Black', quotedPrice: 28000, finalPrice: 28000, partnerId: 'partner-001', partnerName: 'TechHub Store', deliveryAgentId: 'delivery-003', deliveryAgentName: 'Deepak Verma', pickupDate: '2024-12-08', pickupSlot: '2:00 PM - 4:00 PM', createdAt: '2024-12-07T10:00:00Z', updatedAt: '2024-12-09T16:00:00Z', paymentStatus: 'paid', inspectionScore: 82, notes: 'Exchange completed successfully' },
-{ id: 'ord-014', orderNumber: 'CSM-2024-014', type: 'sell', status: 'inspection_completed', customerId: 'cust-014', customerName: 'Pooja Agarwal', customerPhone: '8543210987', customerEmail: 'pooja@email.com', customerAddress: '20 Sector 62, Noida', pinCode: '201309', city: 'Noida', deviceName: 'iPhone 13 Pro Max 256GB', deviceBrand: 'Apple', deviceModel: 'iPhone 13 Pro Max', deviceStorage: '256GB', deviceColor: 'Sierra Blue', quotedPrice: 42000, finalPrice: 40500, partnerId: 'partner-002', partnerName: 'MobileHub Store', deliveryAgentId: 'delivery-001', deliveryAgentName: 'Ravi Kumar', pickupDate: '2024-12-19', pickupSlot: '10:00 AM - 12:00 PM', createdAt: '2024-12-18T09:00:00Z', updatedAt: '2024-12-20T13:00:00Z', paymentStatus: 'pending', inspectionScore: 86, notes: 'Minor scratches on back panel noted' },
-{ id: 'ord-015', orderNumber: 'CSM-2024-015', type: 'repair', status: 'completed', customerId: 'cust-015', customerName: 'Nikhil Verma', customerPhone: '8432109876', customerEmail: 'nikhil@email.com', customerAddress: '3 Andheri West, Mumbai', pinCode: '400058', city: 'Mumbai', deviceName: 'OnePlus 10 Pro - Charging Port', deviceBrand: 'OnePlus', deviceModel: 'OnePlus 10 Pro', deviceStorage: '256GB', deviceColor: 'Volcanic Black', quotedPrice: 2500, finalPrice: 2500, partnerId: 'partner-004', partnerName: 'iRepair Center', deliveryAgentId: 'delivery-002', deliveryAgentName: 'Suresh Nair', pickupDate: '2024-12-05', pickupSlot: '3:00 PM - 5:00 PM', createdAt: '2024-12-04T11:00:00Z', updatedAt: '2024-12-06T14:00:00Z', paymentStatus: 'paid', inspectionScore: null, notes: 'Charging port replaced successfully' },
-// More orders
-{ id: 'ord-016', orderNumber: 'CSM-2024-016', type: 'sell', status: 'created', customerId: 'cust-016', customerName: 'Aisha Khan', customerPhone: '8321098765', customerEmail: 'aisha@email.com', customerAddress: '11 Vasant Kunj, New Delhi', pinCode: '110070', city: 'Delhi', deviceName: 'Samsung Galaxy Z Fold 5 512GB', deviceBrand: 'Samsung', deviceModel: 'Galaxy Z Fold 5', deviceStorage: '512GB', deviceColor: 'Phantom Black', quotedPrice: 72000, finalPrice: 0, partnerId: null, partnerName: null, deliveryAgentId: null, deliveryAgentName: null, pickupDate: '2024-12-27', pickupSlot: '10:00 AM - 12:00 PM', createdAt: '2024-12-24T10:00:00Z', updatedAt: '2024-12-24T10:00:00Z', paymentStatus: 'pending', inspectionScore: null, notes: '' },
-{ id: 'ord-017', orderNumber: 'CSM-2024-017', type: 'buy', status: 'completed', customerId: 'cust-017', customerName: 'Rajan Pillai', customerPhone: '8210987654', customerEmail: 'rajan@email.com', customerAddress: '16 Ernakulam, Kochi', pinCode: '682011', city: 'Kochi', deviceName: 'iPhone 14 128GB', deviceBrand: 'Apple', deviceModel: 'iPhone 14', deviceStorage: '128GB', deviceColor: 'Midnight', quotedPrice: 42000, finalPrice: 42000, partnerId: 'partner-003', partnerName: 'GadgetZone', deliveryAgentId: 'delivery-003', deliveryAgentName: 'Deepak Verma', pickupDate: '2024-12-13', pickupSlot: '11:00 AM - 1:00 PM', createdAt: '2024-12-12T09:00:00Z', updatedAt: '2024-12-14T15:00:00Z', paymentStatus: 'paid', inspectionScore: 88, notes: 'Refurbished - Grade A' },
-{ id: 'ord-018', orderNumber: 'CSM-2024-018', type: 'sell', status: 'assigned', customerId: 'cust-018', customerName: 'Tanvi Desai', customerPhone: '8109876543', customerEmail: 'tanvi@email.com', customerAddress: '28 Satellite, Ahmedabad', pinCode: '380015', city: 'Ahmedabad', deviceName: 'Vivo X100 Pro 256GB', deviceBrand: 'Vivo', deviceModel: 'X100 Pro', deviceStorage: '256GB', deviceColor: 'Asteroid Black', quotedPrice: 38000, finalPrice: 0, partnerId: 'partner-002', partnerName: 'MobileHub Store', deliveryAgentId: null, deliveryAgentName: null, pickupDate: '2024-12-25', pickupSlot: '2:00 PM - 4:00 PM', createdAt: '2024-12-23T11:00:00Z', updatedAt: '2024-12-23T15:00:00Z', paymentStatus: 'pending', inspectionScore: null, notes: '' },
-{ id: 'ord-019', orderNumber: 'CSM-2024-019', type: 'sell', status: 'picked_up', customerId: 'cust-019', customerName: 'Manish Tiwari', customerPhone: '7987654321', customerEmail: 'manish@email.com', customerAddress: '4 Hazratganj, Lucknow', pinCode: '226001', city: 'Lucknow', deviceName: 'Realme GT Neo 5 256GB', deviceBrand: 'Realme', deviceModel: 'GT Neo 5', deviceStorage: '256GB', deviceColor: 'Booster White', quotedPrice: 22000, finalPrice: 0, partnerId: 'partner-001', partnerName: 'TechHub Store', deliveryAgentId: 'delivery-001', deliveryAgentName: 'Ravi Kumar', pickupDate: '2024-12-21', pickupSlot: '9:00 AM - 11:00 AM', createdAt: '2024-12-20T10:00:00Z', updatedAt: '2024-12-21T10:30:00Z', paymentStatus: 'pending', inspectionScore: null, notes: '' },
-{ id: 'ord-020', orderNumber: 'CSM-2024-020', type: 'repair', status: 'created', customerId: 'cust-020', customerName: 'Shreya Bose', customerPhone: '7876543210', customerEmail: 'shreya@email.com', customerAddress: '19 Salt Lake, Kolkata', pinCode: '700091', city: 'Kolkata', deviceName: 'Nothing Phone 2 - Camera Issue', deviceBrand: 'Nothing', deviceModel: 'Phone 2', deviceStorage: '256GB', deviceColor: 'Dark Gray', quotedPrice: 4500, finalPrice: 0, partnerId: null, partnerName: null, deliveryAgentId: null, deliveryAgentName: null, pickupDate: '2024-12-28', pickupSlot: '11:00 AM - 1:00 PM', createdAt: '2024-12-25T09:00:00Z', updatedAt: '2024-12-25T09:00:00Z', paymentStatus: 'pending', inspectionScore: null, notes: 'Front camera not working' }];
-
-
-// ─── PARTNERS ─────────────────────────────────────────────────────────────────
+  {
+    id: 'ord-1001',
+    orderNumber: 'CAM-2026-8891',
+    type: 'sell',
+    status: 'completed',
+    customerId: 'cust-101',
+    customerName: 'Aditya Kashyap',
+    customerPhone: '9845012345',
+    customerEmail: 'aditya@gmail.com',
+    customerAddress: 'Flat 402, Prestige Tower, Indiranagar',
+    pinCode: '560038',
+    city: 'Bengaluru',
+    deviceName: 'Sony Alpha A7 III',
+    deviceBrand: 'Sony',
+    deviceModel: 'used-sony-alpha-a7-iii',
+    deviceStorage: 'Body Only',
+    deviceColor: 'Black',
+    quotedPrice: 85000,
+    finalPrice: 85000,
+    partnerId: null,
+    partnerName: null,
+    deliveryAgentId: 'agent-101',
+    deliveryAgentName: 'Raghu Sharma',
+    pickupDate: '2026-09-12',
+    pickupSlot: '11:00 AM - 1:00 PM',
+    createdAt: '2026-09-11T10:30:00Z',
+    updatedAt: '2026-09-12T12:45:00Z',
+    paymentStatus: 'paid',
+    inspectionScore: 95,
+    notes: 'Camera in pristine condition. Sensor spot clean, 12K shutter count. Instant UPI transfer done.',
+  },
+  {
+    id: 'ord-1002',
+    orderNumber: 'CAM-2026-8892',
+    type: 'sell',
+    status: 'pickup_scheduled',
+    customerId: 'cust-102',
+    customerName: 'Ritu Sen',
+    customerPhone: '9811234567',
+    customerEmail: 'ritu.sen@yahoo.com',
+    customerAddress: 'B-14, Hauz Khas Enclave',
+    pinCode: '110016',
+    city: 'Delhi',
+    deviceName: 'Canon EOS RP',
+    deviceBrand: 'Canon',
+    deviceModel: 'used-canon-eos-rp',
+    deviceStorage: 'Kit 24-105mm',
+    deviceColor: 'Black',
+    quotedPrice: 58000,
+    finalPrice: 58000,
+    partnerId: null,
+    partnerName: null,
+    deliveryAgentId: 'agent-102',
+    deliveryAgentName: 'Vikas Tyagi',
+    pickupDate: '2026-09-15',
+    pickupSlot: '2:00 PM - 4:00 PM',
+    createdAt: '2026-09-14T08:15:00Z',
+    updatedAt: '2026-09-14T09:00:00Z',
+    paymentStatus: 'pending',
+    inspectionScore: null,
+    notes: 'Doorstep technician assigned. Free pickup scheduled.',
+  },
+];
 
 export const partners: Partner[] = [
-{ id: 'partner-001', name: 'Rajesh Kumar', storeName: 'TechHub Store', phone: '9876543210', email: 'rajesh@techhub.com', city: 'Bangalore', state: 'Karnataka', pinCodes: ['560034', '560038', '560095', '560037', '560066'], categories: ['Smartphones', 'Laptops', 'Tablets'], status: 'active', rating: 4.8, totalOrders: 342, completedOrders: 318, totalEarnings: 485000, pendingPayout: 28500, availableBalance: 45000, joinedAt: '2023-03-15', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80', commission: 12 },
-{ id: 'partner-002', name: 'Pradeep Sharma', storeName: 'MobileHub Store', phone: '9765432109', email: 'pradeep@mobilehub.com', city: 'Mumbai', state: 'Maharashtra', pinCodes: ['400050', '400076', '400058', '400001'], categories: ['Smartphones', 'Earbuds', 'Smartwatches'], status: 'active', rating: 4.6, totalOrders: 287, completedOrders: 265, totalEarnings: 392000, pendingPayout: 18200, availableBalance: 32000, joinedAt: '2023-05-20', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&q=80', commission: 10 },
-{ id: 'partner-003', name: 'Sunil Reddy', storeName: 'GadgetZone', phone: '9654321098', email: 'sunil@gadgetzone.com', city: 'Hyderabad', state: 'Telangana', pinCodes: ['500033', '500034', '500001'], categories: ['Smartphones', 'Gaming Consoles', 'Cameras'], status: 'active', rating: 4.5, totalOrders: 198, completedOrders: 182, totalEarnings: 265000, pendingPayout: 12800, availableBalance: 22000, joinedAt: '2023-07-10', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&q=80', commission: 11 },
-{ id: 'partner-004', name: 'Anil Menon', storeName: 'iRepair Center', phone: '9543210987', email: 'anil@irepair.com', city: 'Chennai', state: 'Tamil Nadu', pinCodes: ['600040', '600017', '600001'], categories: ['Smartphones', 'Tablets', 'Laptops'], status: 'active', rating: 4.7, totalOrders: 156, completedOrders: 148, totalEarnings: 198000, pendingPayout: 9500, availableBalance: 18000, joinedAt: '2023-09-05', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=80&q=80', commission: 13 },
-{ id: 'partner-005', name: 'Vikash Singh', storeName: 'DigiWorld', phone: '9432109876', email: 'vikash@digiworld.com', city: 'Delhi', state: 'Delhi', pinCodes: ['110070', '110001', '110020'], categories: ['Smartphones', 'Laptops'], status: 'pending', rating: 0, totalOrders: 0, completedOrders: 0, totalEarnings: 0, pendingPayout: 0, availableBalance: 0, joinedAt: '2024-12-20', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&q=80', commission: 10 }];
-
-
-// ─── DELIVERY AGENTS ──────────────────────────────────────────────────────────
+  {
+    id: 'partner-001',
+    name: 'Camera Hub Store',
+    storeName: 'Camsik Certified Camera Hub',
+    phone: '9845012399',
+    email: 'contact@camerahub.in',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    pinCodes: ['560001', '560034', '560038', '560095'],
+    categories: ['cat-dslr', 'cat-lens', 'cat-video-camera'],
+    status: 'active',
+    rating: 4.9,
+    totalOrders: 420,
+    completedOrders: 412,
+    totalEarnings: 385000,
+    pendingPayout: 18500,
+    availableBalance: 42000,
+    joinedAt: '2023-04-10',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80',
+    commission: 4.5,
+  },
+  {
+    id: 'partner-002',
+    name: 'Pro Optics Mumbai',
+    storeName: 'Camsik Certified Lens & Cine Hub',
+    phone: '9820011223',
+    email: 'mumbai@prooptics.in',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    pinCodes: ['400050', '400051', '400052'],
+    categories: ['cat-dslr', 'cat-lens', 'cat-gimbal'],
+    status: 'active',
+    rating: 4.8,
+    totalOrders: 310,
+    completedOrders: 304,
+    totalEarnings: 295000,
+    pendingPayout: 14200,
+    availableBalance: 31000,
+    joinedAt: '2023-06-15',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80',
+    commission: 5.0,
+  },
+  {
+    id: 'partner-003',
+    name: 'Delhi Cine Care',
+    storeName: 'Camsik Delhi Pro Studio Store',
+    phone: '9811022334',
+    email: 'delhi@cinecare.in',
+    city: 'Delhi',
+    state: 'Delhi NCR',
+    pinCodes: ['110016', '110017', '110020'],
+    categories: ['cat-dslr', 'cat-lens', 'cat-video-camera', 'cat-action-camera'],
+    status: 'active',
+    rating: 4.9,
+    totalOrders: 540,
+    completedOrders: 532,
+    totalEarnings: 480000,
+    pendingPayout: 22000,
+    availableBalance: 56000,
+    joinedAt: '2023-02-20',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80',
+    commission: 4.0,
+  },
+];
 
 export const deliveryAgents: DeliveryAgent[] = [
-{ id: 'delivery-001', name: 'Ravi Kumar', phone: '9876543210', email: 'ravi@casmik.com', city: 'Bangalore', pinCodes: ['560034', '560038', '560095'], status: 'on_trip', rating: 4.9, todayPickups: 3, todayDeliveries: 2, totalDeliveries: 892, earnings: 2850, vehicle: 'Bike', vehicleNumber: 'KA01AB1234', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80', joinedAt: '2023-01-10' },
-{ id: 'delivery-002', name: 'Suresh Nair', phone: '9765432109', email: 'suresh@casmik.com', city: 'Mumbai', pinCodes: ['400050', '400076', '400058'], status: 'online', rating: 4.7, todayPickups: 2, todayDeliveries: 3, totalDeliveries: 654, earnings: 2200, vehicle: 'Bike', vehicleNumber: 'MH02CD5678', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&q=80', joinedAt: '2023-03-15' },
-{ id: 'delivery-003', name: 'Deepak Verma', phone: '9654321098', email: 'deepak@casmik.com', city: 'Noida', pinCodes: ['201301', '201309', '122002'], status: 'online', rating: 4.8, todayPickups: 4, todayDeliveries: 1, totalDeliveries: 445, earnings: 1850, vehicle: 'Scooter', vehicleNumber: 'UP16EF9012', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&q=80', joinedAt: '2023-06-20' },
-{ id: 'delivery-004', name: 'Anand Pillai', phone: '9543210987', email: 'anand@casmik.com', city: 'Chennai', pinCodes: ['600040', '600017', '600001'], status: 'offline', rating: 4.6, todayPickups: 0, todayDeliveries: 0, totalDeliveries: 312, earnings: 0, vehicle: 'Bike', vehicleNumber: 'TN09GH3456', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=80&q=80', joinedAt: '2023-09-01' },
-{ id: 'delivery-005', name: 'Mohit Sharma', phone: '9432109876', email: 'mohit@casmik.com', city: 'Hyderabad', pinCodes: ['500033', '500034', '500001'], status: 'online', rating: 4.5, todayPickups: 1, todayDeliveries: 2, totalDeliveries: 228, earnings: 1200, vehicle: 'Bike', vehicleNumber: 'TS10IJ7890', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&q=80', joinedAt: '2023-11-15' }];
-
-
-// ─── CUSTOMERS ────────────────────────────────────────────────────────────────
+  {
+    id: 'agent-101',
+    name: 'Raghu Sharma',
+    phone: '9876543210',
+    email: 'raghu@camsik.com',
+    city: 'Bengaluru',
+    pinCodes: ['560034', '560038', '560095'],
+    status: 'online',
+    rating: 4.9,
+    todayPickups: 3,
+    todayDeliveries: 1,
+    totalDeliveries: 840,
+    earnings: 3200,
+    vehicle: 'Bike',
+    vehicleNumber: 'KA01AB5566',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80',
+    joinedAt: '2023-01-15',
+  },
+  {
+    id: 'agent-102',
+    name: 'Vikas Tyagi',
+    phone: '9654321098',
+    email: 'vikas@camsik.com',
+    city: 'Delhi',
+    pinCodes: ['110016', '110017', '110020'],
+    status: 'online',
+    rating: 4.8,
+    todayPickups: 4,
+    todayDeliveries: 2,
+    totalDeliveries: 610,
+    earnings: 2800,
+    vehicle: 'Scooter',
+    vehicleNumber: 'DL04CD8899',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&q=80',
+    joinedAt: '2023-05-12',
+  },
+];
 
 export const customers: Customer[] = [
-{ id: 'cust-001', name: 'Rahul Sharma', phone: '9876543210', email: 'rahul@email.com', city: 'Bangalore', pinCode: '560034', totalOrders: 5, totalValue: 285000, joinedAt: '2023-06-15', status: 'active', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80' },
-{ id: 'cust-002', name: 'Priya Patel', phone: '9765432109', email: 'priya@email.com', city: 'Mumbai', pinCode: '400050', totalOrders: 3, totalValue: 145000, joinedAt: '2023-08-20', status: 'active', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80' },
-{ id: 'cust-003', name: 'Amit Singh', phone: '9654321098', email: 'amit@email.com', city: 'Noida', pinCode: '201301', totalOrders: 2, totalValue: 90000, joinedAt: '2023-09-10', status: 'active', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&q=80' },
-{ id: 'cust-004', name: 'Sneha Reddy', phone: '9543210987', email: 'sneha@email.com', city: 'Hyderabad', pinCode: '500033', totalOrders: 4, totalValue: 198000, joinedAt: '2023-07-05', status: 'active', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&q=80' },
-{ id: 'cust-005', name: 'Vikram Joshi', phone: '9432109876', email: 'vikram@email.com', city: 'Chennai', pinCode: '600040', totalOrders: 1, totalValue: 8500, joinedAt: '2023-11-20', status: 'active', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&q=80' }];
+  {
+    id: 'cust-101',
+    name: 'Aditya Kashyap',
+    phone: '9845012345',
+    email: 'aditya@gmail.com',
+    city: 'Bengaluru',
+    pinCode: '560038',
+    totalOrders: 3,
+    totalValue: 168000,
+    joinedAt: '2023-11-20',
+    status: 'active',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&q=80',
+  },
+];
 
+// ─── HELPER FUNCTIONS ────────────────────────────────────────────────────────
 
-// ─── HELPER FUNCTIONS ─────────────────────────────────────────────────────────
-
-export const getOrderStatusLabel = (status: OrderStatus): string => {
-  const labels: Record<OrderStatus, string> = {
+export function getOrderStatusLabel(status: OrderStatus): string {
+  const map: Record<OrderStatus, string> = {
     created: 'Quote Created',
-    assigned: 'Partner Assigned',
-    accepted: 'Partner Accepted',
+    assigned: 'Agent Assigned',
+    accepted: 'Pickup Confirmed',
     pickup_scheduled: 'Pickup Scheduled',
-    picked_up: 'Device Picked Up',
+    picked_up: 'Camera Picked Up',
     inspection: 'Under Inspection',
-    inspection_completed: 'Inspection Done',
-    final_price: 'Final Price Set',
-    customer_accepted: 'Customer Accepted',
-    payment_processing: 'Payment Processing',
-    paid: 'Payment Done',
-    completed: 'Completed',
-    rejected: 'Rejected',
+    inspection_completed: 'Inspection Completed',
+    final_price: 'Price Offered',
+    customer_accepted: 'Price Accepted',
+    payment_processing: 'Payment In Progress',
+    paid: 'Payment Disbursed',
+    completed: 'Order Completed',
+    rejected: 'Price Declined',
     cancelled: 'Cancelled',
-    rescheduled: 'Rescheduled'
+    rescheduled: 'Rescheduled',
   };
-  return labels[status] || status;
-};
+  return map[status] || status;
+}
 
-export const getOrderStatusColor = (status: OrderStatus): string => {
-  const colors: Record<OrderStatus, string> = {
-    created: 'bg-blue-50 text-blue-700',
-    assigned: 'bg-purple-50 text-purple-700',
-    accepted: 'bg-indigo-50 text-indigo-700',
-    pickup_scheduled: 'bg-cyan-50 text-cyan-700',
-    picked_up: 'bg-teal-50 text-teal-700',
-    inspection: 'bg-yellow-50 text-yellow-700',
-    inspection_completed: 'bg-orange-50 text-orange-700',
-    final_price: 'bg-amber-50 text-amber-700',
-    customer_accepted: 'bg-lime-50 text-lime-700',
-    payment_processing: 'bg-green-50 text-green-700',
-    paid: 'bg-emerald-50 text-emerald-700',
-    completed: 'bg-green-100 text-green-800',
-    rejected: 'bg-red-50 text-red-700',
-    cancelled: 'bg-gray-100 text-gray-600',
-    failed: 'bg-red-100 text-red-800',
-    rescheduled: 'bg-yellow-100 text-yellow-800'
-  } as Record<string, string>;
-  return colors[status] || 'bg-gray-100 text-gray-600';
-};
+export function getOrderStatusColor(status: OrderStatus): string {
+  switch (status) {
+    case 'completed':
+    case 'paid':
+      return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+    case 'pickup_scheduled':
+    case 'assigned':
+      return 'text-blue-600 bg-blue-50 border-blue-200';
+    case 'inspection':
+    case 'picked_up':
+      return 'text-amber-600 bg-amber-50 border-amber-200';
+    case 'cancelled':
+    case 'rejected':
+      return 'text-rose-600 bg-rose-50 border-rose-200';
+    default:
+      return 'text-slate-600 bg-slate-50 border-slate-200';
+  }
+}
 
-export const getTypeColor = (type: Order['type']): string => {
-  const colors = { sell: 'bg-green-50 text-green-700', buy: 'bg-blue-50 text-blue-700', exchange: 'bg-purple-50 text-purple-700', repair: 'bg-orange-50 text-orange-700' };
-  return colors[type];
-};
+export function getTypeColor(type: 'sell' | 'buy' | 'exchange'): string {
+  switch (type) {
+    case 'sell':
+      return 'text-purple-600 bg-purple-50 border-purple-200';
+    case 'buy':
+      return 'text-blue-600 bg-blue-50 border-blue-200';
+    case 'exchange':
+      return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+  }
+}
+
+export function getModelsByCategory(categoryId: string): DeviceModel[] {
+  return deviceModels.filter((m) => m.categoryId === categoryId && m.active);
+}
+
+export function getBrandsByCategory(categoryId: string): Brand[] {
+  return brands.filter((b) => b.categoryId === categoryId && b.active);
+}
+
+export function getCategoryBySlug(slug: string): Category | undefined {
+  return categories.find((c) => c.slug === slug || c.id === slug);
+}
+
+export function getModelBySlug(slug: string): DeviceModel | undefined {
+  return deviceModels.find((m) => m.slug === slug || m.id === slug);
+}
+
+export function getBrandBySlug(slug: string): Brand | undefined {
+  return brands.find((b) => b.slug === slug || b.id === slug);
+}

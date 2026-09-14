@@ -1,9 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-
-import { MapPin, Phone, Mail } from 'lucide-react';
-import Icon from '@/components/ui/AppIcon';
-
+import { MapPin, Phone, Mail, Camera, ShieldCheck, Truck, RefreshCw, Zap } from 'lucide-react';
 
 const FacebookIcon = ({ size = 15 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -32,106 +29,161 @@ const YoutubeIcon = ({ size = 15 }: { size?: number }) => (
   </svg>
 );
 
-const LinkedinIcon = ({ size = 15 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-    <rect x="2" y="9" width="4" height="12"/>
-    <circle cx="4" cy="4" r="2"/>
-  </svg>
-);
-
 const footerLinks = {
-  'Services': [
-    { label: 'Sell Device', href: '/sell-device-get-quote' },
-    { label: 'Buy Refurbished', href: '/buy-refurbished' },
-    { label: 'Exchange Device', href: '/exchange-device' },
-    { label: 'Repair Services', href: '/repair-device' },
-    { label: 'Bulk Deals', href: '#bulk' },
+  'Sell Camera Gear': [
+    { label: 'Sell DSLR Cameras', href: '/sell-device-get-quote?cat=cat-dslr' },
+    { label: 'Sell Camera Lenses', href: '/sell-device-get-quote?cat=cat-lens' },
+    { label: 'Sell Video Cameras & Camcorders', href: '/sell-device-get-quote?cat=cat-video-camera' },
+    { label: 'Sell Action Cameras', href: '/sell-device-get-quote?cat=cat-action-camera' },
+    { label: 'Sell Gimbals & Stabilizers', href: '/sell-device-get-quote?cat=cat-gimbal' },
   ],
-  'Company': [
-    { label: 'About Us', href: '#about' },
-    { label: 'How It Works', href: '#how-it-works' },
-    { label: 'Careers', href: '#careers' },
-    { label: 'Blog', href: '#blog' },
-    { label: 'Press', href: '#press' },
+  'Top Camera Brands': [
+    { label: 'Sell Canon Cameras', href: '/sell-device-get-quote?brand=canon' },
+    { label: 'Sell Nikon Cameras', href: '/sell-device-get-quote?brand=nikon' },
+    { label: 'Sell Sony Alpha Cameras', href: '/sell-device-get-quote?brand=sony' },
+    { label: 'Sell LUMIX / Panasonic', href: '/sell-device-get-quote?brand=lumix' },
+    { label: 'Sell GoPro & DJI', href: '/sell-device-get-quote?brand=gopro' },
   ],
-  'Support': [
-    { label: 'Help Center', href: '#help' },
-    { label: 'Contact Us', href: '#contact' },
-    { label: 'Track Order', href: '#track' },
-    { label: 'Partner Portal', href: '/partner' },
-    { label: 'Become a Partner', href: '#become-partner' },
+  'Company & Trust': [
+    { label: 'About Camsik', href: '#about' },
+    { label: 'How Camsik Works', href: '#how-it-works' },
+    { label: 'Why People Choose Camsik', href: '#why-us' },
+    { label: 'Customer Video Reviews', href: '#testimonials' },
+    { label: 'Frequently Asked Questions', href: '#faq' },
   ],
-  'Legal': [
-    { label: 'Terms of Service', href: '#terms' },
-    { label: 'Privacy Policy', href: '#privacy' },
-    { label: 'Refund Policy', href: '#refund' },
-    { label: 'Warranty Policy', href: '#warranty' },
-    { label: 'Cookie Policy', href: '#cookies' },
+  'Support & Policies': [
+    { label: 'Track Camera Order', href: '/track-order' },
+    { label: 'Doorstep Pickup Policy', href: '#how-it-works' },
+    { label: 'Privacy & Data Protection', href: '#privacy' },
+    { label: 'Terms & Conditions', href: '#terms' },
+    { label: 'Partner Program', href: '/partner/login' },
   ],
 };
 
-const socialLinks = [
-  { name: 'Facebook', href: 'https://facebook.com/casmik', Icon: FacebookIcon },
-  { name: 'Twitter', href: 'https://twitter.com/casmik', Icon: TwitterIcon },
-  { name: 'Instagram', href: 'https://instagram.com/casmik', Icon: InstagramIcon },
-  { name: 'Youtube', href: 'https://youtube.com/casmik', Icon: YoutubeIcon },
-  { name: 'LinkedIn', href: 'https://linkedin.com/company/casmik', Icon: LinkedinIcon },
+const popularCities = [
+  'Bengaluru', 'Mumbai', 'Delhi NCR', 'Hyderabad', 'Chennai', 'Pune',
+  'Kolkata', 'Ahmedabad', 'Jaipur', 'Chandigarh', 'Lucknow', 'Indore',
+  'Surat', 'Kochi', 'Bhopal', 'Nagpur', 'Coimbatore', 'Visakhapatnam'
 ];
 
 export default function CustomerFooter() {
   return (
-    <footer className="bg-secondary text-white">
-      <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10 pt-16 pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 mb-12">
-          {/* Brand */}
+    <footer className="bg-slate-950 text-slate-300 border-t border-slate-800">
+      {/* Feature Strip */}
+      <div className="border-b border-slate-800/80 bg-slate-900/40 py-8">
+        <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center md:text-left">
+            <div className="flex items-center gap-3.5 justify-center md:justify-start">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                <Zap size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">Instant Spot Payment</p>
+                <p className="text-xs text-slate-400">UPI or Bank Transfer on the spot</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3.5 justify-center md:justify-start">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <Truck size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">Free Doorstep Pickup</p>
+                <p className="text-xs text-slate-400">Across 200+ cities in India</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3.5 justify-center md:justify-start">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <ShieldCheck size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">Factory Grade Data Wipe</p>
+                <p className="text-xs text-slate-400">100% Data privacy guaranteed</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3.5 justify-center md:justify-start">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                <RefreshCw size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">Best Market Valuation</p>
+                <p className="text-xs text-slate-400">Objective AI camera pricing</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Footer Links */}
+      <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10 py-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10">
+          {/* Brand Info */}
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-xl gradient-green flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" fill="white" fillOpacity="0.9"/>
-                  <path d="M9 12l2 2 4-4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+            <Link href="/" className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-purple-600/25">
+                <Camera size={22} />
               </div>
-              <span className="font-extrabold text-xl text-white">Casmik</span>
-            </div>
-            <p className="text-sm text-slate-400 leading-relaxed mb-5">
-              India&apos;s most trusted device lifecycle platform. Sell, buy, exchange or repair your devices with full transparency and instant payment.
+              <div>
+                <span className="font-black text-2xl text-white tracking-tight">CAMSIK</span>
+                <span className="block text-[10px] font-semibold text-purple-400 uppercase tracking-widest -mt-1">
+                  Camera Electronics
+                </span>
+              </div>
+            </Link>
+            <p className="text-sm text-slate-400 leading-relaxed mb-6">
+              India&apos;s leading camera buyback platform. Turn your old DSLR, mirrorless cameras, lenses, video camcorders, action cameras &amp; gimbals into instant cash with safe doorstep inspection.
             </p>
-            <div className="flex flex-col gap-2 text-sm text-slate-400 mb-5">
-              <div className="flex items-center gap-2">
-                <MapPin size={14} className="text-primary flex-shrink-0" />
-                <span>Casmik Technologies Pvt. Ltd., Bengaluru, Karnataka 560001</span>
+
+            <div className="space-y-2.5 text-xs text-slate-400 mb-6">
+              <div className="flex items-start gap-2.5">
+                <MapPin size={15} className="text-purple-400 flex-shrink-0 mt-0.5" />
+                <span>Camsik Electronics Pvt. Ltd., Outer Ring Road, Bengaluru, Karnataka 560103</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Phone size={14} className="text-primary flex-shrink-0" />
-                <a href="tel:+919876543210" className="hover:text-white transition-colors">+91 98765 43210</a>
+              <div className="flex items-center gap-2.5">
+                <Phone size={15} className="text-purple-400 flex-shrink-0" />
+                <span>Toll Free: 1800-CAMSIK (Mon–Sun 9 AM – 9 PM)</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Mail size={14} className="text-primary flex-shrink-0" />
-                <a href="mailto:support@casmik.in" className="hover:text-white transition-colors">support@casmik.in</a>
+              <div className="flex items-center gap-2.5">
+                <Mail size={15} className="text-purple-400 flex-shrink-0" />
+                <a href="mailto:support@camsik.com" className="hover:text-white transition-colors">
+                  support@camsik.com
+                </a>
               </div>
             </div>
-            {/* Social links */}
-            <div className="flex items-center gap-2">
-              {socialLinks?.map(({ name, href, Icon }) => (
-                <a key={name} href={href} target="_blank" rel="noopener noreferrer" aria-label={name}
-                  className="w-9 h-9 rounded-lg bg-white/10 hover:bg-primary flex items-center justify-center transition-colors duration-150">
-                  <Icon size={15} />
-                </a>
-              ))}
+
+            {/* Social Icons */}
+            <div className="flex items-center gap-2.5">
+              <a href="https://facebook.com/camsik" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-purple-600 flex items-center justify-center text-slate-300 hover:text-white transition-colors" aria-label="Facebook">
+                <FacebookIcon size={14} />
+              </a>
+              <a href="https://twitter.com/camsik" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-purple-600 flex items-center justify-center text-slate-300 hover:text-white transition-colors" aria-label="Twitter">
+                <TwitterIcon size={14} />
+              </a>
+              <a href="https://instagram.com/camsik" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-purple-600 flex items-center justify-center text-slate-300 hover:text-white transition-colors" aria-label="Instagram">
+                <InstagramIcon size={14} />
+              </a>
+              <a href="https://youtube.com/camsik" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-purple-600 flex items-center justify-center text-slate-300 hover:text-white transition-colors" aria-label="YouTube">
+                <YoutubeIcon size={14} />
+              </a>
             </div>
           </div>
 
-          {/* Link groups */}
-          {Object.entries(footerLinks)?.map(([group, links]) => (
-            <div key={`footer-group-${group}`}>
-              <h4 className="font-semibold text-white text-sm mb-4 uppercase tracking-wide">{group}</h4>
-              <ul className="flex flex-col gap-2">
-                {links?.map(link => (
-                  <li key={`footer-link-${link?.label}`}>
-                    <Link href={link?.href} className="text-sm text-slate-400 hover:text-primary transition-colors duration-150">
-                      {link?.label}
+          {/* Dynamic Link Columns */}
+          {Object.entries(footerLinks).map(([title, links]) => (
+            <div key={title}>
+              <h4 className="font-bold text-white text-xs uppercase tracking-wider mb-4 border-b border-slate-800/80 pb-2">
+                {title}
+              </h4>
+              <ul className="space-y-2.5">
+                {links.map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      className="text-xs text-slate-400 hover:text-purple-400 transition-colors block leading-relaxed"
+                    >
+                      {link.label}
                     </Link>
                   </li>
                 ))}
@@ -140,50 +192,31 @@ export default function CustomerFooter() {
           ))}
         </div>
 
-        {/* Newsletter */}
-        <div className="border-t border-white/10 pt-8 pb-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <p className="font-semibold text-white mb-1">Stay updated with Casmik</p>
-              <p className="text-sm text-slate-400">Get the latest deals, offers and device news.</p>
-            </div>
-            <div className="flex gap-2 w-full md:w-auto">
-              <input type="email" placeholder="Enter your email" className="flex-1 md:w-64 px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:border-primary transition-colors" />
-              <button className="px-5 py-2.5 gradient-green text-white rounded-xl text-sm font-semibold shadow-green btn-press whitespace-nowrap">Subscribe</button>
-            </div>
+        {/* Operating Cities Tag Cloud */}
+        <div className="mt-12 pt-8 border-t border-slate-800">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+            Popular Cities for Free Camera Pickup:
+          </p>
+          <div className="flex flex-wrap gap-2 text-xs text-slate-400">
+            {popularCities.map((city) => (
+              <span
+                key={city}
+                className="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 hover:border-purple-500/40 hover:text-white transition-colors cursor-default"
+              >
+                {city}
+              </span>
+            ))}
           </div>
         </div>
 
-        {/* App download */}
-        <div className="border-t border-white/10 pt-6 pb-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-slate-400">Download the Casmik app for a better experience</p>
-            <div className="flex gap-3">
-              <a href="#" className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors">
-                <span className="text-lg">🍎</span>
-                <div>
-                  <p className="text-xs text-slate-400 leading-none">Download on the</p>
-                  <p className="text-sm font-semibold text-white leading-tight">App Store</p>
-                </div>
-              </a>
-              <a href="#" className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors">
-                <span className="text-lg">▶️</span>
-                <div>
-                  <p className="text-xs text-slate-400 leading-none">Get it on</p>
-                  <p className="text-sm font-semibold text-white leading-tight">Google Play</p>
-                </div>
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-slate-500">© 2026 Casmik Technologies Pvt. Ltd. All rights reserved.</p>
-          <div className="flex items-center gap-6 text-xs text-slate-500">
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary"></span>ISO 27001 Certified</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary"></span>100% Secure Transactions</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary"></span>Rated 4.9/5 on Google</span>
+        {/* Bottom Copyright */}
+        <div className="mt-8 pt-6 border-t border-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+          <p>© 2026 Camsik Electronics Pvt. Ltd. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <Link href="#privacy" className="hover:text-slate-300 transition-colors">Privacy Policy</Link>
+            <Link href="#terms" className="hover:text-slate-300 transition-colors">Terms of Service</Link>
+            <Link href="#disclaimer" className="hover:text-slate-300 transition-colors">Valuation Disclaimer</Link>
+            <Link href="#sitemap" className="hover:text-slate-300 transition-colors">Sitemap</Link>
           </div>
         </div>
       </div>

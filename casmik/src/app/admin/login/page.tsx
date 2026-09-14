@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary shadow-2xl shadow-primary/40 mb-4">
             <Shield size={28} className="text-white" />
           </div>
-          <h1 className="text-2xl font-black text-white">CASMIK Admin</h1>
+          <h1 className="text-2xl font-black text-white">CAMSIK Admin</h1>
           <p className="text-white/50 text-sm mt-1">Super Admin Control Panel</p>
         </div>
 
@@ -121,7 +121,7 @@ export default function AdminLoginPage() {
         </div>
 
         <p className="text-center text-white/30 text-xs mt-6">
-          © 2024 CASMIK. All rights reserved. Unauthorized access is prohibited.
+          © 2024 CAMSIK. All rights reserved. Unauthorized access is prohibited.
         </p>
       </div>
     </div>

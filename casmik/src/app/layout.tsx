@@ -18,8 +18,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Casmik — Turn Your Old Devices Into Instant Value',
-  description: 'Sell, buy, exchange or repair your devices at the best price with free doorstep pickup, instant payment, and 100% secure process across 100+ Indian cities.',
+  title: 'Camsik — Sell Used DSLR, Lenses, Video & Action Cameras | Instant Cash & Free Doorstep Pickup',
+  description: 'Sell your old or used DSLR camera, mirrorless lenses, 4K video camcorders, action cameras & gimbals at the best market price. Instant AI valuation, free doorstep pickup, and instant cash transfer across India.',
+  keywords: 'sell old camera, sell dslr camera, sell camera lens, sell used mirrorless, camsik electronics, camera buyback, canon, nikon, sony alpha, lumix, gopro, dji osmo',
   icons: {
     icon: [{ url: '/favicon.ico', type: 'image/x-icon' }],
   },
@@ -35,7 +36,7 @@ export default function RootLayout({
           {children}
         </AuthProvider>
         <Toaster position="bottom-right" richColors closeButton />
-</body>
+      </body>
     </html>
   );
 }

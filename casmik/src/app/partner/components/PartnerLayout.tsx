@@ -32,7 +32,7 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
         </div>
         {!collapsed && (
           <div>
-            <p className="font-black text-gray-900 text-sm leading-none">CASMIK</p>
+            <p className="font-black text-gray-900 text-sm leading-none">CAMSIK</p>
             <p className="text-xs text-gray-400 leading-none mt-0.5">Partner Portal</p>
           </div>
         )}

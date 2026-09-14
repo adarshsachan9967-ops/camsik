@@ -69,7 +69,7 @@ export default function LoginPage() {
                 {mode === 'otp' ? 'Verify OTP' : mode === 'register' ? 'Create Account' : 'Welcome Back'}
               </h1>
               <p className="text-white/80 text-sm">
-                {mode === 'otp' ? `OTP sent to ${loginMethod === 'phone' ? phone : email}` : mode === 'register' ? 'Join 10 lakh+ happy customers' : 'Sign in to your Casmik account'}
+                {mode === 'otp' ? `OTP sent to ${loginMethod === 'phone' ? phone : email}` : mode === 'register' ? 'Join 10 lakh+ happy customers' : 'Sign in to your Camsik account'}
               </p>
             </div>
 
@@ -185,14 +185,14 @@ export default function LoginPage() {
 
                   {mode === 'login' && (
                     <p className="text-center text-sm text-muted-foreground mt-4">
-                      New to Casmik?{' '}
+                      New to Camsik?{' '}
                       <button onClick={() => setMode('register')} className="text-primary font-semibold hover:underline">Create account</button>
                     </p>
                   )}
 
                   <div className="mt-5 pt-5 border-t border-border">
                     <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                      By continuing, you agree to Casmik&apos;s{' '}
+                      By continuing, you agree to Camsik&apos;s{' '}
                       <Link href="#terms" className="text-primary hover:underline">Terms of Service</Link> and{' '}
                       <Link href="#privacy" className="text-primary hover:underline">Privacy Policy</Link>
                     </p>

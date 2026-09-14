@@ -6,7 +6,7 @@ import { Search, Filter, Eye, UserCheck, MoreHorizontal, ChevronLeft, ChevronRig
 const orders = [
   { id: 'CSM-2608-4721', customer: 'Priya Nair', city: 'Bengaluru', device: 'iPhone 15 Pro Max 256GB', service: 'Sell', quote: '₹1,05,000', status: 'Inspection', partner: 'TechHub Store', pickupDate: '22 Aug 2026', assigned: true },
   { id: 'CSM-2608-4720', customer: 'Arjun Mehta', city: 'Mumbai', device: 'Samsung S24 Ultra 512GB', service: 'Sell', quote: '₹58,000', status: 'Pickup Scheduled', partner: 'QuickFix Mumbai', pickupDate: '23 Aug 2026', assigned: true },
-  { id: 'CSM-2608-4719', customer: 'Sneha Reddy', city: 'Hyderabad', device: 'MacBook Air M3 16GB', service: 'Buy', quote: '₹72,000', status: 'Shipped', partner: 'Casmik Warehouse', pickupDate: '24 Aug 2026', assigned: true },
+  { id: 'CSM-2608-4719', customer: 'Sneha Reddy', city: 'Hyderabad', device: 'Sony Alpha 7 IV 24-70mm', service: 'Buy', quote: '₹1,48,000', status: 'Shipped', partner: 'Camsik Hub', pickupDate: '24 Aug 2026', assigned: true },
   { id: 'CSM-2608-4718', customer: 'Vikram Singh', city: 'Delhi', device: 'iPhone 14 Pro 128GB', service: 'Repair', quote: '₹8,500', status: 'Pending', partner: null, pickupDate: '23 Aug 2026', assigned: false },
   { id: 'CSM-2608-4717', customer: 'Kavya KM', city: 'Chennai', device: 'OnePlus 12 256GB', service: 'Exchange', quote: '₹42,000', status: 'Quote Generated', partner: null, pickupDate: '25 Aug 2026', assigned: false },
   { id: 'CSM-2608-4716', customer: 'Rohit Kapoor', city: 'Pune', device: 'iPad Pro M4 256GB', service: 'Buy', quote: '₹65,000', status: 'Delivered', partner: 'GadgetZone Pune', pickupDate: '21 Aug 2026', assigned: true },

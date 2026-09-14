@@ -32,7 +32,7 @@ export default function DeliveryLayout({ activeSection, onSectionChange, childre
               <span className="text-white font-black text-sm">C</span>
             </div>
             <div>
-              <p className="font-black text-gray-900 text-sm leading-none">CASMIK</p>
+              <p className="font-black text-gray-900 text-sm leading-none">CAMSIK</p>
               <p className="text-xs text-gray-400 leading-none">Delivery Agent</p>
             </div>
           </div>

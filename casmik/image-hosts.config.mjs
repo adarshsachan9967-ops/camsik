@@ -5,6 +5,10 @@
 export const imageHosts = [
     {
         protocol: 'https',
+        hostname: 'camsik.com',
+    },
+    {
+        protocol: 'https',
         hostname: 'images.unsplash.com',
     },
     {

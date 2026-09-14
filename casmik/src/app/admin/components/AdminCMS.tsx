@@ -13,7 +13,7 @@ const cmsModules: Record<CMSSection, {id: CMSModule;label: string;icon: string;d
   { id: 'banners', label: 'Hero Banners', icon: '🖼️', description: 'Manage homepage hero banners and CTAs' },
   { id: 'hero', label: 'Hero Content', icon: '✨', description: 'Edit headline, subtext and hero section' },
   { id: 'stats', label: 'Trust Statistics', icon: '📊', description: 'Happy customers, devices sold, cities covered' },
-  { id: 'why', label: 'Why Casmik', icon: '💡', description: 'Manage trust cards and feature highlights' },
+  { id: 'why', label: 'Why Camsik', icon: '💡', description: 'Manage trust cards and feature highlights' },
   { id: 'howItWorks', label: 'How It Works', icon: '🔄', description: 'Edit step-by-step process sections' },
   { id: 'testimonials', label: 'Testimonials', icon: '⭐', description: 'Add, edit and manage customer reviews' },
   { id: 'faqs', label: 'FAQs', icon: '❓', description: 'Manage frequently asked questions' },
@@ -40,7 +40,7 @@ const cmsModules: Record<CMSSection, {id: CMSModule;label: string;icon: string;d
 };
 
 const sampleFAQs = [
-{ id: 1, q: 'How does Casmik calculate the price of my device?', a: 'We use a dynamic pricing engine based on device model, condition, and market demand.', active: true },
+{ id: 1, q: 'How does Camsik calculate the price of my device?', a: 'We use a dynamic pricing engine based on device model, condition, and market demand.', active: true },
 { id: 2, q: 'How long does pickup take after booking?', a: 'Our partner will pick up your device within 24-48 hours of booking.', active: true },
 { id: 3, q: 'When will I receive payment for my sold device?', a: 'Payment is processed within 24 hours after final inspection and price confirmation.', active: true },
 { id: 4, q: 'What documents do I need for selling?', a: 'Just a valid ID proof. No other documents required for selling.', active: false }];
@@ -245,7 +245,7 @@ export default function AdminCMS() {
                 <div className="space-y-3">
                   <div>
                     <label className="text-xs font-bold text-gray-600 mb-1 block">Brand Name</label>
-                    <input defaultValue="CASMIK" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                    <input defaultValue="CAMSIK" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
                   <div>
                     <label className="text-xs font-bold text-gray-600 mb-1 block">Tagline</label>

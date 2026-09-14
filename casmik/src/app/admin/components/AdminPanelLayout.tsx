@@ -78,7 +78,7 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
         </div>
         {!collapsed && (
           <div>
-            <p className="font-black text-white text-sm leading-none">CASMIK</p>
+            <p className="font-black text-white text-sm leading-none">CAMSIK</p>
             <p className="text-xs text-white/40 leading-none mt-0.5">Super Admin</p>
           </div>
         )}

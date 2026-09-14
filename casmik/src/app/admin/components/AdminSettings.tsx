@@ -61,9 +61,9 @@ export default function AdminSettings() {
               <h3 className="font-bold text-gray-900 text-base">Company Details</h3>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: 'Company Name', value: 'CASMIK Technologies Pvt Ltd' },
-                  { label: 'Brand Name', value: 'CASMIK' },
-                  { label: 'Support Email', value: 'support@casmik.com' },
+                  { label: 'Company Name', value: 'CAMSIK Technologies Pvt Ltd' },
+                  { label: 'Brand Name', value: 'CAMSIK' },
+                  { label: 'Support Email', value: 'support@camsik.com' },
                   { label: 'Support Phone', value: '+91 9967000000' },
                   { label: 'GST Number', value: '27AABCC1234D1Z5' },
                   { label: 'PAN Number', value: 'AABCC1234D' },

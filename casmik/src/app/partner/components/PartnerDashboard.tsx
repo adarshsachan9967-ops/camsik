@@ -4,7 +4,12 @@ import { orders, partners } from '@/lib/casmikData';
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const partner = partners[1]; // MobileHub Store
+const partner = partners[1] || partners[0] || {
+  totalEarnings: 385000,
+  totalOrders: 420,
+  commission: 4.5,
+  pendingPayout: 18500,
+};
 
 const earningsData = [
   { day: '06 May', earnings: 8200 },

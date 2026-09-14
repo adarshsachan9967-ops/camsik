@@ -188,9 +188,9 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
         </div>
       </div>
 
-      {/* Why sell to Casmik */}
+      {/* Why sell to Camsik */}
       <div className="bg-white rounded-2xl border border-border shadow-sm p-6">
-        <h3 className="font-bold text-foreground mb-4">Why sell to Casmik?</h3>
+        <h3 className="font-bold text-foreground mb-4">Why sell to Camsik?</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           {sellBenefits.map(b => (
             <div key={b.id} className="flex flex-col items-center text-center p-3 rounded-xl bg-surface">

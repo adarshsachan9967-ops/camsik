@@ -1,331 +1,509 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Search, Star, Shield, Truck, ChevronRight, SlidersHorizontal, CheckCircle, Battery, Package, ArrowRight } from 'lucide-react';
+import { Search, Star, Shield, Truck, ChevronRight, CheckCircle, Package, ArrowRight, Camera, Sparkles } from 'lucide-react';
 import CustomerHeader from '@/components/CustomerHeader';
 import CustomerFooter from '@/components/CustomerFooter';
 import AppImage from '@/components/ui/AppImage';
 
 type Condition = 'all' | 'superb' | 'good' | 'fair';
-type Category = 'all' | 'smartphones' | 'laptops' | 'tablets' | 'smartwatches';
+type CameraCategory = 'all' | 'cat-dslr' | 'cat-lens' | 'cat-video-camera' | 'cat-action-camera' | 'cat-gimbal';
 
-const refurbishedDevices = [
-{ id: 'ref-001', brand: 'Apple', model: 'iPhone 15 Pro', storage: '128GB', color: 'Natural Titanium', condition: 'superb' as const, price: 58999, originalPrice: 134900, discount: 56, batteryHealth: 98, warranty: '12 months', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_17b82fb7a-1772960574407.png', alt: 'iPhone 15 Pro in natural titanium', rating: 4.8, reviews: 234, category: 'smartphones', inStock: true, deliveryDays: 2 },
-{ id: 'ref-002', brand: 'Apple', model: 'iPhone 14 Pro Max', storage: '256GB', color: 'Deep Purple', condition: 'good' as const, price: 52999, originalPrice: 139900, discount: 62, batteryHealth: 92, warranty: '12 months', image: "https://images.unsplash.com/photo-1676353410356-867313a96ed4", alt: 'iPhone 14 Pro Max in deep purple', rating: 4.7, reviews: 189, category: 'smartphones', inStock: true, deliveryDays: 2 },
-{ id: 'ref-003', brand: 'Samsung', model: 'Galaxy S24 Ultra', storage: '256GB', color: 'Titanium Black', condition: 'superb' as const, price: 62999, originalPrice: 129999, discount: 52, batteryHealth: 97, warranty: '12 months', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_1d40efa47-1773056836850.png', alt: 'Samsung Galaxy S24 Ultra in titanium black', rating: 4.9, reviews: 312, category: 'smartphones', inStock: true, deliveryDays: 2 },
-{ id: 'ref-004', brand: 'Apple', model: 'MacBook Air M2', storage: '256GB SSD', color: 'Space Gray', condition: 'good' as const, price: 72999, originalPrice: 114900, discount: 36, batteryHealth: 94, warranty: '12 months', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1a40d28b0-1772275866999.png", alt: 'MacBook Air M2 in space gray', rating: 4.8, reviews: 156, category: 'laptops', inStock: true, deliveryDays: 3 },
-{ id: 'ref-005', brand: 'OnePlus', model: 'OnePlus 12', storage: '256GB', color: 'Silky Black', condition: 'superb' as const, price: 38999, originalPrice: 64999, discount: 40, batteryHealth: 99, warranty: '12 months', image: 'https://img.rocket.new/generatedImages/rocket_gen_img_137629e57-1765615226355.png', alt: 'OnePlus 12 in silky black', rating: 4.7, reviews: 98, category: 'smartphones', inStock: true, deliveryDays: 2 },
-{ id: 'ref-006', brand: 'Apple', model: 'iPad Pro 12.9"', storage: '256GB', color: 'Space Gray', condition: 'good' as const, price: 58999, originalPrice: 112900, discount: 48, batteryHealth: 93, warranty: '12 months', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1f9863b31-1773175179242.png", alt: 'iPad Pro 12.9 inch in space gray', rating: 4.6, reviews: 87, category: 'tablets', inStock: true, deliveryDays: 2 },
-{ id: 'ref-007', brand: 'Samsung', model: 'Galaxy S23', storage: '128GB', color: 'Phantom Black', condition: 'fair' as const, price: 28999, originalPrice: 74999, discount: 61, batteryHealth: 85, warranty: '6 months', image: "https://img.rocket.new/generatedImages/rocket_gen_img_122e5667e-1772368533819.png", alt: 'Samsung Galaxy S23 in phantom black', rating: 4.4, reviews: 145, category: 'smartphones', inStock: true, deliveryDays: 2 },
-{ id: 'ref-008', brand: 'Apple', model: 'Apple Watch Series 9', storage: '32GB', color: 'Midnight', condition: 'superb' as const, price: 18999, originalPrice: 41900, discount: 55, batteryHealth: 96, warranty: '6 months', image: "https://img.rocket.new/generatedImages/rocket_gen_img_10e772778-1764671536455.png", alt: 'Apple Watch Series 9 in midnight', rating: 4.8, reviews: 203, category: 'smartwatches', inStock: true, deliveryDays: 2 },
-{ id: 'ref-009', brand: 'Google', model: 'Pixel 8 Pro', storage: '256GB', color: 'Obsidian', condition: 'good' as const, price: 42999, originalPrice: 106999, discount: 60, batteryHealth: 91, warranty: '12 months', image: "https://img.rocket.new/generatedImages/rocket_gen_img_182eccfbd-1765101833319.png", alt: 'Google Pixel 8 Pro in obsidian', rating: 4.6, reviews: 76, category: 'smartphones', inStock: true, deliveryDays: 2 },
-{ id: 'ref-010', brand: 'Apple', model: 'iPhone 13', storage: '128GB', color: 'Midnight', condition: 'fair' as const, price: 32999, originalPrice: 79900, discount: 59, batteryHealth: 84, warranty: '6 months', image: "https://images.unsplash.com/photo-1702309087982-4bf4dc02f926", alt: 'iPhone 13 in midnight color', rating: 4.5, reviews: 421, category: 'smartphones', inStock: true, deliveryDays: 2 },
-{ id: 'ref-011', brand: 'Dell', model: 'XPS 15', storage: '512GB SSD', color: 'Platinum Silver', condition: 'good' as const, price: 82999, originalPrice: 149990, discount: 45, batteryHealth: 90, warranty: '12 months', image: "https://img.rocket.new/generatedImages/rocket_gen_img_1fbe29315-1773056140933.png", alt: 'Dell XPS 15 laptop in platinum silver', rating: 4.7, reviews: 63, category: 'laptops', inStock: true, deliveryDays: 3 },
-{ id: 'ref-012', brand: 'Samsung', model: 'Galaxy Tab S9', storage: '128GB', color: 'Graphite', condition: 'superb' as const, price: 44999, originalPrice: 87999, discount: 49, batteryHealth: 97, warranty: '12 months', image: "https://img.rocket.new/generatedImages/rocket_gen_img_157363c6f-1764671536613.png", alt: 'Samsung Galaxy Tab S9 in graphite', rating: 4.7, reviews: 112, category: 'tablets', inStock: true, deliveryDays: 2 }];
+interface RefurbishedCamera {
+  id: string;
+  brand: string;
+  model: string;
+  category: CameraCategory;
+  categoryLabel: string;
+  condition: 'superb' | 'good' | 'fair';
+  price: number;
+  originalPrice: number;
+  discount: number;
+  shutterCount: string;
+  warranty: string;
+  image: string;
+  alt: string;
+  rating: number;
+  reviews: number;
+  inStock: boolean;
+  deliveryDays: number;
+  specs: string;
+}
 
+const refurbishedCameras: RefurbishedCamera[] = [
+  {
+    id: 'ref-cam-001',
+    brand: 'Sony',
+    model: 'Sony Alpha 7 IV (ILCE-7M4)',
+    category: 'cat-dslr',
+    categoryLabel: 'Full-Frame Mirrorless',
+    condition: 'superb',
+    price: 148000,
+    originalPrice: 242490,
+    discount: 39,
+    shutterCount: '4,210 actuations (98% life)',
+    warranty: '12 Months Warranty',
+    image: 'https://camsik.com/img/purchaseProducts/ilce_7m4_1_png.png',
+    alt: 'Sony Alpha 7 IV',
+    rating: 4.9,
+    reviews: 142,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '33MP BSI Sensor, 4K60p 10-bit 4:2:2, Dual BIONZ XR',
+  },
+  {
+    id: 'ref-cam-002',
+    brand: 'Canon',
+    model: 'Canon EOS R6 Mark II',
+    category: 'cat-dslr',
+    categoryLabel: 'Full-Frame Mirrorless',
+    condition: 'superb',
+    price: 154000,
+    originalPrice: 243995,
+    discount: 37,
+    shutterCount: '2,800 actuations (99% life)',
+    warranty: '12 Months Warranty',
+    image: 'https://camsik.com/img/purchaseProducts/eos_r6_mark_ii_body_1_png.png',
+    alt: 'Canon EOS R6 Mark II',
+    rating: 4.8,
+    reviews: 98,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '24.2MP CMOS, 40 fps electronic shutter, 6K RAW',
+  },
+  {
+    id: 'ref-cam-003',
+    brand: 'Nikon',
+    model: 'Nikon Z8 Flagship Body',
+    category: 'cat-dslr',
+    categoryLabel: 'Flagship Mirrorless',
+    condition: 'superb',
+    price: 248000,
+    originalPrice: 343995,
+    discount: 28,
+    shutterCount: '6,150 actuations (97% life)',
+    warranty: '12 Months Warranty',
+    image: 'https://camsik.com/img/purchaseProducts/nikon_z8_1_png.png',
+    alt: 'Nikon Z8',
+    rating: 5.0,
+    reviews: 64,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '45.7MP Stacked CMOS, 8.3K60p N-RAW, No shutter lag',
+  },
+  {
+    id: 'ref-cam-004',
+    brand: 'Fujifilm',
+    model: 'Fujifilm X-T5 Mirrorless Body',
+    category: 'cat-dslr',
+    categoryLabel: 'APS-C Mirrorless',
+    condition: 'good',
+    price: 108000,
+    originalPrice: 169999,
+    discount: 36,
+    shutterCount: '12,400 actuations (94% life)',
+    warranty: '6 Months Warranty',
+    image: 'https://camsik.com/img/purchaseProducts/fujifilm_xt5_1_png.png',
+    alt: 'Fujifilm X-T5',
+    rating: 4.7,
+    reviews: 87,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '40.2MP X-Trans CMOS 5 HR, Film Simulations, IBIS',
+  },
+  {
+    id: 'ref-cam-005',
+    brand: 'Sony',
+    model: 'Sony FE 24-70mm f/2.8 GM II',
+    category: 'cat-lens',
+    categoryLabel: 'G Master Zoom Lens',
+    condition: 'superb',
+    price: 142000,
+    originalPrice: 199990,
+    discount: 29,
+    shutterCount: 'Clean optics, zero fungus',
+    warranty: '12 Months Warranty',
+    image: 'https://camsik.com/img/purchaseProducts/sony_fe_24_70mm_gm2_1_png.png',
+    alt: 'Sony FE 24-70mm f/2.8 GM II',
+    rating: 4.9,
+    reviews: 110,
+    inStock: true,
+    deliveryDays: 2,
+    specs: 'XD Linear Motors, Nano AR Coating II, Aperture ring click switch',
+  },
+  {
+    id: 'ref-cam-006',
+    brand: 'Canon',
+    model: 'Canon RF 70-200mm f/2.8L IS USM',
+    category: 'cat-lens',
+    categoryLabel: 'L-Series Telephoto',
+    condition: 'good',
+    price: 172000,
+    originalPrice: 249995,
+    discount: 31,
+    shutterCount: 'Pristine glass, minor barrel rub',
+    warranty: '12 Months Warranty',
+    image: 'https://camsik.com/img/purchaseProducts/canon_rf_70_200mm_f28_1_png.png',
+    alt: 'Canon RF 70-200mm f/2.8L IS USM',
+    rating: 4.9,
+    reviews: 53,
+    inStock: true,
+    deliveryDays: 2,
+    specs: 'Dual Nano USM, 5-stop Image Stabilization, Compact retracting body',
+  },
+  {
+    id: 'ref-cam-007',
+    brand: 'DJI',
+    model: 'DJI RS 3 Pro Combo Gimbal',
+    category: 'cat-gimbal',
+    categoryLabel: 'Professional Gimbal',
+    condition: 'superb',
+    price: 49500,
+    originalPrice: 79900,
+    discount: 38,
+    shutterCount: '4.5kg payload, calibrated motors',
+    warranty: '6 Months Warranty',
+    image: 'https://camsik.com/img/purchaseProducts/dji_rs3_pro_1_png.png',
+    alt: 'DJI RS 3 Pro Gimbal',
+    rating: 4.8,
+    reviews: 79,
+    inStock: true,
+    deliveryDays: 2,
+    specs: 'Carbon fiber arms, LiDAR autofocus compatible, automated axis locks',
+  },
+  {
+    id: 'ref-cam-008',
+    brand: 'GoPro',
+    model: 'GoPro HERO 12 Black Creator Edition',
+    category: 'cat-action-camera',
+    categoryLabel: 'Action Camera',
+    condition: 'superb',
+    price: 32500,
+    originalPrice: 48990,
+    discount: 34,
+    shutterCount: 'Includes Volta, Media Mod & Light Mod',
+    warranty: '6 Months Warranty',
+    image: 'https://camsik.com/img/purchaseProducts/gopro_hero12_1_png.png',
+    alt: 'GoPro HERO 12 Black',
+    rating: 4.7,
+    reviews: 165,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '5.3K60 HDR, HyperSmooth 6.0, GP-Log encoding, Bluetooth audio',
+  },
+  {
+    id: 'ref-cam-009',
+    brand: 'Insta360',
+    model: 'Insta360 X4 8K 360 Action Camera',
+    category: 'cat-action-camera',
+    categoryLabel: '360° Action Camera',
+    condition: 'superb',
+    price: 38900,
+    originalPrice: 54990,
+    discount: 29,
+    shutterCount: 'Scratchless dual lenses with guards',
+    warranty: '6 Months Warranty',
+    image: 'https://camsik.com/img/purchaseProducts/insta360_x4_1_png.png',
+    alt: 'Insta360 X4 8K',
+    rating: 4.9,
+    reviews: 84,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '8K 30fps 360 video, Invisible Selfie Stick effect, AI Gesture Control',
+  },
+  {
+    id: 'ref-cam-010',
+    brand: 'Sony',
+    model: 'Sony Cinema Line FX3 (ILME-FX3)',
+    category: 'cat-video-camera',
+    categoryLabel: 'Cinema Camera',
+    condition: 'good',
+    price: 265000,
+    originalPrice: 399990,
+    discount: 34,
+    shutterCount: '180 operating hours, pristine sensor',
+    warranty: '12 Months Warranty',
+    image: 'https://camsik.com/img/purchaseProducts/sony_fx3_1_png.png',
+    alt: 'Sony Cinema Line FX3',
+    rating: 5.0,
+    reviews: 42,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '10.2MP Full-Frame Back-Illuminated sensor, Active cooling fan, S-Cinetone',
+  },
+  {
+    id: 'ref-cam-011',
+    brand: 'Sigma',
+    model: 'Sigma 24-70mm f/2.8 DG DN Art (Sony E)',
+    category: 'cat-lens',
+    categoryLabel: 'Art Series Zoom',
+    condition: 'good',
+    price: 68000,
+    originalPrice: 104990,
+    discount: 35,
+    shutterCount: 'Optically flawless, minor hood wear',
+    warranty: '6 Months Warranty',
+    image: 'https://camsik.com/img/purchaseProducts/sigma_24_70_art_1_png.png',
+    alt: 'Sigma 24-70mm Art',
+    rating: 4.8,
+    reviews: 132,
+    inStock: true,
+    deliveryDays: 2,
+    specs: 'Dust and splash-proof mount, 11-blade rounded diaphragm, stepping AF motor',
+  },
+  {
+    id: 'ref-cam-012',
+    brand: 'Canon',
+    model: 'Canon EOS 90D DSLR Body',
+    category: 'cat-dslr',
+    categoryLabel: 'DSLR Camera',
+    condition: 'fair',
+    price: 54000,
+    originalPrice: 97495,
+    discount: 45,
+    shutterCount: '34,200 actuations (65% life)',
+    warranty: '6 Months Warranty',
+    image: 'https://camsik.com/img/purchaseProducts/canon_eos_90d_1_png.png',
+    alt: 'Canon EOS 90D',
+    rating: 4.6,
+    reviews: 210,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '32.5MP APS-C sensor, 45-point all cross-type AF, uncropped 4K video',
+  },
+];
 
 const conditionConfig = {
-  superb: { label: 'Superb', color: 'bg-emerald-100 text-emerald-700', desc: 'Like new, minimal marks' },
-  good: { label: 'Good', color: 'bg-blue-100 text-blue-700', desc: 'Minor cosmetic marks' },
-  fair: { label: 'Fair', color: 'bg-amber-100 text-amber-700', desc: 'Visible marks, fully functional' }
+  superb: { label: 'Superb', color: 'bg-emerald-100 text-emerald-800 border-emerald-200', desc: 'Like new, < 10k shutter, zero marks' },
+  good: { label: 'Good', color: 'bg-blue-100 text-blue-800 border-blue-200', desc: 'Clean optics, minor scuffs on body' },
+  fair: { label: 'Fair', color: 'bg-amber-100 text-amber-800 border-amber-200', desc: 'Fully functional, cosmetic wear or high shutter' },
 };
 
-const howItWorks = [
-{ step: 1, icon: '🔍', title: 'Choose Device', desc: 'Browse certified refurbished devices by category, brand or model.' },
-{ step: 2, icon: '⭐', title: 'Select Condition', desc: 'Pick Fair, Good or Superb condition based on your budget.' },
-{ step: 3, icon: '📋', title: 'Check Details', desc: 'Review inspection report, battery health, warranty and accessories.' },
-{ step: 4, icon: '💳', title: 'Place Order', desc: 'Checkout securely via UPI, card or EMI with instant confirmation.' },
-{ step: 5, icon: '📦', title: 'Get Delivery', desc: 'Receive your device at home within 2–3 business days.' }];
-
+const categoryTabs = [
+  { id: 'all', label: 'All Gear' },
+  { id: 'cat-dslr', label: 'DSLR & Mirrorless' },
+  { id: 'cat-lens', label: 'Lenses & Optics' },
+  { id: 'cat-video-camera', label: 'Cinema Cameras' },
+  { id: 'cat-action-camera', label: 'Action & 360' },
+  { id: 'cat-gimbal', label: 'Gimbals & Stabilizers' },
+];
 
 export default function BuyRefurbishedPage() {
-  const [activeCategory, setActiveCategory] = useState<Category>('all');
+  const [activeCategory, setActiveCategory] = useState<CameraCategory>('all');
   const [activeCondition, setActiveCondition] = useState<Condition>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDevice, setSelectedDevice] = useState<typeof refurbishedDevices[0] | null>(null);
-  const [checkoutStep, setCheckoutStep] = useState<'browse' | 'detail' | 'checkout' | 'confirmed'>('browse');
+  const [selectedDevice, setSelectedDevice] = useState<RefurbishedCamera | null>(null);
+  const [checkoutStep, setCheckoutStep] = useState<'browse' | 'confirmed'>('browse');
 
-  const filtered = refurbishedDevices.filter((d) => {
+  const filtered = refurbishedCameras.filter((d) => {
     const matchCat = activeCategory === 'all' || d.category === activeCategory;
     const matchCond = activeCondition === 'all' || d.condition === activeCondition;
-    const matchSearch = d.model.toLowerCase().includes(searchQuery.toLowerCase()) || d.brand.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchSearch =
+      d.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.categoryLabel.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCat && matchCond && matchSearch;
   });
 
-  if (checkoutStep === 'confirmed') {
+  if (checkoutStep === 'confirmed' && selectedDevice) {
     return (
       <main className="min-h-screen bg-background">
         <CustomerHeader />
         <div className="min-h-[calc(100vh-64px)] flex items-center justify-center py-12 px-4">
-          <div className="text-center max-w-md">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle size={40} className="text-primary" />
+          <div className="text-center max-w-md bg-white rounded-3xl border border-border p-8 shadow-xl">
+            <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6 text-emerald-600">
+              <CheckCircle size={40} />
             </div>
-            <h1 className="text-2xl font-extrabold text-foreground mb-2">Order Confirmed! 🎉</h1>
-            <p className="text-muted-foreground mb-6">Your refurbished {selectedDevice?.brand} {selectedDevice?.model} is on its way. Expected delivery in {selectedDevice?.deliveryDays} business days.</p>
-            <div className="bg-white rounded-2xl border border-border p-5 mb-6 text-left">
-              <p className="text-sm font-semibold text-foreground mb-3">Order Summary</p>
-              <div className="flex justify-between text-sm mb-2"><span className="text-muted-foreground">Device</span><span className="font-semibold">{selectedDevice?.brand} {selectedDevice?.model}</span></div>
-              <div className="flex justify-between text-sm mb-2"><span className="text-muted-foreground">Condition</span><span className="font-semibold capitalize">{selectedDevice?.condition}</span></div>
-              <div className="flex justify-between text-sm mb-2"><span className="text-muted-foreground">Amount Paid</span><span className="font-bold text-primary">₹{selectedDevice?.price.toLocaleString('en-IN')}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Warranty</span><span className="font-semibold">{selectedDevice?.warranty}</span></div>
+            <h1 className="text-2xl font-black text-foreground mb-2">Order Reserved! 🎉</h1>
+            <p className="text-sm text-muted-foreground mb-6">
+              Your certified pre-owned {selectedDevice.model} has been reserved. Our camera team will call you to schedule insured doorstep delivery with 7-day inspection return privilege.
+            </p>
+            <div className="p-4 rounded-2xl bg-surface border border-border/80 text-left text-xs space-y-2 mb-6">
+              <div className="flex justify-between"><span className="text-muted-foreground">Camera</span><span className="font-bold">{selectedDevice.model}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Condition</span><span className="font-bold capitalize">{selectedDevice.condition}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Price</span><span className="font-black text-primary text-sm">₹{selectedDevice.price.toLocaleString('en-IN')}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Warranty</span><span className="font-bold text-emerald-600">{selectedDevice.warranty}</span></div>
             </div>
-            <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 gradient-green text-white rounded-xl font-semibold shadow-green">
-              Back to Home <ArrowRight size={16} />
+            <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 gradient-green text-white rounded-xl font-bold shadow-green">
+              Back to Camsik Home <ArrowRight size={16} />
             </Link>
           </div>
         </div>
         <CustomerFooter />
-      </main>);
-
-  }
-
-  if (checkoutStep === 'checkout' && selectedDevice) {
-    return (
-      <main className="min-h-screen bg-background">
-        <CustomerHeader />
-        <div className="max-w-2xl mx-auto px-4 py-12">
-          <button onClick={() => setCheckoutStep('detail')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-            ← Back to Device Details
-          </button>
-          <h1 className="text-2xl font-extrabold text-foreground mb-6">Complete Your Order</h1>
-          <div className="bg-white rounded-2xl border border-border p-6 mb-6">
-            <div className="flex items-center gap-4 mb-5 pb-5 border-b border-border">
-              <img src={selectedDevice.image} alt={selectedDevice.alt} className="w-16 h-16 rounded-xl object-cover bg-muted" />
-              <div>
-                <p className="font-bold text-foreground">{selectedDevice.brand} {selectedDevice.model}</p>
-                <p className="text-sm text-muted-foreground">{selectedDevice.storage} · {selectedDevice.color}</p>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${conditionConfig[selectedDevice.condition].color}`}>{conditionConfig[selectedDevice.condition].label}</span>
-              </div>
-              <div className="ml-auto text-right">
-                <p className="text-xl font-extrabold text-foreground">₹{selectedDevice.price.toLocaleString('en-IN')}</p>
-                <p className="text-xs text-muted-foreground line-through">₹{selectedDevice.originalPrice.toLocaleString('en-IN')}</p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-1.5">Delivery Address</label>
-                <textarea placeholder="Enter your full delivery address..." rows={3}
-                className="w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-1.5">PIN Code</label>
-                  <input type="text" placeholder="6-digit PIN" maxLength={6}
-                  className="w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-1.5">Phone</label>
-                  <input type="tel" placeholder="+91 XXXXX XXXXX"
-                  className="w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground mb-2">Payment Method</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {['UPI', 'Card', 'EMI'].map((m) =>
-                  <button key={m} className="py-2.5 rounded-xl border-2 border-border text-sm font-semibold hover:border-primary hover:bg-primary/5 transition-all first:border-primary first:bg-primary/5">
-                      {m}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl border border-border p-5 mb-5">
-            <div className="flex justify-between text-sm mb-2"><span className="text-muted-foreground">Device Price</span><span>₹{selectedDevice.price.toLocaleString('en-IN')}</span></div>
-            <div className="flex justify-between text-sm mb-2"><span className="text-muted-foreground">Delivery</span><span className="text-primary font-semibold">FREE</span></div>
-            <div className="flex justify-between text-sm font-bold border-t border-border pt-2 mt-2"><span>Total</span><span className="text-primary">₹{selectedDevice.price.toLocaleString('en-IN')}</span></div>
-          </div>
-          <button onClick={() => setCheckoutStep('confirmed')}
-          className="w-full py-4 gradient-green text-white rounded-xl font-bold text-base shadow-green btn-press flex items-center justify-center gap-2">
-            <CheckCircle size={18} /> Place Order — ₹{selectedDevice.price.toLocaleString('en-IN')}
-          </button>
-        </div>
-        <CustomerFooter />
-      </main>);
-
-  }
-
-  if (checkoutStep === 'detail' && selectedDevice) {
-    const cond = conditionConfig[selectedDevice.condition];
-    return (
-      <main className="min-h-screen bg-background">
-        <CustomerHeader />
-        <div className="max-w-screen-xl mx-auto px-4 py-8">
-          <button onClick={() => setCheckoutStep('browse')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-            ← Back to Listings
-          </button>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div>
-              <div className="bg-white rounded-2xl border border-border p-6 mb-4">
-                <AppImage src={selectedDevice.image} alt={selectedDevice.alt} width={400} height={400} className="w-full h-72 object-contain" />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                {[selectedDevice.image, selectedDevice.image, selectedDevice.image].map((img, i) =>
-                <div key={i} className="bg-white rounded-xl border border-border p-2 cursor-pointer hover:border-primary transition-colors">
-                    <img src={img} alt={`View ${i + 1}`} className="w-full h-16 object-contain" />
-                  </div>
-                )}
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${cond.color}`}>{cond.label}</span>
-                <span className="text-xs text-muted-foreground">{cond.desc}</span>
-              </div>
-              <h1 className="text-2xl font-extrabold text-foreground mb-1">{selectedDevice.brand} {selectedDevice.model}</h1>
-              <p className="text-sm text-muted-foreground mb-4">{selectedDevice.storage} · {selectedDevice.color}</p>
-              <div className="flex items-baseline gap-3 mb-5">
-                <span className="text-3xl font-extrabold text-foreground">₹{selectedDevice.price.toLocaleString('en-IN')}</span>
-                <span className="text-lg text-muted-foreground line-through">₹{selectedDevice.originalPrice.toLocaleString('en-IN')}</span>
-                <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg">{selectedDevice.discount}% OFF</span>
-              </div>
-              <div className="grid grid-cols-2 gap-3 mb-5">
-                {[
-                { icon: Battery, label: 'Battery Health', value: `${selectedDevice.batteryHealth}%` },
-                { icon: Shield, label: 'Warranty', value: selectedDevice.warranty },
-                { icon: Star, label: 'Rating', value: `${selectedDevice.rating}/5 (${selectedDevice.reviews})` },
-                { icon: Truck, label: 'Delivery', value: `${selectedDevice.deliveryDays} business days` }].
-                map((item) =>
-                <div key={item.label} className="bg-surface rounded-xl p-3 flex items-center gap-2.5">
-                    <item.icon size={16} className="text-primary flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">{item.label}</p>
-                      <p className="text-sm font-bold text-foreground">{item.value}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="bg-surface rounded-xl p-4 mb-5">
-                <p className="text-sm font-bold text-foreground mb-3">Inspection Report</p>
-                {['Display', 'Battery', 'Camera', 'Speakers', 'Charging Port', 'Face ID / Fingerprint'].map((item) =>
-                <div key={item} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
-                    <span className="text-sm text-muted-foreground">{item}</span>
-                    <span className="flex items-center gap-1 text-xs font-semibold text-primary"><CheckCircle size={12} /> Passed</span>
-                  </div>
-                )}
-              </div>
-              <button onClick={() => setCheckoutStep('checkout')}
-              className="w-full py-4 gradient-green text-white rounded-xl font-bold text-base shadow-green btn-press mb-3">
-                Buy Now — ₹{selectedDevice.price.toLocaleString('en-IN')}
-              </button>
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Shield size={12} className="text-primary" /> Certified Refurbished</span>
-                <span className="flex items-center gap-1"><Truck size={12} className="text-primary" /> Free Delivery</span>
-                <span className="flex items-center gap-1"><Package size={12} className="text-primary" /> Easy Returns</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <CustomerFooter />
-      </main>);
-
+      </main>
+    );
   }
 
   return (
     <main className="min-h-screen bg-background">
       <CustomerHeader />
+
       {/* Hero */}
-      <section className="bg-gradient-to-br from-blue-50 via-white to-white py-12 border-b border-border">
-        <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mb-4">
-              <Shield size={12} /> CERTIFIED REFURBISHED DEVICES
+      <section className="bg-gradient-to-b from-slate-900 to-slate-950 text-white py-14 border-b border-slate-800 relative overflow-hidden">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 relative z-10">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 text-primary text-xs font-bold mb-4 border border-primary/30">
+              <Sparkles size={13} />
+              45-POINT CERTIFIED PRE-OWNED GEAR
             </div>
-            <h1 className="text-4xl font-extrabold text-foreground mb-3">Buy Refurbished Devices</h1>
-            <p className="text-lg text-muted-foreground mb-6">Certified devices with warranty, inspection report and battery health guarantee. Save up to 60% vs new.</p>
-            <div className="relative max-w-lg">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search iPhone, Samsung, MacBook..."
-              className="w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 border-border bg-white shadow-sm text-sm focus:outline-none focus:border-primary transition-all" />
-            </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-4">
+              Buy Certified Pre-Owned Cameras &amp; Lenses
+            </h1>
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
+              Save up to 60% on flagship full-frame bodies, cinema cameras, fast zoom optics, and creators’ gimbals. Every unit is tested for shutter accuracy, sensor dust, and autofocus sharpness with up to 12 months warranty.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="py-10 bg-white border-b border-border">
-        <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10">
-          <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
-            {howItWorks.map((step, i) =>
-            <React.Fragment key={step.step}>
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl flex-shrink-0">{step.icon}</div>
-                  <div>
-                    <p className="text-xs font-bold text-foreground">{step.title}</p>
-                    <p className="text-xs text-muted-foreground max-w-28 leading-tight">{step.desc}</p>
-                  </div>
-                </div>
-                {i < howItWorks.length - 1 && <ChevronRight size={16} className="text-muted-foreground flex-shrink-0" />}
-              </React.Fragment>
-            )}
+      {/* Filters & Content Area */}
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-10">
+        {/* Search & Category Filter Tabs */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          {/* Category Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+            {categoryTabs.map((tab) => {
+              const isActive = activeCategory === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveCategory(tab.id as CameraCategory)}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    isActive
+                      ? 'bg-primary text-white shadow-md'
+                      : 'bg-white border border-border text-muted-foreground hover:text-foreground hover:border-primary/40'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
-        </div>
-      </section>
 
-      <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10 py-8">
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <div className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-            <SlidersHorizontal size={14} /> Filter:
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {(['all', 'smartphones', 'laptops', 'tablets', 'smartwatches'] as Category[]).map((cat) =>
-            <button key={cat} onClick={() => setActiveCategory(cat)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize transition-all ${activeCategory === cat ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:text-foreground'}`}>
-                {cat === 'all' ? 'All Categories' : cat}
-              </button>
-            )}
-          </div>
-          <div className="flex gap-2 ml-auto flex-wrap">
-            {(['all', 'superb', 'good', 'fair'] as Condition[]).map((cond) =>
-            <button key={cond} onClick={() => setActiveCondition(cond)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize transition-all ${activeCondition === cond ? 'bg-secondary text-white' : 'bg-muted text-muted-foreground hover:text-foreground'}`}>
-                {cond === 'all' ? 'All Conditions' : cond}
-              </button>
-            )}
+          {/* Search Box */}
+          <div className="relative w-full md:w-72">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search Sony, Canon, 24-70mm..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
           </div>
         </div>
 
-        <p className="text-sm text-muted-foreground mb-5">{filtered.length} devices found</p>
+        {/* Condition Filter Badges */}
+        <div className="flex items-center gap-2 mb-8">
+          <span className="text-xs font-bold text-muted-foreground mr-1">Condition Grade:</span>
+          {(['all', 'superb', 'good', 'fair'] as Condition[]).map((cond) => (
+            <button
+              key={cond}
+              onClick={() => setActiveCondition(cond)}
+              className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition-all ${
+                activeCondition === cond
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-slate-100 text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {cond}
+            </button>
+          ))}
+        </div>
 
-        {/* Device grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filtered.map((device) => {
-            const cond = conditionConfig[device.condition];
+        {/* Camera Products Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filtered.map((cam) => {
+            const cond = conditionConfig[cam.condition];
             return (
-              <div key={device.id} className="bg-white rounded-2xl border border-border hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group">
-                <div className="relative p-4 bg-surface">
-                  <span className={`absolute top-3 left-3 text-xs px-2 py-0.5 rounded-full font-bold ${cond.color}`}>{cond.label}</span>
-                  <span className="absolute top-3 right-3 text-xs px-2 py-0.5 rounded-full font-bold bg-primary/10 text-primary">{device.discount}% OFF</span>
-                  <AppImage src={device.image} alt={device.alt} width={200} height={160} className="w-full h-40 object-contain group-hover:scale-105 transition-transform duration-300" />
+              <div
+                key={cam.id}
+                className="bg-white rounded-3xl border border-border/80 overflow-hidden hover:border-primary/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
+              >
+                <div className="p-5">
+                  {/* Image with Badges */}
+                  <div className="relative aspect-[4/3] rounded-2xl bg-slate-50 overflow-hidden mb-4 border border-border/50">
+                    <AppImage
+                      src={cam.image}
+                      alt={cam.alt}
+                      fill
+                      className="object-contain p-3 group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-3 left-3">
+                      <span className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${cond.color}`}>
+                        Grade: {cond.label}
+                      </span>
+                    </div>
+                    <div className="absolute top-3 right-3">
+                      <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-500 text-white shadow-sm">
+                        {cam.discount}% OFF
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Brand & Category */}
+                  <div className="flex items-center justify-between text-xs font-bold text-muted-foreground mb-1">
+                    <span className="text-primary uppercase tracking-wider">{cam.brand}</span>
+                    <span className="text-[11px] bg-surface px-2 py-0.5 rounded-md border border-border">
+                      {cam.categoryLabel}
+                    </span>
+                  </div>
+
+                  <h3 className="font-black text-foreground text-base line-clamp-1 group-hover:text-primary transition-colors">
+                    {cam.model}
+                  </h3>
+
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                    {cam.specs}
+                  </p>
+
+                  <div className="mt-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1 text-[11px]">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Diagnostics</span>
+                      <span className="font-bold text-slate-700 truncate max-w-[150px]">{cam.shutterCount}</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Warranty</span>
+                      <span className="font-bold text-emerald-600">{cam.warranty}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-4">
-                  <p className="text-xs text-muted-foreground font-medium mb-0.5">{device.brand}</p>
-                  <p className="font-bold text-foreground mb-1">{device.model}</p>
-                  <p className="text-xs text-muted-foreground mb-3">{device.storage} · {device.color}</p>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Battery size={12} className="text-primary" />
-                    <span className="text-xs text-muted-foreground">Battery: <strong className="text-foreground">{device.batteryHealth}%</strong></span>
-                    <Shield size={12} className="text-primary ml-1" />
-                    <span className="text-xs text-muted-foreground">{device.warranty}</span>
+
+                <div className="p-5 pt-0">
+                  <div className="flex items-baseline justify-between pt-3 border-t border-border/60 mb-4">
+                    <div>
+                      <p className="text-lg font-black text-primary">
+                        ₹{cam.price.toLocaleString('en-IN')}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground line-through">
+                        MRP: ₹{cam.originalPrice.toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs font-bold text-amber-500">
+                      <Star size={13} className="fill-amber-400 text-amber-400" />
+                      <span>{cam.rating}</span>
+                      <span className="text-muted-foreground">({cam.reviews})</span>
+                    </div>
                   </div>
-                  <div className="flex items-baseline gap-2 mb-4">
-                    <span className="text-xl font-extrabold text-foreground">₹{device.price.toLocaleString('en-IN')}</span>
-                    <span className="text-sm text-muted-foreground line-through">₹{device.originalPrice.toLocaleString('en-IN')}</span>
-                  </div>
-                  <button onClick={() => {setSelectedDevice(device);setCheckoutStep('detail');}}
-                  className="w-full py-2.5 gradient-green text-white rounded-xl text-sm font-semibold shadow-green btn-press">
-                    View Details
+
+                  <button
+                    onClick={() => {
+                      setSelectedDevice(cam);
+                      setCheckoutStep('confirmed');
+                    }}
+                    className="w-full py-3 rounded-xl gradient-green text-white font-extrabold text-xs uppercase tracking-wider shadow-green hover:shadow-lg transition-all flex items-center justify-center gap-2 btn-press"
+                  >
+                    <Camera size={14} />
+                    Reserve This Gear Now
                   </button>
                 </div>
-              </div>);
-
+              </div>
+            );
           })}
         </div>
       </div>
-      <CustomerFooter />
-    </main>);
 
+      <CustomerFooter />
+    </main>
+  );
 }

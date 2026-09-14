@@ -114,7 +114,7 @@ export default function AdminSidebar({ collapsed, onToggle, activeSection, onSec
         <AppLogo size={32} />
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <span className="font-extrabold text-base text-white">Casmik</span>
+            <span className="font-extrabold text-base text-white">Camsik</span>
             <p className="text-xs text-white/40 leading-none">Super Admin</p>
           </div>
         )}

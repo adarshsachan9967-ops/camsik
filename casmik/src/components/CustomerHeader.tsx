@@ -1,18 +1,38 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Search, MapPin, Heart, ShoppingCart, Zap, Menu, X, ChevronDown, Pin, LogIn } from 'lucide-react';
-import { deviceModels, brands } from '@/lib/casmikData';
+import {
+  Search,
+  MapPin,
+  ChevronDown,
+  ChevronRight,
+  Menu,
+  X,
+  Camera,
+  Layers,
+  Video,
+  Film,
+  Compass,
+  Sparkles,
+  CheckCircle2,
+  LogIn,
+  ShieldCheck,
+} from 'lucide-react';
+import { deviceModels, brands, categories } from '@/lib/casmikData';
 
-const navItems = [
-  { label: 'Sell Device', href: '/sell-device-get-quote' },
-  { label: 'Buy Refurbished', href: '/buy-refurbished' },
-  { label: 'Exchange', href: '/exchange-device' },
-  { label: 'Repair', href: '/repair-device' },
-  { label: 'Track Order', href: '/track-order' },
-  { label: 'How It Works', href: '#how-it-works' },
-  { label: 'About Us', href: '#about' },
-  { label: 'Contact', href: '#contact' },
+const popularCities = [
+  { id: 'all', name: 'All Cities', areas: [] },
+  { id: 'delhi', name: 'Delhi NCR', areas: ['Connaught Place', 'Karol Bagh', 'Dwarka', 'Rohini', 'Noida', 'Gurgaon'] },
+  { id: 'mumbai', name: 'Mumbai', areas: ['Andheri West', 'Bandra West', 'Dadar', 'Thane West', 'Borivali'] },
+  { id: 'bengaluru', name: 'Bengaluru', areas: ['Indiranagar', 'Koramangala', 'Whitefield', 'HSR Layout', 'Jayanagar'] },
+  { id: 'hyderabad', name: 'Hyderabad', areas: ['Gachibowli', 'Hitec City', 'Banjara Hills', 'Jubilee Hills', 'Madhapur'] },
+  { id: 'pune', name: 'Pune', areas: ['Kothrud', 'Baner', 'Viman Nagar', 'Hinjewadi', 'Wakad'] },
+  { id: 'chennai', name: 'Chennai', areas: ['T Nagar', 'Velachery', 'Anna Nagar', 'Adyar', 'OMR'] },
+  { id: 'kolkata', name: 'Kolkata', areas: ['Salt Lake', 'Park Street', 'New Town', 'Ballygunge'] },
+  { id: 'ahmedabad', name: 'Ahmedabad', areas: ['Navrangpura', 'Satellite', 'Bodakdev', 'SG Highway'] },
+  { id: 'jaipur', name: 'Jaipur', areas: ['Malviya Nagar', 'Vaishali Nagar', 'Mansarovar', 'C-Scheme'] },
+  { id: 'chandigarh', name: 'Chandigarh', areas: ['Sector 17', 'Sector 35', 'Sector 22', 'Mohali'] },
+  { id: 'lucknow', name: 'Lucknow', areas: ['Gomti Nagar', 'Hazratganj', 'Aliganj', 'Indira Nagar'] },
 ];
 
 interface SearchResult {
@@ -21,36 +41,54 @@ interface SearchResult {
   name: string;
   brandName?: string;
   image?: string;
-  href: string;
+  categorySlug?: string;
+  slug?: string;
 }
 
 export default function CustomerHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [cityModalOpen, setCityModalOpen] = useState(false);
+  const [selectedCity, setSelectedCity] = useState('All Cities');
+  const [selectedArea, setSelectedArea] = useState<string | null>(null);
+  const [citySearch, setCitySearch] = useState('');
+  const [activeCityObj, setActiveCityObj] = useState(popularCities[0]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const [locationOpen, setLocationOpen] = useState(false);
-  const [pinInput, setPinInput] = useState('');
-  const [currentCity, setCurrentCity] = useState('Detect Location');
-  const [pinError, setPinError] = useState('');
+  const [megaMenuOpen, setMegaMenuOpen] = useState(false);
+
   const searchRef = useRef<HTMLDivElement>(null);
-  const locationRef = useRef<HTMLDivElement>(null);
+  const megaMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 10);
+    const handler = () => setScrolled(window.scrollY > 15);
     window.addEventListener('scroll', handler, { passive: true });
     return () => window.removeEventListener('scroll', handler);
   }, []);
 
+  // Load saved city from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('camsik_city');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.name) {
+          setSelectedCity(parsed.area ? `${parsed.name} (${parsed.area})` : parsed.name);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Click outside listener
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setShowResults(false);
       }
-      if (locationRef.current && !locationRef.current.contains(e.target as Node)) {
-        setLocationOpen(false);
+      if (megaMenuRef.current && !megaMenuRef.current.contains(e.target as Node)) {
+        setMegaMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -59,245 +97,577 @@ export default function CustomerHeader() {
 
   const handleSearch = (q: string) => {
     setSearchQuery(q);
-    if (q.length < 1) { setSearchResults([]); setShowResults(false); return; }
+    if (!q || q.trim().length < 1) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
     const lower = q.toLowerCase();
     const results: SearchResult[] = [];
-    // Search brands
-    brands.filter(b => b.name.toLowerCase().includes(lower)).slice(0, 3).forEach(b => {
-      results.push({ id: `brand-${b.id}`, type: 'brand', name: b.name, image: b.logo, href: '/sell-device-get-quote' });
-    });
-    // Search models
-    deviceModels.filter(m => m.name.toLowerCase().includes(lower)).slice(0, 6).forEach(m => {
-      const brand = brands.find(b => b.id === m.brandId);
-      results.push({ id: `model-${m.id}`, type: 'model', name: m.name, brandName: brand?.name, image: m.image, href: '/sell-device-get-quote' });
-    });
+
+    // Search camera brands
+    brands
+      .filter((b) => b.name.toLowerCase().includes(lower))
+      .slice(0, 3)
+      .forEach((b) => {
+        results.push({
+          id: `brand-${b.id}`,
+          type: 'brand',
+          name: b.name,
+          image: b.logo,
+          slug: b.slug,
+        });
+      });
+
+    // Search camera models
+    deviceModels
+      .filter((m) => m.name.toLowerCase().includes(lower))
+      .slice(0, 6)
+      .forEach((m) => {
+        const brand = brands.find((b) => b.id === m.brandId);
+        results.push({
+          id: `model-${m.id}`,
+          type: 'model',
+          name: m.name,
+          brandName: brand?.name,
+          image: m.image,
+          slug: m.slug,
+        });
+      });
+
     setSearchResults(results.slice(0, 8));
     setShowResults(true);
   };
 
-  const handlePinSubmit = () => {
-    if (!/^\d{6}$/.test(pinInput)) { setPinError('Please enter a valid 6-digit PIN code'); return; }
-    const pinCityMap: Record<string, string> = {
-      '560': 'Bangalore', '400': 'Mumbai', '110': 'Delhi', '500': 'Hyderabad',
-      '600': 'Chennai', '700': 'Kolkata', '380': 'Ahmedabad', '411': 'Pune',
-      '302': 'Jaipur', '226': 'Lucknow', '201': 'Noida', '122': 'Gurgaon',
-    };
-    const prefix = pinInput.substring(0, 3);
-    const city = pinCityMap[prefix] || 'Your City';
-    setCurrentCity(`${city} - ${pinInput}`);
-    setPinError('');
-    setLocationOpen(false);
-    setPinInput('');
-  };
-
-  const detectLocation = () => {
-    if (typeof window !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        () => { setCurrentCity('Current Location'); setLocationOpen(false); },
-        () => { setPinError('Location access denied. Please enter PIN code.'); }
-      );
+  const handleCitySelect = (city: typeof popularCities[0], area?: string) => {
+    setActiveCityObj(city);
+    if (city.id === 'all') {
+      setSelectedCity('All Cities');
+      setSelectedArea(null);
+      localStorage.setItem('camsik_city', JSON.stringify({ id: 'all', name: 'All Cities' }));
+      setCityModalOpen(false);
+      return;
+    }
+    if (area) {
+      setSelectedCity(`${city.name} (${area})`);
+      setSelectedArea(area);
+      localStorage.setItem('camsik_city', JSON.stringify({ id: city.id, name: city.name, area }));
+      setCityModalOpen(false);
+    } else if (city.areas.length === 0) {
+      setSelectedCity(city.name);
+      setSelectedArea(null);
+      localStorage.setItem('camsik_city', JSON.stringify({ id: city.id, name: city.name }));
+      setCityModalOpen(false);
     }
   };
 
+  const filteredCities = popularCities.filter((c) =>
+    c.name.toLowerCase().includes(citySearch.toLowerCase()) ||
+    c.areas.some((a) => a.toLowerCase().includes(citySearch.toLowerCase()))
+  );
+
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-md border-b border-border' : 'bg-white border-b border-border'}`}>
+      {/* Top Main Header */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-border/80'
+            : 'bg-white border-b border-border'
+        }`}
+      >
         <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10">
-          <div className="flex items-center h-16 gap-4">
+          <div className="flex items-center justify-between h-20 gap-4 lg:gap-6">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 flex-shrink-0 group">
-              <div className="w-9 h-9 rounded-xl gradient-green flex items-center justify-center shadow-green">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" fill="white" fillOpacity="0.9"/>
-                  <path d="M9 12l2 2 4-4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+            <Link href="/" className="flex items-center gap-3 flex-shrink-0 group">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-700 via-indigo-600 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/25 group-hover:scale-105 transition-transform duration-200">
+                <div className="relative flex items-center justify-center">
+                  <Camera className="w-6 h-6 text-white" strokeWidth={2.2} />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-white animate-pulse" />
+                </div>
               </div>
-              <div className="hidden sm:block">
-                <span className="font-extrabold text-xl tracking-tight text-foreground">Cas</span>
-                <span className="font-extrabold text-xl tracking-tight text-primary">mik</span>
+              <div className="flex flex-col">
+                <div className="flex items-center tracking-tight">
+                  <span className="font-black text-2xl text-slate-900">CAM</span>
+                  <span className="font-black text-2xl bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                    SIK
+                  </span>
+                </div>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 -mt-1">
+                  Camera Electronics
+                </span>
               </div>
             </Link>
 
-            {/* Nav — desktop */}
-            <nav className="hidden xl:flex items-center gap-0.5 ml-4">
-              {navItems.map((item) => (
-                <Link key={`nav-${item.label}`} href={item.href}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg hover:bg-muted transition-colors duration-150 whitespace-nowrap">
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-
-            <div className="flex-1" />
-
-            {/* Right actions */}
-            <div className="flex items-center gap-2">
-              {/* Search */}
-              <div ref={searchRef} className="relative hidden md:block">
-                <button onClick={() => { setSearchOpen(!searchOpen); if (!searchOpen) setTimeout(() => document.getElementById('header-search')?.focus(), 100); }}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" aria-label="Search">
-                  <Search size={18} />
-                </button>
-                {searchOpen && (
-                  <div className="absolute right-0 top-11 w-80 bg-white rounded-2xl border border-border shadow-xl z-50 overflow-hidden fade-in">
-                    <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-                      <Search size={15} className="text-muted-foreground flex-shrink-0" />
-                      <input id="header-search" type="text" value={searchQuery} onChange={e => handleSearch(e.target.value)}
-                        placeholder="Search brand, model..." autoFocus
-                        className="flex-1 text-sm bg-transparent focus:outline-none text-foreground placeholder:text-muted-foreground" />
-                      {searchQuery && <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="text-muted-foreground hover:text-foreground"><X size={14} /></button>}
-                    </div>
-                    {showResults && searchResults.length > 0 ? (
-                      <div className="py-2 max-h-72 overflow-y-auto">
-                        {searchResults.map(r => (
-                          <Link key={r.id} href={r.href} onClick={() => { setSearchOpen(false); setSearchQuery(''); setShowResults(false); }}
-                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted transition-colors">
-                            {r.image && <img src={r.image} alt={r.name} className="w-8 h-8 rounded-lg object-cover bg-muted flex-shrink-0" />}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-foreground truncate">{r.name}</p>
-                              {r.brandName && <p className="text-xs text-muted-foreground">{r.brandName}</p>}
-                            </div>
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.type === 'brand' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                              {r.type === 'brand' ? 'Brand' : 'Model'}
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
-                    ) : searchQuery.length > 0 ? (
-                      <div className="px-4 py-6 text-center text-sm text-muted-foreground">No results for &quot;{searchQuery}&quot;</div>
-                    ) : (
-                      <div className="px-4 py-3">
-                        <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Popular Searches</p>
-                        {['iPhone 15 Pro', 'Samsung S24', 'MacBook Air M3', 'OnePlus 12'].map(s => (
-                          <button key={s} onClick={() => handleSearch(s)}
-                            className="flex items-center gap-2 w-full px-2 py-2 rounded-lg hover:bg-muted text-sm text-foreground transition-colors">
-                            <Search size={12} className="text-muted-foreground" />{s}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+            {/* Live Search Bar — Desktop */}
+            <div ref={searchRef} className="hidden md:flex flex-1 max-w-xl relative">
+              <div className="w-full flex items-center bg-slate-50 border border-slate-200/80 rounded-xl px-3.5 py-2.5 shadow-sm focus-within:border-purple-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-purple-600/10 transition-all">
+                <Search className="w-4 h-4 text-slate-400 mr-2.5 flex-shrink-0" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  onFocus={() => {
+                    if (searchQuery.trim().length > 0) setShowResults(true);
+                  }}
+                  placeholder="Search cameras, lenses (e.g. Sony A7 III, Nikon Z30, Canon RF...)"
+                  className="w-full text-sm bg-transparent text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSearchResults([]);
+                      setShowResults(false);
+                    }}
+                    className="p-1 text-slate-400 hover:text-slate-600 rounded-md"
+                  >
+                    <X size={14} />
+                  </button>
                 )}
               </div>
 
-              {/* Location */}
-              <div ref={locationRef} className="relative hidden md:block">
-                <button onClick={() => setLocationOpen(!locationOpen)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border hover:bg-muted transition-colors text-sm font-medium text-muted-foreground hover:text-foreground max-w-36 truncate">
-                  <MapPin size={14} className="text-primary flex-shrink-0" />
-                  <span className="truncate">{currentCity}</span>
-                  <ChevronDown size={12} className="flex-shrink-0" />
-                </button>
-                {locationOpen && (
-                  <div className="absolute right-0 top-11 w-72 bg-white rounded-2xl border border-border shadow-xl z-50 p-4 fade-in">
-                    <p className="font-bold text-sm text-foreground mb-3">Change Location</p>
-                    <button onClick={detectLocation}
-                      className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-medium mb-3 hover:bg-primary/10 transition-colors">
-                      <MapPin size={14} /> Use Current Location
-                    </button>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="flex-1 h-px bg-border" />
-                      <span className="text-xs text-muted-foreground">or enter PIN code</span>
-                      <div className="flex-1 h-px bg-border" />
+              {/* Autocomplete Dropdown */}
+              {showResults && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden z-50 animate-in fade-in-50 slide-in-from-top-2 duration-200">
+                  {searchResults.length > 0 ? (
+                    <div className="p-2 max-h-96 overflow-y-auto divide-y divide-slate-100">
+                      <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        Matching Cameras & Brands
+                      </div>
+                      {searchResults.map((res) => (
+                        <Link
+                          key={res.id}
+                          href={
+                            res.type === 'model'
+                              ? `/sell-device-get-quote?model=${res.slug}`
+                              : `/sell-device-get-quote?brand=${res.slug}`
+                          }
+                          onClick={() => setShowResults(false)}
+                          className="flex items-center gap-3.5 p-2.5 rounded-xl hover:bg-purple-50/70 transition-colors group"
+                        >
+                          <div className="w-12 h-12 rounded-lg bg-slate-100 p-1 flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-200">
+                            {res.image ? (
+                              <img
+                                src={res.image}
+                                alt={res.name}
+                                className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                              />
+                            ) : (
+                              <Camera className="w-5 h-5 text-slate-400" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-slate-900 group-hover:text-purple-700 truncate">
+                              {res.name}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {res.type === 'model' ? `${res.brandName || ''} · Get Instant Quote` : 'Camera Brand'}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-600 transition-colors" />
+                        </Link>
+                      ))}
                     </div>
-                    <div className="flex gap-2 mt-3">
-                      <input type="text" value={pinInput} onChange={e => { setPinInput(e.target.value.replace(/\D/g, '').slice(0, 6)); setPinError(''); }}
-                        placeholder="Enter 6-digit PIN" maxLength={6}
-                        className="flex-1 px-3 py-2 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-                      <button onClick={handlePinSubmit}
-                        className="px-4 py-2 gradient-green text-white rounded-xl text-sm font-semibold shadow-green">
-                        <Pin size={14} />
-                      </button>
+                  ) : (
+                    <div className="p-6 text-center text-sm text-slate-500">
+                      No camera products found matching &ldquo;{searchQuery}&rdquo;.
                     </div>
-                    {pinError && <p className="text-xs text-danger mt-1.5">{pinError}</p>}
-                    <p className="text-xs text-muted-foreground mt-2">We use your location to show available services in your area.</p>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
+            </div>
 
-              {/* Login */}
-              <Link href="/login"
-                className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border hover:bg-muted transition-colors text-sm font-medium text-foreground">
-                <LogIn size={14} />
+            {/* Right Actions: City Selector + Login + CTA */}
+            <div className="flex items-center gap-3">
+              {/* City Selector Button */}
+              <button
+                type="button"
+                onClick={() => setCityModalOpen(true)}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100/90 hover:bg-slate-200/80 border border-slate-200/60 text-slate-800 text-sm font-semibold transition-all duration-150"
+              >
+                <MapPin className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                <span className="max-w-[110px] truncate text-xs sm:text-sm">{selectedCity}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+
+              {/* Login / Auth */}
+              <Link
+                href="/login"
+                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 text-sm font-semibold text-slate-700 hover:text-purple-700 transition-colors"
+              >
+                <LogIn size={15} />
                 <span>Login</span>
               </Link>
 
-              {/* Wishlist */}
-              <button className="hidden lg:flex w-9 h-9 items-center justify-center rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-                <Heart size={18} />
-              </button>
-
-              {/* Cart */}
-              <button className="hidden lg:flex w-9 h-9 items-center justify-center rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground relative">
-                <ShoppingCart size={18} />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full"></span>
-              </button>
-
-              {/* Panel Links */}
-              <div className="hidden lg:flex items-center gap-1 border-l border-border pl-2 ml-1">
-                <Link href="/admin" className="text-xs font-semibold text-muted-foreground hover:text-primary px-2 py-1 rounded-lg hover:bg-primary/5 transition-colors">Admin</Link>
-                <Link href="/partner" className="text-xs font-semibold text-muted-foreground hover:text-purple-600 px-2 py-1 rounded-lg hover:bg-purple-50 transition-colors">Partner</Link>
-                <Link href="/delivery" className="text-xs font-semibold text-muted-foreground hover:text-blue-600 px-2 py-1 rounded-lg hover:bg-blue-50 transition-colors">Delivery</Link>
-              </div>
-
-              {/* CTA */}
-              <Link href="/sell-device-get-quote"
-                className="flex items-center gap-2 px-4 py-2 gradient-green text-white rounded-xl text-sm font-semibold shadow-green btn-press whitespace-nowrap">
-                <Zap size={14} />
-                <span className="hidden sm:inline">Get Instant Quote</span>
-                <span className="sm:hidden">Quote</span>
+              {/* Instant Sell CTA */}
+              <Link
+                href="/sell-device-get-quote"
+                className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-purple-600/20 hover:shadow-purple-600/30 transition-all duration-200 hover:-translate-y-0.5 whitespace-nowrap"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Sell Camera</span>
               </Link>
 
-              {/* Hamburger */}
-              <button onClick={() => setMobileOpen(!mobileOpen)}
-                className="xl:hidden w-9 h-9 flex items-center justify-center rounded-lg hover:bg-muted transition-colors" aria-label="Menu">
-                {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+              {/* Mobile hamburger */}
+              <button
+                type="button"
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="lg:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
+                aria-label="Toggle Navigation Menu"
+              >
+                {mobileOpen ? <X size={22} /> : <Menu size={22} />}
               </button>
             </div>
           </div>
-        </div>
 
-        {/* Mobile nav drawer */}
-        {mobileOpen && (
-          <div className="xl:hidden border-t border-border bg-white fade-in">
-            <nav className="max-w-screen-2xl mx-auto px-4 py-3 flex flex-col gap-1">
-              {navItems.map((item) => (
-                <Link key={`mobile-nav-${item.label}`} href={item.href} onClick={() => setMobileOpen(false)}
-                  className="text-sm font-medium text-foreground px-3 py-2.5 rounded-lg hover:bg-muted transition-colors">
-                  {item.label}
-                </Link>
-              ))}
-              {/* Mobile search */}
-              <div className="border-t border-border mt-2 pt-3">
-                <div className="relative">
-                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <input type="text" value={searchQuery} onChange={e => handleSearch(e.target.value)}
-                    placeholder="Search device..." className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                </div>
-                {showResults && searchResults.length > 0 && (
-                  <div className="mt-2 bg-white rounded-xl border border-border shadow-sm overflow-hidden">
-                    {searchResults.slice(0, 5).map(r => (
-                      <Link key={r.id} href={r.href} onClick={() => setMobileOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted text-sm border-b border-border last:border-0">
-                        {r.image && <img src={r.image} alt={r.name} className="w-7 h-7 rounded-lg object-cover" />}
-                        <span className="font-medium text-foreground">{r.name}</span>
-                      </Link>
-                    ))}
+          {/* Second Navigation Row — Desktop Mega Navigation */}
+          <div className="hidden lg:flex items-center justify-between border-t border-slate-100 py-2.5">
+            <nav className="flex items-center gap-1">
+              <Link
+                href="/"
+                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-900 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
+              >
+                Home
+              </Link>
+
+              {/* Sell Camera Dropdown */}
+              <div ref={megaMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMegaMenuOpen(!megaMenuOpen)}
+                  onMouseEnter={() => setMegaMenuOpen(true)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                    megaMenuOpen
+                      ? 'text-purple-700 bg-purple-50'
+                      : 'text-slate-700 hover:text-purple-600 hover:bg-purple-50/60'
+                  }`}
+                >
+                  <Camera size={15} className="text-purple-600" />
+                  <span>Sell Camera Gear</span>
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${megaMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Mega Dropdown Menu */}
+                {megaMenuOpen && (
+                  <div
+                    onMouseLeave={() => setMegaMenuOpen(false)}
+                    className="absolute top-full left-0 mt-2 w-[720px] bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 z-50 grid grid-cols-3 gap-6 animate-in fade-in-50 slide-in-from-top-2 duration-200"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-100">
+                        <Camera className="w-4 h-4 text-purple-600" />
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">DSLR & Mirrorless</h4>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {['Canon', 'Nikon', 'Sony', 'Fujifilm', 'LUMIX'].map((b) => (
+                          <li key={b}>
+                            <Link
+                              href={`/sell-device-get-quote?brand=${b.toLowerCase()}&cat=cat-dslr`}
+                              onClick={() => setMegaMenuOpen(false)}
+                              className="flex items-center justify-between text-xs font-medium text-slate-600 hover:text-purple-600 hover:translate-x-1 transition-all py-1"
+                            >
+                              <span>{b} Cameras</span>
+                              <ChevronRight size={12} className="text-slate-300" />
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-100">
+                        <Layers className="w-4 h-4 text-indigo-600" />
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Camera Lenses</h4>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {['Sony FE', 'Canon RF/EF', 'Nikon Z', 'Sigma Art', 'Tamron', 'LUMIX S'].map((l) => (
+                          <li key={l}>
+                            <Link
+                              href={`/sell-device-get-quote?cat=cat-lens`}
+                              onClick={() => setMegaMenuOpen(false)}
+                              className="flex items-center justify-between text-xs font-medium text-slate-600 hover:text-indigo-600 hover:translate-x-1 transition-all py-1"
+                            >
+                              <span>{l}</span>
+                              <ChevronRight size={12} className="text-slate-300" />
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-100">
+                        <Film className="w-4 h-4 text-emerald-600" />
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Video & Action Cams</h4>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {['Canon XA Camcorders', 'Panasonic HC Series', 'GoPro Hero', 'DJI Osmo Pocket', 'Insta360 X Series', 'Camera Gimbals'].map((v) => (
+                          <li key={v}>
+                            <Link
+                              href="/sell-device-get-quote"
+                              onClick={() => setMegaMenuOpen(false)}
+                              className="flex items-center justify-between text-xs font-medium text-slate-600 hover:text-emerald-600 hover:translate-x-1 transition-all py-1"
+                            >
+                              <span>{v}</span>
+                              <ChevronRight size={12} className="text-slate-300" />
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 )}
               </div>
-              <div className="flex gap-2 mt-1">
-                <Link href="/login" onClick={() => setMobileOpen(false)}
-                  className="flex-1 text-center px-3 py-2 rounded-lg border border-border text-sm font-medium flex items-center justify-center gap-1.5">
-                  <LogIn size={14} /> Login / Sign Up
-                </Link>
-              </div>
+
+              <Link
+                href="/buy-refurbished"
+                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
+              >
+                Buy Refurbished Cameras
+              </Link>
+              <Link
+                href="/exchange-device"
+                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
+              >
+                Exchange Camera
+              </Link>
+              <Link
+                href="/track-order"
+                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
+              >
+                Track Order
+              </Link>
+              <Link
+                href="#how-it-works"
+                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
+              >
+                How It Works
+              </Link>
+              <Link
+                href="#why-us"
+                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
+              >
+                Why Camsik
+              </Link>
+              <Link
+                href="#faq"
+                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
+              >
+                FAQ
+              </Link>
             </nav>
+
+            {/* Help & Support pill */}
+            <div className="flex items-center gap-3 text-xs text-slate-500">
+              <span className="inline-flex items-center gap-1 font-medium text-emerald-600">
+                <ShieldCheck size={14} /> 100% Secure Valuation
+              </span>
+              <span>•</span>
+              <span className="font-semibold text-slate-700">Toll Free: 1800-CAMSIK</span>
+            </div>
           </div>
-        )}
+        </div>
       </header>
-      {/* Spacer */}
-      <div className="h-16" />
+
+      {/* City Selection Modal — Cashify Style */}
+      {cityModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in-50">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] shadow-2xl overflow-hidden flex flex-col border border-slate-100">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-black text-slate-900">Select Your City</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Select your location to get accurate pickup dates and local camera technicians
+                </p>
+              </div>
+              <button
+                onClick={() => setCityModalOpen(false)}
+                className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* City Search Bar */}
+            <div className="p-4 bg-slate-50 border-b border-slate-100">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={citySearch}
+                  onChange={(e) => setCitySearch(e.target.value)}
+                  placeholder="Search city or locality (e.g. Bengaluru, Connaught Place, Koramangala...)"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10"
+                />
+              </div>
+            </div>
+
+            {/* Cities Grid */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Popular Cities</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                  {filteredCities.map((city) => {
+                    const isSelected = activeCityObj.id === city.id;
+                    return (
+                      <button
+                        key={city.id}
+                        type="button"
+                        onClick={() => handleCitySelect(city)}
+                        className={`flex items-center gap-2 p-3 rounded-xl border text-left transition-all ${
+                          isSelected
+                            ? 'border-purple-600 bg-purple-50/80 text-purple-800 font-bold shadow-sm'
+                            : 'border-slate-200 hover:border-purple-300 hover:bg-slate-50 text-slate-700 font-medium'
+                        }`}
+                      >
+                        <MapPin className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-purple-600' : 'text-slate-400'}`} />
+                        <span className="text-xs truncate">{city.name}</span>
+                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 ml-auto flex-shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Localities Section (shown if selected city has localities) */}
+              {activeCityObj && activeCityObj.areas.length > 0 && (
+                <div className="pt-4 border-t border-slate-100">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                    Localities in {activeCityObj.name}
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleCitySelect(activeCityObj)}
+                      className={`p-2.5 rounded-lg border text-xs text-left font-medium transition-colors ${
+                        !selectedArea && activeCityObj.id === 'all'
+                          ? 'border-purple-600 bg-purple-50 text-purple-700 font-bold'
+                          : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                      }`}
+                    >
+                      All Localities
+                    </button>
+                    {activeCityObj.areas.map((area) => (
+                      <button
+                        key={area}
+                        type="button"
+                        onClick={() => handleCitySelect(activeCityObj, area)}
+                        className={`p-2.5 rounded-lg border text-xs text-left font-medium transition-colors ${
+                          selectedArea === area
+                            ? 'border-purple-600 bg-purple-50 text-purple-700 font-bold'
+                            : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        {area}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Offcanvas Navigation Drawer */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[90] lg:hidden">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+          <div className="fixed top-0 bottom-0 right-0 w-80 max-w-full bg-white shadow-2xl p-6 flex flex-col justify-between overflow-y-auto z-10 animate-in slide-in-from-right duration-200">
+            <div>
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-purple-600 flex items-center justify-center text-white font-black text-sm">
+                    C
+                  </div>
+                  <span className="font-extrabold text-lg text-slate-900">CAMSIK</span>
+                </div>
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Mobile Navigation Links */}
+              <nav className="space-y-1">
+                <Link
+                  href="/"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-xl text-sm font-bold text-slate-900 hover:bg-purple-50 hover:text-purple-600"
+                >
+                  <span>Home</span>
+                </Link>
+
+                <div className="pt-2 pb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Camera Categories
+                </div>
+                {categories.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`/sell-device-get-quote?cat=${c.id}`}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center justify-between p-3 rounded-xl text-sm font-semibold text-slate-700 hover:bg-purple-50 hover:text-purple-600"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <span>{c.icon}</span>
+                      <span>{c.name}</span>
+                    </span>
+                    <ChevronRight size={14} className="text-slate-400" />
+                  </Link>
+                ))}
+
+                <div className="pt-4 pb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  More Services
+                </div>
+                <Link
+                  href="/buy-refurbished"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-purple-50"
+                >
+                  Buy Refurbished Cameras
+                </Link>
+                <Link
+                  href="/exchange-device"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-purple-50"
+                >
+                  Exchange Camera
+                </Link>
+                <Link
+                  href="/track-order"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-purple-50"
+                >
+                  Track Order
+                </Link>
+              </nav>
+            </div>
+
+            <div className="pt-6 border-t border-slate-100">
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 hover:bg-slate-50 mb-3"
+              >
+                <LogIn size={16} />
+                <span>Account Login</span>
+              </Link>
+              <Link
+                href="/sell-device-get-quote"
+                onClick={() => setMobileOpen(false)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-purple-600 text-white text-sm font-bold shadow-md shadow-purple-600/25"
+              >
+                <Sparkles size={16} />
+                <span>Get Instant Camera Quote</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

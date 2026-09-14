@@ -78,7 +78,7 @@ export default function DeliveryAuthPage() {
             <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center">
               <span className="text-white font-black text-lg">C</span>
             </div>
-            <span className="font-black text-2xl text-gray-900">CASMIK</span>
+            <span className="font-black text-2xl text-gray-900">CAMSIK</span>
           </Link>
           <p className="text-gray-500 text-sm">Delivery Agent Portal</p>
         </div>
@@ -287,7 +287,7 @@ export default function DeliveryAuthPage() {
                       <div className="flex items-start gap-2 bg-blue-50 rounded-xl p-3">
                         <input type="checkbox" required id="terms" className="mt-0.5 accent-primary" />
                         <label htmlFor="terms" className="text-xs text-gray-600">
-                          I agree to Casmik's <span className="text-primary font-semibold">Delivery Agent Terms</span> and confirm all submitted information is accurate.
+                          I agree to Camsik's <span className="text-primary font-semibold">Delivery Agent Terms</span> and confirm all submitted information is accurate.
                         </label>
                       </div>
                     </>
@@ -309,7 +309,7 @@ export default function DeliveryAuthPage() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          <Link href="/" className="hover:text-primary">← Back to Casmik Home</Link>
+          <Link href="/" className="hover:text-primary">← Back to Camsik Home</Link>
         </p>
       </div>
     </div>
