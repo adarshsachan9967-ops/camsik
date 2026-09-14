@@ -6,6 +6,7 @@ import { deviceModels } from '@/lib/casmikData';
 interface Props {
   brand: string;
   brandId: string | null;
+  categoryId?: string | null;
   selectedModel: string | null;
   selectedStorage: string | null;
   selectedColor: string | null;
@@ -13,12 +14,34 @@ interface Props {
   onBack: () => void;
 }
 
-export default function StepModelSelect({ brand, brandId, selectedModel, selectedStorage, selectedColor, onSelect, onBack }: Props) {
-  const models = deviceModels.filter(m => m.brandId === brandId && m.active);
+export default function StepModelSelect({ brand, brandId, categoryId, selectedModel, selectedStorage, selectedColor, onSelect, onBack }: Props) {
+  const modelsForCat = deviceModels.filter(m => {
+    const matchesBrand = brandId ? m.brandId === brandId : true;
+    const matchesCat = categoryId ? m.categoryId === categoryId : true;
+    return matchesBrand && matchesCat && m.active;
+  });
+
+  const models = modelsForCat.length > 0 
+    ? modelsForCat 
+    : deviceModels.filter(m => (brandId ? m.brandId === brandId : true) && m.active);
+
   const [query, setQuery] = useState('');
-  const [chosenModel, setChosenModel] = useState<typeof models[0] | null>(null);
-  const [chosenStorage, setChosenStorage] = useState<string | null>(null);
-  const [chosenColor, setChosenColor] = useState<string | null>(null);
+  
+  const initialModel = models.find(m => m.id === selectedModel || m.slug === selectedModel) || null;
+  const [chosenModel, setChosenModel] = useState<typeof models[0] | null>(initialModel);
+  const [chosenStorage, setChosenStorage] = useState<string | null>(selectedStorage || initialModel?.storages[0] || null);
+  const [chosenColor, setChosenColor] = useState<string | null>(selectedColor || initialModel?.colors[0] || null);
+
+  React.useEffect(() => {
+    if (selectedModel) {
+      const found = models.find(m => m.id === selectedModel || m.slug === selectedModel);
+      if (found) {
+        setChosenModel(found);
+        setChosenStorage(selectedStorage || found.storages[0] || null);
+        setChosenColor(selectedColor || found.colors[0] || null);
+      }
+    }
+  }, [selectedModel, selectedStorage, selectedColor, models]);
 
   const filtered = models.filter(m => m.name.toLowerCase().includes(query.toLowerCase()));
   const canContinue = chosenModel && chosenStorage && chosenColor;
@@ -39,8 +62,8 @@ export default function StepModelSelect({ brand, brandId, selectedModel, selecte
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5 max-h-64 overflow-y-auto scrollbar-hide">
         {filtered.length > 0 ? filtered.map((model) => (
-          <button key={`model-btn-${model.id}`} onClick={() => { setChosenModel(model); setChosenStorage(null); setChosenColor(null); }}
-            className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all duration-150 btn-press ${chosenModel?.id === model.id ? 'border-primary bg-primary-50' : 'border-border bg-white hover:border-primary/40 hover:bg-primary-50/30'}`}>
+          <button key={`model-btn-${model.id}`} onClick={() => { setChosenModel(model); setChosenStorage(model.storages[0] || null); setChosenColor(model.colors[0] || null); }}
+            className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all duration-150 btn-press ${chosenModel?.id === model.id ? 'border-primary bg-primary-50 shadow-sm ring-1 ring-primary/20' : 'border-border bg-white hover:border-primary/40 hover:bg-primary-50/30'}`}>
             <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
               <img src={model.image} alt={model.alt} className="w-full h-full object-cover" />
             </div>

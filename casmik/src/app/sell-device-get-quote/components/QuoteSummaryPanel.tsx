@@ -2,6 +2,7 @@
 import React from 'react';
 import { CheckCircle, Star, Phone, MessageCircle, TrendingDown, TrendingUp } from 'lucide-react';
 import type { SellState } from './SellDeviceWorkflow';
+import { deviceModels } from '@/lib/casmikData';
 
 interface Props {
   sellState: SellState;
@@ -11,6 +12,8 @@ interface Props {
 export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
   const hasDevice = sellState.model !== null;
   const hasPrice = sellState.currentPrice > 0;
+
+  const matchedModel = deviceModels.find(m => m.id === sellState.model || m.slug === sellState.model);
 
   const positiveAdj = sellState.adjustments.filter(a => a.amount > 0);
   const negativeAdj = sellState.adjustments.filter(a => a.amount < 0);
@@ -24,20 +27,20 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
         {!hasDevice ? (
           <div className="text-center py-8">
             <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
-              <span className="text-2xl">📱</span>
+              <span className="text-2xl">📷</span>
             </div>
-            <p className="text-sm font-semibold text-foreground mb-1">No device selected yet</p>
-            <p className="text-xs text-muted-foreground">Select your device brand and model to see the quote summary here.</p>
+            <p className="text-sm font-semibold text-foreground mb-1">No camera selected yet</p>
+            <p className="text-xs text-muted-foreground">Select your camera brand and model to see the quote summary here.</p>
           </div>
         ) : (
           <>
             {/* Device info */}
             <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border">
-              <div className="w-14 h-14 rounded-xl overflow-hidden bg-muted flex-shrink-0">
+              <div className="w-14 h-14 rounded-xl overflow-hidden bg-muted flex-shrink-0 p-1 flex items-center justify-center border border-border/80">
                 <img
-                  src="https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=56&h=56&fit=crop"
-                  alt={`${sellState.brandName} ${sellState.modelName} device`}
-                  className="w-full h-full object-cover"
+                  src={matchedModel?.image || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=80&h=80&fit=crop"}
+                  alt={`${sellState.brandName} ${sellState.modelName} camera`}
+                  className="w-full h-full object-contain"
                 />
               </div>
               <div className="flex-1 min-w-0">
@@ -153,20 +156,25 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
         <p className="text-xs text-muted-foreground mb-4">Our support team is here for you</p>
         <div className="space-y-2">
           <a
-            href="tel:+919876543210"
+            href="tel:+918976000010"
             className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted hover:border-primary/30 transition-all duration-150"
           >
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
               <Phone size={14} className="text-primary" />
             </div>
-            <span className="text-sm font-semibold text-foreground">+91 98765 43210</span>
+            <span className="text-sm font-semibold text-foreground">+91 8976000010</span>
           </a>
-          <button className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted hover:border-primary/30 transition-all duration-150">
-            <div className="w-8 h-8 rounded-lg bg-info/10 flex items-center justify-center flex-shrink-0">
-              <MessageCircle size={14} className="text-info" />
+          <a
+            href="https://wa.me/918976000010?text=Hi%20Camsik%20team,%20I%20need%20help%20with%20my%20camera%20valuation"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted hover:border-emerald-500/30 transition-all duration-150"
+          >
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+              <MessageCircle size={14} className="text-emerald-600" />
             </div>
-            <span className="text-sm font-semibold text-foreground">Live Chat</span>
-          </button>
+            <span className="text-sm font-semibold text-foreground">Live WhatsApp Chat</span>
+          </a>
         </div>
       </div>
     </div>

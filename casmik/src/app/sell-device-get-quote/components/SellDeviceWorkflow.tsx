@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { CheckCircle } from 'lucide-react';
 import StepCategorySelect from './StepCategorySelect';
 import StepBrandSelect from './StepBrandSelect';
@@ -7,6 +8,7 @@ import StepModelSelect from './StepModelSelect';
 import StepConditionQuestions from './StepConditionQuestions';
 import StepQuoteResult from './StepQuoteResult';
 import QuoteSummaryPanel from './QuoteSummaryPanel';
+import { categories, brands, deviceModels } from '@/lib/casmikData';
 
 export type SellState = {
   category: string | null;
@@ -47,6 +49,7 @@ const steps = [
 ];
 
 export default function SellDeviceWorkflow() {
+  const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(0);
   const [sellState, setSellState] = useState<SellState>(INITIAL_STATE);
 
@@ -56,7 +59,128 @@ export default function SellDeviceWorkflow() {
 
   const goNext = useCallback(() => setCurrentStep(s => Math.min(s + 1, steps.length - 1)), []);
   const goBack = useCallback(() => setCurrentStep(s => Math.max(s - 1, 0)), []);
-  const goToStep = useCallback((i: number) => { if (i < currentStep) setCurrentStep(i); }, [currentStep]);
+  const goToStep = useCallback((i: number) => { 
+    if (i <= currentStep) setCurrentStep(i); 
+  }, [currentStep]);
+
+  // Sync URL query params to workflow state
+  useEffect(() => {
+    const modelParam = searchParams.get('model');
+    const brandParam = searchParams.get('brand');
+    const catParam = searchParams.get('cat') || searchParams.get('category');
+    const storageParam = searchParams.get('storage');
+    const colorParam = searchParams.get('color');
+
+    // 1. Deepest match: Specific camera/lens model
+    if (modelParam) {
+      const lowerModel = modelParam.toLowerCase().trim();
+      const matchedModel = deviceModels.find(m => 
+        m.id.toLowerCase() === lowerModel ||
+        m.slug.toLowerCase() === lowerModel ||
+        m.name.toLowerCase() === lowerModel ||
+        m.slug.toLowerCase().includes(lowerModel) ||
+        lowerModel.includes(m.slug.toLowerCase())
+      );
+
+      if (matchedModel) {
+        const matchedBrand = brands.find(b => b.id === matchedModel.brandId);
+        const matchedCategory = categories.find(c => c.id === matchedModel.categoryId);
+        const chosenStorage = storageParam || matchedModel.storages[0] || 'Standard';
+        const chosenColor = colorParam || matchedModel.colors[0] || 'Black';
+
+        setSellState({
+          category: matchedModel.categoryId,
+          categoryName: matchedCategory?.name || 'Camera Equipment',
+          brand: matchedModel.brandId,
+          brandName: matchedBrand?.name || 'Camera Brand',
+          model: matchedModel.id,
+          modelName: matchedModel.name,
+          storage: chosenStorage,
+          color: chosenColor,
+          answers: {},
+          currentPrice: matchedModel.basePrice,
+          basePrice: matchedModel.basePrice,
+          adjustments: [],
+        });
+        setCurrentStep(3); // Land directly on condition inspection questions
+        return;
+      }
+    }
+
+    // 2. Brand match (with optional category context)
+    if (brandParam) {
+      const lowerBrand = brandParam.toLowerCase().trim();
+      const matchedBrand = brands.find(b => 
+        b.id.toLowerCase() === lowerBrand ||
+        b.slug.toLowerCase() === lowerBrand ||
+        b.name.toLowerCase() === lowerBrand ||
+        b.id.toLowerCase().includes(lowerBrand)
+      );
+
+      if (matchedBrand) {
+        let matchedCategory = catParam ? categories.find(c => 
+          c.id.toLowerCase() === catParam.toLowerCase() ||
+          c.slug.toLowerCase() === catParam.toLowerCase() ||
+          c.id.toLowerCase().includes(catParam.toLowerCase())
+        ) : null;
+
+        if (!matchedCategory) {
+          matchedCategory = categories.find(c => c.id === matchedBrand.categoryId) || null;
+        }
+
+        const resolvedCatId = matchedCategory ? matchedCategory.id : matchedBrand.categoryId;
+        const resolvedCatName = matchedCategory ? matchedCategory.name : 'Camera Equipment';
+
+        setSellState(prev => ({
+          ...prev,
+          category: resolvedCatId,
+          categoryName: resolvedCatName,
+          brand: matchedBrand.id,
+          brandName: matchedBrand.name,
+          model: null,
+          modelName: '',
+          storage: null,
+          color: null,
+          answers: {},
+          currentPrice: 0,
+          basePrice: 0,
+          adjustments: [],
+        }));
+        setCurrentStep(2); // Land on Model selection for that brand
+        return;
+      }
+    }
+
+    // 3. Category match only
+    if (catParam) {
+      const lowerCat = catParam.toLowerCase().trim();
+      const matchedCategory = categories.find(c => 
+        c.id.toLowerCase() === lowerCat ||
+        c.slug.toLowerCase() === lowerCat ||
+        c.id.toLowerCase().includes(lowerCat)
+      );
+
+      if (matchedCategory) {
+        setSellState(prev => ({
+          ...prev,
+          category: matchedCategory.id,
+          categoryName: matchedCategory.name,
+          brand: null,
+          brandName: '',
+          model: null,
+          modelName: '',
+          storage: null,
+          color: null,
+          answers: {},
+          currentPrice: 0,
+          basePrice: 0,
+          adjustments: [],
+        }));
+        setCurrentStep(1); // Land on Brand selection for that category
+        return;
+      }
+    }
+  }, [searchParams]);
 
   return (
     <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10 py-8">
@@ -114,8 +238,9 @@ export default function SellDeviceWorkflow() {
           )}
           {currentStep === 2 && (
             <StepModelSelect
-              brand={sellState.brandName}
+              brand={sellState.brandName || 'Selected Brand'}
               brandId={sellState.brand}
+              categoryId={sellState.category}
               selectedModel={sellState.model}
               selectedStorage={sellState.storage}
               selectedColor={sellState.color}

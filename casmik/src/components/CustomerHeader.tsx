@@ -382,14 +382,21 @@ export default function CustomerHeader() {
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Camera Lenses</h4>
                       </div>
                       <ul className="space-y-1.5">
-                        {['Sony FE', 'Canon RF/EF', 'Nikon Z', 'Sigma Art', 'Tamron', 'LUMIX S'].map((l) => (
-                          <li key={l}>
+                        {[
+                          { name: 'Sony FE Lenses', brand: 'sony', cat: 'cat-lens' },
+                          { name: 'Canon RF/EF Lenses', brand: 'canon', cat: 'cat-lens' },
+                          { name: 'Nikon Z Lenses', brand: 'nikon', cat: 'cat-lens' },
+                          { name: 'Sigma Art Series', brand: 'sigma', cat: 'cat-lens' },
+                          { name: 'Tamron Di III', brand: 'tamron', cat: 'cat-lens' },
+                          { name: 'Samyang AF Lenses', brand: 'samyang', cat: 'cat-lens' },
+                        ].map((l) => (
+                          <li key={l.name}>
                             <Link
-                              href={`/sell-device-get-quote?cat=cat-lens`}
+                              href={`/sell-device-get-quote?brand=${l.brand}&cat=${l.cat}`}
                               onClick={() => setMegaMenuOpen(false)}
                               className="flex items-center justify-between text-xs font-medium text-slate-600 hover:text-indigo-600 hover:translate-x-1 transition-all py-1"
                             >
-                              <span>{l}</span>
+                              <span>{l.name}</span>
                               <ChevronRight size={12} className="text-slate-300" />
                             </Link>
                           </li>
@@ -403,14 +410,21 @@ export default function CustomerHeader() {
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Video & Action Cams</h4>
                       </div>
                       <ul className="space-y-1.5">
-                        {['Canon XA Camcorders', 'Panasonic HC Series', 'GoPro Hero', 'DJI Osmo Pocket', 'Insta360 X Series', 'Camera Gimbals'].map((v) => (
-                          <li key={v}>
+                        {[
+                          { name: 'Canon XA Camcorders', brand: 'canon', cat: 'cat-video-camera' },
+                          { name: 'Panasonic HC Series', brand: 'panasonic', cat: 'cat-video-camera' },
+                          { name: 'GoPro Hero Cameras', brand: 'gopro', cat: 'cat-action-camera' },
+                          { name: 'DJI Osmo Pocket', brand: 'dji', cat: 'cat-action-camera' },
+                          { name: 'Insta360 X Series', brand: 'insta360', cat: 'cat-action-camera' },
+                          { name: 'DJI & Feiyu Gimbals', brand: 'dji', cat: 'cat-gimbal' },
+                        ].map((v) => (
+                          <li key={v.name}>
                             <Link
-                              href="/sell-device-get-quote"
+                              href={`/sell-device-get-quote?brand=${v.brand}&cat=${v.cat}`}
                               onClick={() => setMegaMenuOpen(false)}
                               className="flex items-center justify-between text-xs font-medium text-slate-600 hover:text-emerald-600 hover:translate-x-1 transition-all py-1"
                             >
-                              <span>{v}</span>
+                              <span>{v.name}</span>
                               <ChevronRight size={12} className="text-slate-300" />
                             </Link>
                           </li>
