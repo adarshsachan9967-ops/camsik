@@ -5,16 +5,16 @@ class EnvConfig {
 
   // MongoDB Atlas Configuration
   static const String mongodbUri =
-      "mongodb+srv://adarshsachan7071_db_user:WhVdi8oaPTqFJZAP@casmikk.nfgequ6.mongodb.net/?appName=casmikk";
+      "mongodb+srv://adarshsachan9967_db_user:aQCPwwzcilQGVHhU@camsik.oxiqz3o.mongodb.net";
   static const String mongodbDbName = "casmik";
 
   // ImageKit Configuration
-  static const String imagekitId = "v8swalwfs";
-  static const String imagekitUrlEndpoint = "https://ik.imagekit.io/v8swalwfs";
+  static const String imagekitId = "avdarinn";
+  static const String imagekitUrlEndpoint = "https://ik.imagekit.io/avdarinn";
   static const String imagekitPublicKey =
-      "public_BEIY/mfZ/cGwCuJpaYzOJ9UIapM=";
+      "public_uzSklsoDFlGNoIPGFtTdcYJU32Y=";
   static const String imagekitPrivateKey =
-      "private_3m79CXKzWsW2hXu/jnRvcohOAHQ=";
+      "private_Zgjm0jSmxe2S76y3kkULZ5nzEvo=";
   static const String imagekitFolder = "casmik";
 
   /// Generates full ImageKit URL given an image path or fileName

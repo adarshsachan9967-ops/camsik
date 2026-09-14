@@ -1,17 +1,17 @@
 import ImageKit from 'imagekit';
 
 export const IMAGEKIT_CONFIG = {
-  id: process.env.IMAGEKIT_ID || 'v8swalwfs',
+  id: process.env.IMAGEKIT_ID || 'avdarinn',
   urlEndpoint:
     process.env.IMAGEKIT_URL_ENDPOINT ||
     process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT ||
-    'https://ik.imagekit.io/v8swalwfs',
+    'https://ik.imagekit.io/avdarinn',
   publicKey:
     process.env.IMAGEKIT_PUBLIC_KEY ||
     process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY ||
-    'public_BEIY/mfZ/cGwCuJpaYzOJ9UIapM=',
+    'public_uzSklsoDFlGNoIPGFtTdcYJU32Y=',
   privateKey:
-    process.env.IMAGEKIT_PRIVATE_KEY || 'private_3m79CXKzWsW2hXu/jnRvcohOAHQ=',
+    process.env.IMAGEKIT_PRIVATE_KEY || 'private_Zgjm0jSmxe2S76y3kkULZ5nzEvo=',
   folder:
     process.env.IMAGEKIT_FOLDER ||
     process.env.NEXT_PUBLIC_IMAGEKIT_FOLDER ||

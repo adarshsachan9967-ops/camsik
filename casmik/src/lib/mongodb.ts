@@ -1,6 +1,6 @@
 import { MongoClient, MongoClientOptions, Db, Collection, Document } from 'mongodb';
 
-const uri = process.env.MONGODB_URI || 'mongodb+srv://adarshsachan7071_db_user:WhVdi8oaPTqFJZAP@casmikk.nfgequ6.mongodb.net/?appName=casmikk';
+const uri = process.env.MONGODB_URI || 'mongodb+srv://adarshsachan9967_db_user:aQCPwwzcilQGVHhU@camsik.oxiqz3o.mongodb.net';
 const dbName = process.env.MONGODB_DB_NAME || 'casmik';
 
 const options: MongoClientOptions = {
