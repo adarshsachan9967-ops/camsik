@@ -171,7 +171,7 @@ export default function CustomerHeader() {
     <>
       {/* Top Main Header */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`sticky top-0 z-50 transition-all duration-300 ${
           scrolled
             ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-border/80'
             : 'bg-white border-b border-border'
@@ -454,40 +454,40 @@ export default function CustomerHeader() {
                 Track Order
               </Link>
               <Link
-                href="#how-it-works"
-                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
+                href="/how-it-works"
+                className="px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors whitespace-nowrap"
               >
                 How It Works
               </Link>
               <Link
-                href="#why-us"
-                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
+                href="/why-camsik"
+                className="px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors whitespace-nowrap"
               >
                 Why Camsik
               </Link>
               <Link
-                href="#faq"
-                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
+                href="/faq"
+                className="px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors whitespace-nowrap"
               >
                 FAQ
               </Link>
               <Link
                 href="/contact-us"
-                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
+                className="px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors whitespace-nowrap"
               >
                 Contact Us
               </Link>
             </nav>
 
             {/* Help & Support pill */}
-            <div className="flex items-center gap-3 text-xs text-slate-500">
-              <span className="inline-flex items-center gap-1 font-medium text-emerald-600">
+            <div className="flex items-center gap-3 text-xs text-slate-500 flex-shrink-0 pl-3">
+              <span className="hidden xl:inline-flex items-center gap-1 font-medium text-emerald-600 whitespace-nowrap">
                 <ShieldCheck size={14} /> 100% Secure Valuation
               </span>
-              <span>•</span>
+              <span className="hidden xl:inline">•</span>
               <a
                 href="tel:+918976000010"
-                className="font-bold text-slate-700 hover:text-primary transition-colors inline-flex items-center gap-1"
+                className="font-bold text-slate-700 hover:text-primary transition-colors inline-flex items-center gap-1 whitespace-nowrap"
               >
                 <Phone size={12} className="text-primary" /> +91 8976000010
               </a>
@@ -669,6 +669,27 @@ export default function CustomerHeader() {
                   className="flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-purple-50"
                 >
                   Track Order
+                </Link>
+                <Link
+                  href="/how-it-works"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-purple-50"
+                >
+                  How It Works
+                </Link>
+                <Link
+                  href="/why-camsik"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-purple-50"
+                >
+                  Why Camsik
+                </Link>
+                <Link
+                  href="/faq"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-purple-50"
+                >
+                  FAQ
                 </Link>
                 <Link
                   href="/contact-us"

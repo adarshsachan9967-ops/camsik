@@ -227,7 +227,7 @@ export default function ContactUsPage() {
                       <input
                         type="tel"
                         required
-                        placeholder="+91 98765 43210"
+                        placeholder="e.g. 9876000010"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         className="w-full px-4 py-3 rounded-2xl bg-surface border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"

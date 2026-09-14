@@ -45,11 +45,11 @@ const footerLinks = {
     { label: 'Sell GoPro & DJI', href: '/sell-device-get-quote?brand=gopro' },
   ],
   'Company & Trust': [
-    { label: 'About Camsik', href: '#about' },
-    { label: 'How Camsik Works', href: '#how-it-works' },
-    { label: 'Why People Choose Camsik', href: '#why-us' },
-    { label: 'Customer Video Reviews', href: '#testimonials' },
-    { label: 'Frequently Asked Questions', href: '#faq' },
+    { label: 'About Camsik', href: '/why-camsik' },
+    { label: 'How Camsik Works', href: '/how-it-works' },
+    { label: 'Why People Choose Camsik', href: '/why-camsik' },
+    { label: 'Customer Video Reviews', href: '/#testimonials' },
+    { label: 'Frequently Asked Questions', href: '/faq' },
   ],
   'Support & Policies': [
     { label: 'Contact Us', href: '/contact-us' },

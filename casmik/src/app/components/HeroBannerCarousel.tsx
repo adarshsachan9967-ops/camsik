@@ -149,7 +149,7 @@ export default function HeroBannerCarousel() {
 
   return (
     <section
-      className="relative overflow-hidden pt-20 lg:pt-24 select-none"
+      className="relative overflow-hidden pt-3 sm:pt-4 select-none"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
