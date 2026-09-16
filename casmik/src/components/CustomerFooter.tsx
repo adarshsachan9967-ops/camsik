@@ -71,7 +71,7 @@ export default function CustomerFooter() {
   return (
     <footer className="bg-slate-950 text-slate-300 border-t border-slate-800">
       {/* Feature Strip */}
-      <div className="border-b border-slate-800/80 bg-slate-900/40 py-8">
+      <div className="border-b border-slate-800/80 bg-slate-900/40 py-5 sm:py-6">
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center md:text-left">
             <div className="flex items-center gap-3.5 justify-center md:justify-start">
@@ -118,7 +118,7 @@ export default function CustomerFooter() {
       </div>
 
       {/* Main Footer Links */}
-      <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10 py-14">
+      <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10 py-8 sm:py-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10">
           {/* Brand Info */}
           <div className="lg:col-span-2">

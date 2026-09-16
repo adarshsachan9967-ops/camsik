@@ -90,21 +90,21 @@ const reasons = [
 
 export default function WhyCamsik() {
   return (
-    <section id="why-us" className="py-16 lg:py-24 bg-white relative overflow-hidden">
+    <section id="why-us" className="py-8 lg:py-12 bg-white relative overflow-hidden">
       {/* Subtle background decoration */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-10 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 relative">
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-3">
+        <div className="text-center max-w-3xl mx-auto mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-2">
             <Sparkles size={13} />
             The Camsik Advantage
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
             Why Over 1.85 Lakh Photographers Trust <span className="text-primary">Camsik</span>
           </h2>
-          <p className="text-muted-foreground mt-3 text-sm sm:text-base leading-relaxed">
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base leading-relaxed">
             Experience the safest, fastest, and most transparent platform to sell your old cameras, cinema rigs, and optics with zero hassle.
           </p>
         </div>

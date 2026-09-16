@@ -5,7 +5,7 @@ import AppImage from '@/components/ui/AppImage';
 
 export default function AppDownloadCTA() {
   return (
-    <section className="py-16 lg:py-24 bg-slate-950 overflow-hidden relative border-t border-slate-800">
+    <section className="py-10 lg:py-14 bg-slate-950 overflow-hidden relative border-t border-slate-800">
       {/* Background gradients */}
       <div className="absolute top-0 right-1/3 w-96 h-96 bg-primary/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-10 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />

@@ -39,13 +39,13 @@ const stats = [
 
 export default function CamsikTrustScore() {
   return (
-    <section className="py-14 bg-slate-900 text-white relative overflow-hidden">
+    <section className="py-8 lg:py-10 bg-slate-900 text-white relative overflow-hidden">
       {/* Glow effects */}
       <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 relative">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-8 border-b border-slate-800">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6 pb-6 border-b border-slate-800">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2 border border-slate-700">
               <ShieldCheck size={14} />

@@ -19,7 +19,7 @@ export default function WhyCamsikPage() {
       <CustomerHeader />
 
       {/* Hero Header */}
-      <section className="bg-gradient-to-b from-slate-900 to-slate-950 text-white py-12 lg:py-16 border-b border-slate-800">
+      <section className="bg-gradient-to-b from-slate-900 to-slate-950 text-white py-8 sm:py-10 border-b border-slate-800">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-6">
@@ -46,9 +46,7 @@ export default function WhyCamsikPage() {
       </section>
 
       {/* 9 Core Value Pillars */}
-      <div className="py-4">
-        <WhyCamsik />
-      </div>
+      <WhyCamsik />
 
       {/* Safe and Reliable Diagnostic Pillars */}
       <SafeAndReliableSection />
@@ -60,7 +58,7 @@ export default function WhyCamsikPage() {
       <CamsikTrustScore />
 
       {/* Bottom CTA */}
-      <section className="py-12 bg-purple-50/60 border-t border-purple-100">
+      <section className="py-8 sm:py-10 bg-purple-50/60 border-t border-purple-100">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 text-center">
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3">
             Experience India&apos;s Highest Camera Payouts

@@ -21,7 +21,7 @@ export default function RepairRedirectPage() {
     <main className="min-h-screen bg-background flex flex-col justify-between">
       <CustomerHeader />
 
-      <section className="flex-1 flex items-center justify-center py-20 px-4">
+      <section className="flex-1 flex items-center justify-center py-10 sm:py-14 px-4">
         <div className="max-w-xl w-full bg-white rounded-3xl border border-border/80 p-8 sm:p-12 text-center shadow-xl relative overflow-hidden">
           <div className="w-20 h-20 rounded-3xl gradient-green flex items-center justify-center text-white mx-auto mb-6 shadow-green">
             <Camera size={38} />

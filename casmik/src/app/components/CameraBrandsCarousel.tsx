@@ -175,10 +175,10 @@ export default function CameraBrandsCarousel() {
   };
 
   return (
-    <section className="py-14 lg:py-20 bg-white border-y border-border/60 overflow-hidden">
+    <section className="py-8 lg:py-10 bg-white border-y border-border/60 overflow-hidden">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
         {/* Header with Badges */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-5 gap-4">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-2.5">
               <Sparkles size={12} />
@@ -224,12 +224,11 @@ export default function CameraBrandsCarousel() {
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="h-10 w-24 relative flex items-center">
-                    <AppImage
+                  <div className="h-8 w-24 flex items-center justify-start">
+                    <img
                       src={brand.logo}
                       alt={`${brand.name} logo`}
-                      fill
-                      className="object-contain object-left group-hover:scale-105 transition-transform duration-300"
+                      className="max-h-7 max-w-[85px] w-auto h-auto object-contain object-left group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
                   <div className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all duration-200">

@@ -139,13 +139,13 @@ export default function CustomerVideoReviewsCarousel() {
 
   return (
     <section 
-      className="py-16 lg:py-24 bg-gradient-to-b from-surface via-white to-surface overflow-hidden relative"
+      className="py-8 lg:py-12 bg-gradient-to-b from-surface via-white to-surface overflow-hidden relative"
       onMouseEnter={() => setIsAutoPlaying(false)}
       onMouseLeave={() => setIsAutoPlaying(true)}
     >
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
         {/* Header with Badges */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-6">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-3">
               <Sparkles size={13} />

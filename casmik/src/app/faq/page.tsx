@@ -16,7 +16,7 @@ export default function FaqPage() {
       <CustomerHeader />
 
       {/* Hero Header */}
-      <section className="bg-gradient-to-b from-slate-900 to-slate-950 text-white py-12 lg:py-16 border-b border-slate-800">
+      <section className="bg-gradient-to-b from-slate-900 to-slate-950 text-white py-8 sm:py-10 border-b border-slate-800">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-6">
@@ -43,12 +43,12 @@ export default function FaqPage() {
       </section>
 
       {/* Main Full-Width & Responsive FAQ Component */}
-      <div className="flex-1 py-8">
+      <div className="flex-1">
         <CamsikFaqSection />
       </div>
 
       {/* Direct Contact Options */}
-      <section className="py-12 bg-slate-50 border-t border-slate-200/80">
+      <section className="py-8 sm:py-10 bg-slate-50 border-t border-slate-200/80">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
           <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center max-w-2xl mx-auto shadow-sm">
             <h3 className="text-xl sm:text-2xl font-black text-slate-900 mb-2">

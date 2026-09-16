@@ -168,7 +168,7 @@ export default function ExchangeDevicePage() {
       <CustomerHeader />
 
       {/* Hero */}
-      <section className="bg-gradient-to-br from-primary-50 via-white to-surface py-12 border-b border-border">
+      <section className="bg-gradient-to-br from-primary-50 via-white to-surface py-8 sm:py-10 border-b border-border">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold mb-4">
@@ -186,7 +186,7 @@ export default function ExchangeDevicePage() {
       </section>
 
       {/* How it Works Bar */}
-      <section className="py-6 bg-white border-b border-border overflow-x-auto scrollbar-none">
+      <section className="py-4 sm:py-5 bg-white border-b border-border overflow-x-auto scrollbar-none">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
           <div className="flex items-center gap-6 min-w-[700px]">
             {howItWorks.map((s, i) => (
@@ -208,7 +208,7 @@ export default function ExchangeDevicePage() {
       </section>
 
       {/* Exchange Wizard Steps */}
-      <div className="max-w-screen-xl mx-auto px-4 lg:px-8 py-10">
+      <div className="max-w-screen-xl mx-auto px-4 lg:px-8 py-6 sm:py-8">
         {/* Step 1: Select Old Device */}
         {step === 'select-old' && (
           <div className="bg-white rounded-3xl border border-border p-6 sm:p-8 shadow-sm">

@@ -138,25 +138,25 @@ export default function CamsikFaqSection() {
   }, [activeCategory, searchQuery]);
 
   return (
-    <section id="faq" className="py-16 lg:py-24 bg-surface border-t border-border/80 w-full overflow-hidden">
+    <section id="faq" className="py-8 lg:py-12 bg-surface border-t border-border/80 w-full overflow-hidden">
       <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
         
         {/* Section Header */}
-        <div className="text-center max-w-4xl mx-auto mb-10 sm:mb-12">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-3">
+        <div className="text-center max-w-4xl mx-auto mb-6">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-2">
             <Sparkles size={13} />
             Got Questions? We&apos;ve Got Answers
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-foreground tracking-tight">
             Frequently Asked Questions
           </h2>
-          <p className="text-muted-foreground mt-3 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto">
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto">
             Everything you need to know about selling, upgrading, or evaluating your camera equipment safely on Camsik.
           </p>
         </div>
 
         {/* Filter Tabs & Search Bar — Full Width Row */}
-        <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 sm:mb-10">
+        <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
           
           {/* Category Filter Pills */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none w-full md:w-auto">

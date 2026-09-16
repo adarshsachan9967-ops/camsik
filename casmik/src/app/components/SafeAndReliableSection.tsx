@@ -28,9 +28,9 @@ const safetyPillars = [
 
 export default function SafeAndReliableSection() {
   return (
-    <section className="py-16 lg:py-24 bg-surface border-y border-border/70 relative overflow-hidden">
+    <section className="py-8 lg:py-12 bg-surface border-y border-border/70 relative overflow-hidden">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           {/* Left Column: 3D-styled Shield Card & Visual Guarantee */}
           <div className="lg:col-span-5">
             <div className="relative rounded-3xl p-8 sm:p-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white shadow-2xl overflow-hidden border border-slate-700/60">

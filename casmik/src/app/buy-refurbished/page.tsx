@@ -538,7 +538,7 @@ export default function BuyRefurbishedPage() {
       <CustomerHeader />
 
       {/* Hero */}
-      <section className="bg-gradient-to-b from-slate-900 to-slate-950 text-white py-14 border-b border-slate-800 relative overflow-hidden">
+      <section className="bg-gradient-to-b from-slate-900 to-slate-950 text-white py-8 sm:py-10 border-b border-slate-800 relative overflow-hidden">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 relative z-10">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 text-primary text-xs font-bold mb-4 border border-primary/30">
@@ -556,7 +556,7 @@ export default function BuyRefurbishedPage() {
       </section>
 
       {/* Filters & Content Area */}
-      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-10">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8">
         {/* Search & Category Filter Tabs */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           {/* Category Tabs */}

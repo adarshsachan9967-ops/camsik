@@ -44,10 +44,10 @@ export default function TopCamerasCarousel() {
   };
 
   return (
-    <section className="py-14 lg:py-18 bg-slate-50 border-b border-slate-200/60">
+    <section className="py-8 lg:py-10 bg-slate-50 border-b border-slate-200/60">
       <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10">
         {/* Header Row */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-5 gap-4">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100/70 border border-purple-200 text-xs font-bold text-purple-800 mb-2">
               <TrendingUp size={13} className="text-purple-600" />
@@ -81,7 +81,7 @@ export default function TopCamerasCarousel() {
         </div>
 
         {/* Category Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 no-scrollbar">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar">
           <button
             type="button"
             onClick={() => setActiveTab('all')}

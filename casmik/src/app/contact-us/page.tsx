@@ -42,11 +42,11 @@ export default function ContactUsPage() {
       <CustomerHeader />
 
       {/* Main Content */}
-      <section className="flex-1 py-10 lg:py-16">
+      <section className="flex-1 py-6 sm:py-8 lg:py-10">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
           
           {/* Breadcrumbs */}
-          <nav className="flex items-center gap-2 text-xs font-semibold text-muted-foreground mb-6">
+          <nav className="flex items-center gap-2 text-xs font-semibold text-muted-foreground mb-4">
             <Link href="/" className="hover:text-primary transition-colors">
               Home
             </Link>
@@ -55,7 +55,7 @@ export default function ContactUsPage() {
           </nav>
 
           {/* Page Title */}
-          <div className="mb-10">
+          <div className="mb-6">
             <h1 className="text-4xl sm:text-5xl font-black text-foreground tracking-tight">
               Contact
             </h1>

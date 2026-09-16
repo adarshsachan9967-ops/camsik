@@ -86,23 +86,23 @@ export default function HowItWorks() {
   const steps = flows[activeTab] || flows['tab-sell'];
 
   return (
-    <section id="how-it-works" className="py-16 lg:py-24 bg-gradient-to-b from-white via-surface to-white relative">
+    <section id="how-it-works" className="py-8 lg:py-12 bg-gradient-to-b from-white via-surface to-white relative">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-3">
+        <div className="text-center max-w-3xl mx-auto mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-2">
             <Sparkles size={13} />
             Hassle-Free Camera Liquidation
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
             How Selling on <span className="text-primary">Camsik</span> Works
           </h2>
-          <p className="text-muted-foreground mt-3 text-sm sm:text-base">
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
             Turn your unused camera gear into instant liquid cash in 3 effortless steps.
           </p>
         </div>
 
         {/* Tab Buttons (Sell / Buy / Exchange - No Repair!) */}
-        <div className="flex items-center justify-center gap-2.5 mb-14 flex-wrap">
+        <div className="flex items-center justify-center gap-2.5 mb-8 flex-wrap">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -165,12 +165,12 @@ export default function HowItWorks() {
         </div>
 
         {/* Action Button */}
-        <div className="mt-12 text-center">
+        <div className="mt-7 text-center">
           <Link
             href="/sell-device-get-quote"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl gradient-green text-white font-extrabold text-base shadow-green hover:shadow-xl hover:scale-105 transition-all duration-200 btn-press"
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl gradient-green text-white font-extrabold text-sm sm:text-base shadow-green hover:shadow-xl hover:scale-105 transition-all duration-200 btn-press"
           >
-            <Camera size={20} />
+            <Camera size={18} />
             Check Your Camera&apos;s Resale Value Now
           </Link>
         </div>

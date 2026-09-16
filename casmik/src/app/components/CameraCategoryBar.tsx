@@ -6,10 +6,10 @@ import { categories } from '@/lib/casmikData';
 
 export default function CameraCategoryBar() {
   return (
-    <section className="py-10 bg-white border-b border-slate-100">
+    <section className="py-6 sm:py-8 bg-white border-b border-slate-100">
       <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10">
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-5 gap-4">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-200/60 text-xs font-bold text-purple-700 mb-2">
               <Sparkles size={12} className="text-purple-600" />

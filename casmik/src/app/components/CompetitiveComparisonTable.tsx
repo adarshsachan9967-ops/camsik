@@ -72,17 +72,17 @@ const comparisonData: FeatureComparison[] = [
 
 export default function CompetitiveComparisonTable() {
   return (
-    <section className="py-16 lg:py-24 bg-white relative overflow-hidden">
+    <section className="py-8 lg:py-12 bg-white relative overflow-hidden">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-3">
+        <div className="text-center max-w-3xl mx-auto mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-2">
             <Sparkles size={13} />
             Honest Comparison
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
             Why Photographers Choose <span className="text-primary">Camsik</span>
           </h2>
-          <p className="text-muted-foreground mt-3 text-sm sm:text-base">
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
             See how selling on Camsik compares against traditional offline camera markets and peer-to-peer classified websites.
           </p>
         </div>
