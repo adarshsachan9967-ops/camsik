@@ -27,6 +27,22 @@ export default function TopCamerasCarousel() {
     ? deviceModels
     : deviceModels.filter((m) => m.categoryId === activeTab);
 
+  const getCategoryFallback = (categoryId: string) => {
+    switch (categoryId) {
+      case 'cat-dslr': return '/assets/images/categories/dslr.png';
+      case 'cat-lens': return '/assets/images/categories/lens.png';
+      case 'cat-video':
+      case 'cat-video-camera': return '/assets/images/categories/video.png';
+      case 'cat-action':
+      case 'cat-action-camera': return '/assets/images/categories/action.png';
+      case 'cat-gimbal': return '/assets/images/categories/gimbal.png';
+      case 'cat-smartphone': return '/assets/images/categories/smartphone.png';
+      case 'cat-laptop': return '/assets/images/categories/laptop.png';
+      case 'cat-tablet': return '/assets/images/categories/tablet.png';
+      default: return '/assets/images/categories/dslr.png';
+    }
+  };
+
   return (
     <section className="py-14 lg:py-18 bg-slate-50 border-b border-slate-200/60">
       <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10">
@@ -130,6 +146,12 @@ export default function TopCamerasCarousel() {
                     src={prod.image}
                     alt={prod.alt}
                     className="max-w-full max-h-full object-contain group-hover:scale-108 transition-transform duration-300 filter drop-shadow-sm"
+                    onError={(e) => {
+                      const fallback = getCategoryFallback(prod.categoryId);
+                      if (e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
                   />
                 </div>
 

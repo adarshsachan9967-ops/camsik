@@ -58,7 +58,7 @@ const newUpgradeCameras = [
     model: 'Sony Alpha 7 IV (ILCE-7M4)', 
     category: 'Full-Frame Mirrorless', 
     price: 185000, 
-    image: 'https://camsik.com/img/purchaseProducts/ilce_7m4_1_png.png', 
+    image: 'https://camsik.com/img/purchaseProducts/19b88e40-342c-4465-9824-f1d8ab63d944.jpg', 
     alt: 'Sony Alpha 7 IV' 
   },
   { 
@@ -67,7 +67,7 @@ const newUpgradeCameras = [
     model: 'Canon EOS R6 Mark II', 
     category: 'Full-Frame Mirrorless', 
     price: 198000, 
-    image: 'https://camsik.com/img/purchaseProducts/eos_r6_mark_ii_body_1_png.png', 
+    image: 'https://camsik.com/img/purchaseProducts/b23d6149-e618-4779-8ce5-62d923b9576c.webp', 
     alt: 'Canon EOS R6 Mark II' 
   },
   { 
@@ -76,7 +76,7 @@ const newUpgradeCameras = [
     model: 'Nikon Z8 Flagship Body', 
     category: 'Full-Frame Mirrorless', 
     price: 295000, 
-    image: 'https://camsik.com/img/purchaseProducts/nikon_z8_1_png.png', 
+    image: 'https://camsik.com/img/purchaseProducts/cf90160d-7994-402a-9c77-dc15e6c45dbf.webp', 
     alt: 'Nikon Z8' 
   },
   { 
@@ -85,7 +85,7 @@ const newUpgradeCameras = [
     model: 'Fujifilm X-T5 Mirrorless', 
     category: 'APS-C Mirrorless', 
     price: 145000, 
-    image: 'https://camsik.com/img/purchaseProducts/fujifilm_xt5_1_png.png', 
+    image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&q=80', 
     alt: 'Fujifilm X-T5' 
   },
   { 
@@ -94,7 +94,7 @@ const newUpgradeCameras = [
     model: 'Sony FE 24-70mm f/2.8 GM II', 
     category: 'G Master Zoom Lens', 
     price: 175000, 
-    image: 'https://camsik.com/img/purchaseProducts/sony_fe_24_70mm_gm2_1_png.png', 
+    image: 'https://camsik.com/img/purchaseProducts/427263ea-08e9-4d8c-baa1-a3fc173163fe.jpg', 
     alt: 'Sony 24-70 GM II' 
   },
   { 
@@ -103,7 +103,7 @@ const newUpgradeCameras = [
     model: 'DJI RS 3 Pro Combo Gimbal', 
     category: '3-Axis Gimbal Stabilizer', 
     price: 64900, 
-    image: 'https://camsik.com/img/purchaseProducts/dji_rs3_pro_1_png.png', 
+    image: 'https://images.unsplash.com/photo-1542744094-3a31f272c490?w=600&q=80', 
     alt: 'DJI RS 3 Pro' 
   },
 ];

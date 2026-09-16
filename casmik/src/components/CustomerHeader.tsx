@@ -253,6 +253,9 @@ export default function CustomerHeader() {
                                 src={res.image}
                                 alt={res.name}
                                 className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                                onError={(e) => {
+                                  e.currentTarget.src = '/assets/images/categories/dslr.png';
+                                }}
                               />
                             ) : (
                               <Camera className="w-5 h-5 text-slate-400" />

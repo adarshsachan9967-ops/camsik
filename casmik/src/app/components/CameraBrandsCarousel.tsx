@@ -18,7 +18,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'apple',
     name: 'Apple',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg',
+    logo: '/assets/images/brands/apple.svg',
     tagline: 'iPhone, MacBook & iPad Series',
     specialty: 'iPhone 16 Pro, MacBook M3, iPad Pro M4',
     popularModels: '60+ Devices Supported',
@@ -27,7 +27,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'samsung',
     name: 'Samsung',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg',
+    logo: '/assets/images/brands/samsung.svg',
     tagline: 'Galaxy S, Z-Fold & Tab Series',
     specialty: 'S24 Ultra, Z Fold 5, Tab S9 Ultra',
     popularModels: '50+ Devices Supported',
@@ -36,7 +36,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'dell',
     name: 'Dell',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/1/18/Dell_logo_2016.svg',
+    logo: '/assets/images/brands/dell.svg',
     tagline: 'XPS, Alienware & Inspiron',
     specialty: 'XPS 15, XPS 13 Plus, Alienware m16',
     popularModels: '30+ Laptops Supported',
@@ -45,7 +45,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'hp',
     name: 'HP',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/a/ad/HP_logo_2012.svg',
+    logo: '/assets/images/brands/hp.svg',
     tagline: 'Spectre, Envy & Omen Series',
     specialty: 'Spectre x360, Envy 16, Omen 16',
     popularModels: '28+ Laptops Supported',
@@ -54,7 +54,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'lenovo',
     name: 'Lenovo',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b8/Lenovo_logo_2015.svg',
+    logo: '/assets/images/brands/lenovo.svg',
     tagline: 'ThinkPad, Legion & Yoga Series',
     specialty: 'ThinkPad X1, Legion Pro 7i, Tab P12',
     popularModels: '35+ Devices Supported',
@@ -63,7 +63,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'canon',
     name: 'Canon',
-    logo: 'https://camsik.com/img/brand/canon.png',
+    logo: 'https://camsik.com/img/productBrand/4bd0ce5a-6914-4263-9f81-6b0127bec025.png',
     tagline: 'EOS R & DSLR Series',
     specialty: 'EOS R5, R6 II, 5D IV, 90D',
     popularModels: '120+ Models Supported',
@@ -72,7 +72,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'sony',
     name: 'Sony',
-    logo: 'https://camsik.com/img/brand/sony.png',
+    logo: 'https://camsik.com/img/productBrand/bbd3f7f8-4909-43fd-85c9-7191a3b64dcd.png',
     tagline: 'Alpha Full-Frame & Cinema',
     specialty: 'A7 IV, A7R V, FX3, FX30, ZV-E10',
     popularModels: '95+ Models Supported',
@@ -81,7 +81,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'nikon',
     name: 'Nikon',
-    logo: 'https://camsik.com/img/brand/nikon.png',
+    logo: 'https://camsik.com/img/productBrand/9f533d3d-4304-48e9-8a0d-a7c8fdd7318c.png',
     tagline: 'Z-Mount & D-Series',
     specialty: 'Z8, Z6 II, Z50, D850, D750',
     popularModels: '80+ Models Supported',
@@ -90,7 +90,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'fujifilm',
     name: 'Fujifilm',
-    logo: 'https://camsik.com/img/brand/fujifilm.png',
+    logo: 'https://camsik.com/img/productBrand/ccd22eff-5208-4a76-9b0f-8d1a1bca00a2.png',
     tagline: 'X-Series & GFX Medium Format',
     specialty: 'X-T5, X-H2S, X100V, GFX 100S',
     popularModels: '45+ Models Supported',
@@ -99,7 +99,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'lumix',
     name: 'Panasonic LUMIX',
-    logo: 'https://camsik.com/img/brand/panasonic.png',
+    logo: 'https://camsik.com/img/productBrand/378fcf74-3103-45f4-b195-82c32e575075.png',
     tagline: 'S & GH Hybrid Series',
     specialty: 'S5 IIX, GH6, GH5 II, G9 II',
     popularModels: '35+ Models Supported',
@@ -108,7 +108,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'sigma',
     name: 'Sigma',
-    logo: 'https://camsik.com/img/brand/sigma.png',
+    logo: 'https://camsik.com/img/productBrand/6a7e9cc4-ef20-4afd-8258-478d2f860f12.png',
     tagline: 'Art, Contemporary & Sport Lenses',
     specialty: '24-70mm Art, 85mm f/1.4, 18-50mm',
     popularModels: '70+ Lenses Supported',
@@ -117,7 +117,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'tamron',
     name: 'Tamron',
-    logo: 'https://camsik.com/img/brand/tamron.png',
+    logo: 'https://camsik.com/img/productBrand/8e522ebd-f7e0-407c-81dc-d19510321cae.png',
     tagline: 'Fast Di III Zooms & Primes',
     specialty: '28-75mm G2, 70-180mm, 35-150mm',
     popularModels: '50+ Lenses Supported',
@@ -126,7 +126,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'gopro',
     name: 'GoPro',
-    logo: 'https://camsik.com/img/brand/gopro.png',
+    logo: 'https://camsik.com/img/productBrand/17a259cc-2f9c-4bfe-82f9-8143df8cb30d.png',
     tagline: 'Hero & Max Action Cameras',
     specialty: 'Hero 13 Black, Hero 12, Hero 11, Max',
     popularModels: '25+ Action Models',
@@ -135,7 +135,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'dji',
     name: 'DJI',
-    logo: 'https://camsik.com/img/brand/dji.png',
+    logo: 'https://camsik.com/img/productBrand/6e8121dd-49f6-4df5-b458-7990f5d11eae.png',
     tagline: 'Ronin Gimbals & Osmo Action',
     specialty: 'RS 3 Pro, RS 4, Osmo Pocket 3, Action 4',
     popularModels: '30+ Gimbals & Cameras',
@@ -144,7 +144,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'insta360',
     name: 'Insta360',
-    logo: 'https://camsik.com/img/brand/insta360.png',
+    logo: 'https://camsik.com/img/productBrand/2a349fb4-1de7-4f51-a2be-f4d60f909eaf.png',
     tagline: '360° & AI Action Cameras',
     specialty: 'X4 8K 360, Ace Pro, GO 3S, ONE RS',
     popularModels: '20+ Models Supported',
@@ -153,7 +153,7 @@ const cameraBrands: CameraBrand[] = [
   {
     id: 'zhiyun',
     name: 'Zhiyun Tech',
-    logo: 'https://camsik.com/img/brand/zhiyun.png',
+    logo: 'https://camsik.com/img/productBrand/1898d608-4b2f-4448-b9c8-72498f0ebf30.png',
     tagline: 'Crane & Weebill Pro Gimbals',
     specialty: 'Crane 4, Weebill 3S, Smooth 5S',
     popularModels: '18+ Stabilizers',
