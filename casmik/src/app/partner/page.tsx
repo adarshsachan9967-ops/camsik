@@ -17,6 +17,15 @@ export default function PartnerPage() {
   const [activeSection, setActiveSection] = useState<PartnerSection>('dashboard');
   const [session, setSession] = useState<Partner | null>(null);
   const [loading, setLoading] = useState(true);
+  const [inspectingOrderId, setInspectingOrderId] = useState<string | null>(null);
+
+  const handleStartInspection = (orderId: string) => {
+    setInspectingOrderId(orderId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('casmik_active_inspection_id', orderId);
+    }
+    setActiveSection('inspection');
+  };
 
   const checkAuth = () => {
     if (typeof window === 'undefined') return;
@@ -155,16 +164,6 @@ export default function PartnerPage() {
       </div>
     );
   }
-
-  const [inspectingOrderId, setInspectingOrderId] = useState<string | null>(null);
-
-  const handleStartInspection = (orderId: string) => {
-    setInspectingOrderId(orderId);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('casmik_active_inspection_id', orderId);
-    }
-    setActiveSection('inspection');
-  };
 
   const renderSection = () => {
     switch (activeSection) {

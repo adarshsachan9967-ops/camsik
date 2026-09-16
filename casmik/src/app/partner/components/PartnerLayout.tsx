@@ -30,9 +30,21 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const partner: Partner = currentPartner || (typeof window !== 'undefined' && localStorage.getItem('casmik_partner_session')
-    ? JSON.parse(localStorage.getItem('casmik_partner_session')!)
-    : partners[0]);
+  const getPartner = (): Partner => {
+    if (currentPartner) return currentPartner;
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('casmik_partner_session');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') return parsed;
+        }
+      } catch {}
+    }
+    return partners[0];
+  };
+
+  const partner: Partner = getPartner();
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
