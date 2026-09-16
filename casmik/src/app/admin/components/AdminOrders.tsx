@@ -3,8 +3,21 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { orders as defaultOrders, partners, getOrderStatusLabel, getOrderStatusColor, getTypeColor } from '@/lib/casmikData';
 import type { Order, OrderStatus } from '@/lib/casmikData';
-import { Search, Eye, UserCheck, X, AlertCircle, Wifi, WifiOff, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Search, Eye, UserCheck, X, AlertCircle, Wifi, WifiOff, RefreshCw, CheckCircle2, ChevronDown, SlidersHorizontal, CheckCircle } from 'lucide-react';
 import LiveOrderTracker from '@/components/LiveOrderTracker';
+
+const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
+  { value: 'created', label: 'Order Created' },
+  { value: 'assigned', label: 'New / Assigned' },
+  { value: 'accepted', label: 'Order Accepted' },
+  { value: 'pickup_scheduled', label: 'Pickup Scheduled' },
+  { value: 'picked_up', label: 'Picked Up' },
+  { value: 'in_transit', label: 'In Transit' },
+  { value: 'inspection', label: 'Under Inspection' },
+  { value: 'completed', label: 'Order Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'rejected', label: 'Rejected' },
+];
 
 interface DBOrder {
   id: string;
@@ -180,6 +193,21 @@ export default function AdminOrders() {
     setSelectedPartner('');
   };
 
+  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    const updated = orderList.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
+    setOrderList(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('casmik_orders_v1', JSON.stringify(updated));
+    }
+    setSelectedOrder(prev => prev && prev.id === orderId ? { ...prev, status: newStatus } : prev);
+
+    try {
+      await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+    } catch (err: any) {
+      console.log('Admin status update note:', err.message);
+    }
+  };
+
   const stats = {
     total: orderList.length,
     pending: orderList.filter(o => ['created', 'assigned'].includes(o.status)).length,
@@ -315,10 +343,21 @@ export default function AdminOrders() {
                           <p className="text-xs text-green-600 font-semibold">Final: ₹{order.finalPrice.toLocaleString('en-IN')}</p>
                         )}
                       </td>
-                      <td className="px-4 py-3.5">
-                        <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${getOrderStatusColor(order.status)}`}>
-                          {getOrderStatusLabel(order.status)}
-                        </span>
+                      <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
+                        <div className="relative inline-block">
+                          <select
+                            value={order.status}
+                            onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
+                            className={`text-xs font-bold px-2.5 py-1 rounded-lg border border-transparent hover:border-gray-300 cursor-pointer appearance-none pr-6 transition-all ${getOrderStatusColor(order.status)}`}
+                          >
+                            {STATUS_OPTIONS.map(opt => (
+                              <option key={opt.value} value={opt.value} className="bg-white text-gray-800 font-semibold">
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown size={11} className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
+                        </div>
                       </td>
                       <td className="px-4 py-3.5">
                         {order.partnerName ? (
@@ -368,15 +407,90 @@ export default function AdminOrders() {
       {selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedOrder(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 z-10 max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 z-10 max-h-[90vh] overflow-y-auto border border-gray-100">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-black text-gray-900">{selectedOrder.orderNumber}</h3>
-              <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-xl hover:bg-gray-100"><X size={18} /></button>
+              <div>
+                <span className="text-xs font-bold text-gray-400">Order Management</span>
+                <h3 className="text-lg font-black text-gray-900">{selectedOrder.orderNumber}</h3>
+              </div>
+              <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-xl hover:bg-gray-100 cursor-pointer"><X size={18} /></button>
             </div>
             <div className="space-y-4">
               <div className="flex gap-2">
                 <span className={`text-xs font-bold px-2 py-1 rounded-lg capitalize ${getTypeColor(selectedOrder.type)}`}>{selectedOrder.type}</span>
                 <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${getOrderStatusColor(selectedOrder.status)}`}>{getOrderStatusLabel(selectedOrder.status)}</span>
+              </div>
+
+              {/* CHANGE ORDER STATUS SECTION IN ADMIN MODAL */}
+              <div className="bg-gradient-to-br from-primary/5 via-white to-gray-50 border border-primary/20 rounded-2xl p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-2.5">
+                  <p className="text-xs font-black text-gray-900 flex items-center gap-1.5">
+                    <SlidersHorizontal size={14} className="text-primary" /> Change Order Status
+                  </p>
+                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getOrderStatusColor(selectedOrder.status)}`}>
+                    {getOrderStatusLabel(selectedOrder.status)}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange(selectedOrder.id, 'accepted')}
+                    className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      selectedOrder.status === 'accepted' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'
+                    }`}
+                  >
+                    ✓ Accept
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange(selectedOrder.id, 'picked_up')}
+                    className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      selectedOrder.status === 'picked_up' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-purple-700 border-purple-200 hover:bg-purple-50'
+                    }`}
+                  >
+                    🚚 Picked Up
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange(selectedOrder.id, 'inspection')}
+                    className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      selectedOrder.status === 'inspection' ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50'
+                    }`}
+                  >
+                    🔍 Inspection
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange(selectedOrder.id, 'completed')}
+                    className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      selectedOrder.status === 'completed' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-green-700 border-green-200 hover:bg-green-50'
+                    }`}
+                  >
+                    🎉 Complete
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 border-t border-gray-200/60">
+                  <label htmlFor="admin-modal-status-select" className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                    All Statuses:
+                  </label>
+                  <div className="relative flex-1">
+                    <select
+                      id="admin-modal-status-select"
+                      value={selectedOrder.status}
+                      onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value as OrderStatus)}
+                      className="w-full text-xs font-bold bg-white border border-gray-300 rounded-xl pl-3 pr-8 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
+                    >
+                      {STATUS_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-xl p-3">
