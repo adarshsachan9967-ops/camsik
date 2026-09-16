@@ -1,10 +1,24 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Eye, EyeOff, Phone, Mail, User, MapPin, Store, FileText, ChevronRight, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Phone, Mail, User, MapPin, Store, FileText, ChevronRight, ArrowLeft, CheckCircle, AlertTriangle, KeyRound } from 'lucide-react';
+import { partners, Partner } from '@/lib/casmikData';
 
 type AuthMode = 'signin' | 'signup';
 type SignupStep = 1 | 2 | 3;
+
+function getPartnersList(): Partner[] {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('casmik_partners_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+  }
+  return partners;
+}
 
 export default function PartnerAuthPage() {
   const [mode, setMode] = useState<AuthMode>('signin');
@@ -12,6 +26,7 @@ export default function PartnerAuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Sign In fields
   const [siEmail, setSiEmail] = useState('');
@@ -32,13 +47,75 @@ export default function PartnerAuthPage() {
 
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    const query = siEmail.trim().toLowerCase();
+    const cleanPhone = query.replace(/[^0-9]/g, '');
+    const allPartners = getPartnersList();
+
+    const partner = allPartners.find(
+      p => p.email.toLowerCase() === query || (cleanPhone.length >= 10 && p.phone.replace(/[^0-9]/g, '') === cleanPhone)
+    );
+
+    if (!partner) {
+      if (query === 'partner@casmik.com' || query === 'partner@camsik.com' || query === '9876543210') {
+        const demo = allPartners[0];
+        localStorage.setItem('casmik_partner_session', JSON.stringify(demo));
+        window.location.href = '/partner';
+        return;
+      }
+      setError('No partner account found with these credentials. Please check your details or register as a new partner.');
+      return;
+    }
+
+    if (partner.status === 'pending') {
+      setError('Your partner application is currently PENDING approval from the Super Admin. You will be able to access the portal once approved.');
+      return;
+    }
+
+    if (partner.status === 'suspended') {
+      setError('Your partner account has been suspended or rejected by the Super Admin. Please contact support@camsik.com.');
+      return;
+    }
+
+    localStorage.setItem('casmik_partner_session', JSON.stringify(partner));
     window.location.href = '/partner';
   };
 
   const handleSignupNext = (e: React.FormEvent) => {
     e.preventDefault();
-    if (signupStep < 3) setSignupStep((s) => (s + 1) as SignupStep);
-    else setSubmitted(true);
+    setError(null);
+    if (signupStep < 3) {
+      setSignupStep((s) => (s + 1) as SignupStep);
+    } else {
+      const newPartner: Partner = {
+        id: `partner-${Date.now().toString().slice(-4)}`,
+        name: suName.trim(),
+        storeName: suStoreName.trim() || `${suName.trim()}'s Electronics Store`,
+        phone: suPhone.trim(),
+        email: suEmail.trim(),
+        city: suCity.trim() || 'Bengaluru',
+        state: 'Karnataka',
+        pinCodes: suPinCode.trim() ? [suPinCode.trim()] : ['560001'],
+        categories: ['Smartphones', 'Laptops', 'Cameras'],
+        status: 'pending', // Requires Super Admin approval!
+        rating: 5.0,
+        totalOrders: 0,
+        completedOrders: 0,
+        totalEarnings: 0,
+        pendingPayout: 0,
+        availableBalance: 0,
+        joinedAt: new Date().toISOString().split('T')[0],
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&q=80',
+        commission: 6,
+      };
+
+      const current = getPartnersList();
+      const updated = [newPartner, ...current];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('casmik_partners_v1', JSON.stringify(updated));
+      }
+      setSubmitted(true);
+    }
   };
 
   if (submitted) {
@@ -101,13 +178,21 @@ export default function PartnerAuthPage() {
             {mode === 'signin' ? (
               <>
                 <h2 className="text-xl font-black text-gray-900 mb-1">Welcome back</h2>
-                <p className="text-gray-500 text-sm mb-6">Sign in to your partner account</p>
+                <p className="text-gray-500 text-sm mb-4">Sign in to your partner account</p>
+
+                {error && (
+                  <div className="p-3.5 mb-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2 animate-fade-in">
+                    <AlertTriangle size={16} className="text-red-600 flex-shrink-0 mt-0.5" />
+                    <p className="font-medium leading-relaxed">{error}</p>
+                  </div>
+                )}
+
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div>
                     <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Email or Phone</label>
                     <div className="relative">
                       <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input type="text" value={siEmail} onChange={e => setSiEmail(e.target.value)} required
+                      <input type="text" value={siEmail} onChange={e => { setSiEmail(e.target.value); setError(null); }} required
                         placeholder="partner@email.com or 9876543210"
                         className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary" />
                     </div>
@@ -115,7 +200,7 @@ export default function PartnerAuthPage() {
                   <div>
                     <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Password</label>
                     <div className="relative">
-                      <input type={showPassword ? 'text' : 'password'} value={siPassword} onChange={e => setSiPassword(e.target.value)} required
+                      <input type={showPassword ? 'text' : 'password'} value={siPassword} onChange={e => { setSiPassword(e.target.value); setError(null); }} required
                         placeholder="Enter your password"
                         className="w-full pl-4 pr-10 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary" />
                       <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -127,13 +212,49 @@ export default function PartnerAuthPage() {
                     <button type="button" className="text-xs text-primary font-semibold hover:underline">Forgot password?</button>
                   </div>
                   <button type="submit"
-                    className="w-full py-3.5 bg-primary text-white rounded-2xl font-bold text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+                    className="w-full py-3.5 bg-primary text-white rounded-2xl font-bold text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/20">
                     Sign In to Partner Portal <ChevronRight size={16} />
                   </button>
                 </form>
-                <p className="text-center text-xs text-gray-400 mt-5">
+
+                {/* Quick Demo Logins Helper */}
+                <div className="mt-5 pt-4 border-t border-gray-100">
+                  <p className="text-[11px] font-bold text-gray-400 mb-2 tracking-wide uppercase">Quick Demo Fill</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSiEmail('rajesh@camera.com');
+                        setSiPassword('Partner@123');
+                        setError(null);
+                      }}
+                      className="text-left p-2.5 rounded-xl bg-gray-50 hover:bg-primary/5 hover:border-primary/40 border border-gray-200 text-[11px] transition-all cursor-pointer"
+                    >
+                      <p className="font-bold text-gray-800 flex items-center gap-1">
+                        <KeyRound size={12} className="text-primary" /> Active Partner
+                      </p>
+                      <p className="text-gray-400 truncate">rajesh@camera.com</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSiEmail('newpartner@store.com');
+                        setSiPassword('Partner@123');
+                        setError(null);
+                      }}
+                      className="text-left p-2.5 rounded-xl bg-yellow-50/70 hover:bg-yellow-100/70 hover:border-yellow-300 border border-yellow-200 text-[11px] transition-all cursor-pointer"
+                    >
+                      <p className="font-bold text-amber-800 flex items-center gap-1">
+                        <AlertTriangle size={12} className="text-amber-600" /> Test Pending
+                      </p>
+                      <p className="text-amber-600/80 truncate">newpartner@store.com</p>
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-center text-xs text-gray-400 mt-4">
                   Not a partner yet?{' '}
-                  <button onClick={() => setMode('signup')} className="text-primary font-bold hover:underline">Register now</button>
+                  <button onClick={() => { setMode('signup'); setError(null); }} className="text-primary font-bold hover:underline cursor-pointer">Register now</button>
                 </p>
               </>
             ) : (

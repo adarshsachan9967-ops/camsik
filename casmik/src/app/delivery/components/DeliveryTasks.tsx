@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Order, OrderStatus } from '@/lib/casmikData';
-import { MapPin, Phone, CheckCircle, Camera, X, Navigation, Package, Truck, Wifi, WifiOff } from 'lucide-react';
+import { MapPin, Phone, CheckCircle, Camera, X, Navigation, Package, Truck, Wifi, WifiOff, Eye } from 'lucide-react';
 import LiveOrderTracker from '@/components/LiveOrderTracker';
 
 const DELIVERY_AGENT_ID = 'delivery-001';
@@ -60,6 +60,7 @@ export default function DeliveryTasks() {
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [activeTask, setActiveTask] = useState<Order | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Order | null>(null);
   const [otpInput, setOtpInput] = useState('');
   const [otpVerified, setOtpVerified] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -199,14 +200,18 @@ export default function DeliveryTasks() {
             ))}
           </div>
 
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filtered.map((task) => (
-              <div key={task.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div
+                key={task.id}
+                onClick={() => setSelectedTask(task)}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group"
+              >
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className="text-xs font-black text-gray-400">{task.orderNumber}</p>
-                      <p className="font-bold text-gray-900 text-sm mt-0.5">{task.deviceName.split(' ').slice(0, 4).join(' ')}</p>
+                      <p className="text-xs font-black text-gray-400 group-hover:text-primary transition-colors">{task.orderNumber}</p>
+                      <p className="font-bold text-gray-900 text-sm mt-0.5 group-hover:text-primary transition-colors">{task.deviceName}</p>
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${
                         task.type === 'sell' ? 'bg-green-100 text-green-700' :
                         task.type === 'buy' ? 'bg-blue-100 text-blue-700' :
@@ -227,31 +232,58 @@ export default function DeliveryTasks() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                    <span>📅 {task.pickupDate}</span>
-                    <span>🕐 {task.pickupSlot}</span>
+                  <div className="flex items-center justify-between text-xs text-gray-500 mb-3 bg-gray-50/70 px-3 py-1.5 rounded-xl">
+                    <span>📅 {task.pickupDate || 'Today'}</span>
+                    <span>🕐 {task.pickupSlot || '10:00 AM - 1:00 PM'}</span>
                   </div>
 
-                  <div className="flex gap-2">
-                    <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50">
+                  <div className="flex items-center gap-2 pt-1 border-t border-gray-50" onClick={e => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTask(task)}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-primary hover:text-white hover:border-primary transition-colors cursor-pointer"
+                    >
+                      <Eye size={12} /> Details
+                    </button>
+                    <a
+                      href={`tel:${task.customerPhone}`}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-300 transition-colors cursor-pointer"
+                    >
                       <Phone size={12} /> Call
-                    </button>
-                    <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50">
-                      <Navigation size={12} /> Navigate
-                    </button>
+                    </a>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((task.customerAddress || '') + ' ' + (task.city || ''))}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 transition-colors cursor-pointer"
+                    >
+                      <Navigation size={12} /> Map
+                    </a>
                     {task.status === 'assigned' && (
-                      <button onClick={() => handleStartPickup(task.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90">
+                      <button
+                        type="button"
+                        onClick={() => handleStartPickup(task.id)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90 cursor-pointer shadow-sm shadow-primary/20"
+                      >
                         <Truck size={12} /> Start Trip
                       </button>
                     )}
                     {task.status === 'pickup_scheduled' && (
-                      <button onClick={() => setActiveTask(task)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-500 text-white text-xs font-bold hover:bg-blue-600">
-                        <Package size={12} /> Arrived — Verify OTP
+                      <button
+                        type="button"
+                        onClick={() => setActiveTask(task)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 cursor-pointer shadow-sm shadow-blue-500/20"
+                      >
+                        <Package size={12} /> Verify OTP
                       </button>
                     )}
                     {task.status === 'picked_up' && (
-                      <button onClick={() => handleComplete(task.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green-500 text-white text-xs font-bold hover:bg-green-600">
-                        <CheckCircle size={12} /> Mark Delivered
+                      <button
+                        type="button"
+                        onClick={() => handleComplete(task.id)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green-500 text-white text-xs font-bold hover:bg-green-600 cursor-pointer shadow-sm shadow-green-500/20"
+                      >
+                        <CheckCircle size={12} /> Complete
                       </button>
                     )}
                   </div>
@@ -312,6 +344,79 @@ export default function DeliveryTasks() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Task Details Modal */}
+      {selectedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedTask(null)} />
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 z-10 max-h-[90vh] overflow-y-auto border border-gray-100">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
+              <div>
+                <span className="text-xs font-bold text-gray-400">Pickup Task Details</span>
+                <h3 className="text-lg font-black text-gray-900">{selectedTask.orderNumber}</h3>
+              </div>
+              <button onClick={() => setSelectedTask(null)} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-gray-50 rounded-2xl p-4">
+                <p className="text-xs font-bold text-gray-500 uppercase mb-1">Device Details</p>
+                <p className="font-bold text-gray-900 text-base">{selectedTask.deviceName}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{selectedTask.deviceColor} · {selectedTask.deviceStorage}</p>
+              </div>
+
+              <div className="bg-gray-50 rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold text-gray-500 uppercase">Customer Information</p>
+                  <a href={`tel:${selectedTask.customerPhone}`} className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold hover:bg-green-200">
+                    <Phone size={12} /> Call Customer
+                  </a>
+                </div>
+                <p className="font-bold text-gray-900 text-sm">{selectedTask.customerName}</p>
+                <p className="text-xs text-gray-500">{selectedTask.customerPhone}</p>
+                <p className="text-xs text-gray-700 mt-2 bg-white p-2.5 rounded-xl border border-gray-200/70">
+                  📍 {selectedTask.customerAddress}, {selectedTask.city} - {selectedTask.pinCode}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-3.5">
+                  <p className="text-xs font-bold text-blue-700 mb-1">Scheduled Slot</p>
+                  <p className="font-bold text-gray-900 text-sm">{selectedTask.pickupDate || 'Today'}</p>
+                  <p className="text-xs text-gray-500">{selectedTask.pickupSlot || '10:00 AM - 1:00 PM'}</p>
+                </div>
+                <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-3.5">
+                  <p className="text-xs font-bold text-emerald-700 mb-1">Quoted Value</p>
+                  <p className="text-xl font-black text-emerald-700">₹{selectedTask.quotedPrice.toLocaleString('en-IN')}</p>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-gray-100 flex gap-2">
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((selectedTask.customerAddress || '') + ' ' + (selectedTask.city || ''))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-3 bg-blue-600 text-white text-center rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors cursor-pointer"
+                >
+                  Open in Google Maps
+                </a>
+                <button
+                  onClick={() => {
+                    const task = selectedTask;
+                    setSelectedTask(null);
+                    setActiveTask(task);
+                  }}
+                  className="flex-1 py-3 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors cursor-pointer"
+                >
+                  Verify OTP
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

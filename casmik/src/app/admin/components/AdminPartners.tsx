@@ -20,8 +20,21 @@ const docLabels = [
   { key: 'bankProof', label: 'Bank Proof', icon: '🏦' },
 ];
 
+const getInitialPartners = (): typeof partners => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('casmik_partners_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+  }
+  return partners;
+};
+
 export default function AdminPartners() {
-  const [partnerList, setPartnerList] = useState(partners);
+  const [partnerList, setPartnerList] = useState(getInitialPartners);
   const [query, setQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selected, setSelected] = useState<typeof partners[0] | null>(null);
@@ -34,9 +47,29 @@ export default function AdminPartners() {
     (activeTab === 'all' || (activeTab === 'pending' && p.status === 'pending') || (activeTab === 'unapproved' && (p.status === 'pending' || p.status === 'suspended')))
   );
 
-  const handleApprove = (id: string) => setPartnerList(prev => prev.map(p => p.id === id ? { ...p, status: 'active' as const } : p));
-  const handleSuspend = (id: string) => setPartnerList(prev => prev.map(p => p.id === id ? { ...p, status: 'suspended' as const } : p));
-  const handleReject = (id: string) => setPartnerList(prev => prev.map(p => p.id === id ? { ...p, status: 'suspended' as const } : p));
+  const handleApprove = (id: string) => {
+    setPartnerList(prev => {
+      const updated = prev.map(p => p.id === id ? { ...p, status: 'active' as const } : p);
+      if (typeof window !== 'undefined') localStorage.setItem('casmik_partners_v1', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleSuspend = (id: string) => {
+    setPartnerList(prev => {
+      const updated = prev.map(p => p.id === id ? { ...p, status: 'suspended' as const } : p);
+      if (typeof window !== 'undefined') localStorage.setItem('casmik_partners_v1', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleReject = (id: string) => {
+    setPartnerList(prev => {
+      const updated = prev.map(p => p.id === id ? { ...p, status: 'suspended' as const } : p);
+      if (typeof window !== 'undefined') localStorage.setItem('casmik_partners_v1', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   const pendingCount = partnerList.filter(p => p.status === 'pending').length;
 

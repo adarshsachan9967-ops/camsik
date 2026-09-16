@@ -25,8 +25,21 @@ const extendedAgents = [
   { id: 'delivery-006', name: 'Priya Sharma', phone: '9876501234', email: 'priya.d@casmik.com', city: 'Delhi', pinCodes: ['110070', '110001'], status: 'offline' as const, rating: 0, todayPickups: 0, todayDeliveries: 0, totalDeliveries: 0, earnings: 0, vehicle: 'Bike', vehicleNumber: 'DL01AA0001', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80', joinedAt: '2024-12-20', approvalStatus: 'pending' },
 ];
 
+const getInitialAgents = () => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('casmik_delivery_agents_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+  }
+  return extendedAgents.map(a => ({ ...a, approvalStatus: (a as any).approvalStatus || 'approved' }));
+};
+
 export default function AdminDelivery() {
-  const [agents, setAgents] = useState(extendedAgents.map(a => ({ ...a, approvalStatus: (a as any).approvalStatus || 'approved' })));
+  const [agents, setAgents] = useState(getInitialAgents);
   const [query, setQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [docModal, setDocModal] = useState<typeof agents[0] | null>(null);
@@ -43,8 +56,21 @@ export default function AdminDelivery() {
   const statusColors = { online: 'bg-green-100 text-green-700', offline: 'bg-gray-100 text-gray-600', on_trip: 'bg-blue-100 text-blue-700' };
   const statusDots = { online: 'bg-green-500', offline: 'bg-gray-400', on_trip: 'bg-blue-500' };
 
-  const handleApprove = (id: string) => setAgents(prev => prev.map(a => a.id === id ? { ...a, approvalStatus: 'approved' } : a));
-  const handleReject = (id: string) => setAgents(prev => prev.map(a => a.id === id ? { ...a, approvalStatus: 'rejected' } : a));
+  const handleApprove = (id: string) => {
+    setAgents(prev => {
+      const updated = prev.map(a => a.id === id ? { ...a, approvalStatus: 'approved' } : a);
+      if (typeof window !== 'undefined') localStorage.setItem('casmik_delivery_agents_v1', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleReject = (id: string) => {
+    setAgents(prev => {
+      const updated = prev.map(a => a.id === id ? { ...a, approvalStatus: 'rejected' } : a);
+      if (typeof window !== 'undefined') localStorage.setItem('casmik_delivery_agents_v1', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   const pendingCount = agents.filter(a => a.approvalStatus === 'pending').length;
 

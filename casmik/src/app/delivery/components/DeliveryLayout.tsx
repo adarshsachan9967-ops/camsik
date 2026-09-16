@@ -2,10 +2,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import type { DeliverySection } from '../page';
-import { LayoutDashboard, Package, DollarSign, User, Bell, MessageSquare } from 'lucide-react';
-import { deliveryAgents } from '@/lib/casmikData';
-
-const agent = deliveryAgents[0];
+import { LayoutDashboard, Package, DollarSign, User, Bell, MessageSquare, LogOut } from 'lucide-react';
+import { deliveryAgents, DeliveryAgent } from '@/lib/casmikData';
 
 interface NavItem { id: DeliverySection; icon: React.ElementType; label: string; badge?: number; }
 const navItems: NavItem[] = [
@@ -16,30 +14,45 @@ const navItems: NavItem[] = [
   { id: 'profile', icon: User, label: 'Profile' },
 ];
 
-interface Props { activeSection: DeliverySection; onSectionChange: (s: DeliverySection) => void; children: React.ReactNode; }
+interface Props {
+  activeSection: DeliverySection;
+  onSectionChange: (s: DeliverySection) => void;
+  children: React.ReactNode;
+  currentAgent?: DeliveryAgent | null;
+}
 
-export default function DeliveryLayout({ activeSection, onSectionChange, children }: Props) {
-  const [isOnline, setIsOnline] = useState(agent.status !== 'offline');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+export default function DeliveryLayout({ activeSection, onSectionChange, children, currentAgent }: Props) {
+  const agent: DeliveryAgent = currentAgent || (typeof window !== 'undefined' && localStorage.getItem('casmik_delivery_session')
+    ? JSON.parse(localStorage.getItem('casmik_delivery_session')!)
+    : deliveryAgents[0]);
+
+  const [isOnline, setIsOnline] = useState(agent?.status !== 'offline');
+
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('casmik_delivery_session');
+      window.location.href = '/delivery/login';
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen bg-[#f8f9fb] overflow-hidden font-sans">
       {/* Top Header */}
       <header className="bg-white border-b border-gray-100 flex-shrink-0">
-        <div className="flex items-center px-4 h-16 gap-4">
-          <div className="flex items-center gap-3 flex-1">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
+        <div className="flex items-center px-4 h-16 gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
               <span className="text-white font-black text-sm">C</span>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="font-black text-gray-900 text-sm leading-none">CAMSIK</p>
-              <p className="text-xs text-gray-400 leading-none">Delivery Agent</p>
+              <p className="text-xs text-gray-400 leading-none truncate">Delivery Executive</p>
             </div>
           </div>
 
           {/* Online/Offline Toggle */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-gray-500">{isOnline ? 'Online' : 'Offline'}</span>
+            <span className="text-xs font-bold text-gray-500 hidden sm:inline">{isOnline ? 'Online' : 'Offline'}</span>
             <button onClick={() => setIsOnline(o => !o)}
               className={`relative w-12 h-6 rounded-full transition-all duration-300 ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`}>
               <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300 ${isOnline ? 'left-6' : 'left-0.5'}`} />
@@ -51,21 +64,35 @@ export default function DeliveryLayout({ activeSection, onSectionChange, childre
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
           </button>
 
-          <div className="flex items-center gap-2">
-            <img src={agent.avatar} alt={agent.name} className="w-8 h-8 rounded-full object-cover" />
-            <div className="hidden sm:block">
-              <p className="text-xs font-bold text-gray-900 leading-none">{agent.name}</p>
-              <p className="text-xs text-gray-400 leading-none">⭐ {agent.rating}</p>
+          <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-2.5 py-1.5 border border-gray-100">
+            {agent?.avatar ? (
+              <img src={agent.avatar} alt={agent.name} className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                {agent?.name?.[0] || 'D'}
+              </div>
+            )}
+            <div className="hidden sm:block min-w-0">
+              <p className="text-xs font-bold text-gray-900 leading-none truncate">{agent?.name}</p>
+              <p className="text-[10px] text-gray-400 leading-none mt-0.5">⭐ {agent?.rating || '5.0'}</p>
             </div>
           </div>
 
-          <Link href="/admin/login" className="hidden sm:block text-xs text-gray-400 hover:text-primary">Admin</Link>
-          <Link href="/partner" className="hidden sm:block text-xs text-gray-400 hover:text-primary">Partner</Link>
-          <Link href="/delivery/login" className="hidden sm:block text-xs font-semibold text-primary border border-primary/30 rounded-lg px-2 py-1 hover:bg-primary/5">Sign In</Link>
+          <Link href="/admin" className="hidden md:block text-xs text-gray-400 hover:text-primary">Admin</Link>
+          <Link href="/partner" className="hidden md:block text-xs text-gray-400 hover:text-primary">Partner</Link>
+
+          <button
+            onClick={handleLogout}
+            className="text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg px-2.5 py-1.5 transition-colors flex items-center gap-1 border border-red-200"
+            title="Sign Out"
+          >
+            <LogOut size={13} />
+            <span className="hidden sm:inline">Sign Out</span>
+          </button>
         </div>
 
         {/* Status Bar */}
-        <div className={`px-4 py-2 text-xs font-bold text-center transition-all ${isOnline ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
+        <div className={`px-4 py-1.5 text-xs font-bold text-center transition-all ${isOnline ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
           {isOnline ? '🟢 You are ONLINE — Ready to receive tasks' : '⚫ You are OFFLINE — Go online to receive tasks'}
         </div>
       </header>

@@ -220,23 +220,27 @@ export default function PartnerOrders() {
 
           <div className="space-y-3">
             {filtered.map((order) => (
-              <div key={order.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow">
+              <div
+                key={order.id}
+                onClick={() => setSelectedOrder(order)}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group"
+              >
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-black text-gray-500">{order.orderNumber}</span>
+                      <span className="text-xs font-black text-gray-500 group-hover:text-primary transition-colors">{order.orderNumber}</span>
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-lg capitalize ${getTypeColor(order.type)}`}>{order.type}</span>
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${getOrderStatusColor(order.status)}`}>{getOrderStatusLabel(order.status)}</span>
                     </div>
-                    <p className="text-sm font-bold text-gray-900">{order.deviceName}</p>
+                    <p className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">{order.deviceName}</p>
                   </div>
                   <p className="text-lg font-black text-gray-900">₹{order.quotedPrice.toLocaleString('en-IN')}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
                   <div className="flex items-center gap-1.5 text-gray-600">
-                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs flex-shrink-0">
-                      {order.customerName[0]}
+                    <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0">
+                      {order.customerName ? order.customerName[0] : 'C'}
                     </div>
                     <div>
                       <p className="font-semibold text-gray-800">{order.customerName}</p>
@@ -244,7 +248,7 @@ export default function PartnerOrders() {
                     </div>
                   </div>
                   <div className="flex items-start gap-1.5 text-gray-600">
-                    <MapPin size={12} className="mt-0.5 flex-shrink-0" />
+                    <MapPin size={12} className="mt-0.5 flex-shrink-0 text-primary" />
                     <div>
                       <p className="font-semibold text-gray-800">{order.city}</p>
                       <p className="text-gray-400">PIN: {order.pinCode}</p>
@@ -252,31 +256,63 @@ export default function PartnerOrders() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                  <span>📅 Pickup: {order.pickupDate}</span>
-                  <span>🕐 {order.pickupSlot}</span>
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-3 bg-gray-50/70 px-3 py-1.5 rounded-xl">
+                  <span>📅 Pickup: <strong>{order.pickupDate || 'Flexible'}</strong></span>
+                  <span>🕐 {order.pickupSlot || '10:00 AM - 1:00 PM'}</span>
                 </div>
 
-                <div className="flex gap-2">
-                  <button onClick={() => setSelectedOrder(order)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50">
-                    <Eye size={12} /> Details
+                <div className="flex items-center gap-2 pt-1 border-t border-gray-50">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedOrder(order);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-primary hover:text-white hover:border-primary transition-colors cursor-pointer"
+                  >
+                    <Eye size={13} /> Details
                   </button>
-                  <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50">
-                    <Phone size={12} /> Call
-                  </button>
+                  <a
+                    href={`tel:${order.customerPhone}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-300 transition-colors cursor-pointer"
+                  >
+                    <Phone size={13} /> Call
+                  </a>
                   {order.status === 'assigned' && (
                     <>
-                      <button onClick={() => handleAccept(order.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green-500 text-white text-xs font-bold hover:bg-green-600">
-                        <CheckCircle size={12} /> Accept
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAccept(order.id);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green-500 text-white text-xs font-bold hover:bg-green-600 cursor-pointer shadow-sm shadow-green-500/20"
+                      >
+                        <CheckCircle size={13} /> Accept
                       </button>
-                      <button onClick={() => handleReject(order.id)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100">
-                        <XCircle size={12} /> Reject
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReject(order.id);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 cursor-pointer"
+                      >
+                        <XCircle size={13} /> Reject
                       </button>
                     </>
                   )}
                   {order.status === 'accepted' && (
-                    <button onClick={() => handlePickup(order.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90">
-                      <Truck size={12} /> Start Pickup
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePickup(order.id);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90 cursor-pointer shadow-sm shadow-primary/20"
+                    >
+                      <Truck size={13} /> Start Pickup
                     </button>
                   )}
                 </div>
@@ -292,34 +328,127 @@ export default function PartnerOrders() {
 
           {selectedOrder && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedOrder(null)} />
-              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 z-10 max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-lg font-black text-gray-900">{selectedOrder.orderNumber}</h3>
-                  <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-xl hover:bg-gray-100"><X size={18} /></button>
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedOrder(null)} />
+              <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 z-10 max-h-[90vh] overflow-y-auto border border-gray-100">
+                <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
+                  <div>
+                    <span className="text-xs font-bold text-gray-400">Order Details</span>
+                    <h3 className="text-lg font-black text-gray-900">{selectedOrder.orderNumber}</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-lg capitalize ${getTypeColor(selectedOrder.type)}`}>
+                      {selectedOrder.type}
+                    </span>
+                    <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 cursor-pointer">
+                      <X size={18} />
+                    </button>
+                  </div>
                 </div>
+
                 <div className="space-y-4">
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-xs font-bold text-gray-500 mb-2">Device</p>
-                    <p className="font-bold text-gray-900">{selectedOrder.deviceName}</p>
-                    <p className="text-sm text-gray-500">{selectedOrder.deviceColor} · {selectedOrder.deviceStorage}</p>
+                  {/* Status Banner */}
+                  <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-2xl">
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Order Status</p>
+                      <p className="font-bold text-sm text-gray-900 mt-0.5">{getOrderStatusLabel(selectedOrder.status)}</p>
+                    </div>
+                    <span className={`text-xs font-bold px-3 py-1 rounded-xl ${getOrderStatusColor(selectedOrder.status)}`}>
+                      {selectedOrder.status.replace(/_/g, ' ')}
+                    </span>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-xs font-bold text-gray-500 mb-2">Customer</p>
-                    <p className="font-bold text-gray-900">{selectedOrder.customerName}</p>
-                    <p className="text-sm text-gray-500">{selectedOrder.customerPhone}</p>
-                    <p className="text-sm text-gray-500">{selectedOrder.customerAddress}</p>
+
+                  {/* Device Info */}
+                  <div className="bg-gray-50 rounded-2xl p-4">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Device Information</p>
+                    <p className="font-black text-gray-900 text-base">{selectedOrder.deviceName}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {selectedOrder.deviceBrand} · {selectedOrder.deviceModel} · {selectedOrder.deviceStorage} · {selectedOrder.deviceColor}
+                    </p>
                   </div>
-                  <div className="bg-green-50 rounded-xl p-4">
-                    <p className="text-xs font-bold text-gray-500 mb-1">Quoted Price</p>
-                    <p className="text-2xl font-black text-green-700">₹{selectedOrder.quotedPrice.toLocaleString('en-IN')}</p>
+
+                  {/* Customer Info */}
+                  <div className="bg-gray-50 rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Customer Details</p>
+                      <a
+                        href={`tel:${selectedOrder.customerPhone}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold hover:bg-green-200 transition-colors"
+                      >
+                        <Phone size={12} /> Call Customer
+                      </a>
+                    </div>
+                    <p className="font-bold text-gray-900 text-sm">{selectedOrder.customerName}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{selectedOrder.customerPhone} {selectedOrder.customerEmail ? `· ${selectedOrder.customerEmail}` : ''}</p>
+                    <p className="text-xs text-gray-700 mt-2 bg-white p-2.5 rounded-xl border border-gray-200/70">
+                      📍 {selectedOrder.customerAddress}, {selectedOrder.city} - {selectedOrder.pinCode}
+                    </p>
                   </div>
+
+                  {/* Schedule & Price */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-3.5">
+                      <p className="text-xs font-bold text-blue-700 mb-1">Pickup Slot</p>
+                      <p className="font-bold text-gray-900 text-sm">{selectedOrder.pickupDate || 'Today'}</p>
+                      <p className="text-xs text-gray-500">{selectedOrder.pickupSlot || '10 AM - 1 PM'}</p>
+                    </div>
+                    <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-3.5">
+                      <p className="text-xs font-bold text-emerald-700 mb-1">Quoted Price</p>
+                      <p className="text-xl font-black text-emerald-700">₹{selectedOrder.quotedPrice.toLocaleString('en-IN')}</p>
+                      {selectedOrder.finalPrice > 0 && selectedOrder.finalPrice !== selectedOrder.quotedPrice && (
+                        <p className="text-xs text-gray-500">Final: ₹{selectedOrder.finalPrice.toLocaleString('en-IN')}</p>
+                      )}
+                    </div>
+                  </div>
+
                   {selectedOrder.notes && (
-                    <div className="bg-yellow-50 rounded-xl p-4">
-                      <p className="text-xs font-bold text-gray-500 mb-1">Notes</p>
-                      <p className="text-sm text-gray-700">{selectedOrder.notes}</p>
+                    <div className="bg-amber-50/60 border border-amber-100 rounded-2xl p-3.5">
+                      <p className="text-xs font-bold text-amber-800 mb-1">Notes / Instructions</p>
+                      <p className="text-xs text-amber-900">{selectedOrder.notes}</p>
                     </div>
                   )}
+
+                  {/* Order Actions inside Modal */}
+                  <div className="pt-2 border-t border-gray-100 flex gap-2">
+                    {selectedOrder.status === 'assigned' && (
+                      <>
+                        <button
+                          onClick={() => {
+                            handleAccept(selectedOrder.id);
+                            setSelectedOrder(prev => prev ? { ...prev, status: 'accepted' } : null);
+                          }}
+                          className="flex-1 py-3 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition-colors shadow-sm cursor-pointer"
+                        >
+                          Accept Order
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleReject(selectedOrder.id);
+                            setSelectedOrder(prev => prev ? { ...prev, status: 'rejected' } : null);
+                          }}
+                          className="px-4 py-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors cursor-pointer"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    {selectedOrder.status === 'accepted' && (
+                      <button
+                        onClick={() => {
+                          handlePickup(selectedOrder.id);
+                          setSelectedOrder(prev => prev ? { ...prev, status: 'picked_up' } : null);
+                        }}
+                        className="flex-1 py-3 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm cursor-pointer"
+                      >
+                        Start Pickup
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setSelectedOrder(null)}
+                      className="flex-1 py-3 border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors cursor-pointer"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

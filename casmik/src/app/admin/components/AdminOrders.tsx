@@ -289,9 +289,13 @@ export default function AdminOrders() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {filtered.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr
+                      key={order.id}
+                      onClick={() => setSelectedOrder(order)}
+                      className="hover:bg-primary/5 transition-colors cursor-pointer group"
+                    >
                       <td className="px-5 py-3.5">
-                        <p className="font-bold text-gray-900 text-xs">{order.orderNumber}</p>
+                        <p className="font-bold text-gray-900 text-xs group-hover:text-primary transition-colors">{order.orderNumber}</p>
                         <p className="text-xs text-gray-400">{order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN') : ''}</p>
                       </td>
                       <td className="px-4 py-3.5">
@@ -324,12 +328,22 @@ export default function AdminOrders() {
                         )}
                       </td>
                       <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-1.5">
-                          <button onClick={() => setSelectedOrder(order)} className="p-1.5 rounded-lg bg-gray-100 hover:bg-primary hover:text-white transition-colors" title="View Details">
+                        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrder(order)}
+                            className="p-1.5 rounded-lg bg-gray-100 hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                            title="View Details"
+                          >
                             <Eye size={13} />
                           </button>
                           {!order.partnerId && (
-                            <button onClick={() => setAssignModal(order)} className="p-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-500 hover:text-white transition-colors" title="Assign Partner">
+                            <button
+                              type="button"
+                              onClick={() => setAssignModal(order)}
+                              className="p-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-500 hover:text-white transition-colors cursor-pointer"
+                              title="Assign Partner"
+                            >
                               <UserCheck size={13} />
                             </button>
                           )}
