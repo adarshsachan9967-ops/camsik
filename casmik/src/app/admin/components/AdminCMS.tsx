@@ -21,6 +21,7 @@ import {
   Mail,
   MapPin
 } from 'lucide-react';
+import ImageUploadField from '@/components/ui/ImageUploadField';
 
 type CMSSection = 'website' | 'app' | 'partner' | 'delivery';
 type CMSModule = 'logo' | 'banners' | 'hero' | 'stats' | 'why' | 'howItWorks' | 'testimonials' | 'faqs' | 'footer';
@@ -552,6 +553,7 @@ export default function AdminCMS() {
   // Modals for Adding / Editing
   const [bannerModalOpen, setBannerModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<BannerItem | null>(null);
+  const [bannerImage, setBannerImage] = useState('/assets/images/categories/smartphone.png');
 
   const [whyModalOpen, setWhyModalOpen] = useState(false);
   const [editingWhy, setEditingWhy] = useState<WhyItem | null>(null);
@@ -986,6 +988,7 @@ export default function AdminCMS() {
                 <button
                   onClick={() => {
                     setEditingBanner(null);
+                    setBannerImage('/assets/images/categories/smartphone.png');
                     setBannerModalOpen(true);
                   }}
                   className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/30"
@@ -1030,6 +1033,7 @@ export default function AdminCMS() {
                       <button
                         onClick={() => {
                           setEditingBanner(b);
+                          setBannerImage(b.image || '/assets/images/categories/smartphone.png');
                           setBannerModalOpen(true);
                         }}
                         className="p-2 rounded-xl bg-white border border-gray-200 hover:border-primary hover:text-primary text-gray-600 transition-colors shadow-sm"
@@ -1822,15 +1826,14 @@ export default function AdminCMS() {
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-gray-700 mb-1 block">Image URL / Asset Path</label>
-                <input
-                  name="image"
-                  defaultValue={editingBanner?.image || '/assets/images/categories/smartphone.png'}
-                  required
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono text-xs"
-                />
-              </div>
+              <input type="hidden" name="image" value={bannerImage} />
+              <ImageUploadField
+                label="Image URL / Asset Path"
+                value={bannerImage}
+                onChange={setBannerImage}
+                placeholder="/assets/images/categories/... or click Upload"
+                folder="banners"
+              />
 
               <div className="flex items-center gap-2 pt-2">
                 <input

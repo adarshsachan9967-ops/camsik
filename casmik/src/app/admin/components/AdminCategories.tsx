@@ -2,9 +2,23 @@
 import React, { useState } from 'react';
 import { categories } from '@/lib/casmikData';
 import { Plus, Edit2, ToggleLeft, ToggleRight, Search, Package } from 'lucide-react';
+import ImageUploadField from '@/components/ui/ImageUploadField';
+
+const getInitialCats = (): typeof categories => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('casmik_categories_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+  }
+  return categories;
+};
 
 export default function AdminCategories() {
-  const [cats, setCats] = useState(categories);
+  const [cats, setCats] = useState(getInitialCats);
   const [query, setQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingCat, setEditingCat] = useState<typeof categories[0] | null>(null);
@@ -13,7 +27,11 @@ export default function AdminCategories() {
   const filtered = cats.filter(c => c.name.toLowerCase().includes(query.toLowerCase()));
 
   const handleToggle = (id: string) => {
-    setCats(prev => prev.map(c => c.id === id ? { ...c, active: !c.active } : c));
+    setCats(prev => {
+      const updated = prev.map(c => c.id === id ? { ...c, active: !c.active } : c);
+      if (typeof window !== 'undefined') localStorage.setItem('casmik_categories_v1', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleEdit = (cat: typeof categories[0]) => {
@@ -23,12 +41,15 @@ export default function AdminCategories() {
   };
 
   const handleSave = () => {
+    let updated: typeof categories;
     if (editingCat) {
-      setCats(prev => prev.map(c => c.id === editingCat.id ? { ...c, ...form } : c));
+      updated = cats.map(c => c.id === editingCat.id ? { ...c, ...form } : c);
     } else {
       const newCat = { ...form, id: `cat-${Date.now()}`, slug: form.name.toLowerCase().replace(/\s+/g, '-'), alt: form.name, brandCount: 0, modelCount: 0, active: true, sortOrder: cats.length + 1 };
-      setCats(prev => [...prev, newCat]);
+      updated = [...cats, newCat];
     }
+    setCats(updated);
+    if (typeof window !== 'undefined') localStorage.setItem('casmik_categories_v1', JSON.stringify(updated));
     setShowModal(false);
     setEditingCat(null);
     setForm({ name: '', description: '', icon: '📱', image: '' });
@@ -113,11 +134,13 @@ export default function AdminCategories() {
                 <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Short description..."
                   rows={2} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none" />
               </div>
-              <div>
-                <label className="text-xs font-bold text-gray-600 mb-1.5 block">Image URL</label>
-                <input value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))} placeholder="https://..."
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-              </div>
+              <ImageUploadField
+                label="Image URL"
+                value={form.image}
+                onChange={url => setForm(f => ({ ...f, image: url }))}
+                placeholder="/assets/images/categories/... or click Upload"
+                folder="categories"
+              />
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>

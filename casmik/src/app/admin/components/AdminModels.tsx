@@ -2,15 +2,40 @@
 import React, { useState } from 'react';
 import { deviceModels, brands, categories } from '@/lib/casmikData';
 import { Search, Plus, Edit2, Trash2, Package, ChevronDown } from 'lucide-react';
+import ImageUploadField from '@/components/ui/ImageUploadField';
+
+const getInitialModels = (): typeof deviceModels => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('casmik_models_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+  }
+  return deviceModels;
+};
+
+const defaultForm = {
+  name: '',
+  categoryId: categories[0]?.id || 'cat-smartphone',
+  brandId: brands[0]?.id || 'apple',
+  basePrice: 50000,
+  storageOptions: '128GB, 256GB, 512GB',
+  image: '',
+};
 
 export default function AdminModels() {
+  const [modelsList, setModelsList] = useState(getInitialModels);
   const [search, setSearch] = useState('');
   const [filterBrand, setFilterBrand] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editModel, setEditModel] = useState<string | null>(null);
+  const [form, setForm] = useState(defaultForm);
 
-  const filtered = deviceModels.filter(m => {
+  const filtered = modelsList.filter(m => {
     const matchSearch = m.name.toLowerCase().includes(search.toLowerCase());
     const matchBrand = filterBrand === 'all' || m.brandId === filterBrand;
     const matchCat = filterCategory === 'all' || m.categoryId === filterCategory;
@@ -20,16 +45,78 @@ export default function AdminModels() {
   const getBrandName = (brandId: string) => brands.find(b => b.id === brandId)?.name || brandId;
   const getCategoryName = (catId: string) => categories.find(c => c.id === catId)?.name || catId;
 
+  const handleOpenAdd = () => {
+    setEditModel(null);
+    setForm(defaultForm);
+    setShowAddModal(true);
+  };
+
+  const handleOpenEdit = (m: typeof deviceModels[0]) => {
+    setEditModel(m.id);
+    setForm({
+      name: m.name,
+      categoryId: m.categoryId,
+      brandId: m.brandId,
+      basePrice: m.basePrice,
+      storageOptions: m.storages.join(', '),
+      image: m.image,
+    });
+  };
+
+  const handleSave = () => {
+    const storagesArr = form.storageOptions.split(',').map(s => s.trim()).filter(Boolean);
+    let updated: typeof deviceModels;
+    if (editModel) {
+      updated = modelsList.map(m => m.id === editModel ? {
+        ...m,
+        name: form.name,
+        categoryId: form.categoryId,
+        brandId: form.brandId,
+        basePrice: Number(form.basePrice) || 0,
+        storages: storagesArr.length ? storagesArr : m.storages,
+        image: form.image,
+      } : m);
+    } else {
+      const newModel = {
+        id: `mod-${Date.now()}`,
+        brandId: form.brandId,
+        categoryId: form.categoryId,
+        name: form.name,
+        slug: form.name.toLowerCase().replace(/\s+/g, '-'),
+        basePrice: Number(form.basePrice) || 0,
+        image: form.image,
+        alt: form.name,
+        storages: storagesArr.length ? storagesArr : ['128GB', '256GB'],
+        colors: ['Default'],
+        active: true,
+        popular: false,
+      };
+      updated = [newModel, ...modelsList];
+    }
+    setModelsList(updated);
+    if (typeof window !== 'undefined') localStorage.setItem('casmik_models_v1', JSON.stringify(updated));
+    setShowAddModal(false);
+    setEditModel(null);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm('Are you sure you want to delete this model?')) {
+      const updated = modelsList.filter(m => m.id !== id);
+      setModelsList(updated);
+      if (typeof window !== 'undefined') localStorage.setItem('casmik_models_v1', JSON.stringify(updated));
+    }
+  };
+
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-black text-gray-900">Device Models</h2>
-          <p className="text-sm text-gray-500">{deviceModels.length} models across {brands.length} brands</p>
+          <p className="text-sm text-gray-500">{modelsList.length} models across {brands.length} brands</p>
         </div>
-        <button onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors">
+        <button onClick={handleOpenAdd}
+          className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 cursor-pointer">
           <Plus size={16} /> Add Model
         </button>
       </div>
@@ -111,11 +198,12 @@ export default function AdminModels() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setEditModel(model.id)}
-                        className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors" title="Edit">
+                      <button onClick={() => handleOpenEdit(model)}
+                        className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors cursor-pointer" title="Edit">
                         <Edit2 size={14} />
                       </button>
-                      <button className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors" title="Delete">
+                      <button onClick={() => handleDelete(model.id)}
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors cursor-pointer" title="Delete">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -136,46 +224,82 @@ export default function AdminModels() {
       {/* Add/Edit Modal */}
       {(showAddModal || editModel) && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-black text-gray-900 mb-4">{editModel ? 'Edit Model' : 'Add New Model'}</h3>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-gray-600 mb-1 block">Model Name</label>
-                <input defaultValue={editModel ? deviceModels.find(m => m.id === editModel)?.name : ''}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="e.g. iPhone 16 Pro Max" />
+                <label className="text-xs font-bold text-gray-600 mb-1 block">Model Name *</label>
+                <input
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. iPhone 16 Pro Max"
+                  required
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-gray-600 mb-1 block">Category</label>
-                  <select className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  <select
+                    value={form.categoryId}
+                    onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
+                  >
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-xs font-bold text-gray-600 mb-1 block">Brand</label>
-                  <select className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  <select
+                    value={form.brandId}
+                    onChange={e => setForm(f => ({ ...f, brandId: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
+                  >
                     {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="text-xs font-bold text-gray-600 mb-1 block">Base Price (₹)</label>
-                <input type="number" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="e.g. 75000" />
+                <input
+                  type="number"
+                  value={form.basePrice}
+                  onChange={e => setForm(f => ({ ...f, basePrice: Number(e.target.value) || 0 }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 75000"
+                />
               </div>
               <div>
                 <label className="text-xs font-bold text-gray-600 mb-1 block">Storage Options (comma separated)</label>
-                <input className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="128GB, 256GB, 512GB" />
+                <input
+                  value={form.storageOptions}
+                  onChange={e => setForm(f => ({ ...f, storageOptions: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="128GB, 256GB, 512GB"
+                />
               </div>
-              <div>
-                <label className="text-xs font-bold text-gray-600 mb-1 block">Image URL</label>
-                <input className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="https://..." />
-              </div>
+              <ImageUploadField
+                label="Image URL"
+                value={form.image}
+                onChange={url => setForm(f => ({ ...f, image: url }))}
+                placeholder="https://... or click Upload"
+                folder="models"
+              />
             </div>
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => { setShowAddModal(false); setEditModel(null); }}
-                className="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50">Cancel</button>
-              <button onClick={() => { setShowAddModal(false); setEditModel(null); }}
-                className="flex-1 bg-primary text-white py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90">
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => { setShowAddModal(false); setEditModel(null); }}
+                className="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={!form.name}
+                className="flex-1 bg-primary text-white py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-lg shadow-primary/20"
+              >
                 {editModel ? 'Save Changes' : 'Add Model'}
               </button>
             </div>
