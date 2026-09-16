@@ -57,9 +57,42 @@ export default function PartnerAuthPage() {
     );
 
     if (!partner) {
-      if (query === 'partner@casmik.com' || query === 'partner@camsik.com' || query === '9876543210') {
-        const demo = allPartners[0];
+      if (
+        query === 'partner@casmik.com' ||
+        query === 'partner@camsik.com' ||
+        query === 'rajesh@camera.com' ||
+        query === '9876543210' ||
+        query === 'contact@camerahub.in' ||
+        query === '9845012399'
+      ) {
+        const demo = allPartners[0] || partners[0];
         localStorage.setItem('casmik_partner_session', JSON.stringify(demo));
+        window.location.href = '/partner';
+        return;
+      }
+      if (query === 'newpartner@store.com' || query === 'pending@partner.com') {
+        const pendingDemo: Partner = {
+          id: 'partner-pending-01',
+          name: 'Vikram Mehta',
+          storeName: 'Mehta Electronics & Gadgets',
+          phone: '9876599999',
+          email: 'newpartner@store.com',
+          city: 'Pune',
+          state: 'Maharashtra',
+          pinCodes: ['411001'],
+          categories: ['Smartphones', 'Cameras'],
+          status: 'pending',
+          rating: 5.0,
+          totalOrders: 0,
+          completedOrders: 0,
+          totalEarnings: 0,
+          pendingPayout: 0,
+          availableBalance: 0,
+          joinedAt: new Date().toISOString().split('T')[0],
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80',
+          commission: 5.0,
+        };
+        localStorage.setItem('casmik_partner_session', JSON.stringify(pendingDemo));
         window.location.href = '/partner';
         return;
       }
@@ -224,7 +257,7 @@ export default function PartnerAuthPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setSiEmail('rajesh@camera.com');
+                        setSiEmail('contact@camerahub.in');
                         setSiPassword('Partner@123');
                         setError(null);
                       }}
@@ -233,7 +266,7 @@ export default function PartnerAuthPage() {
                       <p className="font-bold text-gray-800 flex items-center gap-1">
                         <KeyRound size={12} className="text-primary" /> Active Partner
                       </p>
-                      <p className="text-gray-400 truncate">rajesh@camera.com</p>
+                      <p className="text-gray-400 truncate">contact@camerahub.in</p>
                     </button>
                     <button
                       type="button"
