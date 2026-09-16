@@ -47,7 +47,7 @@ const slides: HeroSlide[] = [
     categoryFilter: 'cat-smartphone',
     bgGradient: 'from-blue-950 via-slate-900 to-indigo-950',
     accentColor: '#3b82f6',
-    image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=600&q=80',
+    image: '/assets/images/categories/smartphone.png',
     imageAlt: 'Sell Used Smartphones and iPhones on Camsik',
     stats: [
       { label: 'Smartphones Sold', value: '3,20,000+' },
@@ -68,7 +68,7 @@ const slides: HeroSlide[] = [
     categoryFilter: 'cat-laptop',
     bgGradient: 'from-violet-950 via-slate-900 to-purple-950',
     accentColor: '#8b5cf6',
-    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&q=80',
+    image: '/assets/images/categories/laptop.png',
     imageAlt: 'Sell Laptops and MacBooks on Camsik',
     stats: [
       { label: 'Laptops Liquidated', value: '95,000+' },
@@ -89,7 +89,7 @@ const slides: HeroSlide[] = [
     categoryFilter: 'cat-tablet',
     bgGradient: 'from-cyan-950 via-slate-900 to-teal-950',
     accentColor: '#06b6d4',
-    image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=600&q=80',
+    image: '/assets/images/categories/tablet.png',
     imageAlt: 'Sell Apple iPad and Android Tablets on Camsik',
     stats: [
       { label: 'Tablets Purchased', value: '62,000+' },

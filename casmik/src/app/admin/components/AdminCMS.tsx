@@ -53,9 +53,9 @@ const sampleTestimonials = [
 
 
 const sampleBanners = [
-  { id: 1, title: 'Sell Your Smartphone & iPhone', subtitle: 'Get up to ₹1,25,000 instant cash', cta: 'Sell Smartphone', active: true, image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&q=80' },
-  { id: 2, title: 'Top Resale for Laptops & MacBooks', subtitle: 'Apple MacBook, Dell XPS & ThinkPad in 15 mins', cta: 'Sell Laptop', active: true, image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=300&q=80' },
-  { id: 3, title: 'Instant Cash for iPads & Tablets', subtitle: 'Certified evaluation for iPad Pro & Galaxy Tab', cta: 'Sell Tablet', active: true, image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=300&q=80' },
+  { id: 1, title: 'Sell Your Smartphone & iPhone', subtitle: 'Get up to ₹1,25,000 instant cash', cta: 'Sell Smartphone', active: true, image: '/assets/images/categories/smartphone.png' },
+  { id: 2, title: 'Top Resale for Laptops & MacBooks', subtitle: 'Apple MacBook, Dell XPS & ThinkPad in 15 mins', cta: 'Sell Laptop', active: true, image: '/assets/images/categories/laptop.png' },
+  { id: 3, title: 'Instant Cash for iPads & Tablets', subtitle: 'Certified evaluation for iPad Pro & Galaxy Tab', cta: 'Sell Tablet', active: true, image: '/assets/images/categories/tablet.png' },
   { id: 4, title: 'Sell DSLR & Mirrorless Cameras', subtitle: 'Sony, Canon, Nikon & LUMIX gear for spot cash', cta: 'Sell Camera', active: true, image: 'https://camsik.com/img/Category/a44c5d48-0f22-4db2-bef9-f0edb0fb54f7.png' },
   { id: 5, title: 'Buy Certified Refurbished', subtitle: 'Up to 60% off with 12 months warranty', cta: 'Shop Refurbished', active: true, image: 'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=300&q=80' },
   { id: 6, title: 'Exchange & Save More', subtitle: 'Trade your old tech & pay only the difference', cta: 'Exchange Now', active: false, image: 'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=300&q=80' },

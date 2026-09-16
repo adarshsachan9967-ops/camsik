@@ -59,9 +59,9 @@ export default function AdminCategories() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filtered.map((cat) => (
           <div key={cat.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all hover:shadow-md ${cat.active ? 'border-gray-100' : 'border-gray-200 opacity-60'}`}>
-            <div className="relative h-32 overflow-hidden">
-              <img src={cat.image} alt={cat.alt} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            <div className="relative h-32 overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100 flex items-center justify-center p-3">
+              <img src={cat.image} alt={cat.alt} className="max-w-full max-h-full object-contain filter drop-shadow-sm" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
               <div className="absolute bottom-2 left-3 flex items-center gap-2">
                 <span className="text-2xl">{cat.icon}</span>
                 <span className="text-white font-bold text-sm">{cat.name}</span>
