@@ -16,7 +16,7 @@ import AppDownloadCTA from '@/app/components/AppDownloadCTA';
 
 export default function CustomerHomePage() {
   return (
-    <main className="min-h-screen bg-background flex flex-col">
+    <main className="min-h-screen bg-background flex flex-col overflow-x-hidden w-full max-w-full">
       <CustomerHeader />
       
       {/* Carousel 1: Hero Banner Promo Carousel with search & live navigation */}

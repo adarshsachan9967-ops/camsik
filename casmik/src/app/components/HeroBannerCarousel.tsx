@@ -212,18 +212,18 @@ export default function HeroBannerCarousel() {
 
   return (
     <section
-      className="relative overflow-hidden pt-3 sm:pt-4 select-none"
+      className="relative overflow-hidden pt-2 sm:pt-4 select-none w-full max-w-full"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
       {/* Slide Canvas */}
-      <div className={`relative min-h-[580px] sm:min-h-[520px] lg:min-h-[580px] bg-gradient-to-br ${activeSlide.bgGradient} transition-all duration-700 flex items-center`}>
+      <div className={`relative min-h-[520px] sm:min-h-[520px] lg:min-h-[580px] bg-gradient-to-br ${activeSlide.bgGradient} transition-all duration-700 flex items-center overflow-hidden`}>
         {/* Subtle Decorative Glows */}
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
-        <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10 py-12 lg:py-16 w-full relative z-10">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-12 lg:py-16 w-full relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             {/* Left Content Column */}
             <div className="lg:col-span-7 xl:col-span-7 space-y-6 animate-in fade-in slide-in-from-left-4 duration-500 key={activeSlide.id}">
@@ -234,7 +234,7 @@ export default function HeroBannerCarousel() {
               </div>
 
               {/* Title */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black text-white leading-tight tracking-tight text-balance">
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl xl:text-6xl font-black text-white leading-tight tracking-tight text-balance">
                 {activeSlide.titlePrefix}
                 <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-300 bg-clip-text text-transparent">
                   {activeSlide.titleHighlight}
@@ -243,7 +243,7 @@ export default function HeroBannerCarousel() {
               </h1>
 
               {/* Description */}
-              <p className="text-sm sm:text-base lg:text-lg text-slate-300 max-w-xl leading-relaxed">
+              <p className="text-xs sm:text-base lg:text-lg text-slate-300 max-w-xl leading-relaxed">
                 {activeSlide.description}
               </p>
 
@@ -251,24 +251,26 @@ export default function HeroBannerCarousel() {
               <div className="space-y-4 pt-2 max-w-xl">
                 {/* Search Bar on Hero */}
                 <div className="relative">
-                  <div className="flex items-center bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-1.5 shadow-2xl focus-within:bg-white/20 focus-within:border-purple-400 transition-all">
-                    <Search className="w-5 h-5 text-purple-300 ml-3 flex-shrink-0" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value);
-                        setSearchDropdown(true);
-                      }}
-                      onFocus={() => {
-                        if (searchQuery) setSearchDropdown(true);
-                      }}
-                      placeholder="Search your camera model (e.g. Sony A7 III, Nikon Z30...)"
-                      className="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-slate-300 focus:outline-none"
-                    />
+                  <div className="flex flex-col sm:flex-row sm:items-center bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-1.5 shadow-2xl focus-within:bg-white/20 focus-within:border-purple-400 transition-all gap-1.5 sm:gap-0">
+                    <div className="flex items-center flex-1 min-w-0">
+                      <Search className="w-5 h-5 text-purple-300 ml-2.5 sm:ml-3 flex-shrink-0" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setSearchDropdown(true);
+                        }}
+                        onFocus={() => {
+                          if (searchQuery) setSearchDropdown(true);
+                        }}
+                        placeholder="Search model (e.g. iPhone 16, MacBook, Sony A7...)"
+                        className="w-full min-w-0 bg-transparent px-2.5 sm:px-3 py-2 text-sm text-white placeholder:text-slate-300 focus:outline-none"
+                      />
+                    </div>
                     <Link
                       href={activeSlide.ctaLink}
-                      className="px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-purple-600/30 whitespace-nowrap transition-all flex items-center gap-1.5 hover:gap-2.5"
+                      className="w-full sm:w-auto justify-center px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-purple-600/30 whitespace-nowrap transition-all flex items-center gap-1.5 hover:gap-2.5"
                     >
                       <span>{activeSlide.ctaText}</span>
                       <ArrowRight size={15} />
@@ -323,11 +325,11 @@ export default function HeroBannerCarousel() {
               </div>
 
               {/* Stats Counters on Slide */}
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/10 max-w-xl">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-4 border-t border-white/10 max-w-xl">
                 {activeSlide.stats.map((st) => (
-                  <div key={st.label}>
-                    <p className="text-lg sm:text-xl lg:text-2xl font-black text-white">{st.value}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{st.label}</p>
+                  <div key={st.label} className="min-w-0">
+                    <p className="text-base sm:text-xl lg:text-2xl font-black text-white truncate">{st.value}</p>
+                    <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate">{st.label}</p>
                   </div>
                 ))}
               </div>
@@ -335,14 +337,14 @@ export default function HeroBannerCarousel() {
 
             {/* Right Visual / Camera Showcase */}
             <div className="lg:col-span-5 xl:col-span-5 flex justify-center items-center relative animate-in fade-in zoom-in-95 duration-500">
-              <div className="relative w-full max-w-[420px] aspect-square flex items-center justify-center">
+              <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-square flex items-center justify-center mx-auto">
                 {/* Glowing Orbit Rings */}
                 <div className="absolute inset-0 rounded-full border border-purple-500/20 animate-spin [animation-duration:30s] pointer-events-none" />
                 <div className="absolute inset-6 rounded-full border border-dashed border-indigo-500/30 animate-spin [animation-duration:20s] [animation-direction:reverse] pointer-events-none" />
                 <div className="absolute inset-16 rounded-full bg-gradient-to-tr from-purple-600/20 to-indigo-600/10 blur-2xl pointer-events-none" />
 
                 {/* Main Hero Product Image */}
-                <div className="relative z-10 w-4/5 h-4/5 flex items-center justify-center p-4">
+                <div className="relative z-10 w-4/5 h-4/5 flex items-center justify-center p-2 sm:p-4">
                   <img
                     src={activeSlide.image}
                     alt={activeSlide.imageAlt}
@@ -351,7 +353,7 @@ export default function HeroBannerCarousel() {
                 </div>
 
                 {/* Floating Benefit Card 1 */}
-                <div className="absolute top-4 left-0 bg-slate-900/90 backdrop-blur-md border border-white/15 rounded-2xl p-3 shadow-2xl flex items-center gap-3 animate-bounce [animation-duration:3s]">
+                <div className="hidden sm:flex absolute top-4 left-0 bg-slate-900/90 backdrop-blur-md border border-white/15 rounded-2xl p-3 shadow-2xl items-center gap-3 animate-bounce [animation-duration:3s]">
                   <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                     <Zap size={18} />
                   </div>
@@ -362,7 +364,7 @@ export default function HeroBannerCarousel() {
                 </div>
 
                 {/* Floating Benefit Card 2 */}
-                <div className="absolute bottom-4 right-0 bg-slate-900/90 backdrop-blur-md border border-white/15 rounded-2xl p-3 shadow-2xl flex items-center gap-3 animate-bounce [animation-duration:4s]">
+                <div className="hidden sm:flex absolute bottom-4 right-0 bg-slate-900/90 backdrop-blur-md border border-white/15 rounded-2xl p-3 shadow-2xl items-center gap-3 animate-bounce [animation-duration:4s]">
                   <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
                     <Truck size={18} />
                   </div>
@@ -376,17 +378,17 @@ export default function HeroBannerCarousel() {
           </div>
         </div>
 
-        {/* Carousel Navigation Arrows */}
+        {/* Carousel Navigation Arrows - desktop only to prevent mobile overflow */}
         <button
           onClick={prevSlide}
-          className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white flex items-center justify-center transition-all z-20 hover:scale-110"
+          className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white items-center justify-center transition-all z-20 hover:scale-110"
           aria-label="Previous Slide"
         >
           <ChevronLeft size={22} />
         </button>
         <button
           onClick={nextSlide}
-          className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white flex items-center justify-center transition-all z-20 hover:scale-110"
+          className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white items-center justify-center transition-all z-20 hover:scale-110"
           aria-label="Next Slide"
         >
           <ChevronRight size={22} />
