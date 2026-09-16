@@ -109,7 +109,7 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
               <Bell size={18} className="text-gray-600" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
             </button>
-            <Link href="/admin" className="text-xs font-medium text-gray-500 hover:text-primary">Admin Panel</Link>
+            <Link href="/admin/login" className="text-xs font-medium text-gray-500 hover:text-primary">Admin Panel</Link>
             <Link href="/partner/login" className="text-xs font-semibold text-primary border border-primary/30 rounded-lg px-2.5 py-1.5 hover:bg-primary/5 transition-colors">Sign In / Register</Link>
             <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-1.5">
               <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">M</div>

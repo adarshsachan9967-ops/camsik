@@ -1,9 +1,14 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Shield, Lock, Mail, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Eye, EyeOff, Shield, Lock, Mail, AlertCircle, ArrowLeft } from 'lucide-react';
 
-const ADMIN_EMAIL = 'casmikadmin9967@gmail.com';
+const VALID_ADMIN_EMAILS = [
+  'casmikadmin9967@gmail.com',
+  'admin@casmik.com',
+  'admin@camsik.com',
+];
 const ADMIN_PASSWORD = 'Casmik@9967';
 
 export default function AdminLoginPage() {
@@ -14,21 +19,37 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // If already authenticated, redirect straight to admin
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const auth = localStorage.getItem('casmik_admin_auth');
+      if (auth === 'true') {
+        router.replace('/admin');
+      }
+    }
+  }, [router]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    await new Promise(r => setTimeout(r, 600));
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const isEmailValid = VALID_ADMIN_EMAILS.includes(normalizedEmail);
+    const isPasswordValid = password === ADMIN_PASSWORD;
+
+    if (isEmailValid && isPasswordValid) {
       if (typeof window !== 'undefined') {
         localStorage.setItem('casmik_admin_auth', 'true');
-        localStorage.setItem('casmik_admin_email', email);
+        localStorage.setItem('casmik_admin_email', normalizedEmail);
+        localStorage.setItem('casmik_admin_logged_at', new Date().toISOString());
       }
-      router.push('/admin');
+      router.replace('/admin');
     } else {
-      setError('Invalid email or password. Please try again.');
+      setError('Invalid admin credentials. Please enter the correct email and password.');
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -117,6 +138,13 @@ export default function AdminLoginPage() {
             <p className="text-xs text-white/40 font-semibold mb-2">Demo Credentials</p>
             <p className="text-xs text-white/60">Email: <span className="text-white/80 font-mono">casmikadmin9967@gmail.com</span></p>
             <p className="text-xs text-white/60 mt-1">Password: <span className="text-white/80 font-mono">Casmik@9967</span></p>
+          </div>
+
+          <div className="mt-4 text-center">
+            <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white transition-colors">
+              <ArrowLeft size={13} />
+              <span>Back to Customer Site</span>
+            </Link>
           </div>
         </div>
 

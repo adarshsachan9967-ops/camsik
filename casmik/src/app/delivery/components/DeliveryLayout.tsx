@@ -59,7 +59,7 @@ export default function DeliveryLayout({ activeSection, onSectionChange, childre
             </div>
           </div>
 
-          <Link href="/admin" className="hidden sm:block text-xs text-gray-400 hover:text-primary">Admin</Link>
+          <Link href="/admin/login" className="hidden sm:block text-xs text-gray-400 hover:text-primary">Admin</Link>
           <Link href="/partner" className="hidden sm:block text-xs text-gray-400 hover:text-primary">Partner</Link>
           <Link href="/delivery/login" className="hidden sm:block text-xs font-semibold text-primary border border-primary/30 rounded-lg px-2 py-1 hover:bg-primary/5">Sign In</Link>
         </div>

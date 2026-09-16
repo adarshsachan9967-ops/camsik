@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { AdminSection } from '../page';
 import { LayoutDashboard, ShoppingBag, Tag, Globe, Package, Calculator, Users, Handshake, Truck, FileText, BarChart3, Settings, ChevronLeft, ChevronRight, Bell, Menu, X, CreditCard, Send, LogOut, Wrench, Warehouse, MessageSquare, Percent, RefreshCw } from 'lucide-react';
 
@@ -47,9 +48,20 @@ const navGroups: NavGroup[] = [
 interface Props { activeSection: AdminSection; onSectionChange: (s: AdminSection) => void; children: React.ReactNode; }
 
 export default function AdminPanelLayout({ activeSection, onSectionChange, children }: Props) {
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('casmik_admin_auth');
+      localStorage.removeItem('casmik_admin_email');
+      localStorage.removeItem('casmik_admin_logged_at');
+      sessionStorage.clear();
+    }
+    router.replace('/admin/login');
+  };
 
   const notifications = [
     { id: 1, type: 'order', msg: 'New sell order CSM-2024-021 from Rahul Sharma', time: '2m ago', read: false },
@@ -109,19 +121,21 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
           </div>
         ))}
       </nav>
-      <div className={`border-t border-white/10 p-3 flex items-center flex-shrink-0 ${collapsed ? 'justify-center' : 'gap-3'}`}>
-        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">A</div>
+      <div className={`border-t border-white/10 p-3 flex items-center flex-shrink-0 ${collapsed ? 'flex-col gap-2 justify-center' : 'gap-3'}`}>
+        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-white text-xs font-bold shadow-sm shadow-primary/40">A</div>
         {!collapsed && (
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-white truncate">Adarsh Kumar</p>
             <p className="text-xs text-white/40 truncate">Super Admin</p>
           </div>
         )}
-        {!collapsed && (
-          <Link href="/admin/login" className="text-white/40 hover:text-white/80 transition-colors" title="Logout">
-            <LogOut size={15} />
-          </Link>
-        )}
+        <button
+          onClick={handleLogout}
+          className="text-white/40 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+          title="Sign out of Admin Panel"
+        >
+          <LogOut size={16} />
+        </button>
       </div>
     </>
   );
@@ -192,6 +206,14 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
               )}
             </div>
             <Link href="/" className="text-xs font-medium text-primary hover:underline">← Customer Site</Link>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-700 hover:text-red-600 hover:bg-red-50 border border-gray-200 transition-colors"
+              title="Sign out of Admin Panel"
+            >
+              <LogOut size={13} />
+              <span>Logout</span>
+            </button>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
