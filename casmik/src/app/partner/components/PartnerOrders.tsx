@@ -83,7 +83,11 @@ function dbToOrder(o: DBOrder): Order {
   };
 }
 
-export default function PartnerOrders() {
+interface PartnerOrdersProps {
+  onStartInspection?: (orderId: string) => void;
+}
+
+export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps) {
   const [orderList, setOrderList] = useState<Order[]>(getStoredPartnerOrders);
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -91,7 +95,7 @@ export default function PartnerOrders() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeTab, setActiveTab] = useState<'list' | 'live'>('list');
-  const [statusToast, setStatusToast] = useState<string | null>(null);
+  const [statusToast, setStatusToast] = useState<{ message: string; actionLabel?: string; onAction?: () => void } | null>(null);
   const supabase = createClient();
 
   const fetchOrders = useCallback(async () => {
@@ -165,10 +169,23 @@ export default function PartnerOrders() {
       } catch {}
     }
 
-    // 4. Show success toast notification
+    // 4. Show success toast notification with optional immediate action
     const label = getOrderStatusLabel(newStatus);
-    setStatusToast(`Order status updated to "${label}"`);
-    setTimeout(() => setStatusToast(null), 3000);
+    if (newStatus === 'accepted') {
+      setStatusToast({
+        message: `Order marked as Accepted! Ready for device inspection.`,
+        actionLabel: 'Start Inspection →',
+        onAction: () => {
+          handleStatusChange(orderId, 'inspection');
+          onStartInspection?.(orderId);
+        }
+      });
+    } else {
+      setStatusToast({
+        message: `Order status updated to "${label}"`,
+      });
+    }
+    setTimeout(() => setStatusToast(null), 4500);
 
     // 5. Try remote supabase update
     try {
@@ -208,9 +225,17 @@ export default function PartnerOrders() {
     <div className="space-y-5">
       {/* Toast Notification */}
       {statusToast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-bold border border-gray-700 animate-in fade-in slide-in-from-bottom-2">
+        <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-xs font-bold border border-gray-700 animate-in fade-in slide-in-from-bottom-2">
           <CheckCircle size={16} className="text-green-400 flex-shrink-0" />
-          <span>{statusToast}</span>
+          <span>{statusToast.message}</span>
+          {statusToast.actionLabel && statusToast.onAction && (
+            <button
+              onClick={statusToast.onAction}
+              className="ml-2 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-1 flex-shrink-0"
+            >
+              <ClipboardCheck size={12} /> {statusToast.actionLabel}
+            </button>
+          )}
         </div>
       )}
 
@@ -322,7 +347,7 @@ export default function PartnerOrders() {
                     <Phone size={13} /> Call
                   </a>
 
-                  {/* Accept Order button - prominent if not yet accepted/completed */}
+                  {/* Action buttons depending on order status */}
                   {order.status !== 'accepted' && order.status !== 'completed' && order.status !== 'picked_up' && order.status !== 'inspection' ? (
                     <button
                       type="button"
@@ -332,18 +357,41 @@ export default function PartnerOrders() {
                       <CheckCircle size={13} /> Accept Order
                     </button>
                   ) : order.status === 'accepted' ? (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleStatusChange(order.id, 'inspection');
+                          onStartInspection?.(order.id);
+                        }}
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-600/20 cursor-pointer"
+                      >
+                        <ClipboardCheck size={13} /> Start Inspection
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handlePickup(order.id)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 text-gray-700 text-xs font-bold hover:bg-gray-200 transition-colors cursor-pointer"
+                      >
+                        <Truck size={13} /> Start Pickup
+                      </button>
+                    </div>
+                  ) : order.status === 'inspection' ? (
                     <button
                       type="button"
-                      onClick={() => handlePickup(order.id)}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20 cursor-pointer"
+                      onClick={() => onStartInspection?.(order.id)}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors shadow-sm shadow-amber-500/20 cursor-pointer"
                     >
-                      <Truck size={13} /> Start Pickup
+                      <ClipboardCheck size={13} /> Continue Inspection
                     </button>
                   ) : order.status === 'picked_up' ? (
                     <button
                       type="button"
-                      onClick={() => handleStatusChange(order.id, 'inspection')}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors shadow-sm shadow-amber-500/20 cursor-pointer"
+                      onClick={() => {
+                        handleStatusChange(order.id, 'inspection');
+                        onStartInspection?.(order.id);
+                      }}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-600/20 cursor-pointer"
                     >
                       <ClipboardCheck size={13} /> Start Inspection
                     </button>
@@ -448,14 +496,18 @@ export default function PartnerOrders() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleStatusChange(selectedOrder.id, 'inspection')}
+                        onClick={() => {
+                          handleStatusChange(selectedOrder.id, 'inspection');
+                          setSelectedOrder(null);
+                          onStartInspection?.(selectedOrder.id);
+                        }}
                         className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                           selectedOrder.status === 'inspection'
                             ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
                             : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50'
                         }`}
                       >
-                        🔍 Inspection
+                        🔍 Start Inspection
                       </button>
                       <button
                         type="button"
@@ -545,8 +597,9 @@ export default function PartnerOrders() {
 
                   {/* Order Actions inside Modal */}
                   <div className="pt-2 border-t border-gray-100 flex flex-wrap gap-2">
-                    {selectedOrder.status !== 'accepted' && selectedOrder.status !== 'completed' && (
+                    {selectedOrder.status !== 'accepted' && selectedOrder.status !== 'completed' && selectedOrder.status !== 'inspection' && selectedOrder.status !== 'picked_up' && (
                       <button
+                        type="button"
                         onClick={() => handleAccept(selectedOrder.id)}
                         className="flex-1 py-3 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
                       >
@@ -554,11 +607,50 @@ export default function PartnerOrders() {
                       </button>
                     )}
                     {selectedOrder.status === 'accepted' && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleStatusChange(selectedOrder.id, 'inspection');
+                            setSelectedOrder(null);
+                            onStartInspection?.(selectedOrder.id);
+                          }}
+                          className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <ClipboardCheck size={14} /> Start Inspection
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handlePickup(selectedOrder.id)}
+                          className="flex-1 py-3 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <Truck size={14} /> Start Pickup
+                        </button>
+                      </>
+                    )}
+                    {selectedOrder.status === 'picked_up' && (
                       <button
-                        onClick={() => handlePickup(selectedOrder.id)}
-                        className="flex-1 py-3 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                        type="button"
+                        onClick={() => {
+                          handleStatusChange(selectedOrder.id, 'inspection');
+                          setSelectedOrder(null);
+                          onStartInspection?.(selectedOrder.id);
+                        }}
+                        className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
                       >
-                        <Truck size={14} /> Start Pickup
+                        <ClipboardCheck size={14} /> Start Inspection
+                      </button>
+                    )}
+                    {selectedOrder.status === 'inspection' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedOrder(null);
+                          onStartInspection?.(selectedOrder.id);
+                        }}
+                        className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <ClipboardCheck size={14} /> Continue Inspection
                       </button>
                     )}
                     <button

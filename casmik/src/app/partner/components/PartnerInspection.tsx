@@ -1,7 +1,8 @@
 'use client';
-import React, { useState } from 'react';
-import { orders } from '@/lib/casmikData';
-import { Camera, CheckCircle, XCircle, Upload, ClipboardCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { orders as defaultOrders, getOrderStatusLabel, getOrderStatusColor } from '@/lib/casmikData';
+import type { Order } from '@/lib/casmikData';
+import { Camera, CheckCircle, XCircle, Upload, ClipboardCheck, ArrowLeft, SlidersHorizontal } from 'lucide-react';
 
 const inspectionItems = [
   { id: 'display', label: 'Display', subtext: 'Check for cracks, dead pixels, touch issues' },
@@ -18,14 +19,61 @@ const inspectionItems = [
   { id: 'accessories', label: 'Accessories', subtext: 'Charger, box, earphones' },
 ];
 
-const pendingInspectionOrders = orders.filter(o => o.partnerId === 'partner-002' && ['picked_up', 'inspection'].includes(o.status));
+const getInspectionOrders = (): Order[] => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('casmik_partner_orders_v1') || localStorage.getItem('casmik_orders_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {}
+  }
+  return defaultOrders;
+};
 
-export default function PartnerInspection() {
-  const [selectedOrder, setSelectedOrder] = useState(pendingInspectionOrders[0] || null);
+interface PartnerInspectionProps {
+  initialOrderId?: string | null;
+  onBackToOrders?: () => void;
+}
+
+export default function PartnerInspection({ initialOrderId, onBackToOrders }: PartnerInspectionProps) {
+  const [ordersList, setOrdersList] = useState<Order[]>(getInspectionOrders);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(() => {
+    const list = getInspectionOrders();
+    const targetId = initialOrderId || (typeof window !== 'undefined' ? localStorage.getItem('casmik_active_inspection_id') : null);
+    if (targetId) {
+      const match = list.find(o => o.id === targetId || o.orderNumber === targetId);
+      if (match) return match;
+    }
+    const readyOrder = list.find(o => ['inspection', 'accepted', 'picked_up'].includes(o.status));
+    return readyOrder || list[0] || null;
+  });
+
   const [inspectionResults, setInspectionResults] = useState<Record<string, 'pass' | 'fail' | 'na'>>({});
   const [imei, setImei] = useState('');
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    const list = getInspectionOrders();
+    setOrdersList(list);
+    const targetId = initialOrderId || (typeof window !== 'undefined' ? localStorage.getItem('casmik_active_inspection_id') : null);
+    if (targetId) {
+      const match = list.find(o => o.id === targetId || o.orderNumber === targetId);
+      if (match) {
+        setSelectedOrder(match);
+      }
+    }
+  }, [initialOrderId]);
+
+  // Orders that are relevant for inspection
+  const displayOrders = ordersList.filter(o =>
+    ['inspection', 'accepted', 'picked_up'].includes(o.status) || o.id === selectedOrder?.id
+  );
+  const ordersToShow = displayOrders.length > 0 ? displayOrders : ordersList;
 
   const handleResult = (itemId: string, result: 'pass' | 'fail' | 'na') => {
     setInspectionResults(prev => ({ ...prev, [itemId]: result }));
@@ -36,6 +84,35 @@ export default function PartnerInspection() {
   const scorePercent = Math.round((score / total) * 100);
 
   const handleSubmit = () => {
+    if (!selectedOrder) return;
+    const updatedOrder = {
+      ...selectedOrder,
+      inspectionScore: scorePercent,
+      status: 'completed' as const,
+      notes: notes || selectedOrder.notes
+    };
+
+    if (typeof window !== 'undefined') {
+      try {
+        const partnerOrders = localStorage.getItem('casmik_partner_orders_v1');
+        if (partnerOrders) {
+          const list = JSON.parse(partnerOrders);
+          if (Array.isArray(list)) {
+            const updated = list.map((o: Order) => o.id === selectedOrder.id ? updatedOrder : o);
+            localStorage.setItem('casmik_partner_orders_v1', JSON.stringify(updated));
+          }
+        }
+        const globalOrders = localStorage.getItem('casmik_orders_v1');
+        if (globalOrders) {
+          const list = JSON.parse(globalOrders);
+          if (Array.isArray(list)) {
+            const updated = list.map((o: Order) => o.id === selectedOrder.id ? updatedOrder : o);
+            localStorage.setItem('casmik_orders_v1', JSON.stringify(updated));
+          }
+        }
+      } catch {}
+    }
+
     setSubmitted(true);
   };
 
@@ -46,38 +123,68 @@ export default function PartnerInspection() {
           <CheckCircle size={40} className="text-green-600" />
         </div>
         <h2 className="text-2xl font-black text-gray-900 mb-2">Inspection Submitted!</h2>
-        <p className="text-gray-500 mb-2">Inspection score: <span className="font-black text-green-600">{scorePercent}/100</span></p>
-        <p className="text-sm text-gray-400 mb-6">The final price will be calculated and sent to the customer.</p>
-        <button onClick={() => setSubmitted(false)} className="px-6 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary/90">
-          Start New Inspection
-        </button>
+        <p className="text-gray-600 text-sm mb-1">Device: <strong>{selectedOrder?.deviceName}</strong> ({selectedOrder?.orderNumber})</p>
+        <p className="text-gray-500 mb-2">Inspection score: <span className="font-black text-green-600 text-lg">{scorePercent}/100</span></p>
+        <p className="text-sm text-gray-400 mb-6">Device report has been recorded and order status updated.</p>
+        <div className="flex gap-3">
+          {onBackToOrders && (
+            <button onClick={onBackToOrders} className="px-6 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-colors shadow-sm">
+              ← Back to Orders
+            </button>
+          )}
+          <button onClick={() => { setSubmitted(false); setInspectionResults({}); }} className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors">
+            Inspect Another Device
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="text-xl font-black text-gray-900">Device Inspection</h2>
-        <p className="text-sm text-gray-500">Inspect device condition and submit report</p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
+            Device Inspection
+            {selectedOrder && (
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                {selectedOrder.orderNumber}
+              </span>
+            )}
+          </h2>
+          <p className="text-sm text-gray-500">Inspect device condition, verify IMEI, and submit diagnostic report</p>
+        </div>
+        {onBackToOrders && (
+          <button
+            onClick={onBackToOrders}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm cursor-pointer"
+          >
+            <ArrowLeft size={13} /> Back to Orders
+          </button>
+        )}
       </div>
 
       {/* Order Selector */}
-      {pendingInspectionOrders.length > 0 ? (
+      {ordersToShow.length > 0 ? (
         <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
-          {pendingInspectionOrders.map(order => (
-            <button key={order.id} onClick={() => setSelectedOrder(order)}
-              className={`flex-shrink-0 p-3 rounded-2xl border-2 text-left transition-all ${selectedOrder?.id === order.id ? 'border-primary bg-primary/5' : 'border-gray-100 bg-white hover:border-gray-200'}`}>
-              <p className="text-xs font-black text-gray-900">{order.orderNumber}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{order.deviceName.split(' ').slice(0, 3).join(' ')}</p>
-              <p className="text-xs text-gray-400">{order.customerName}</p>
+          {ordersToShow.map(order => (
+            <button key={order.id} onClick={() => { setSelectedOrder(order); setInspectionResults({}); setSubmitted(false); }}
+              className={`flex-shrink-0 p-3 rounded-2xl border-2 text-left transition-all cursor-pointer ${selectedOrder?.id === order.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-gray-100 bg-white hover:border-gray-200'}`}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-black text-gray-900">{order.orderNumber}</p>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${getOrderStatusColor(order.status)}`}>
+                  {getOrderStatusLabel(order.status)}
+                </span>
+              </div>
+              <p className="text-xs font-bold text-gray-800 mt-1 truncate max-w-[170px]">{order.deviceName}</p>
+              <p className="text-xs text-gray-400 truncate">{order.customerName}</p>
             </button>
           ))}
         </div>
       ) : (
         <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
           <ClipboardCheck size={40} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500 font-semibold">No devices pending inspection</p>
+          <p className="text-gray-500 font-semibold">No devices currently available for inspection</p>
         </div>
       )}
 

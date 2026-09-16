@@ -156,11 +156,21 @@ export default function PartnerPage() {
     );
   }
 
+  const [inspectingOrderId, setInspectingOrderId] = useState<string | null>(null);
+
+  const handleStartInspection = (orderId: string) => {
+    setInspectingOrderId(orderId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('casmik_active_inspection_id', orderId);
+    }
+    setActiveSection('inspection');
+  };
+
   const renderSection = () => {
     switch (activeSection) {
       case 'dashboard': return <PartnerDashboard />;
-      case 'orders': return <PartnerOrders />;
-      case 'inspection': return <PartnerInspection />;
+      case 'orders': return <PartnerOrders onStartInspection={handleStartInspection} />;
+      case 'inspection': return <PartnerInspection initialOrderId={inspectingOrderId} onBackToOrders={() => setActiveSection('orders')} />;
       case 'payouts': return <PartnerPayouts />;
       case 'support': return <SupportTicketsPanel panelType="partner" userName={session.name || "Partner"} />;
       case 'profile': return <PartnerProfile />;
