@@ -123,6 +123,72 @@ class _ModelsScreenState extends State<ModelsScreen> {
           'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=100&h=100&fit=crop',
       'status': 'Active',
     },
+    {
+      'name': 'HP Spectre x360 14',
+      'slug': 'hp-spectre-14',
+      'category': 'Laptops',
+      'brand': 'HP',
+      'basePrice': 134999,
+      'storage': '1TB, 2TB',
+      'image':
+          'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=100&h=100&fit=crop',
+      'status': 'Active',
+    },
+    {
+      'name': 'Lenovo ThinkPad X1 Carbon',
+      'slug': 'thinkpad-x1-carbon',
+      'category': 'Laptops',
+      'brand': 'Lenovo',
+      'basePrice': 142000,
+      'storage': '512GB, 1TB',
+      'image':
+          'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=100&h=100&fit=crop',
+      'status': 'Active',
+    },
+    {
+      'name': 'iPad Pro 13" M4 OLED',
+      'slug': 'ipad-pro-13-m4',
+      'category': 'Tablets',
+      'brand': 'Apple',
+      'basePrice': 98000,
+      'storage': '256GB, 512GB, 1TB',
+      'image':
+          'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=100&h=100&fit=crop',
+      'status': 'Active',
+    },
+    {
+      'name': 'iPad Air 13" M2',
+      'slug': 'ipad-air-13-m2',
+      'category': 'Tablets',
+      'brand': 'Apple',
+      'basePrice': 65000,
+      'storage': '128GB, 256GB',
+      'image':
+          'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=100&h=100&fit=crop',
+      'status': 'Active',
+    },
+    {
+      'name': 'Samsung Galaxy Tab S9 Ultra',
+      'slug': 'galaxy-tab-s9-ultra',
+      'category': 'Tablets',
+      'brand': 'Samsung',
+      'basePrice': 74000,
+      'storage': '256GB, 512GB',
+      'image':
+          'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=100&h=100&fit=crop',
+      'status': 'Active',
+    },
+    {
+      'name': 'OnePlus Pad 2',
+      'slug': 'oneplus-pad-2',
+      'category': 'Tablets',
+      'brand': 'OnePlus',
+      'basePrice': 32000,
+      'storage': '128GB, 256GB',
+      'image':
+          'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=100&h=100&fit=crop',
+      'status': 'Active',
+    },
   ];
 
   List<String> get _brands {

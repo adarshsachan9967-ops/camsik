@@ -195,7 +195,7 @@ export default function CustomerHeader() {
                   </span>
                 </div>
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 -mt-1">
-                  Camera Electronics
+                  Electronics & Cameras
                 </span>
               </div>
             </Link>
@@ -211,7 +211,7 @@ export default function CustomerHeader() {
                   onFocus={() => {
                     if (searchQuery.trim().length > 0) setShowResults(true);
                   }}
-                  placeholder="Search cameras, lenses (e.g. Sony A7 III, Nikon Z30, Canon RF...)"
+                  placeholder="Search phones, laptops, tablets, cameras (e.g. iPhone 16 Pro, MacBook M3, Sony A7...)"
                   className="w-full text-sm bg-transparent text-slate-900 placeholder:text-slate-400 focus:outline-none"
                 />
                 {searchQuery && (
@@ -307,7 +307,7 @@ export default function CustomerHeader() {
                 className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-purple-600/20 hover:shadow-purple-600/30 transition-all duration-200 hover:-translate-y-0.5 whitespace-nowrap"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Sell Camera</span>
+                <span>Sell Device</span>
               </Link>
 
               {/* Mobile hamburger */}
@@ -332,7 +332,7 @@ export default function CustomerHeader() {
                 Home
               </Link>
 
-              {/* Sell Camera Dropdown */}
+              {/* Sell Device Dropdown */}
               <div ref={megaMenuRef} className="relative">
                 <button
                   type="button"
@@ -344,8 +344,8 @@ export default function CustomerHeader() {
                       : 'text-slate-700 hover:text-purple-600 hover:bg-purple-50/60'
                   }`}
                 >
-                  <Camera size={15} className="text-purple-600" />
-                  <span>Sell Camera Gear</span>
+                  <Sparkles size={15} className="text-purple-600" />
+                  <span>Sell Devices & Gear</span>
                   <ChevronDown size={14} className={`transition-transform duration-200 ${megaMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -353,8 +353,92 @@ export default function CustomerHeader() {
                 {megaMenuOpen && (
                   <div
                     onMouseLeave={() => setMegaMenuOpen(false)}
-                    className="absolute top-full left-0 mt-2 w-[720px] bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 z-50 grid grid-cols-3 gap-6 animate-in fade-in-50 slide-in-from-top-2 duration-200"
+                    className="absolute top-full left-0 mt-2 w-[920px] bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 z-50 grid grid-cols-5 gap-5 animate-in fade-in-50 slide-in-from-top-2 duration-200"
                   >
+                    {/* Column 1: Smartphones */}
+                    <div>
+                      <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-100">
+                        <span className="text-base">📱</span>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Smartphones</h4>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {[
+                          { name: 'Apple iPhones', brand: 'brand-apple-phone' },
+                          { name: 'Samsung Galaxy', brand: 'brand-samsung-phone' },
+                          { name: 'Google Pixel', brand: 'brand-google-phone' },
+                          { name: 'OnePlus Series', brand: 'brand-oneplus-phone' },
+                          { name: 'Xiaomi Series', brand: 'brand-xiaomi-phone' },
+                        ].map((p) => (
+                          <li key={p.name}>
+                            <Link
+                              href={`/sell-device-get-quote?brand=${p.brand}&cat=cat-smartphone`}
+                              onClick={() => setMegaMenuOpen(false)}
+                              className="flex items-center justify-between text-xs font-medium text-slate-600 hover:text-purple-600 hover:translate-x-1 transition-all py-1"
+                            >
+                              <span>{p.name}</span>
+                              <ChevronRight size={12} className="text-slate-300" />
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Column 2: Laptops */}
+                    <div>
+                      <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-100">
+                        <span className="text-base">💻</span>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Laptops</h4>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {[
+                          { name: 'Apple MacBooks', brand: 'brand-apple-laptop' },
+                          { name: 'Dell XPS & Inspiron', brand: 'brand-dell-laptop' },
+                          { name: 'HP Spectre & Envy', brand: 'brand-hp-laptop' },
+                          { name: 'Lenovo ThinkPads', brand: 'brand-lenovo-laptop' },
+                          { name: 'ASUS ROG & ZenBook', brand: 'brand-asus-laptop' },
+                        ].map((l) => (
+                          <li key={l.name}>
+                            <Link
+                              href={`/sell-device-get-quote?brand=${l.brand}&cat=cat-laptop`}
+                              onClick={() => setMegaMenuOpen(false)}
+                              className="flex items-center justify-between text-xs font-medium text-slate-600 hover:text-purple-600 hover:translate-x-1 transition-all py-1"
+                            >
+                              <span>{l.name}</span>
+                              <ChevronRight size={12} className="text-slate-300" />
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Column 3: Tablets */}
+                    <div>
+                      <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-100">
+                        <span className="text-base">📟</span>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Tablets & iPads</h4>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {[
+                          { name: 'Apple iPad Pro / Air', brand: 'brand-apple-tablet' },
+                          { name: 'Galaxy Tab S-Series', brand: 'brand-samsung-tablet' },
+                          { name: 'OnePlus Pad', brand: 'brand-oneplus-tablet' },
+                          { name: 'Lenovo Tablets', brand: 'brand-lenovo-tablet' },
+                        ].map((t) => (
+                          <li key={t.name}>
+                            <Link
+                              href={`/sell-device-get-quote?brand=${t.brand}&cat=cat-tablet`}
+                              onClick={() => setMegaMenuOpen(false)}
+                              className="flex items-center justify-between text-xs font-medium text-slate-600 hover:text-purple-600 hover:translate-x-1 transition-all py-1"
+                            >
+                              <span>{t.name}</span>
+                              <ChevronRight size={12} className="text-slate-300" />
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Column 4: Cameras */}
                     <div>
                       <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-100">
                         <Camera className="w-4 h-4 text-purple-600" />
@@ -376,19 +460,19 @@ export default function CustomerHeader() {
                       </ul>
                     </div>
 
+                    {/* Column 5: Lenses & Action */}
                     <div>
                       <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-100">
                         <Layers className="w-4 h-4 text-indigo-600" />
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Camera Lenses</h4>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Lenses & Action</h4>
                       </div>
                       <ul className="space-y-1.5">
                         {[
-                          { name: 'Sony FE Lenses', brand: 'sony', cat: 'cat-lens' },
-                          { name: 'Canon RF/EF Lenses', brand: 'canon', cat: 'cat-lens' },
-                          { name: 'Nikon Z Lenses', brand: 'nikon', cat: 'cat-lens' },
-                          { name: 'Sigma Art Series', brand: 'sigma', cat: 'cat-lens' },
-                          { name: 'Tamron Di III', brand: 'tamron', cat: 'cat-lens' },
-                          { name: 'Samyang AF Lenses', brand: 'samyang', cat: 'cat-lens' },
+                          { name: 'Sony & Canon Lenses', brand: 'sony', cat: 'cat-lens' },
+                          { name: 'Sigma & Tamron Lenses', brand: 'sigma', cat: 'cat-lens' },
+                          { name: 'GoPro Hero Action', brand: 'gopro', cat: 'cat-action-camera' },
+                          { name: 'DJI Osmo & Gimbals', brand: 'dji', cat: 'cat-action-camera' },
+                          { name: 'Insta360 360 Cams', brand: 'insta360', cat: 'cat-action-camera' },
                         ].map((l) => (
                           <li key={l.name}>
                             <Link
@@ -403,34 +487,6 @@ export default function CustomerHeader() {
                         ))}
                       </ul>
                     </div>
-
-                    <div>
-                      <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-100">
-                        <Film className="w-4 h-4 text-emerald-600" />
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Video & Action Cams</h4>
-                      </div>
-                      <ul className="space-y-1.5">
-                        {[
-                          { name: 'Canon XA Camcorders', brand: 'canon', cat: 'cat-video-camera' },
-                          { name: 'Panasonic HC Series', brand: 'panasonic', cat: 'cat-video-camera' },
-                          { name: 'GoPro Hero Cameras', brand: 'gopro', cat: 'cat-action-camera' },
-                          { name: 'DJI Osmo Pocket', brand: 'dji', cat: 'cat-action-camera' },
-                          { name: 'Insta360 X Series', brand: 'insta360', cat: 'cat-action-camera' },
-                          { name: 'DJI & Feiyu Gimbals', brand: 'dji', cat: 'cat-gimbal' },
-                        ].map((v) => (
-                          <li key={v.name}>
-                            <Link
-                              href={`/sell-device-get-quote?brand=${v.brand}&cat=${v.cat}`}
-                              onClick={() => setMegaMenuOpen(false)}
-                              className="flex items-center justify-between text-xs font-medium text-slate-600 hover:text-emerald-600 hover:translate-x-1 transition-all py-1"
-                            >
-                              <span>{v.name}</span>
-                              <ChevronRight size={12} className="text-slate-300" />
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
                   </div>
                 )}
               </div>
@@ -439,13 +495,13 @@ export default function CustomerHeader() {
                 href="/buy-refurbished"
                 className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
               >
-                Buy Refurbished Cameras
+                Buy Refurbished
               </Link>
               <Link
                 href="/exchange-device"
                 className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
               >
-                Exchange Camera
+                Exchange Device
               </Link>
               <Link
                 href="/track-order"

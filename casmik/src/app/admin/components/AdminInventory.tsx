@@ -36,6 +36,10 @@ const initialInventory: InventoryItem[] = [
   { id: 'inv-15', invId: 'INV-012', modelId: 'iphone-14-pro-max', modelName: 'iPhone 14 Pro Max', category: 'Smartphones', brand: 'Apple', basePrice: 58000, stockLevel: 28, alertThreshold: 5, location: 'Warehouse - Bangalore', photos: ['https://img.rocket.new/generatedImages/rocket_gen_img_103da8441-1770037000517.png'], status: 'Good Stock' },
   { id: 'inv-16', invId: 'INV-013', modelId: 's24-ultra', modelName: 'Galaxy S24 Ultra', category: 'Smartphones', brand: 'Samsung', basePrice: 68000, stockLevel: 3, alertThreshold: 5, location: 'Main Warehouse', photos: [], status: 'Reorder Needed' },
   { id: 'inv-17', invId: 'INV-014', modelId: 'oneplus-12', modelName: 'OnePlus 12', category: 'Smartphones', brand: 'OnePlus', basePrice: 48000, stockLevel: 45, alertThreshold: 8, location: 'Warehouse - Mumbai', photos: [], status: 'Good Stock' },
+  { id: 'inv-18', invId: 'INV-015', modelId: 'ipad-pro-13-m4', modelName: 'Apple iPad Pro 13" M4', category: 'Tablets', brand: 'Apple', basePrice: 98000, stockLevel: 25, alertThreshold: 5, location: 'Warehouse - Bangalore', photos: [], status: 'Good Stock' },
+  { id: 'inv-19', invId: 'INV-016', modelId: 'galaxy-tab-s9-ultra', modelName: 'Galaxy Tab S9 Ultra', category: 'Tablets', brand: 'Samsung', basePrice: 74000, stockLevel: 14, alertThreshold: 4, location: 'Warehouse - Delhi', photos: [], status: 'Good Stock' },
+  { id: 'inv-20', invId: 'INV-017', modelId: 'cam-sony-a7iii', modelName: 'Sony Alpha A7 III', category: 'Cameras', brand: 'Sony', basePrice: 85000, stockLevel: 12, alertThreshold: 3, location: 'Warehouse - Mumbai', photos: [], status: 'Good Stock' },
+  { id: 'inv-21', invId: 'INV-018', modelId: 'cam-canon-rp', modelName: 'Canon EOS RP', category: 'Cameras', brand: 'Canon', basePrice: 58000, stockLevel: 8, alertThreshold: 2, location: 'Warehouse - Noida', photos: [], status: 'Good Stock' },
 ];
 
 export default function AdminInventory() {

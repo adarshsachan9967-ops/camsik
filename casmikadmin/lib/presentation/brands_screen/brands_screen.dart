@@ -118,6 +118,38 @@ class _BrandsScreenState extends State<BrandsScreen> {
           'https://upload.wikimedia.org/wikipedia/commons/c/ca/Sony_logo.svg',
       'active': true,
     },
+    {
+      'name': 'Apple',
+      'category': 'Tablets',
+      'models': 12,
+      'logo':
+          'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg',
+      'active': true,
+    },
+    {
+      'name': 'Samsung',
+      'category': 'Tablets',
+      'models': 8,
+      'logo':
+          'https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg',
+      'active': true,
+    },
+    {
+      'name': 'OnePlus',
+      'category': 'Tablets',
+      'models': 4,
+      'logo':
+          'https://upload.wikimedia.org/wikipedia/commons/8/8a/OnePlus_Logo.svg',
+      'active': true,
+    },
+    {
+      'name': 'Lenovo',
+      'category': 'Tablets',
+      'models': 6,
+      'logo':
+          'https://upload.wikimedia.org/wikipedia/commons/b/b8/Lenovo_logo_2015.svg',
+      'active': true,
+    },
   ];
 
   List<Map<String, dynamic>> get _filteredBrands {

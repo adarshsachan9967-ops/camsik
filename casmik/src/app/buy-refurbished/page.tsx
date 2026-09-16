@@ -7,7 +7,16 @@ import CustomerFooter from '@/components/CustomerFooter';
 import AppImage from '@/components/ui/AppImage';
 
 type Condition = 'all' | 'superb' | 'good' | 'fair';
-type CameraCategory = 'all' | 'cat-dslr' | 'cat-lens' | 'cat-video-camera' | 'cat-action-camera' | 'cat-gimbal';
+type CameraCategory =
+  | 'all'
+  | 'cat-smartphone'
+  | 'cat-laptop'
+  | 'cat-tablet'
+  | 'cat-dslr'
+  | 'cat-lens'
+  | 'cat-video-camera'
+  | 'cat-action-camera'
+  | 'cat-gimbal';
 
 interface RefurbishedCamera {
   id: string;
@@ -31,6 +40,193 @@ interface RefurbishedCamera {
 }
 
 const refurbishedCameras: RefurbishedCamera[] = [
+  // ── Smartphones ──
+  {
+    id: 'ref-phone-001',
+    brand: 'Apple',
+    model: 'Apple iPhone 15 Pro Max (256GB)',
+    category: 'cat-smartphone',
+    categoryLabel: 'Flagship Smartphone',
+    condition: 'superb',
+    price: 74000,
+    originalPrice: 159900,
+    discount: 54,
+    shutterCount: 'Battery Health: 96%, Zero scratches',
+    warranty: '12 Months Warranty',
+    image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=600&q=80',
+    alt: 'Refurbished Apple iPhone 15 Pro Max',
+    rating: 4.9,
+    reviews: 184,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '6.7" Super Retina XDR OLED 120Hz, A17 Pro Chip, 48MP Triple Camera, Natural Titanium',
+  },
+  {
+    id: 'ref-phone-002',
+    brand: 'Samsung',
+    model: 'Samsung Galaxy S24 Ultra 5G (256GB)',
+    category: 'cat-smartphone',
+    categoryLabel: 'AI Flagship Smartphone',
+    condition: 'superb',
+    price: 68000,
+    originalPrice: 129999,
+    discount: 48,
+    shutterCount: 'Battery Health: 95%, S-Pen included',
+    warranty: '12 Months Warranty',
+    image: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&q=80',
+    alt: 'Refurbished Samsung Galaxy S24 Ultra',
+    rating: 4.9,
+    reviews: 142,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '6.8" Dynamic AMOLED 2X QHD+, Snapdragon 8 Gen 3, 200MP Quad Camera, Titanium Gray',
+  },
+  {
+    id: 'ref-phone-003',
+    brand: 'OnePlus',
+    model: 'OnePlus 12 5G (256GB)',
+    category: 'cat-smartphone',
+    categoryLabel: 'Performance Smartphone',
+    condition: 'good',
+    price: 38000,
+    originalPrice: 64999,
+    discount: 42,
+    shutterCount: 'Battery Health: 93%, Mint condition',
+    warranty: '6 Months Warranty',
+    image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&q=80',
+    alt: 'Refurbished OnePlus 12 5G',
+    rating: 4.7,
+    reviews: 96,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '6.82" 2K 120Hz ProXDR, Snapdragon 8 Gen 3, Hasselblad Camera, 100W Charging',
+  },
+
+  // ── Laptops ──
+  {
+    id: 'ref-laptop-001',
+    brand: 'Apple',
+    model: 'Apple MacBook Pro 14" M3 Pro',
+    category: 'cat-laptop',
+    categoryLabel: 'Pro Laptop',
+    condition: 'superb',
+    price: 118000,
+    originalPrice: 199900,
+    discount: 41,
+    shutterCount: 'Battery Cycle: 32 cycles (99% capacity)',
+    warranty: '12 Months Warranty',
+    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&q=80',
+    alt: 'Refurbished Apple MacBook Pro 14 M3 Pro',
+    rating: 5.0,
+    reviews: 88,
+    inStock: true,
+    deliveryDays: 2,
+    specs: 'Apple M3 Pro 11-core CPU / 14-core GPU, 18GB Unified RAM, 512GB SSD, Space Black',
+  },
+  {
+    id: 'ref-laptop-002',
+    brand: 'Dell',
+    model: 'Dell XPS 15 9530 (i7-13700H / RTX 4060)',
+    category: 'cat-laptop',
+    categoryLabel: 'Premium Laptop',
+    condition: 'good',
+    price: 82000,
+    originalPrice: 149999,
+    discount: 45,
+    shutterCount: 'Battery Health: 89%, Clean keyboard & screen',
+    warranty: '6 Months Warranty',
+    image: 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=600&q=80',
+    alt: 'Refurbished Dell XPS 15',
+    rating: 4.8,
+    reviews: 64,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '15.6" 3.5K OLED Touch, Intel i7-13700H, 16GB RAM, 512GB SSD, RTX 4060 8GB',
+  },
+  {
+    id: 'ref-laptop-003',
+    brand: 'Lenovo',
+    model: 'Lenovo ThinkPad X1 Carbon Gen 11',
+    category: 'cat-laptop',
+    categoryLabel: 'Business Ultrabook',
+    condition: 'superb',
+    price: 69000,
+    originalPrice: 135000,
+    discount: 49,
+    shutterCount: 'Battery Health: 94%, Pristine chassis',
+    warranty: '6 Months Warranty',
+    image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=600&q=80',
+    alt: 'Refurbished Lenovo ThinkPad X1 Carbon',
+    rating: 4.9,
+    reviews: 52,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '14" 2.8K OLED, Intel Core i7-1355U, 16GB LPDDR5, 512GB SSD, Ultralight 1.12kg',
+  },
+
+  // ── Tablets ──
+  {
+    id: 'ref-tablet-001',
+    brand: 'Apple',
+    model: 'Apple iPad Pro 12.9" M2 (128GB Wi-Fi)',
+    category: 'cat-tablet',
+    categoryLabel: 'Flagship iPad',
+    condition: 'superb',
+    price: 58000,
+    originalPrice: 112900,
+    discount: 49,
+    shutterCount: 'Battery Health: 95%, Screen protector applied',
+    warranty: '12 Months Warranty',
+    image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=600&q=80',
+    alt: 'Refurbished Apple iPad Pro 12.9 M2',
+    rating: 4.9,
+    reviews: 110,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '12.9" Liquid Retina XDR Mini-LED 120Hz, Apple M2 Chip, Face ID, Space Gray',
+  },
+  {
+    id: 'ref-tablet-002',
+    brand: 'Samsung',
+    model: 'Samsung Galaxy Tab S9 Ultra (256GB Wi-Fi)',
+    category: 'cat-tablet',
+    categoryLabel: 'AMOLED Tablet',
+    condition: 'good',
+    price: 52000,
+    originalPrice: 108999,
+    discount: 52,
+    shutterCount: 'Battery Health: 93%, S-Pen in box',
+    warranty: '6 Months Warranty',
+    image: 'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=600&q=80',
+    alt: 'Refurbished Samsung Galaxy Tab S9 Ultra',
+    rating: 4.8,
+    reviews: 73,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '14.6" Dynamic AMOLED 2X 120Hz, Snapdragon 8 Gen 2, Quad AKG Speakers, IP68',
+  },
+  {
+    id: 'ref-tablet-003',
+    brand: 'Apple',
+    model: 'Apple iPad Air 5th Gen M1 (64GB Wi-Fi)',
+    category: 'cat-tablet',
+    categoryLabel: 'Lightweight Tablet',
+    condition: 'superb',
+    price: 36000,
+    originalPrice: 59900,
+    discount: 40,
+    shutterCount: 'Battery Health: 97%, Flawless body',
+    warranty: '6 Months Warranty',
+    image: 'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=600&q=80',
+    alt: 'Refurbished Apple iPad Air 5th Gen M1',
+    rating: 4.8,
+    reviews: 95,
+    inStock: true,
+    deliveryDays: 2,
+    specs: '10.9" Liquid Retina, Apple M1 Chip, Touch ID in top button, Blue finish',
+  },
+
+  // ── DSLR & Mirrorless Cameras ──
   {
     id: 'ref-cam-001',
     brand: 'Sony',
@@ -280,7 +476,10 @@ const conditionConfig = {
 };
 
 const categoryTabs = [
-  { id: 'all', label: 'All Gear' },
+  { id: 'all', label: 'All Devices' },
+  { id: 'cat-smartphone', label: 'Smartphones' },
+  { id: 'cat-laptop', label: 'Laptops' },
+  { id: 'cat-tablet', label: 'Tablets & iPads' },
   { id: 'cat-dslr', label: 'DSLR & Mirrorless' },
   { id: 'cat-lens', label: 'Lenses & Optics' },
   { id: 'cat-video-camera', label: 'Cinema Cameras' },
@@ -347,10 +546,10 @@ export default function BuyRefurbishedPage() {
               45-POINT CERTIFIED PRE-OWNED GEAR
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-4">
-              Buy Certified Pre-Owned Cameras &amp; Lenses
+              Buy Certified Refurbished Devices &amp; Cameras
             </h1>
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
-              Save up to 60% on flagship full-frame bodies, cinema cameras, fast zoom optics, and creators’ gimbals. Every unit is tested for shutter accuracy, sensor dust, and autofocus sharpness with up to 12 months warranty.
+              Save up to 60% on flagship iPhones, Samsung Galaxy, Apple MacBooks, iPads, mirrorless camera bodies, and premium lenses. Every unit is rigorously tested with comprehensive inspection and up to 12 months warranty.
             </p>
           </div>
         </div>

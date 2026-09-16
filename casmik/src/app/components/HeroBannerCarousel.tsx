@@ -35,6 +35,69 @@ interface HeroSlide {
 
 const slides: HeroSlide[] = [
   {
+    id: 'slide-smartphone',
+    badge: '📱 #1 SMARTPHONE & IPHONE BUYBACK',
+    titlePrefix: 'Sell Used ',
+    titleHighlight: 'Smartphones & iPhones',
+    titleSuffix: ' for Peak Cash',
+    description:
+      'Get guaranteed highest resale payout for Apple iPhone 16/15 Pro, Samsung Galaxy S24, Google Pixel & OnePlus. AI instant quote, free doorstep pickup & spot UPI payment within 15 minutes.',
+    ctaText: 'Check Phone Price',
+    ctaLink: '/sell-device-get-quote?cat=cat-smartphone',
+    categoryFilter: 'cat-smartphone',
+    bgGradient: 'from-blue-950 via-slate-900 to-indigo-950',
+    accentColor: '#3b82f6',
+    image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=600&q=80',
+    imageAlt: 'Sell Used Smartphones and iPhones on Camsik',
+    stats: [
+      { label: 'Smartphones Sold', value: '3,20,000+' },
+      { label: 'Payment Speed', value: 'Instant UPI / Bank' },
+      { label: 'Data Wipe', value: '100% Certified' },
+    ],
+  },
+  {
+    id: 'slide-laptop',
+    badge: '💻 MAX VALUE FOR LAPTOPS & MACBOOKS',
+    titlePrefix: 'Turn Old ',
+    titleHighlight: 'MacBook & Laptops',
+    titleSuffix: ' Into Big Money',
+    description:
+      'Selling Apple MacBook Pro / Air M3, Dell XPS, HP Spectre, Lenovo ThinkPad or gaming laptops? Fair evaluation, zero hidden deductions & free doorstep inspection.',
+    ctaText: 'Sell Old Laptop',
+    ctaLink: '/sell-device-get-quote?cat=cat-laptop',
+    categoryFilter: 'cat-laptop',
+    bgGradient: 'from-violet-950 via-slate-900 to-purple-950',
+    accentColor: '#8b5cf6',
+    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&q=80',
+    imageAlt: 'Sell Laptops and MacBooks on Camsik',
+    stats: [
+      { label: 'Laptops Liquidated', value: '95,000+' },
+      { label: 'Doorstep Pickup', value: '100% Free' },
+      { label: 'Turnaround Time', value: '15 Minutes' },
+    ],
+  },
+  {
+    id: 'slide-tablet',
+    badge: '📟 INSTANT CASH FOR IPADS & TABLETS',
+    titlePrefix: 'Upgrade Your ',
+    titleHighlight: 'iPads & Tablets',
+    titleSuffix: ' Today',
+    description:
+      'Instant AI-driven valuation for Apple iPad Pro M4, iPad Air, Samsung Galaxy Tab S9 & Lenovo tablets. Doorstep testing, hassle-free handover and instant bank transfer.',
+    ctaText: 'Sell iPad / Tablet',
+    ctaLink: '/sell-device-get-quote?cat=cat-tablet',
+    categoryFilter: 'cat-tablet',
+    bgGradient: 'from-cyan-950 via-slate-900 to-teal-950',
+    accentColor: '#06b6d4',
+    image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=600&q=80',
+    imageAlt: 'Sell Apple iPad and Android Tablets on Camsik',
+    stats: [
+      { label: 'Tablets Purchased', value: '62,000+' },
+      { label: 'Best Price Match', value: 'Guaranteed' },
+      { label: 'Happy Customers', value: '99.4%' },
+    ],
+  },
+  {
     id: 'slide-dslr',
     badge: '★ #1 CAMERA BUYBACK PLATFORM IN INDIA',
     titlePrefix: 'Sell Used ',
@@ -243,7 +306,7 @@ export default function HeroBannerCarousel() {
                 {/* Popular Search Badges */}
                 <div className="flex items-center gap-2 flex-wrap text-xs text-slate-300">
                   <span className="font-semibold text-slate-400">Popular:</span>
-                  {['Nikon Z30', 'Canon EOS RP', 'Sony A7 III', 'Lumix S5 II', 'GoPro 12', 'Insta360 X3'].map((item) => (
+                  {['iPhone 16 Pro', 'MacBook Pro M3', 'iPad Pro M4', 'Galaxy S24 Ultra', 'Sony A7 III', 'Canon EOS RP'].map((item) => (
                     <button
                       key={item}
                       type="button"

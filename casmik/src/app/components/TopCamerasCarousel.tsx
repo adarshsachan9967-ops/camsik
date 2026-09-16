@@ -35,13 +35,13 @@ export default function TopCamerasCarousel() {
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100/70 border border-purple-200 text-xs font-bold text-purple-800 mb-2">
               <TrendingUp size={13} className="text-purple-600" />
-              <span>MOST VALUED CAMERA GEAR TODAY</span>
+              <span>MOST VALUED TECH & CAMERA GEAR TODAY</span>
             </div>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
-              Top Selling <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Cameras & Lenses</span>
+              Top Selling <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Devices & Cameras</span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Photographers and creators are getting peak payouts for these models this week
+              Users and creators are getting peak payouts for these models this week
             </p>
           </div>
 
