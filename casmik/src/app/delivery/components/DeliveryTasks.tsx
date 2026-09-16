@@ -42,9 +42,22 @@ function dbToOrder(o: DBOrder): Order {
   };
 }
 
+import { orders } from '@/lib/casmikData';
+
+function getStoredDeliveryTasks(): Order[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem('casmik_orders_v1');
+    const all: Order[] = raw ? JSON.parse(raw) : orders;
+    return all.filter(o => o.deliveryAgentId === DELIVERY_AGENT_ID || o.deliveryAgentId === 'agent-101' || !o.deliveryAgentId);
+  } catch {
+    return orders.filter(o => o.deliveryAgentId === DELIVERY_AGENT_ID || o.deliveryAgentId === 'agent-101' || !o.deliveryAgentId);
+  }
+}
+
 export default function DeliveryTasks() {
-  const [taskList, setTaskList] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [taskList, setTaskList] = useState<Order[]>(getStoredDeliveryTasks);
+  const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [activeTask, setActiveTask] = useState<Order | null>(null);
   const [otpInput, setOtpInput] = useState('');
@@ -63,11 +76,17 @@ export default function DeliveryTasks() {
       if (error) {
         if (error.code?.startsWith('42')) throw error;
         console.log('Tasks fetch error:', error.message);
+        setTaskList(getStoredDeliveryTasks());
         return;
       }
-      setTaskList((data || []).map(dbToOrder));
+      if (data && data.length > 0) {
+        setTaskList(data.map(dbToOrder));
+      } else {
+        setTaskList(getStoredDeliveryTasks());
+      }
     } catch (err: any) {
       console.log('Tasks error:', err.message);
+      setTaskList(getStoredDeliveryTasks());
     } finally {
       setLoading(false);
     }

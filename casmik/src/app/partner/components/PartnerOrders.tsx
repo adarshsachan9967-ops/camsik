@@ -1,12 +1,27 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { getOrderStatusColor, getOrderStatusLabel, getTypeColor } from '@/lib/casmikData';
+import { orders as defaultOrders, getOrderStatusColor, getOrderStatusLabel, getTypeColor } from '@/lib/casmikData';
 import type { Order, OrderStatus } from '@/lib/casmikData';
 import { Search, CheckCircle, XCircle, Eye, Phone, MapPin, X, Truck, Wifi, WifiOff } from 'lucide-react';
 import LiveOrderTracker from '@/components/LiveOrderTracker';
 
 const PARTNER_ID = 'partner-002';
+
+const getStoredPartnerOrders = (): Order[] => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('casmik_orders_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter((o: Order) => o.partnerId === PARTNER_ID || !o.partnerId);
+        }
+      }
+    } catch (e) {}
+  }
+  return defaultOrders.filter(o => o.partnerId === PARTNER_ID || !o.partnerId);
+};
 
 interface DBOrder {
   id: string;
@@ -58,8 +73,8 @@ function dbToOrder(o: DBOrder): Order {
 }
 
 export default function PartnerOrders() {
-  const [orderList, setOrderList] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orderList, setOrderList] = useState<Order[]>(getStoredPartnerOrders);
+  const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [query, setQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -74,18 +89,18 @@ export default function PartnerOrders() {
         .select('*')
         .eq('partner_id', PARTNER_ID)
         .order('created_at', { ascending: false });
-      if (error) {
-        if (error.code?.startsWith('42')) throw error;
-        console.log('Partner orders error:', error.message);
+      if (!error && data && data.length > 0) {
+        setOrderList(data.map(dbToOrder));
+        setIsConnected(true);
         return;
       }
-      setOrderList((data || []).map(dbToOrder));
     } catch (err: any) {
-      console.log('Partner orders error:', err.message);
+      console.log('Partner orders remote notice:', err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+    setOrderList(getStoredPartnerOrders());
+  }, [supabase]);
 
   useEffect(() => {
     fetchOrders();
