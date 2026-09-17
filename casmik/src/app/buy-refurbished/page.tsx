@@ -29,10 +29,11 @@ import {
   ProductCategory,
   ProductCondition,
   getRefurbishedProducts,
+  DEFAULT_REFURBISHED_PRODUCTS,
 } from '@/lib/refurbishedCatalog';
 
 export default function BuyRefurbishedPage() {
-  const [products, setProducts] = useState<RefurbishedProduct[]>([]);
+  const [products, setProducts] = useState<RefurbishedProduct[]>(DEFAULT_REFURBISHED_PRODUCTS);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeCondition, setActiveCondition] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');

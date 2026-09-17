@@ -660,3 +660,5 @@ export function resetRefurbishedProducts(): RefurbishedProduct[] {
   }
   return defaultRefurbishedProducts;
 }
+
+export const DEFAULT_REFURBISHED_PRODUCTS = defaultRefurbishedProducts;
