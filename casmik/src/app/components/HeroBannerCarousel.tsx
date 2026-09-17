@@ -47,7 +47,7 @@ const slides: HeroSlide[] = [
     categoryFilter: 'cat-smartphone',
     bgGradient: 'from-blue-950 via-slate-900 to-indigo-950',
     accentColor: '#3b82f6',
-    image: '/assets/images/categories/smartphone.png',
+    image: '/assets/images/categories/smartphone-banner.png',
     imageAlt: 'Sell Used Smartphones and iPhones on Camsik',
     stats: [
       { label: 'Smartphones Sold', value: '3,20,000+' },
@@ -337,14 +337,24 @@ export default function HeroBannerCarousel() {
 
             {/* Right Visual / Camera Showcase */}
             <div className="lg:col-span-5 xl:col-span-5 flex justify-center items-center relative animate-in fade-in zoom-in-95 duration-500">
-              <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-square flex items-center justify-center mx-auto">
+              <div
+                className={`relative w-full ${
+                  activeSlide.id === 'slide-smartphone'
+                    ? 'max-w-[340px] sm:max-w-[480px] lg:max-w-[560px]'
+                    : 'max-w-[280px] sm:max-w-[420px]'
+                } aspect-[4/3] sm:aspect-square flex items-center justify-center mx-auto`}
+              >
                 {/* Glowing Orbit Rings */}
                 <div className="absolute inset-0 rounded-full border border-purple-500/20 animate-spin [animation-duration:30s] pointer-events-none" />
                 <div className="absolute inset-6 rounded-full border border-dashed border-indigo-500/30 animate-spin [animation-duration:20s] [animation-direction:reverse] pointer-events-none" />
                 <div className="absolute inset-16 rounded-full bg-gradient-to-tr from-purple-600/20 to-indigo-600/10 blur-2xl pointer-events-none" />
 
                 {/* Main Hero Product Image */}
-                <div className="relative z-10 w-4/5 h-4/5 flex items-center justify-center p-2 sm:p-4">
+                <div
+                  className={`relative z-10 ${
+                    activeSlide.id === 'slide-smartphone' ? 'w-full h-full' : 'w-4/5 h-4/5'
+                  } flex items-center justify-center p-2 sm:p-4`}
+                >
                   <img
                     src={activeSlide.image}
                     alt={activeSlide.imageAlt}
@@ -352,27 +362,30 @@ export default function HeroBannerCarousel() {
                   />
                 </div>
 
-                {/* Floating Benefit Card 1 */}
-                <div className="hidden sm:flex absolute top-4 left-0 bg-slate-900/90 backdrop-blur-md border border-white/15 rounded-2xl p-3 shadow-2xl items-center gap-3 animate-bounce [animation-duration:3s]">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                    <Zap size={18} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-white">Instant Payment</p>
-                    <p className="text-[10px] text-slate-400">UPI / Bank at Pickup</p>
-                  </div>
-                </div>
+                {/* Floating Benefit Cards (rendered on slides without built-in badges) */}
+                {activeSlide.id !== 'slide-smartphone' && (
+                  <>
+                    <div className="hidden sm:flex absolute top-4 left-0 bg-slate-900/90 backdrop-blur-md border border-white/15 rounded-2xl p-3 shadow-2xl items-center gap-3 animate-bounce [animation-duration:3s]">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                        <Zap size={18} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-white">Instant Payment</p>
+                        <p className="text-[10px] text-slate-400">UPI / Bank at Pickup</p>
+                      </div>
+                    </div>
 
-                {/* Floating Benefit Card 2 */}
-                <div className="hidden sm:flex absolute bottom-4 right-0 bg-slate-900/90 backdrop-blur-md border border-white/15 rounded-2xl p-3 shadow-2xl items-center gap-3 animate-bounce [animation-duration:4s]">
-                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
-                    <Truck size={18} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-white">Free Doorstep Pickup</p>
-                    <p className="text-[10px] text-slate-400">200+ Cities in India</p>
-                  </div>
-                </div>
+                    <div className="hidden sm:flex absolute bottom-4 right-0 bg-slate-900/90 backdrop-blur-md border border-white/15 rounded-2xl p-3 shadow-2xl items-center gap-3 animate-bounce [animation-duration:4s]">
+                      <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                        <Truck size={18} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-white">Free Doorstep Pickup</p>
+                        <p className="text-[10px] text-slate-400">200+ Cities in India</p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

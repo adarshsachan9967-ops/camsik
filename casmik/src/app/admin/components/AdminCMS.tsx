@@ -156,7 +156,7 @@ const initialBanners: BannerItem[] = [
     subtitle: 'Get up to ₹1,25,000 instant cash · Free doorstep pickup in 15 mins',
     cta: 'Sell Smartphone',
     ctaLink: '/sell-device-get-quote?cat=smartphones',
-    image: '/assets/images/categories/smartphone.png',
+    image: '/assets/images/categories/smartphone-banner.png',
     active: true,
   },
   {
