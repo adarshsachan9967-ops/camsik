@@ -190,7 +190,7 @@ const oldTradeInDevices: OldDeviceItem[] = [
     category: 'Lenses',
     brand: 'Sony',
     name: 'Sony FE 24-70mm f/2.8 GM',
-    image: '/assets/images/refurbished/lens.jpg',
+    image: '/assets/images/refurbished/sony-1635gm.jpg',
     basePrice: 72000,
     specs: 'Direct Drive SSM, Nano AR Coating, 9-Blade Circular Aperture',
   },
@@ -199,7 +199,7 @@ const oldTradeInDevices: OldDeviceItem[] = [
     category: 'Lenses',
     brand: 'Sony',
     name: 'Sony FE 16-35mm f/2.8 GM',
-    image: '/assets/images/refurbished/lens.jpg',
+    image: '/assets/images/refurbished/sony-1635gm.jpg',
     basePrice: 75000,
     specs: 'Ultra-wide angle zoom, Constant f/2.8 aperture, Dust & Moisture resistant',
   },
@@ -208,7 +208,7 @@ const oldTradeInDevices: OldDeviceItem[] = [
     category: 'Lenses',
     brand: 'Canon',
     name: 'Canon RF 50mm f/1.2L USM',
-    image: '/assets/images/refurbished/lens.jpg',
+    image: '/assets/images/categories/lens.png',
     basePrice: 95000,
     specs: 'Ultra-fast f/1.2 prime, Ring-type USM, Control Ring',
   },
@@ -217,7 +217,7 @@ const oldTradeInDevices: OldDeviceItem[] = [
     category: 'Lenses',
     brand: 'Nikon',
     name: 'NIKKOR Z 24-70mm f/2.8 S',
-    image: '/assets/images/refurbished/lens.jpg',
+    image: '/assets/images/categories/lens.png',
     basePrice: 88000,
     specs: 'Multi-focus system, ARNEO & Nano Crystal Coat, OLED panel',
   },
@@ -228,7 +228,7 @@ const oldTradeInDevices: OldDeviceItem[] = [
     category: 'Smartphones',
     brand: 'Apple',
     name: 'Apple iPhone 13 Pro (128GB)',
-    image: '/assets/images/refurbished/iphone-15-pro.png',
+    image: '/assets/images/refurbished/iphone-13-pro-max.png',
     basePrice: 46000,
     specs: 'A15 Bionic, 120Hz ProMotion Super Retina, Triple 12MP',
   },
@@ -237,7 +237,7 @@ const oldTradeInDevices: OldDeviceItem[] = [
     category: 'Smartphones',
     brand: 'Apple',
     name: 'Apple iPhone 14 (128GB)',
-    image: '/assets/images/refurbished/iphone-14.png',
+    image: '/assets/images/refurbished/iphone-14-pro-max.png',
     basePrice: 39000,
     specs: 'Super Retina XDR, Photonic Engine, Crash Detection',
   },
@@ -246,7 +246,7 @@ const oldTradeInDevices: OldDeviceItem[] = [
     category: 'Smartphones',
     brand: 'Apple',
     name: 'Apple iPhone 14 Pro (128GB)',
-    image: '/assets/images/refurbished/iphone-15-pro.png',
+    image: '/assets/images/refurbished/iphone-14-pro-gold.jpg',
     basePrice: 58000,
     specs: 'Dynamic Island, Always-On display, 48MP Main sensor',
   },
@@ -255,7 +255,7 @@ const oldTradeInDevices: OldDeviceItem[] = [
     category: 'Smartphones',
     brand: 'Samsung',
     name: 'Samsung Galaxy S22 Ultra 5G',
-    image: '/assets/images/refurbished/samsung-s24-ultra.png',
+    image: '/assets/images/refurbished/galaxy-s24-ultra.png',
     basePrice: 42000,
     specs: 'Embedded S Pen, Nightography 108MP, 100x Space Zoom',
   },
@@ -264,7 +264,7 @@ const oldTradeInDevices: OldDeviceItem[] = [
     category: 'Smartphones',
     brand: 'Samsung',
     name: 'Samsung Galaxy S23 Ultra 5G',
-    image: '/assets/images/refurbished/samsung-s24-ultra.png',
+    image: '/assets/images/refurbished/galaxy-s24-violet.jpg',
     basePrice: 62000,
     specs: '200MP sensor, Snapdragon 8 Gen 2 for Galaxy, 5000mAh',
   },
@@ -273,7 +273,7 @@ const oldTradeInDevices: OldDeviceItem[] = [
     category: 'Smartphones',
     brand: 'Google',
     name: 'Google Pixel 7 Pro (128GB)',
-    image: '/assets/images/refurbished/google-pixel-8-pro.png',
+    image: '/assets/images/refurbished/pixel-8-pro.png',
     basePrice: 32000,
     specs: 'Google Tensor G2, 30x Super Res Zoom, Macro Focus',
   },
@@ -284,7 +284,7 @@ const oldTradeInDevices: OldDeviceItem[] = [
     category: 'Laptops',
     brand: 'Apple',
     name: 'Apple MacBook Air M1 (256GB)',
-    image: '/assets/images/refurbished/macbook-pro.jpg',
+    image: '/assets/images/refurbished/macbook-air-m2.png',
     basePrice: 43000,
     specs: 'Apple M1 Chip, 8-Core CPU, 13.3" Retina, 18hr battery',
   },
@@ -293,7 +293,7 @@ const oldTradeInDevices: OldDeviceItem[] = [
     category: 'Laptops',
     brand: 'Apple',
     name: 'Apple MacBook Pro 14" M1 Pro',
-    image: '/assets/images/refurbished/macbook-pro.jpg',
+    image: '/assets/images/refurbished/macbook-pro-14.png',
     basePrice: 82000,
     specs: '10-Core CPU, 16-Core GPU, Liquid Retina XDR, MagSafe 3',
   },
@@ -302,7 +302,7 @@ const oldTradeInDevices: OldDeviceItem[] = [
     category: 'Laptops',
     brand: 'Dell',
     name: 'Dell XPS 15 9520 (i7 12th Gen)',
-    image: '/assets/images/refurbished/macbook-pro.jpg',
+    image: '/assets/images/refurbished/dell-xps-15.png',
     basePrice: 65000,
     specs: 'Intel Core i7-12700H, RTX 3050 Ti, 15.6" OLED 3.5K',
   },
@@ -479,6 +479,13 @@ const availableCoupons: CouponOption[] = [
     minAmount: 40000,
   },
 ];
+
+const getCategoryFallbackImage = (category?: string) => {
+  if (category === 'Lenses') return '/assets/images/categories/lens.png';
+  if (category === 'Smartphones') return '/assets/images/categories/smartphone.png';
+  if (category === 'Laptops') return '/assets/images/categories/laptop.png';
+  return '/assets/images/categories/dslr.png';
+};
 
 export default function ExchangeDevicePage() {
   const [step, setStep] = useState<ExchangeWizardStep>('select-old');
@@ -946,7 +953,14 @@ export default function ExchangeDevicePage() {
                       className="p-4 sm:p-5 rounded-3xl border border-slate-200 bg-white hover:border-emerald-500 hover:shadow-xl hover:-translate-y-0.5 transition-all text-left flex items-center gap-4 group cursor-pointer"
                     >
                       <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-slate-50/90 p-2 flex items-center justify-center shrink-0 border border-slate-100 group-hover:scale-105 transition-transform duration-300">
-                        <img src={item.image} alt={item.name} className="max-w-full max-h-full object-contain" />
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="max-w-full max-h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.src = getCategoryFallbackImage(item.category);
+                          }}
+                        />
                       </div>
                       <div className="min-w-0 flex-1">
                         <span className="text-[10px] font-black uppercase text-emerald-700 tracking-wider px-2 py-0.5 rounded-md bg-emerald-50 inline-block mb-1">
@@ -1005,7 +1019,14 @@ export default function ExchangeDevicePage() {
                   <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-4 mb-6">
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-16 rounded-2xl bg-white p-1.5 border border-slate-200 flex items-center justify-center shrink-0">
-                        <img src={selectedOldDevice.image} alt={selectedOldDevice.name} className="max-w-full max-h-full object-contain" />
+                        <img
+                          src={selectedOldDevice.image}
+                          alt={selectedOldDevice.name}
+                          className="max-w-full max-h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.src = getCategoryFallbackImage(selectedOldDevice.category);
+                          }}
+                        />
                       </div>
                       <div>
                         <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
@@ -1256,6 +1277,9 @@ export default function ExchangeDevicePage() {
                               src={prod.image}
                               alt={prod.model}
                               className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                e.currentTarget.src = getCategoryFallbackImage(prod.category);
+                              }}
                             />
                             <div className="absolute top-3 left-3">
                               <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-slate-900 text-white shadow-2xs">
@@ -1437,6 +1461,9 @@ export default function ExchangeDevicePage() {
                       }
                       alt={`${selectedUpgradeProduct.brand} ${selectedUpgradeProduct.model} - ${selectedUpgradeProduct.color}`}
                       className="max-w-full max-h-full object-contain filter drop-shadow-md transition-all duration-300"
+                      onError={(e) => {
+                        e.currentTarget.src = getCategoryFallbackImage(selectedUpgradeProduct.category);
+                      }}
                     />
                     <div className="absolute top-4 left-4">
                       <span className="text-xs font-bold px-3 py-1 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200 shadow-2xs">
@@ -1472,7 +1499,14 @@ export default function ExchangeDevicePage() {
                               : 'border-slate-200 hover:border-slate-300 bg-white/50'
                           }`}
                         >
-                          <img src={img} alt={`Angle ${idx + 1}`} className="max-w-full max-h-full object-contain" />
+                          <img
+                            src={img}
+                            alt={`Angle ${idx + 1}`}
+                            className="max-w-full max-h-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.src = getCategoryFallbackImage(selectedUpgradeProduct.category);
+                            }}
+                          />
                         </button>
                       );
                     })}
@@ -1596,7 +1630,14 @@ export default function ExchangeDevicePage() {
                               >
                                 <div className="flex items-center gap-3 min-w-0">
                                   <div className="w-11 h-11 rounded-xl bg-slate-100 p-1 flex items-center justify-center shrink-0 border border-slate-200/60">
-                                    <img src={unit.image} alt={unit.model} className="max-w-full max-h-full object-contain" />
+                                    <img
+                                      src={unit.image}
+                                      alt={unit.model}
+                                      className="max-w-full max-h-full object-contain"
+                                      onError={(e) => {
+                                        e.currentTarget.src = getCategoryFallbackImage(unit.category);
+                                      }}
+                                    />
                                   </div>
                                   <div className="min-w-0">
                                     <div className="flex items-center gap-2">
@@ -1728,7 +1769,14 @@ export default function ExchangeDevicePage() {
                     <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/70 flex flex-col justify-between">
                       <div className="flex items-center gap-3.5">
                         <div className="w-16 h-16 rounded-xl bg-white p-1 border border-amber-200/80 flex items-center justify-center shrink-0">
-                          <img src={selectedOldDevice.image} alt={selectedOldDevice.name} className="max-w-full max-h-full object-contain" />
+                          <img
+                            src={selectedOldDevice.image}
+                            alt={selectedOldDevice.name}
+                            className="max-w-full max-h-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.src = getCategoryFallbackImage(selectedOldDevice.category);
+                            }}
+                          />
                         </div>
                         <div className="min-w-0">
                           <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-800">
@@ -1760,6 +1808,9 @@ export default function ExchangeDevicePage() {
                             }
                             alt={selectedUpgradeProduct.model}
                             className="max-w-full max-h-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.src = getCategoryFallbackImage(selectedUpgradeProduct.category);
+                            }}
                           />
                         </div>
                         <div className="min-w-0">
