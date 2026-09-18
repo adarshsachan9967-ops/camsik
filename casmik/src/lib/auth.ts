@@ -56,6 +56,8 @@ export interface CustomerOrderRecord {
   couponCode?: string;
   couponDiscount: number;
   netPayable: number;
+  balanceOwedToUser?: number;
+  payoutDetails?: string;
 }
 
 const USER_STORAGE_KEY = 'camsik_customer_user';

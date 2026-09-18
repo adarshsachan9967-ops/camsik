@@ -95,7 +95,7 @@ export default function MyOrdersPage() {
 
         {/* Page Banner */}
         <section className="bg-white border-b border-slate-200/80 py-8 sm:py-10">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-black mb-3 border border-emerald-200">
@@ -145,7 +145,7 @@ export default function MyOrdersPage() {
         </section>
 
         {/* Content Section */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <section className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
           {/* Filter Tabs & Phone Quick-Lookup */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -233,20 +233,36 @@ export default function MyOrdersPage() {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-500 font-medium">Net Amount:</span>
-                        <span className="text-base font-black text-slate-900">
-                          ₹{order.netPayable.toLocaleString('en-IN')}
-                        </span>
-                        <span
-                          className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
-                            order.paymentStatus === 'paid'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200'
-                          }`}
-                        >
-                          {order.paymentStatus === 'paid' ? 'Paid Online' : 'Pay on Delivery'}
-                        </span>
+                      <div className="flex items-center gap-3">
+                        {order.balanceOwedToUser && order.balanceOwedToUser > 0 ? (
+                          <>
+                            <div className="text-right">
+                              <span className="text-[10px] text-emerald-700 font-bold block">Balance to Receive</span>
+                              <span className="text-base font-black text-emerald-600">
+                                +₹{order.balanceOwedToUser.toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              Payout on Handover
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-xs text-slate-500 font-medium">Net Amount:</span>
+                            <span className="text-base font-black text-slate-900">
+                              ₹{order.netPayable.toLocaleString('en-IN')}
+                            </span>
+                            <span
+                              className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                                order.paymentStatus === 'paid'
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+                              }`}
+                            >
+                              {order.paymentStatus === 'paid' ? 'Paid Online' : 'Pay on Delivery'}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -454,6 +470,18 @@ export default function MyOrdersPage() {
                     ₹{selectedReceiptOrder.netPayable.toLocaleString('en-IN')}
                   </span>
                 </div>
+
+                {selectedReceiptOrder.balanceOwedToUser && selectedReceiptOrder.balanceOwedToUser > 0 && (
+                  <div className="pt-2 border-t border-slate-200 text-xs">
+                    <div className="flex justify-between font-black text-emerald-700 text-sm">
+                      <span>Balance to be Paid to You:</span>
+                      <span>+ ₹{selectedReceiptOrder.balanceOwedToUser.toLocaleString('en-IN')}</span>
+                    </div>
+                    <p className="text-[11px] text-emerald-700 font-medium mt-0.5">
+                      *Remaining balance will be paid to you via UPI / Bank account immediately after receiving &amp; testing your old device.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4 p-3 rounded-xl bg-blue-50/60 border border-blue-200/60 text-[11px] text-blue-800 font-medium">

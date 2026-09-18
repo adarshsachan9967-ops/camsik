@@ -29,6 +29,11 @@ import {
   BatteryCharging,
   Layers,
   Award,
+  Package,
+  Receipt,
+  Wallet,
+  Coins,
+  CheckCircle2,
 } from 'lucide-react';
 import CustomerHeader from '@/components/CustomerHeader';
 import CustomerFooter from '@/components/CustomerFooter';
@@ -149,134 +154,161 @@ const oldTradeInDevices: OldDeviceItem[] = [
     name: 'Fujifilm X-T4 Mirrorless',
     image: '/assets/images/refurbished/fujifilm-xt5.jpg',
     basePrice: 79000,
-    specs: '26.1 MP X-Trans CMOS 4, 6.5-stop IBIS, 4K 60p 10-bit',
+    specs: '26.1 MP X-Trans CMOS 4, In-Body Image Stabilization',
   },
   {
     id: 'old-cam-fuji-xt5',
     category: 'Cameras',
     brand: 'Fujifilm',
-    name: 'Fujifilm X-T5 Mirrorless Body',
+    name: 'Fujifilm X-T5 Mirrorless',
     image: '/assets/images/refurbished/fujifilm-xt5.jpg',
     basePrice: 110000,
-    specs: '40.2 MP X-Trans CMOS 5 HR, Deep Learning AI AF, 6.2K 30p',
+    specs: '40.2 MP X-Trans 5 HR, 6.2K 30p, AI Deep Learning AF',
+  },
+  {
+    id: 'old-cam-lumix-s5ii',
+    category: 'Cameras',
+    brand: 'Panasonic',
+    name: 'Lumix DC-S5II Body',
+    image: '/assets/images/refurbished/sony-a7.jpg',
+    basePrice: 115000,
+    specs: '24.2 MP Full-Frame, Phase Hybrid AF, Unlimited 4K 60p',
+  },
+  {
+    id: 'old-cam-lumix-s1',
+    category: 'Cameras',
+    brand: 'Panasonic',
+    name: 'Lumix S1 Pro Body',
+    image: '/assets/images/refurbished/sony-a7.jpg',
+    basePrice: 92000,
+    specs: '24.2 MP Full-Frame, 96 MP High-Res Shot, Dual I.S. 2',
   },
 
   // Lenses
   {
-    id: 'old-lens-sony-1635gm',
+    id: 'old-lens-sony-2470',
     category: 'Lenses',
     brand: 'Sony',
-    name: 'Sony FE 16-35mm f/2.8 GM Lens',
-    image: '/assets/images/refurbished/sony-1635gm.jpg',
-    basePrice: 75000,
-    specs: 'G Master Wide Zoom, Constant f/2.8, Direct Drive SSM',
+    name: 'Sony FE 24-70mm f/2.8 GM',
+    image: '/assets/images/refurbished/lens.jpg',
+    basePrice: 72000,
+    specs: 'Direct Drive SSM, Nano AR Coating, 9-Blade Circular Aperture',
   },
   {
-    id: 'old-lens-sony-2470gm',
+    id: 'old-lens-sony-1635',
     category: 'Lenses',
     brand: 'Sony',
-    name: 'Sony FE 24-70mm f/2.8 GM I',
-    image: '/assets/images/refurbished/sony-1635gm.jpg',
-    basePrice: 72000,
-    specs: 'G Master Standard Zoom, Constant f/2.8, Direct Drive SSM',
+    name: 'Sony FE 16-35mm f/2.8 GM',
+    image: '/assets/images/refurbished/lens.jpg',
+    basePrice: 75000,
+    specs: 'Ultra-wide angle zoom, Constant f/2.8 aperture, Dust & Moisture resistant',
+  },
+  {
+    id: 'old-lens-canon-rf-50',
+    category: 'Lenses',
+    brand: 'Canon',
+    name: 'Canon RF 50mm f/1.2L USM',
+    image: '/assets/images/refurbished/lens.jpg',
+    basePrice: 95000,
+    specs: 'Ultra-fast f/1.2 prime, Ring-type USM, Control Ring',
+  },
+  {
+    id: 'old-lens-nikon-z-2470',
+    category: 'Lenses',
+    brand: 'Nikon',
+    name: 'NIKKOR Z 24-70mm f/2.8 S',
+    image: '/assets/images/refurbished/lens.jpg',
+    basePrice: 88000,
+    specs: 'Multi-focus system, ARNEO & Nano Crystal Coat, OLED panel',
   },
 
   // Smartphones
   {
-    id: 'old-phone-ip14pm',
+    id: 'old-phone-ip13pro',
     category: 'Smartphones',
     brand: 'Apple',
-    name: 'Apple iPhone 14 Pro Max',
-    image: '/assets/images/refurbished/iphone-14-pro-max.png',
-    basePrice: 52000,
-    specs: '6.7" Super Retina XDR OLED, A16 Bionic, 48MP Pro Camera',
+    name: 'Apple iPhone 13 Pro (128GB)',
+    image: '/assets/images/refurbished/iphone-15-pro.png',
+    basePrice: 46000,
+    specs: 'A15 Bionic, 120Hz ProMotion Super Retina, Triple 12MP',
   },
   {
-    id: 'old-phone-ip14p',
+    id: 'old-phone-ip14',
     category: 'Smartphones',
     brand: 'Apple',
-    name: 'Apple iPhone 14 Pro',
-    image: '/assets/images/refurbished/iphone-14-pro-gold.jpg',
-    basePrice: 47000,
-    specs: '6.1" Super Retina XDR OLED, Dynamic Island, A16 Bionic',
+    name: 'Apple iPhone 14 (128GB)',
+    image: '/assets/images/refurbished/iphone-14.png',
+    basePrice: 39000,
+    specs: 'Super Retina XDR, Photonic Engine, Crash Detection',
   },
   {
-    id: 'old-phone-ip13pm',
+    id: 'old-phone-ip14pro',
     category: 'Smartphones',
     brand: 'Apple',
-    name: 'Apple iPhone 13 Pro Max',
-    image: '/assets/images/refurbished/iphone-13-pro-max.png',
-    basePrice: 38000,
-    specs: '6.7" ProMotion 120Hz, A15 Bionic, Triple Camera',
+    name: 'Apple iPhone 14 Pro (128GB)',
+    image: '/assets/images/refurbished/iphone-15-pro.png',
+    basePrice: 58000,
+    specs: 'Dynamic Island, Always-On display, 48MP Main sensor',
+  },
+  {
+    id: 'old-phone-s22u',
+    category: 'Smartphones',
+    brand: 'Samsung',
+    name: 'Samsung Galaxy S22 Ultra 5G',
+    image: '/assets/images/refurbished/samsung-s24-ultra.png',
+    basePrice: 42000,
+    specs: 'Embedded S Pen, Nightography 108MP, 100x Space Zoom',
   },
   {
     id: 'old-phone-s23u',
     category: 'Smartphones',
     brand: 'Samsung',
-    name: 'Samsung Galaxy S23 Ultra',
-    image: '/assets/images/refurbished/galaxy-s24-ultra.png',
-    basePrice: 46000,
-    specs: '6.8" Dynamic AMOLED 2X, Snapdragon 8 Gen 2, 200MP Quad Camera',
+    name: 'Samsung Galaxy S23 Ultra 5G',
+    image: '/assets/images/refurbished/samsung-s24-ultra.png',
+    basePrice: 62000,
+    specs: '200MP sensor, Snapdragon 8 Gen 2 for Galaxy, 5000mAh',
   },
   {
-    id: 'old-phone-pix8p',
+    id: 'old-phone-pixel7pro',
     category: 'Smartphones',
     brand: 'Google',
-    name: 'Google Pixel 8 Pro',
-    image: '/assets/images/refurbished/pixel-8-pro.png',
-    basePrice: 42000,
-    specs: '6.7" Super Actua OLED, Google Tensor G3, Pro Camera System',
-  },
-  {
-    id: 'old-phone-op12',
-    category: 'Smartphones',
-    brand: 'OnePlus',
-    name: 'OnePlus 12 5G',
-    image: '/assets/images/refurbished/oneplus-12.png',
-    basePrice: 38000,
-    specs: '6.82" 2K 120Hz ProXDR, Snapdragon 8 Gen 3, Hasselblad',
+    name: 'Google Pixel 7 Pro (128GB)',
+    image: '/assets/images/refurbished/google-pixel-8-pro.png',
+    basePrice: 32000,
+    specs: 'Google Tensor G2, 30x Super Res Zoom, Macro Focus',
   },
 
-  // Laptops & Tablets
+  // Laptops
   {
-    id: 'old-lap-macbook-air',
+    id: 'old-lap-macbook-air-m1',
     category: 'Laptops',
     brand: 'Apple',
-    name: 'Apple MacBook Air M1',
-    image: '/assets/images/refurbished/macbook-air-m2.png',
-    basePrice: 42000,
-    specs: '13.3" Retina Display, Apple M1 Chip 8-Core, 8GB Unified RAM',
+    name: 'Apple MacBook Air M1 (256GB)',
+    image: '/assets/images/refurbished/macbook-pro.jpg',
+    basePrice: 43000,
+    specs: 'Apple M1 Chip, 8-Core CPU, 13.3" Retina, 18hr battery',
   },
   {
-    id: 'old-lap-macbook-pro',
+    id: 'old-lap-macbook-pro-m1',
     category: 'Laptops',
     brand: 'Apple',
     name: 'Apple MacBook Pro 14" M1 Pro',
-    image: '/assets/images/refurbished/macbook-pro-14.png',
-    basePrice: 78000,
-    specs: '14.2" Liquid Retina XDR 120Hz, M1 Pro 8-Core, 16GB RAM',
+    image: '/assets/images/refurbished/macbook-pro.jpg',
+    basePrice: 82000,
+    specs: '10-Core CPU, 16-Core GPU, Liquid Retina XDR, MagSafe 3',
   },
   {
-    id: 'old-tab-ipad-pro',
-    category: 'Laptops',
-    brand: 'Apple',
-    name: 'Apple iPad Pro 12.9" M1',
-    image: '/assets/images/refurbished/ipad-pro-m2.jpg',
-    basePrice: 46000,
-    specs: '12.9" Liquid Retina XDR Mini-LED, Apple M1 Chip, Face ID',
-  },
-  {
-    id: 'old-lap-dell-xps',
+    id: 'old-lap-dell-xps-15',
     category: 'Laptops',
     brand: 'Dell',
-    name: 'Dell XPS 13 9310',
-    image: '/assets/images/refurbished/dell-xps-15.png',
-    basePrice: 45000,
-    specs: '13.4" FHD+ InfinityEdge, Intel Core i7 11th Gen, 16GB RAM',
+    name: 'Dell XPS 15 9520 (i7 12th Gen)',
+    image: '/assets/images/refurbished/macbook-pro.jpg',
+    basePrice: 65000,
+    specs: 'Intel Core i7-12700H, RTX 3050 Ti, 15.6" OLED 3.5K',
   },
 ];
 
-// ── Diagnostic Questions for Each Category ──
+// Diagnostic Questions Data
 interface DiagnosticOption {
   label: string;
   sublabel: string;
@@ -291,51 +323,48 @@ interface DiagnosticQuestion {
 
 const cameraQuestions: DiagnosticQuestion[] = [
   {
-    id: 'sensor',
-    question: 'Sensor & Optics Condition?',
+    id: 'power',
+    question: 'Does the camera power on & shoot normally?',
     options: [
-      { label: 'Spotless & Pristine', sublabel: 'Zero scratches or dust', adj: 0 },
-      { label: 'Minor Normal Dust', sublabel: 'Cleanable with blower', adj: -1500 },
-      { label: 'Visible Scratches', sublabel: 'Marks on sensor filter', adj: -6000 },
-      { label: 'Fungus on Sensor Glass', sublabel: 'Needs deep service', adj: -10000 },
+      { label: 'Powers on & Shoots Perfectly', sublabel: 'Normal shutter response & dials', adj: 0 },
+      { label: 'Intermittent Shutter Lag', sublabel: 'Takes photos but occasional pause', adj: -3000 },
+      { label: 'Does Not Power On', sublabel: 'Requires servicing / board check', adj: -8000 },
     ],
   },
   {
-    id: 'shutter',
-    question: 'Estimated Shutter Actuations?',
+    id: 'sensor',
+    question: 'Sensor Glass & Viewfinder Condition?',
     options: [
-      { label: 'Low (< 10,000)', sublabel: 'Barely used / Like new', adj: 3000 },
-      { label: 'Moderate (10k - 50k)', sublabel: 'Normal hobbyist use', adj: 0 },
-      { label: 'High (50k - 100k)', sublabel: 'Active photography use', adj: -3500 },
-      { label: 'Heavy (> 100,000)', sublabel: 'Commercial usage', adj: -7000 },
+      { label: 'Pristine Flawless Sensor', sublabel: 'Zero spots, dust or scratches', adj: 2000 },
+      { label: 'Minor Dust (Easily Cleaned)', sublabel: 'Standard sensor dust specks', adj: 0 },
+      { label: 'Visible Scratches / Fungus', sublabel: 'Coating damage or fungus mark', adj: -5000 },
     ],
   },
   {
     id: 'body',
-    question: 'Chassis Body & Rubber Grip?',
+    question: 'Body Cosmetic & Rubber Grip Condition?',
     options: [
-      { label: 'Mint / Zero Marks', sublabel: 'Flawless aesthetic', adj: 2000 },
-      { label: 'Good (Minor Scuffs)', sublabel: 'Subtle signs of normal use', adj: 0 },
-      { label: 'Peeling Rubber / Dent', sublabel: 'Rubber loose or corner dent', adj: -3000 },
-      { label: 'Heavy Wear / Missing Parts', sublabel: 'Missing port doors/caps', adj: -5000 },
-    ],
-  },
-  {
-    id: 'functional',
-    question: 'Autofocus & Electronic Functions?',
-    options: [
-      { label: '100% Fully Functional', sublabel: 'All dials, AF, EVF tested', adj: 0 },
-      { label: 'Minor Sticky Button', sublabel: 'Slight stiffness in dials', adj: -2000 },
-      { label: 'Autofocus Hunt / Error', sublabel: 'Erratic AF or sensor error', adj: -6000 },
+      { label: 'Like New / Flawless', sublabel: 'No scratches, firm rubber grips', adj: 1500 },
+      { label: 'Good (Minor Rub Marks)', sublabel: 'Normal cosmetic edge wear', adj: 0 },
+      { label: 'Heavy Paint Wear / Peeling', sublabel: 'Loose rubber or body dings', adj: -3500 },
     ],
   },
   {
     id: 'accessories',
     question: 'Original Accessories Included?',
     options: [
-      { label: 'Battery + Charger + Box', sublabel: 'Complete packaging', adj: 2000 },
-      { label: 'Battery + Charger Only', sublabel: 'No original retail box', adj: 0 },
-      { label: 'Device Only / No Charger', sublabel: 'Missing charging unit', adj: -2000 },
+      { label: 'Full Box + Charger + 2 Batteries', sublabel: 'Complete packaging & caps', adj: 2500 },
+      { label: 'Original Charger + 1 Battery', sublabel: 'Basic working bundle', adj: 0 },
+      { label: 'Third-Party Charger Only', sublabel: 'No original box/charger', adj: -2000 },
+    ],
+  },
+  {
+    id: 'shutter',
+    question: 'Estimated Shutter Actuations?',
+    options: [
+      { label: '< 20,000 Shutter Count', sublabel: 'Light hobbyist usage', adj: 1500 },
+      { label: '20,000 - 60,000 Shutter Count', sublabel: 'Moderate regular use', adj: 0 },
+      { label: '> 80,000 Shutter Count', sublabel: 'Heavy professional workload', adj: -4000 },
     ],
   },
 ];
@@ -343,48 +372,38 @@ const cameraQuestions: DiagnosticQuestion[] = [
 const smartphoneQuestions: DiagnosticQuestion[] = [
   {
     id: 'screen',
-    question: 'Display Glass & Touch Screen?',
+    question: 'Display & Touchscreen Status?',
     options: [
-      { label: 'Flawless & Pristine', sublabel: 'Zero scratches or marks', adj: 0 },
-      { label: 'Minor Micro-scratches', sublabel: 'Invisible when screen is on', adj: -1500 },
-      { label: 'Deep Scratches', sublabel: 'Felt with fingernail', adj: -4000 },
-      { label: 'Cracked Glass / Lines', sublabel: 'Broken glass or display lines', adj: -8000 },
+      { label: 'Original Flawless Screen', sublabel: 'Zero scratches, perfect TrueTone/120Hz', adj: 2000 },
+      { label: 'Minor Hairline Scratches', sublabel: 'Touch & display 100% functional', adj: 0 },
+      { label: 'Cracked Glass / Black Dots', sublabel: 'Display bleeding or lines', adj: -6000 },
     ],
   },
   {
     id: 'body',
-    question: 'Chassis Frame & Back Glass?',
+    question: 'Back Glass & Metal Frame?',
     options: [
-      { label: 'Pristine / No Marks', sublabel: 'Chassis looks brand new', adj: 1500 },
-      { label: 'Normal Pocket Wear', sublabel: 'Light scuffs along bezel', adj: 0 },
-      { label: 'Dents or Frame Chips', sublabel: 'Corner dents from drops', adj: -3000 },
-      { label: 'Heavy Frame Scratches', sublabel: 'Noticeable cosmetic wear', adj: -5000 },
+      { label: 'Mint / Pristine Condition', sublabel: 'Always used in case', adj: 1000 },
+      { label: 'Minor Edge Dents / Scratches', sublabel: 'Standard daily wear', adj: 0 },
+      { label: 'Cracked Back Glass / Bent', sublabel: 'Chassis damage', adj: -3500 },
     ],
   },
   {
     id: 'battery',
     question: 'Battery Health Percentage?',
     options: [
-      { label: '90%+ Battery Health', sublabel: 'Exceptional battery endurance', adj: 1500 },
-      { label: '80% - 89% Health', sublabel: 'Normal day-to-day life', adj: 0 },
-      { label: 'Below 80% / Service', sublabel: 'Shows service notice', adj: -3000 },
+      { label: '90% - 100% Health', sublabel: 'Excellent battery longevity', adj: 1500 },
+      { label: '80% - 89% Health', sublabel: 'Standard operational health', adj: 0 },
+      { label: 'Below 80% / Service Alert', sublabel: 'Requires battery replacement', adj: -3000 },
     ],
   },
   {
-    id: 'functional',
-    question: 'Face ID, Cameras & Speakers?',
+    id: 'hardware',
+    question: 'Cameras, FaceID & Microphones?',
     options: [
-      { label: '100% Fully Functional', sublabel: 'Cameras, Face ID, mics tested', adj: 0 },
-      { label: 'Camera Blur / Lens Scratch', sublabel: 'Minor optic imperfection', adj: -3500 },
-      { label: 'Face ID / Touch Defect', sublabel: 'Biometrics unavailable', adj: -5000 },
-    ],
-  },
-  {
-    id: 'accessories',
-    question: 'Box & Original Cable?',
-    options: [
-      { label: 'Original Box + Cable', sublabel: 'Matching IMEI box', adj: 1000 },
-      { label: 'Device Only', sublabel: 'Without retail accessories', adj: 0 },
+      { label: 'All Cameras & Sensors Perfect', sublabel: '0.5x, 1x, 3x, FaceID 100%', adj: 0 },
+      { label: 'FaceID / Fingerprint Failure', sublabel: 'Biometric sensor unavailable', adj: -3000 },
+      { label: 'Camera Shaking / Foggy Lens', sublabel: 'OIS motor or lens flaw', adj: -4500 },
     ],
   },
 ];
@@ -392,11 +411,11 @@ const smartphoneQuestions: DiagnosticQuestion[] = [
 const laptopQuestions: DiagnosticQuestion[] = [
   {
     id: 'display',
-    question: 'Display Panel & Screen Glass?',
+    question: 'Screen & Retina Coating?',
     options: [
-      { label: 'Flawless Retina / OLED', sublabel: 'Zero dead pixels or marks', adj: 0 },
-      { label: 'Minor Keyboard Imprint', sublabel: 'Faint coating mark', adj: -3000 },
-      { label: 'Dead Pixels / Scratch', sublabel: 'Visible screen flaw', adj: -7000 },
+      { label: 'Pristine Flawless Display', sublabel: 'No dead pixels or delamination', adj: 1500 },
+      { label: 'Keyboard Imprints / Micro Scratches', sublabel: 'Visible only under direct light', adj: 0 },
+      { label: 'Cracked Panel / Lines / Stain', sublabel: 'Screen replacement needed', adj: -7000 },
     ],
   },
   {
@@ -495,6 +514,9 @@ export default function ExchangeDevicePage() {
   const [customerCity, setCustomerCity] = useState('');
   const [customerPincode, setCustomerPincode] = useState('');
   const [paymentPreference, setPaymentPreference] = useState<'delivery' | 'online' | 'emi'>('delivery');
+
+  // Payout Details if Old Device Trade-in Value > Upgrade Price
+  const [payoutDetails, setPayoutDetails] = useState('');
 
   // Auth Gate
   const [currentUserState, setCurrentUserState] = useState<CustomerUser | null>(null);
@@ -609,15 +631,13 @@ export default function ExchangeDevicePage() {
   // ── Financial Breakdown for Checkout (Step 5) ──
   const upgradeDevicePrice = selectedUpgradeProduct?.sellingPrice || 0;
   const couponDiscountAmount = appliedCoupon ? appliedCoupon.discount : 0;
-  const netPayableAmount = Math.max(
-    upgradeDevicePrice - totalTradeInCredit - couponDiscountAmount,
-    0
-  );
+  const netDifference = upgradeDevicePrice - totalTradeInCredit - couponDiscountAmount;
+  const netPayableAmount = Math.max(netDifference, 0);
+  const balanceOwedToUser = netDifference < 0 ? Math.abs(netDifference) : 0;
 
   // ── Navigation Handlers ──
   const handleSelectOldDevice = (item: OldDeviceItem) => {
     setSelectedOldDevice(item);
-    // Initialize default answers (option index 0 for each question)
     const defaults: Record<string, number> = {};
     const questions =
       item.category === 'Smartphones'
@@ -689,7 +709,6 @@ export default function ExchangeDevicePage() {
       if (authPhone.replace(/\D/g, '').length < 10) return;
       setAuthOtpSent(true);
     } else {
-      // Complete login
       const newUser: CustomerUser = {
         id: 'user-' + Date.now(),
         name: authName.trim() || `Customer ${authPhone.slice(-4)}`,
@@ -730,7 +749,14 @@ export default function ExchangeDevicePage() {
       pincode: customerPincode,
       pickupDate,
       pickupSlot,
-      paymentMethod: paymentPreference === 'delivery' ? 'Pay on Handover (Cash/UPI)' : paymentPreference === 'online' ? 'Prepaid Online' : 'No-Cost EMI',
+      paymentMethod:
+        balanceOwedToUser > 0
+          ? 'Doorstep Payout to Customer (Cash/UPI)'
+          : paymentPreference === 'delivery'
+          ? 'Pay on Handover (Cash/UPI)'
+          : paymentPreference === 'online'
+          ? 'Prepaid Online'
+          : 'No-Cost EMI',
       paymentStatus: paymentPreference === 'online' ? 'paid' : 'pay_on_delivery',
       oldDevice: selectedOldDevice
         ? {
@@ -767,6 +793,8 @@ export default function ExchangeDevicePage() {
       couponCode: appliedCoupon?.code,
       couponDiscount: couponDiscountAmount,
       netPayable: netPayableAmount,
+      balanceOwedToUser: balanceOwedToUser > 0 ? balanceOwedToUser : undefined,
+      payoutDetails: balanceOwedToUser > 0 ? payoutDetails : undefined,
     };
 
     saveCustomerOrder(orderRecord);
@@ -781,26 +809,26 @@ export default function ExchangeDevicePage() {
         <CustomerHeader />
 
         {/* ─────────────────────────────────────────────────────────────
-            HEADER HERO & WORKFLOW STEPPER BAR (MATCHING SCREENSHOT 1)
+            HEADER HERO & WORKFLOW STEPPER BAR (FULL WIDTH & EXPANSIVE)
         ────────────────────────────────────────────────────────────── */}
-        <section className="bg-white border-b border-slate-200/80 pt-6 pb-4 sm:pt-8 sm:pb-6">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-black mb-3 border border-emerald-200">
-                <RefreshCw size={13} className="animate-spin-slow text-emerald-600" />
+        <section className="bg-white border-b border-slate-200/80 pt-6 pb-4 sm:pt-8 sm:pb-6 shadow-2xs">
+          <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
+            <div className="max-w-4xl">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-black mb-3 border border-emerald-200/80 shadow-2xs">
+                <RefreshCw size={13} className="text-emerald-600" />
                 <span>UPGRADE &amp; TRADE-IN PROGRAM</span>
               </div>
-              <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
                 Exchange Your Old Device for a Newer Model
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                Get guaranteed ₹3,000 extra exchange bonus on top of market valuation. Simultaneous doorstep handover with zero downtime for your work.
+              <p className="text-xs sm:text-sm lg:text-base text-slate-600 mt-2 font-medium">
+                Get guaranteed ₹3,000 extra exchange bonus on top of market valuation. Simultaneous doorstep handover with zero downtime for your photography &amp; tech workflow.
               </p>
             </div>
 
             {/* Stepper Progress Bar */}
-            <div className="mt-6 pt-5 border-t border-slate-100 overflow-x-auto scrollbar-none">
-              <div className="flex items-center justify-between min-w-[650px] text-xs">
+            <div className="mt-8 pt-5 border-t border-slate-100 overflow-x-auto scrollbar-none">
+              <div className="flex items-center justify-between min-w-[750px] text-xs">
                 {[
                   { key: 'select-old', num: '1', title: 'Select Old Device', desc: 'Choose trade-in gear' },
                   { key: 'condition', num: '2', title: 'Condition Check', desc: 'Get instant valuation' },
@@ -817,26 +845,26 @@ export default function ExchangeDevicePage() {
 
                   return (
                     <React.Fragment key={s.key}>
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-3">
                         <div
-                          className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs transition-all ${
+                          className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs transition-all shrink-0 ${
                             isCurrent
-                              ? 'bg-emerald-600 text-white ring-4 ring-emerald-100 shadow-xs'
+                              ? 'bg-emerald-600 text-white ring-4 ring-emerald-100 shadow-sm'
                               : isPast
                               ? 'bg-slate-900 text-white'
                               : 'bg-slate-100 text-slate-400'
                           }`}
                         >
-                          {isPast ? <Check size={14} strokeWidth={3} /> : s.num}
+                          {isPast ? <Check size={15} strokeWidth={3} /> : s.num}
                         </div>
                         <div>
-                          <p className={`font-bold leading-none ${isCurrent ? 'text-slate-900 font-black' : isPast ? 'text-slate-700' : 'text-slate-400'}`}>
+                          <p className={`text-xs font-bold leading-tight ${isCurrent ? 'text-slate-900 font-black' : isPast ? 'text-slate-700' : 'text-slate-400'}`}>
                             {s.title}
                           </p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">{s.desc}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">{s.desc}</p>
                         </div>
                       </div>
-                      {idx < arr.length - 1 && <ChevronRight size={14} className="text-slate-300 mx-2 shrink-0" />}
+                      {idx < arr.length - 1 && <ChevronRight size={16} className="text-slate-300 mx-2 shrink-0" />}
                     </React.Fragment>
                   );
                 })}
@@ -846,45 +874,45 @@ export default function ExchangeDevicePage() {
         </section>
 
         {/* ─────────────────────────────────────────────────────────────
-            STEP 1: SELECT OLD DEVICE (SCREENSHOT 1)
+            STEP 1: SELECT OLD DEVICE (FULL WIDTH 5-COL GRID)
         ────────────────────────────────────────────────────────────── */}
         {step === 'select-old' && (
-          <section className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <section className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8 sm:py-10">
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 xl:p-10 shadow-sm">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 mb-8">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">
                     Select Your Existing Device
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
                     Choose the camera body, lens, smartphone or laptop you want to trade in
                   </p>
                 </div>
 
                 {/* Real-time search */}
-                <div className="relative w-full sm:w-72">
-                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <div className="relative w-full sm:w-80 lg:w-96">
+                  <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search your old device..."
+                    placeholder="Search your device (e.g. Sony A7, iPhone 14, MacBook)..."
                     value={oldSearchQuery}
                     onChange={(e) => setOldSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
+                    className="w-full pl-11 pr-10 py-3 rounded-2xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 bg-slate-50/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all shadow-2xs"
                   />
                   {oldSearchQuery && (
                     <button
                       type="button"
                       onClick={() => setOldSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                     >
-                      <X size={14} />
+                      <X size={15} />
                     </button>
                   )}
                 </div>
               </div>
 
               {/* Category Filter Pills */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 scrollbar-none">
+              <div className="flex items-center gap-2.5 overflow-x-auto pb-3 mb-8 scrollbar-none">
                 {[
                   { key: 'all', label: 'All Equipment' },
                   { key: 'cameras', label: '📷 DSLR & Mirrorless' },
@@ -896,10 +924,10 @@ export default function ExchangeDevicePage() {
                     key={tab.key}
                     type="button"
                     onClick={() => setOldCategoryFilter(tab.key)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    className={`px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
                       oldCategoryFilter === tab.key
-                        ? 'bg-slate-900 text-white shadow-sm'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
+                        ? 'bg-slate-900 text-white shadow-md'
+                        : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200/80'
                     }`}
                   >
                     {tab.label}
@@ -907,27 +935,27 @@ export default function ExchangeDevicePage() {
                 ))}
               </div>
 
-              {/* Grid of Devices (Matches Screenshot 1) */}
+              {/* Grid of Devices (Full Width Responsive 5-Col) */}
               {filteredOldDevices.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5">
                   {filteredOldDevices.map((item) => (
                     <button
                       key={item.id}
                       type="button"
                       onClick={() => handleSelectOldDevice(item)}
-                      className="p-4 rounded-2xl border border-slate-200/90 bg-white hover:border-emerald-500 hover:shadow-md transition-all text-left flex items-center gap-3.5 group cursor-pointer"
+                      className="p-4 sm:p-5 rounded-3xl border border-slate-200 bg-white hover:border-emerald-500 hover:shadow-xl hover:-translate-y-0.5 transition-all text-left flex items-center gap-4 group cursor-pointer"
                     >
-                      <div className="w-16 h-16 rounded-xl bg-slate-50 p-1 flex items-center justify-center shrink-0 border border-slate-100 group-hover:scale-105 transition-transform">
+                      <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-slate-50/90 p-2 flex items-center justify-center shrink-0 border border-slate-100 group-hover:scale-105 transition-transform duration-300">
                         <img src={item.image} alt={item.name} className="max-w-full max-h-full object-contain" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="text-[10px] font-black uppercase text-emerald-700 tracking-wider">
+                        <span className="text-[10px] font-black uppercase text-emerald-700 tracking-wider px-2 py-0.5 rounded-md bg-emerald-50 inline-block mb-1">
                           {item.brand}
                         </span>
-                        <p className="text-sm font-black text-slate-900 truncate leading-snug">
+                        <p className="text-sm sm:text-base font-black text-slate-900 truncate leading-snug">
                           {item.name}
                         </p>
-                        <p className="text-xs font-extrabold text-emerald-600 mt-1">
+                        <p className="text-xs sm:text-sm font-extrabold text-emerald-600 mt-1">
                           Up to ₹{item.basePrice.toLocaleString('en-IN')}
                         </p>
                       </div>
@@ -935,8 +963,8 @@ export default function ExchangeDevicePage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <p className="text-sm font-semibold text-slate-500">
+                <div className="text-center py-16">
+                  <p className="text-base font-semibold text-slate-500">
                     No devices found matching &ldquo;{oldSearchQuery}&rdquo;.
                   </p>
                   <button
@@ -945,7 +973,7 @@ export default function ExchangeDevicePage() {
                       setOldSearchQuery('');
                       setOldCategoryFilter('all');
                     }}
-                    className="mt-3 text-xs font-bold text-emerald-600 hover:underline"
+                    className="mt-3 text-sm font-bold text-emerald-600 hover:underline cursor-pointer"
                   >
                     Clear search filter
                   </button>
@@ -956,183 +984,235 @@ export default function ExchangeDevicePage() {
         )}
 
         {/* ─────────────────────────────────────────────────────────────
-            STEP 2: ANSWER DIAGNOSTIC QUESTIONS
+            STEP 2: ANSWER DIAGNOSTIC QUESTIONS (FULL WIDTH 2-COL LAYOUT)
         ────────────────────────────────────────────────────────────── */}
         {step === 'condition' && selectedOldDevice && (
-          <section className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <section className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
             <button
               type="button"
               onClick={() => setStep('select-old')}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 mb-6 group"
+              className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 mb-6 group cursor-pointer"
             >
-              <ArrowLeft size={15} className="group-hover:-translate-x-1 transition-transform" />
-              <span>Back to Gear Selection</span>
+              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+              <span>Back to Device Selection</span>
             </button>
 
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm">
-              {/* Selected Old Device Banner */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-14 h-14 rounded-xl bg-white p-1 border border-slate-200 flex items-center justify-center shrink-0">
-                    <img src={selectedOldDevice.image} alt={selectedOldDevice.name} className="max-w-full max-h-full object-contain" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-black uppercase text-slate-500">{selectedOldDevice.brand} · {selectedOldDevice.category}</span>
-                    <h3 className="text-base font-black text-slate-900 leading-tight">{selectedOldDevice.name}</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">{selectedOldDevice.specs}</p>
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Left Column: Diagnostics Questions */}
+              <div className="lg:col-span-8 2xl:col-span-8 space-y-6">
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+                  {/* Selected Device Banner */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-4 mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-2xl bg-white p-1.5 border border-slate-200 flex items-center justify-center shrink-0">
+                        <img src={selectedOldDevice.image} alt={selectedOldDevice.name} className="max-w-full max-h-full object-contain" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                          {selectedOldDevice.brand} · {selectedOldDevice.category}
+                        </span>
+                        <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                          {selectedOldDevice.name}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1">{selectedOldDevice.specs}</p>
+                      </div>
+                    </div>
 
-                <div className="text-right hidden sm:block">
-                  <span className="text-[11px] text-slate-400 font-medium">Base Market Value</span>
-                  <p className="text-base font-black text-slate-800">₹{selectedOldDevice.basePrice.toLocaleString('en-IN')}</p>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-                  Verify Device Condition &amp; Shutter
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                  Select accurate options below for certified doorstep trade-in valuation
-                </p>
-              </div>
-
-              {/* Diagnostic Questions */}
-              <div className="space-y-6">
-                {activeQuestions.map((q) => (
-                  <div key={q.id} className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80">
-                    <p className="text-sm font-black text-slate-900 mb-3">{q.question}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                      {q.options.map((opt) => {
-                        const isSelected = answers[q.id] === opt.adj;
-                        return (
-                          <button
-                            key={opt.label}
-                            type="button"
-                            onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: opt.adj }))}
-                            className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                              isSelected
-                                ? 'border-emerald-500 bg-white ring-2 ring-emerald-500/20 shadow-xs'
-                                : 'border-slate-200 bg-white hover:border-slate-300'
-                            }`}
-                          >
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className={`text-xs font-black ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>
-                                  {opt.label}
-                                </span>
-                                {isSelected && <Check size={13} className="text-emerald-600" />}
-                              </div>
-                              <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                                {opt.sublabel}
-                              </p>
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-400 mt-2">
-                              {opt.adj > 0 ? `+₹${opt.adj}` : opt.adj < 0 ? `-₹${Math.abs(opt.adj)}` : 'Included'}
-                            </span>
-                          </button>
-                        );
-                      })}
+                    <div className="text-right hidden sm:block shrink-0">
+                      <span className="text-[11px] text-slate-400 font-medium">Base Market Value</span>
+                      <p className="text-lg font-black text-slate-800">
+                        ₹{selectedOldDevice.basePrice.toLocaleString('en-IN')}
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
 
-              {/* Live Trade-in Value Breakdown Footer */}
-              <div className="mt-8 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-teal-500/10 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-600">Calculated Trade-In Credit:</span>
-                    <span className="text-xs font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                      +₹{exchangeBonus.toLocaleString('en-IN')} Guaranteed Bonus Included
-                    </span>
+                  <div className="mb-6">
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+                      Verify Device Condition &amp; Shutter
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                      Select accurate options below for certified doorstep trade-in valuation
+                    </p>
                   </div>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl sm:text-3xl font-black text-emerald-700">
-                      ₹{totalTradeInCredit.toLocaleString('en-IN')}
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      (Base: ₹{oldDeviceNetValuation.toLocaleString('en-IN')} + Bonus: ₹{exchangeBonus})
-                    </span>
+
+                  {/* Diagnostic Questions List */}
+                  <div className="space-y-6">
+                    {activeQuestions.map((q) => (
+                      <div key={q.id} className="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
+                        <p className="text-sm font-black text-slate-900 mb-3">{q.question}</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                          {q.options.map((opt) => {
+                            const isSelected = answers[q.id] === opt.adj;
+                            return (
+                              <button
+                                key={opt.label}
+                                type="button"
+                                onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: opt.adj }))}
+                                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                                  isSelected
+                                    ? 'border-emerald-500 bg-white ring-2 ring-emerald-500/20 shadow-xs'
+                                    : 'border-slate-200 bg-white hover:border-slate-300'
+                                }`}
+                              >
+                                <div>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <span className={`text-xs font-black ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>
+                                      {opt.label}
+                                    </span>
+                                    {isSelected && <Check size={14} className="text-emerald-600 shrink-0 ml-1" />}
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                                    {opt.sublabel}
+                                  </p>
+                                </div>
+                                <span className="text-[11px] font-bold text-slate-400 mt-3 block">
+                                  {opt.adj > 0 ? `+₹${opt.adj}` : opt.adj < 0 ? `-₹${Math.abs(opt.adj)}` : 'Included'}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
+              </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep('select-new');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider shadow-sm shadow-emerald-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <span>Choose Upgrade Gear</span>
-                  <ArrowRight size={15} />
-                </button>
+              {/* Right Column: Sticky Live Valuation Summary */}
+              <div className="lg:col-span-4 2xl:col-span-4 lg:sticky lg:top-24 space-y-4">
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-lg">
+                  <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                    <span className="text-xs font-black uppercase text-slate-400 tracking-wider">
+                      Live Trade-in Valuation
+                    </span>
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      Real-time Lock
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs sm:text-sm mb-6">
+                    <div className="flex justify-between text-slate-600">
+                      <span>Base Market Price:</span>
+                      <span className="font-bold text-slate-900">₹{selectedOldDevice.basePrice.toLocaleString('en-IN')}</span>
+                    </div>
+
+                    <div className="flex justify-between text-slate-600">
+                      <span>Condition Adjustments:</span>
+                      <span className={`font-bold ${diagnosticAdjustmentsTotal >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {diagnosticAdjustmentsTotal >= 0 ? `+₹${diagnosticAdjustmentsTotal}` : `-₹${Math.abs(diagnosticAdjustmentsTotal)}`}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between text-slate-600">
+                      <span>Net Device Valuation:</span>
+                      <span className="font-bold text-slate-900">₹{oldDeviceNetValuation.toLocaleString('en-IN')}</span>
+                    </div>
+
+                    <div className="flex justify-between text-emerald-700 font-bold bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-200/60">
+                      <span>Guaranteed Exchange Bonus:</span>
+                      <span>+ ₹{exchangeBonus.toLocaleString('en-IN')}</span>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-200 flex justify-between items-baseline">
+                      <span className="text-sm font-black text-slate-900">Total Trade-In Credit:</span>
+                      <span className="text-2xl sm:text-3xl font-black text-emerald-600">
+                        ₹{totalTradeInCredit.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep('select-new');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center justify-center gap-2 group"
+                  >
+                    <span>Choose Upgrade Gear</span>
+                    <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
+                  </button>
+
+                  <div className="mt-4 pt-4 border-t border-slate-100 space-y-2 text-[11px] text-slate-500 font-medium">
+                    <div className="flex items-center gap-2 text-emerald-700 font-semibold">
+                      <ShieldCheck size={14} />
+                      <span>Instant doorstep inspection &amp; instant price lock</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Truck size={14} className="text-slate-400" />
+                      <span>Simultaneous old device collection &amp; new gear delivery</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
         )}
 
         {/* ─────────────────────────────────────────────────────────────
-            STEP 3: SELECT TARGET UPGRADE PRODUCT
+            STEP 3: SELECT TARGET UPGRADE PRODUCT (FULL WIDTH 4-COL)
         ────────────────────────────────────────────────────────────── */}
         {step === 'select-new' && (
-          <section className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+          <section className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
             {/* Top Trade-in Credit Reminder Bar */}
-            <div className="p-4 rounded-2xl bg-emerald-600 text-white flex flex-wrap items-center justify-between gap-3 mb-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0">
-                  <RefreshCw size={17} />
+            <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex flex-wrap items-center justify-between gap-4 mb-8 shadow-md">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center text-white shrink-0">
+                  <RefreshCw size={20} />
                 </div>
                 <div>
-                  <p className="text-xs font-extrabold uppercase text-emerald-100">Trade-In Gear Active</p>
-                  <p className="text-sm font-black">{selectedOldDevice?.name} · Value: ₹{totalTradeInCredit.toLocaleString('en-IN')}</p>
+                  <p className="text-xs font-black uppercase text-emerald-100 tracking-wider">
+                    Trade-In Gear Active: {selectedOldDevice?.name}
+                  </p>
+                  <p className="text-base sm:text-lg font-black">
+                    Total Credit Applied: ₹{totalTradeInCredit.toLocaleString('en-IN')}{' '}
+                    <span className="text-xs font-medium text-emerald-200">(Includes ₹3,000 Exchange Bonus)</span>
+                  </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setStep('condition')}
-                className="text-xs font-bold text-white underline hover:text-emerald-100"
+                className="px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-all cursor-pointer"
               >
                 Change Valuation &larr;
               </button>
             </div>
 
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 xl:p-10 shadow-sm">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 mb-8">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">
                     Select Your Target Upgrade Device
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
                     Choose any certified refurbished camera, smartphone, or laptop to upgrade to
                   </p>
                 </div>
 
-                <div className="relative w-full sm:w-72">
-                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <div className="relative w-full sm:w-80 lg:w-96">
+                  <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search upgrade model..."
+                    placeholder="Search upgrade model (e.g. iPhone 15 Pro, Sony A7 III)..."
                     value={newSearchQuery}
                     onChange={(e) => setNewSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
+                    className="w-full pl-11 pr-10 py-3 rounded-2xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 bg-slate-50/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all shadow-2xs"
                   />
                   {newSearchQuery && (
                     <button
                       type="button"
                       onClick={() => setNewSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                     >
-                      <X size={14} />
+                      <X size={15} />
                     </button>
                   )}
                 </div>
               </div>
 
               {/* Category Pills */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 scrollbar-none">
+              <div className="flex items-center gap-2.5 overflow-x-auto pb-3 mb-8 scrollbar-none">
                 {[
                   { key: 'all', label: 'All Upgrades' },
                   { key: 'smartphones', label: '📱 Smartphones' },
@@ -1145,10 +1225,10 @@ export default function ExchangeDevicePage() {
                     key={tab.key}
                     type="button"
                     onClick={() => setNewCategoryFilter(tab.key)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    className={`px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
                       newCategoryFilter === tab.key
-                        ? 'bg-slate-900 text-white shadow-sm'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
+                        ? 'bg-slate-900 text-white shadow-md'
+                        : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200/80'
                     }`}
                   >
                     {tab.label}
@@ -1156,15 +1236,19 @@ export default function ExchangeDevicePage() {
                 ))}
               </div>
 
-              {/* Upgrade Products Grid */}
+              {/* Upgrade Products Grid (Full Width 4-Col) */}
               {filteredUpgradeProducts.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-6">
                   {filteredUpgradeProducts.map((prod) => {
-                    const effectivePayable = Math.max(prod.sellingPrice - totalTradeInCredit, 0);
+                    const priceDiff = prod.sellingPrice - totalTradeInCredit;
+                    const isExtraBack = priceDiff < 0;
+                    const extraBackAmount = Math.abs(priceDiff);
+                    const effectivePayable = Math.max(priceDiff, 0);
+
                     return (
                       <div
                         key={prod.id}
-                        className="p-5 rounded-3xl border border-slate-200 bg-white hover:border-emerald-500 hover:shadow-lg transition-all flex flex-col justify-between group"
+                        className="p-5 sm:p-6 rounded-3xl border border-slate-200 bg-white hover:border-emerald-500 hover:shadow-xl transition-all flex flex-col justify-between group"
                       >
                         <div>
                           <div className="relative aspect-square rounded-2xl bg-slate-50 border border-slate-100 overflow-hidden p-4 mb-4 flex items-center justify-center">
@@ -1173,13 +1257,13 @@ export default function ExchangeDevicePage() {
                               alt={prod.model}
                               className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
                             />
-                            <div className="absolute top-2.5 left-2.5">
-                              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-900 text-white">
+                            <div className="absolute top-3 left-3">
+                              <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-slate-900 text-white shadow-2xs">
                                 {prod.category}
                               </span>
                             </div>
-                            <div className="absolute top-2.5 right-2.5">
-                              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                            <div className="absolute top-3 right-3">
+                              <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-500 text-white shadow-2xs">
                                 {prod.discount}% OFF
                               </span>
                             </div>
@@ -1188,15 +1272,15 @@ export default function ExchangeDevicePage() {
                           <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                             {prod.brand}
                           </p>
-                          <h3 className="text-base font-black text-slate-900 mt-0.5 line-clamp-1">
+                          <h3 className="text-base sm:text-lg font-black text-slate-900 mt-0.5 line-clamp-1">
                             {prod.model}
                           </h3>
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-1 font-medium">
                             {prod.specs}
                           </p>
                         </div>
 
-                        {/* Price & Difference */}
+                        {/* Price & Difference with Remaining Balance Callout */}
                         <div className="mt-5 pt-4 border-t border-slate-100">
                           <div className="flex items-baseline justify-between mb-2">
                             <div>
@@ -1204,27 +1288,52 @@ export default function ExchangeDevicePage() {
                               <p className="text-xs font-semibold text-slate-600 line-through">
                                 ₹{prod.originalPrice.toLocaleString('en-IN')}
                               </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-[10px] font-bold text-emerald-700">You Pay Difference</p>
-                              <p className="text-lg font-black text-slate-900">
-                                ₹{effectivePayable.toLocaleString('en-IN')}
+                              <p className="text-sm font-black text-slate-900">
+                                ₹{prod.sellingPrice.toLocaleString('en-IN')}
                               </p>
                             </div>
+
+                            {isExtraBack ? (
+                              <div className="text-right">
+                                <p className="text-[10px] font-black text-emerald-700 uppercase tracking-wide">
+                                  You Receive Extra
+                                </p>
+                                <p className="text-lg font-black text-emerald-600">
+                                  +₹{extraBackAmount.toLocaleString('en-IN')}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="text-right">
+                                <p className="text-[10px] font-bold text-slate-500 uppercase">You Pay Difference</p>
+                                <p className="text-lg font-black text-slate-900">
+                                  ₹{effectivePayable.toLocaleString('en-IN')}
+                                </p>
+                              </div>
+                            )}
                           </div>
 
-                          <div className="p-2 rounded-xl bg-emerald-50 text-emerald-800 text-[11px] font-bold flex items-center justify-between mb-3 border border-emerald-200/60">
-                            <span>Trade-In Credit Applied:</span>
+                          <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-900 text-[11px] font-bold flex items-center justify-between mb-2.5 border border-emerald-200/70">
+                            <span>Trade-In Credit:</span>
                             <span>- ₹{totalTradeInCredit.toLocaleString('en-IN')}</span>
                           </div>
+
+                          {/* Extra balance payout notice if trade-in > buying price */}
+                          {isExtraBack && (
+                            <div className="p-2.5 rounded-xl bg-emerald-100/70 text-emerald-900 text-[11px] font-bold border border-emerald-300/80 mb-3 flex items-start gap-1.5 leading-snug">
+                              <Coins size={14} className="text-emerald-700 shrink-0 mt-0.5" />
+                              <span>
+                                Remaining balance of ₹{extraBackAmount.toLocaleString('en-IN')} will be paid to you after receiving the device!
+                              </span>
+                            </div>
+                          )}
 
                           <button
                             type="button"
                             onClick={() => handleSelectUpgradeModel(prod)}
-                            className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                            className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
                           >
                             <span>View Units &amp; Select</span>
-                            <ArrowRight size={13} />
+                            <ArrowRight size={14} />
                           </button>
                         </div>
                       </div>
@@ -1232,8 +1341,8 @@ export default function ExchangeDevicePage() {
                   })}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <p className="text-sm font-semibold text-slate-500">
+                <div className="text-center py-16">
+                  <p className="text-base font-semibold text-slate-500">
                     No products found matching &ldquo;{newSearchQuery}&rdquo;.
                   </p>
                 </div>
@@ -1243,45 +1352,82 @@ export default function ExchangeDevicePage() {
         )}
 
         {/* ─────────────────────────────────────────────────────────────
-            STEP 4: DETAILED PRODUCT VIEW (MATCHING /buy-refurbished)
+            STEP 4: DETAILED PRODUCT VIEW (FULL WIDTH DUAL COLUMN)
         ────────────────────────────────────────────────────────────── */}
         {step === 'product-detail' && selectedUpgradeProduct && (
-          <section className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+          <section className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
             <button
               type="button"
               onClick={() => setStep('select-new')}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 mb-6 group"
+              className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 mb-6 group cursor-pointer"
             >
-              <ArrowLeft size={15} className="group-hover:-translate-x-1 transition-transform" />
+              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
               <span>Back to All Upgrades</span>
             </button>
 
             {/* Trade-In Active Highlight Banner */}
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex flex-wrap items-center justify-between gap-3 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
+            <div className="p-4 sm:p-5 rounded-3xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex flex-wrap items-center justify-between gap-4 mb-8">
+              <div className="flex items-center gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
                   ✓
                 </div>
                 <div>
                   <p className="text-xs font-black">Trade-In Gear: {selectedOldDevice?.name}</p>
-                  <p className="text-[11px] text-emerald-700">
+                  <p className="text-xs text-emerald-700">
                     Total Credit: ₹{totalTradeInCredit.toLocaleString('en-IN')} (Includes ₹3,000 Extra Exchange Bonus)
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-[11px] text-slate-500">Net Upgrade Price:</span>
-                <span className="text-base font-black text-slate-900 ml-2">
-                  ₹{Math.max(selectedUpgradeProduct.sellingPrice - totalTradeInCredit, 0).toLocaleString('en-IN')}
-                </span>
-              </div>
+
+              {selectedUpgradeProduct.sellingPrice < totalTradeInCredit ? (
+                <div className="text-right">
+                  <span className="text-xs font-black text-emerald-800 uppercase block">You Receive Extra</span>
+                  <span className="text-lg font-black text-emerald-600">
+                    + ₹{(totalTradeInCredit - selectedUpgradeProduct.sellingPrice).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              ) : (
+                <div className="text-right">
+                  <span className="text-xs text-slate-500 block">Net Upgrade Price:</span>
+                  <span className="text-lg font-black text-slate-900">
+                    ₹{(selectedUpgradeProduct.sellingPrice - totalTradeInCredit).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              )}
             </div>
 
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden p-6 sm:p-10">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            {/* Extra balance notification banner if applicable */}
+            {selectedUpgradeProduct.sellingPrice < totalTradeInCredit && (
+              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-emerald-500/15 border-2 border-emerald-400 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shadow-xs">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-xl shrink-0 shadow-sm">
+                    💸
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black uppercase tracking-wider bg-emerald-600 text-white px-2.5 py-0.5 rounded-md">
+                        Payout to You
+                      </span>
+                      <span className="text-base font-black text-emerald-900">
+                        ₹{(totalTradeInCredit - selectedUpgradeProduct.sellingPrice).toLocaleString('en-IN')} Balance
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm font-semibold text-emerald-900 mt-1">
+                      Your old device valuation (₹{totalTradeInCredit.toLocaleString('en-IN')}) is higher than this upgrade price! 
+                      <span className="font-bold underline ml-1">
+                        Remaining balance of ₹{(totalTradeInCredit - selectedUpgradeProduct.sellingPrice).toLocaleString('en-IN')} will be paid directly after receiving and inspecting your device at your doorstep.
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden p-6 sm:p-10 xl:p-12">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 xl:gap-16">
                 {/* Left Column: Image Showcase & Dedicated Multi-Angle Thumbnails */}
-                <div className="lg:col-span-6 flex flex-col items-center">
-                  <div className="relative w-full aspect-square max-w-[420px] rounded-2xl bg-slate-50 border border-slate-200/80 p-6 flex items-center justify-center mb-4 overflow-hidden">
+                <div className="lg:col-span-6 2xl:col-span-5 flex flex-col items-center">
+                  <div className="relative w-full aspect-square max-w-[480px] rounded-3xl bg-slate-50 border border-slate-200/80 p-6 flex items-center justify-center mb-4 overflow-hidden">
                     <img
                       key={`${selectedUpgradeProduct.id}-${activeImageIndex}`}
                       src={
@@ -1292,25 +1438,24 @@ export default function ExchangeDevicePage() {
                       alt={`${selectedUpgradeProduct.brand} ${selectedUpgradeProduct.model} - ${selectedUpgradeProduct.color}`}
                       className="max-w-full max-h-full object-contain filter drop-shadow-md transition-all duration-300"
                     />
-                    <div className="absolute top-3 left-3">
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
+                    <div className="absolute top-4 left-4">
+                      <span className="text-xs font-bold px-3 py-1 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200 shadow-2xs">
                         {selectedUpgradeProduct.condition}
                       </span>
                     </div>
-                    <div className="absolute top-3 right-3">
-                      <span className="text-xs font-extrabold px-2.5 py-1 rounded-full bg-emerald-500 text-white">
+                    <div className="absolute top-4 right-4">
+                      <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-emerald-500 text-white shadow-2xs">
                         {selectedUpgradeProduct.discount}% OFF
                       </span>
                     </div>
-                    {/* Selected Color & Storage Badge on Image */}
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-white/95 backdrop-blur-xs border border-slate-200/80 text-[11px] font-bold text-slate-700 shadow-xs flex items-center gap-1.5 whitespace-nowrap">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-white/95 backdrop-blur-xs border border-slate-200/80 text-xs font-bold text-slate-700 shadow-xs flex items-center gap-2 whitespace-nowrap">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                       <span>{selectedUpgradeProduct.color} · {selectedUpgradeProduct.storage}</span>
                     </div>
                   </div>
 
                   {/* Clickable Multi-Angle Thumbnails */}
-                  <div className="flex items-center gap-3 w-full max-w-[420px] justify-center overflow-x-auto py-1">
+                  <div className="flex items-center gap-3 w-full max-w-[480px] justify-center overflow-x-auto py-1">
                     {(selectedUpgradeProduct.gallery && selectedUpgradeProduct.gallery.length > 0
                       ? selectedUpgradeProduct.gallery
                       : [selectedUpgradeProduct.image]
@@ -1321,9 +1466,9 @@ export default function ExchangeDevicePage() {
                           key={`${selectedUpgradeProduct.id}-thumb-${idx}`}
                           type="button"
                           onClick={() => setActiveImageIndex(idx)}
-                          className={`w-20 h-20 rounded-xl bg-slate-50 p-2 border transition-all flex items-center justify-center cursor-pointer shrink-0 ${
+                          className={`w-20 h-20 sm:w-22 sm:h-22 rounded-2xl bg-slate-50 p-2 border transition-all flex items-center justify-center cursor-pointer shrink-0 ${
                             isSelected
-                              ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-white shadow-sm'
+                              ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-white shadow-md'
                               : 'border-slate-200 hover:border-slate-300 bg-white/50'
                           }`}
                         >
@@ -1335,10 +1480,10 @@ export default function ExchangeDevicePage() {
                 </div>
 
                 {/* Right Column: Condition Grade & Units Switcher */}
-                <div className="lg:col-span-6 flex flex-col justify-between space-y-6">
+                <div className="lg:col-span-6 2xl:col-span-7 flex flex-col justify-between space-y-6">
                   <div>
                     {/* Condition Pill & Note */}
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-extrabold border border-emerald-200 mb-3">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-extrabold border border-emerald-200 mb-3">
                       <span className="w-2 h-2 rounded-full bg-emerald-500" />
                       <span>{selectedUpgradeProduct.condition}</span>
                       <span className="text-emerald-600/70">·</span>
@@ -1346,10 +1491,10 @@ export default function ExchangeDevicePage() {
                     </div>
 
                     {/* Title & Storage/Color */}
-                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
                       {selectedUpgradeProduct.brand} {selectedUpgradeProduct.model}
                     </h1>
-                    <p className="text-sm font-semibold text-slate-500 mt-1">
+                    <p className="text-sm sm:text-base font-semibold text-slate-500 mt-1">
                       {selectedUpgradeProduct.storage} · {selectedUpgradeProduct.color}
                     </p>
 
@@ -1361,15 +1506,13 @@ export default function ExchangeDevicePage() {
                       <span className="text-base text-slate-400 line-through">
                         ₹{selectedUpgradeProduct.originalPrice.toLocaleString('en-IN')}
                       </span>
-                      <span className="text-xs sm:text-sm font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                      <span className="text-xs sm:text-sm font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200">
                         {selectedUpgradeProduct.discount}% OFF
                       </span>
                     </div>
 
-                    {/* ─────────────────────────────────────────────────────────────
-                        STEP 1: SELECT CONDITION GRADE (Superb / Good / Fair)
-                    ────────────────────────────────────────────────────────────── */}
-                    <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-slate-50/90 border border-slate-200/90 shadow-xs">
+                    {/* Condition Grade Selector */}
+                    <div className="mt-6 p-5 rounded-3xl bg-slate-50/90 border border-slate-200/90 shadow-xs">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-xs font-black flex items-center justify-center shadow-xs">
@@ -1379,13 +1522,13 @@ export default function ExchangeDevicePage() {
                             Select Condition Grade
                           </h3>
                         </div>
-                        <span className="text-[11px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200/60">
+                        <span className="text-[11px] font-bold text-slate-500 bg-white px-2.5 py-0.5 rounded-md border border-slate-200/60">
                           {siblingVariants.length} certified {siblingVariants.length === 1 ? 'unit' : 'units'} listed
                         </span>
                       </div>
 
                       {/* 3 Condition Option Cards */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {(['Superb', 'Good', 'Fair'] as ProductCondition[]).map((cond) => {
                           const isSelected = activeDetailCondition === cond;
                           const count = conditionGroups[cond].length;
@@ -1397,142 +1540,126 @@ export default function ExchangeDevicePage() {
                               key={cond}
                               type="button"
                               onClick={() => handleSelectConditionGrade(cond)}
-                              className={`relative p-3 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between group ${
+                              className={`relative p-3.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between group ${
                                 isSelected
-                                  ? 'bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-sm'
-                                  : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                                  ? 'border-emerald-500 bg-white ring-2 ring-emerald-500/20 shadow-md'
+                                  : 'border-slate-200 bg-white hover:border-slate-300'
                               }`}
                             >
-                              {isSelected && (
-                                <span className="absolute -top-2 -right-1 bg-slate-900 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
-                                  <Check size={11} strokeWidth={3} /> Selected
+                              <div className="flex items-center justify-between mb-1">
+                                <span className={`text-xs font-black ${isSelected ? 'text-slate-900' : 'text-slate-700'}`}>
+                                  {cond}
                                 </span>
-                              )}
-
-                              <div>
-                                <div className="flex items-center justify-between gap-1 mb-1">
-                                  <span className={`text-sm font-black ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>
-                                    {cond}
-                                  </span>
-                                  <span
-                                    className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md ${
-                                      count > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'
-                                    }`}
-                                  >
-                                    {count > 0 ? `${count} available` : 'Out of stock'}
-                                  </span>
-                                </div>
-                                <p className="text-[11px] font-medium text-slate-500 leading-tight">
-                                  {cond === 'Superb' ? 'Like New · Minimal marks' : cond === 'Good' ? 'Lightly Used · Best Value' : 'Budget Deal · Fully Tested'}
-                                </p>
+                                {isSelected && (
+                                  <div className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+                                    <Check size={10} strokeWidth={3} />
+                                  </div>
+                                )}
                               </div>
-
-                              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                                <span className="text-slate-400">Starting</span>
-                                <span className="font-bold text-slate-900">
-                                  {minPrice ? `₹${minPrice.toLocaleString('en-IN')}` : '—'}
-                                </span>
-                              </div>
+                              <p className="text-[11px] text-slate-400 font-medium">
+                                {count > 0 ? `${count} in stock` : 'Out of stock'}
+                              </p>
+                              <p className="text-xs font-black text-slate-900 mt-2">
+                                {minPrice ? `From ₹${minPrice.toLocaleString('en-IN')}` : '—'}
+                              </p>
                             </button>
                           );
                         })}
                       </div>
+                    </div>
 
-                      {/* ─────────────────────────────────────────────────────────────
-                          STEP 2: AVAILABLE UNITS IN CHOSEN CONDITION
-                      ────────────────────────────────────────────────────────────── */}
-                      <div className="mt-5 pt-4 border-t border-slate-200/80">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-xs font-black flex items-center justify-center shadow-xs">
-                              2
-                            </span>
-                            <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                              <span>Available Units in</span>
-                              <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 text-[11px]">
-                                {activeDetailCondition} Condition
-                              </span>
-                            </h4>
-                          </div>
-                          <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">
-                            Tap any unit to switch details &amp; photos
-                          </span>
-                        </div>
-
-                        {/* Units List */}
-                        {conditionGroups[activeDetailCondition].length > 0 ? (
-                          <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
-                            {conditionGroups[activeDetailCondition].map((unit) => {
-                              const isCurrentUnit = selectedUpgradeProduct.id === unit.id;
-                              return (
-                                <button
-                                  key={unit.id}
-                                  type="button"
-                                  onClick={() => handleSwitchUnit(unit)}
-                                  className={`w-full p-3 rounded-2xl border text-left transition-all duration-200 flex items-center justify-between gap-3 group cursor-pointer ${
-                                    isCurrentUnit
-                                      ? 'border-emerald-500 bg-white ring-2 ring-emerald-500/20 shadow-md'
-                                      : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 shadow-xs'
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200/80 p-1 flex items-center justify-center shrink-0">
-                                      <img
-                                        src={unit.gallery && unit.gallery[0] ? unit.gallery[0] : unit.image}
-                                        alt={unit.model}
-                                        className="max-w-full max-h-full object-contain"
-                                      />
-                                    </div>
-                                    <div className="min-w-0">
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-xs font-black text-slate-900">{unit.storage}</span>
-                                        <span className="text-slate-300">·</span>
-                                        <span className="text-xs font-semibold text-slate-600 truncate">{unit.color}</span>
-                                        {isCurrentUnit && (
-                                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
-                                            Currently Selected
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-2 mt-1 text-[11px] font-medium text-slate-500 flex-wrap">
-                                        <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
-                                          <BatteryCharging size={12} className="text-emerald-600" />
-                                          {typeof unit.batteryHealth === 'number' ? `${unit.batteryHealth}% Battery` : unit.batteryHealth}
-                                        </span>
-                                        <span className="text-slate-300">·</span>
-                                        <span>{unit.warranty} Warranty</span>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="text-right shrink-0">
-                                    <p className="text-sm font-black text-slate-900">
-                                      ₹{unit.sellingPrice.toLocaleString('en-IN')}
-                                    </p>
-                                    <p className="text-[10px] text-emerald-600 font-extrabold">
-                                      {unit.discount}% OFF
-                                    </p>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="p-4 rounded-xl bg-slate-100 text-center text-xs text-slate-500">
-                            No certified units currently available in {activeDetailCondition} condition.
-                          </div>
-                        )}
+                    {/* Individual Certified Units Switcher */}
+                    <div className="mt-5 p-5 rounded-3xl bg-slate-50/90 border border-slate-200/90 shadow-xs">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-xs font-black flex items-center justify-center shadow-xs">
+                          2
+                        </span>
+                        <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                          Choose Verified Inventory Unit ({conditionGroups[activeDetailCondition].length} Available)
+                        </h3>
                       </div>
+
+                      {conditionGroups[activeDetailCondition].length > 0 ? (
+                        <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                          {conditionGroups[activeDetailCondition].map((unit) => {
+                            const isSelected = selectedUpgradeProduct.id === unit.id;
+                            return (
+                              <button
+                                key={unit.id}
+                                type="button"
+                                onClick={() => handleSwitchUnit(unit)}
+                                className={`w-full p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                                  isSelected
+                                    ? 'border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-500/20 shadow-xs'
+                                    : 'border-slate-200 bg-white hover:border-slate-300'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-11 h-11 rounded-xl bg-slate-100 p-1 flex items-center justify-center shrink-0 border border-slate-200/60">
+                                    <img src={unit.image} alt={unit.model} className="max-w-full max-h-full object-contain" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-xs font-black text-slate-900 truncate">
+                                        {unit.color} · {unit.storage}
+                                      </p>
+                                      {isSelected && (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500 text-white">
+                                          Active
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium mt-0.5">
+                                      <span>
+                                        {typeof unit.batteryHealth === 'number' ? `${unit.batteryHealth}% Battery` : unit.batteryHealth}
+                                      </span>
+                                      <span className="text-slate-300">·</span>
+                                      <span>{unit.warranty} Warranty</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                  <p className="text-sm font-black text-slate-900">
+                                    ₹{unit.sellingPrice.toLocaleString('en-IN')}
+                                  </p>
+                                  <p className="text-[10px] text-emerald-600 font-extrabold">
+                                    {unit.discount}% OFF
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-4 rounded-xl bg-slate-100 text-center text-xs text-slate-500">
+                          No certified units currently available in {activeDetailCondition} condition.
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Proceed CTA */}
-                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
+                  {/* Proceed CTA with Net Balance Logic */}
+                  <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <p className="text-xs text-slate-400">Net Payable After Trade-In:</p>
-                      <p className="text-2xl font-black text-emerald-700">
-                        ₹{Math.max(selectedUpgradeProduct.sellingPrice - totalTradeInCredit, 0).toLocaleString('en-IN')}
-                      </p>
+                      {selectedUpgradeProduct.sellingPrice < totalTradeInCredit ? (
+                        <div>
+                          <p className="text-xs font-bold text-emerald-700">Remaining Balance Paid to You:</p>
+                          <p className="text-2xl sm:text-3xl font-black text-emerald-600">
+                            + ₹{(totalTradeInCredit - selectedUpgradeProduct.sellingPrice).toLocaleString('en-IN')}
+                          </p>
+                          <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                            (Paid after receiving &amp; testing old device)
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-xs text-slate-400">Net Payable After Trade-In:</p>
+                          <p className="text-2xl sm:text-3xl font-black text-emerald-700">
+                            ₹{(selectedUpgradeProduct.sellingPrice - totalTradeInCredit).toLocaleString('en-IN')}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <button
@@ -1541,10 +1668,10 @@ export default function ExchangeDevicePage() {
                         setStep('checkout');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="px-8 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-2"
+                      className="px-8 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center justify-center gap-2 group"
                     >
                       <span>Proceed to Exchange Checkout</span>
-                      <ArrowRight size={16} />
+                      <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                     </button>
                   </div>
                 </div>
@@ -1554,49 +1681,68 @@ export default function ExchangeDevicePage() {
         )}
 
         {/* ─────────────────────────────────────────────────────────────
-            STEP 5: CHECKOUT, COUPONS & DETAILED SUMMARY (SCREENSHOT 2)
+            STEP 5: CHECKOUT, COUPONS & DETAILED SUMMARY (FULL WIDTH)
         ────────────────────────────────────────────────────────────── */}
         {step === 'checkout' && selectedOldDevice && selectedUpgradeProduct && (
-          <section className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+          <section className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
             <button
               type="button"
               onClick={() => setStep('product-detail')}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 mb-6 group"
+              className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 mb-6 group cursor-pointer"
             >
-              <ArrowLeft size={15} className="group-hover:-translate-x-1 transition-transform" />
+              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
               <span>Back to Unit Selection</span>
             </button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* If Trade-In Credit > Buying Price, show special alert banner */}
+            {balanceOwedToUser > 0 && (
+              <div className="p-5 rounded-3xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-emerald-500/15 border-2 border-emerald-500 text-emerald-950 mb-8 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-2xl shrink-0 shadow-md">
+                    🎉
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-emerald-900">
+                      Positive Balance: You Receive ₹{balanceOwedToUser.toLocaleString('en-IN')} Extra!
+                    </h3>
+                    <p className="text-xs sm:text-sm font-semibold text-emerald-800 mt-1 leading-relaxed">
+                      Your old device valuation exceeds this upgrade device price. You pay <strong className="text-emerald-950 underline">₹0</strong> today, and the <strong className="text-emerald-950">remaining balance of ₹{balanceOwedToUser.toLocaleString('en-IN')} will be paid directly after receiving and inspecting your device at your doorstep</strong>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               {/* Left Column: Side-by-Side Comparative Cards + Doorstep Schedule & Address */}
-              <div className="lg:col-span-7 space-y-6">
+              <div className="lg:col-span-7 2xl:col-span-8 space-y-6">
                 {/* 1. Comparative Trade-In Visual Card */}
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-                  <h3 className="text-base font-black text-slate-900 mb-4 flex items-center gap-2">
-                    <RefreshCw size={17} className="text-emerald-600" />
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-sm">
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
+                    <RefreshCw size={18} className="text-emerald-600" />
                     <span>Doorstep Exchange Overview</span>
                   </h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Old Gear */}
                     <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/70 flex flex-col justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 rounded-xl bg-white p-1 border border-amber-200/80 flex items-center justify-center shrink-0">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-16 h-16 rounded-xl bg-white p-1 border border-amber-200/80 flex items-center justify-center shrink-0">
                           <img src={selectedOldDevice.image} alt={selectedOldDevice.name} className="max-w-full max-h-full object-contain" />
                         </div>
                         <div className="min-w-0">
                           <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-800">
                             Old Device Handover
                           </span>
-                          <p className="text-xs font-black text-slate-900 truncate mt-1">
+                          <p className="text-sm font-black text-slate-900 truncate mt-1">
                             {selectedOldDevice.name}
                           </p>
-                          <p className="text-[11px] text-slate-500 font-semibold">
+                          <p className="text-xs text-slate-500 font-semibold">
                             Trade-In Value: ₹{oldDeviceNetValuation.toLocaleString('en-IN')}
                           </p>
                         </div>
                       </div>
-                      <div className="mt-3 pt-2.5 border-t border-amber-200/60 text-[11px] font-bold text-emerald-700 flex items-center justify-between">
+                      <div className="mt-3 pt-2.5 border-t border-amber-200/60 text-xs font-bold text-emerald-700 flex items-center justify-between">
                         <span>Guaranteed Bonus:</span>
                         <span>+ ₹{exchangeBonus.toLocaleString('en-IN')}</span>
                       </div>
@@ -1604,8 +1750,8 @@ export default function ExchangeDevicePage() {
 
                     {/* New Upgrade */}
                     <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200/70 flex flex-col justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 rounded-xl bg-white p-1 border border-emerald-200/80 flex items-center justify-center shrink-0">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-16 h-16 rounded-xl bg-white p-1 border border-emerald-200/80 flex items-center justify-center shrink-0">
                           <img
                             src={
                               selectedUpgradeProduct.gallery && selectedUpgradeProduct.gallery[0]
@@ -1620,15 +1766,15 @@ export default function ExchangeDevicePage() {
                           <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
                             Upgrade Delivered
                           </span>
-                          <p className="text-xs font-black text-slate-900 truncate mt-1">
+                          <p className="text-sm font-black text-slate-900 truncate mt-1">
                             {selectedUpgradeProduct.brand} {selectedUpgradeProduct.model}
                           </p>
-                          <p className="text-[11px] text-slate-600 font-semibold">
+                          <p className="text-xs text-slate-600 font-semibold">
                             {selectedUpgradeProduct.storage} · {selectedUpgradeProduct.color}
                           </p>
                         </div>
                       </div>
-                      <div className="mt-3 pt-2.5 border-t border-emerald-200/60 text-[11px] font-bold text-slate-700 flex items-center justify-between">
+                      <div className="mt-3 pt-2.5 border-t border-emerald-200/60 text-xs font-bold text-slate-700 flex items-center justify-between">
                         <span>Certified Condition:</span>
                         <span className="text-emerald-700 font-black">{selectedUpgradeProduct.condition} ({selectedUpgradeProduct.warranty})</span>
                       </div>
@@ -1637,9 +1783,9 @@ export default function ExchangeDevicePage() {
                 </div>
 
                 {/* 2. Schedule Doorstep Handover Slot */}
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-                  <h3 className="text-base font-black text-slate-900 mb-4 flex items-center gap-2">
-                    <Calendar size={17} className="text-emerald-600" />
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-sm">
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
+                    <Calendar size={18} className="text-emerald-600" />
                     <span>Schedule Simultaneous Doorstep Handover</span>
                   </h3>
 
@@ -1653,7 +1799,7 @@ export default function ExchangeDevicePage() {
                         value={pickupDate}
                         onChange={(e) => setPickupDate(e.target.value)}
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                        className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                       />
                     </div>
 
@@ -1664,7 +1810,7 @@ export default function ExchangeDevicePage() {
                       <select
                         value={pickupSlot}
                         onChange={(e) => setPickupSlot(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                        className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                       >
                         <option value="10:00 AM - 1:00 PM">10:00 AM - 1:00 PM (Morning)</option>
                         <option value="1:00 PM - 4:00 PM">1:00 PM - 4:00 PM (Afternoon)</option>
@@ -1675,9 +1821,9 @@ export default function ExchangeDevicePage() {
                 </div>
 
                 {/* 3. Doorstep Delivery & Pickup Address */}
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-                  <h3 className="text-base font-black text-slate-900 mb-4 flex items-center gap-2">
-                    <MapPin size={17} className="text-emerald-600" />
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-sm">
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
+                    <MapPin size={18} className="text-emerald-600" />
                     <span>Doorstep Address &amp; Contact Details</span>
                   </h3>
 
@@ -1690,7 +1836,7 @@ export default function ExchangeDevicePage() {
                           placeholder="e.g. Adarsh Sachan"
                           value={customerName}
                           onChange={(e) => setCustomerName(e.target.value)}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                          className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                         />
                       </div>
                       <div>
@@ -1700,7 +1846,7 @@ export default function ExchangeDevicePage() {
                           placeholder="10-digit mobile number"
                           value={customerPhone}
                           onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                          className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                         />
                       </div>
                     </div>
@@ -1712,7 +1858,7 @@ export default function ExchangeDevicePage() {
                         placeholder="House/Flat No., Building Name, Street, Landmark..."
                         value={customerAddress}
                         onChange={(e) => setCustomerAddress(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none"
+                        className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none"
                       />
                     </div>
 
@@ -1724,7 +1870,7 @@ export default function ExchangeDevicePage() {
                           placeholder="e.g. Delhi NCR, Mumbai..."
                           value={customerCity}
                           onChange={(e) => setCustomerCity(e.target.value)}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                          className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                         />
                       </div>
                       <div>
@@ -1734,50 +1880,87 @@ export default function ExchangeDevicePage() {
                           placeholder="6-digit PIN code"
                           value={customerPincode}
                           onChange={(e) => setCustomerPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                          className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                         />
                       </div>
                     </div>
+
+                    {/* Bank / UPI details input if remaining balance is to be paid to customer */}
+                    {balanceOwedToUser > 0 && (
+                      <div className="pt-3 border-t border-slate-100">
+                        <label className="block text-xs font-black text-emerald-800 mb-1.5">
+                          Bank Account / UPI ID for ₹{balanceOwedToUser.toLocaleString('en-IN')} Balance Payout
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. username@okhdfcbank or Account Number & IFSC"
+                          value={payoutDetails}
+                          onChange={(e) => setPayoutDetails(e.target.value)}
+                          className="w-full px-4 py-3 rounded-2xl border-2 border-emerald-300 bg-emerald-50/40 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                        />
+                        <p className="text-[11px] text-emerald-700 font-semibold mt-1">
+                          Remaining balance will be credited instantly after the technician receives and verifies your old device.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* 4. Payment Preference */}
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-                  <h3 className="text-base font-black text-slate-900 mb-3 flex items-center gap-2">
-                    <CreditCard size={17} className="text-emerald-600" />
-                    <span>How would you like to pay the difference?</span>
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-sm">
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 mb-3 flex items-center gap-2">
+                    <CreditCard size={18} className="text-emerald-600" />
+                    <span>
+                      {balanceOwedToUser > 0
+                        ? 'Doorstep Handover Payout Method'
+                        : 'How would you like to pay the difference?'}
+                    </span>
                   </h3>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {[
-                      { key: 'delivery', title: 'Pay on Handover', desc: 'UPI / Cash to technician' },
-                      { key: 'online', title: 'Pay Online Now', desc: 'Credit / Debit / UPI' },
-                      { key: 'emi', title: 'No-Cost EMI', desc: 'Starting ₹1,850/mo' },
-                    ].map((p) => (
-                      <button
-                        key={p.key}
-                        type="button"
-                        onClick={() => setPaymentPreference(p.key as any)}
-                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                          paymentPreference === p.key
-                            ? 'border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/20 shadow-xs'
-                            : 'border-slate-200 bg-white hover:border-slate-300'
-                        }`}
-                      >
-                        <p className="text-xs font-black text-slate-900">{p.title}</p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">{p.desc}</p>
-                      </button>
-                    ))}
-                  </div>
+                  {balanceOwedToUser > 0 ? (
+                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">
+                      <Wallet size={20} className="text-emerald-600 shrink-0" />
+                      <div>
+                        <p className="text-xs font-black text-slate-900">
+                          Direct Instant Payout on Handover
+                        </p>
+                        <p className="text-[11px] text-emerald-800 mt-0.5">
+                          Technician will inspect your old device and transfer ₹{balanceOwedToUser.toLocaleString('en-IN')} via UPI/IMPS on the spot!
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        { key: 'delivery', title: 'Pay on Handover', desc: 'UPI / Cash to technician' },
+                        { key: 'online', title: 'Pay Online Now', desc: 'Credit / Debit / UPI' },
+                        { key: 'emi', title: 'No-Cost EMI', desc: 'Starting ₹1,850/mo' },
+                      ].map((p) => (
+                        <button
+                          key={p.key}
+                          type="button"
+                          onClick={() => setPaymentPreference(p.key as any)}
+                          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                            paymentPreference === p.key
+                              ? 'border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/20 shadow-xs'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <p className="text-xs font-black text-slate-900">{p.title}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">{p.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Right Column: Coupons & Exchange Order Summary (MATCHING SCREENSHOT 2) */}
-              <div className="lg:col-span-5 space-y-6">
+              <div className="lg:col-span-5 2xl:col-span-4 space-y-6 lg:sticky lg:top-24">
                 {/* Available Coupon Codes Engine */}
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-sm">
                   <div className="flex items-center gap-2 mb-3">
-                    <Tag size={16} className="text-emerald-600" />
+                    <Tag size={17} className="text-emerald-600" />
                     <h3 className="text-sm font-black text-slate-900">Apply Exchange Coupon</h3>
                   </div>
 
@@ -1788,7 +1971,7 @@ export default function ExchangeDevicePage() {
                       return (
                         <div
                           key={c.code}
-                          className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                          className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                             isApplied
                               ? 'border-emerald-500 bg-emerald-50/70 ring-1 ring-emerald-500'
                               : 'border-slate-200 bg-slate-50/70 hover:border-slate-300'
@@ -1827,11 +2010,11 @@ export default function ExchangeDevicePage() {
                       placeholder="Have another promo code?"
                       value={customCouponInput}
                       onChange={(e) => setCustomCouponInput(e.target.value)}
-                      className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                     />
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer"
+                      className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer"
                     >
                       Apply
                     </button>
@@ -1846,11 +2029,11 @@ export default function ExchangeDevicePage() {
                   <h2 className="text-xl font-black text-slate-900 tracking-tight mb-1">
                     Exchange Order Summary
                   </h2>
-                  <p className="text-xs text-slate-500 mb-6">
+                  <p className="text-xs text-slate-500 mb-6 font-medium">
                     Review your trade-in breakdown before booking
                   </p>
 
-                  <div className="space-y-3.5 p-4 rounded-2xl bg-slate-50 border border-slate-200/80 mb-6 text-xs sm:text-sm">
+                  <div className="space-y-3.5 p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 mb-6 text-xs sm:text-sm">
                     <div className="flex justify-between items-start gap-2">
                       <span className="text-slate-500 font-medium">Upgrading To</span>
                       <span className="font-bold text-slate-900 text-right">
@@ -1894,6 +2077,21 @@ export default function ExchangeDevicePage() {
                         ₹{netPayableAmount.toLocaleString('en-IN')}
                       </span>
                     </div>
+
+                    {/* Remaining balance callout if trade-in valuation exceeds upgrade price */}
+                    {balanceOwedToUser > 0 && (
+                      <div className="mt-3 p-3 rounded-xl bg-emerald-100/70 border border-emerald-300/80 text-emerald-950 text-xs font-bold flex items-start gap-2">
+                        <CheckCircle2 size={16} className="text-emerald-700 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-black text-emerald-900">
+                            Extra Balance Paid to You: +₹{balanceOwedToUser.toLocaleString('en-IN')}
+                          </p>
+                          <p className="text-[11px] text-emerald-800 font-medium mt-0.5">
+                            Remaining balance will be paid directly to your bank account / UPI after receiving your device at your doorstep!
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Confirm CTA */}
@@ -1902,7 +2100,11 @@ export default function ExchangeDevicePage() {
                     onClick={handleConfirmOrder}
                     className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/40 transition-all cursor-pointer flex items-center justify-center gap-2 group"
                   >
-                    <span>Confirm Doorstep Exchange</span>
+                    <span>
+                      {balanceOwedToUser > 0
+                        ? `Confirm Exchange & Receive ₹${balanceOwedToUser.toLocaleString('en-IN')}`
+                        : 'Confirm Doorstep Exchange'}
+                    </span>
                     <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                   </button>
 
@@ -1919,7 +2121,7 @@ export default function ExchangeDevicePage() {
             STEP 6: ORDER CONFIRMED SCREEN (SAVED TO /my-orders)
         ────────────────────────────────────────────────────────────── */}
         {step === 'confirmed' && confirmedOrder && (
-          <section className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
+          <section className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-12">
             <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden text-center p-8 sm:p-12">
               <div className="w-20 h-20 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto mb-6 shadow-sm">
                 <CheckCircle size={44} />
@@ -1968,6 +2170,21 @@ export default function ExchangeDevicePage() {
                     ₹{confirmedOrder.netPayable.toLocaleString('en-IN')}
                   </span>
                 </div>
+
+                {confirmedOrder.balanceOwedToUser && confirmedOrder.balanceOwedToUser > 0 && (
+                  <div className="p-3.5 rounded-xl bg-emerald-100/80 border border-emerald-300 text-emerald-950 font-bold flex items-start gap-2 mt-2">
+                    <Coins size={16} className="text-emerald-700 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-black text-sm text-emerald-900">
+                        Remaining Balance to be Paid to You: +₹{confirmedOrder.balanceOwedToUser.toLocaleString('en-IN')}
+                      </p>
+                      <p className="text-xs text-emerald-800 mt-0.5">
+                        Will be deposited to your UPI / Bank account immediately after receiving &amp; testing your old device.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
                   <span>Handover Address:</span>
                   <span className="font-semibold text-slate-800">
@@ -2000,81 +2217,100 @@ export default function ExchangeDevicePage() {
         )}
 
         {/* ─────────────────────────────────────────────────────────────
-            AUTH MODAL: QUICK LOGIN GATE BEFORE CONFIRMING
+            LOGIN / AUTH POPUP MODAL GATE BEFORE ORDER CONFIRMATION
         ────────────────────────────────────────────────────────────── */}
         {showAuthModal && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full p-6 sm:p-8 relative animate-in fade-in zoom-in-95 duration-200">
               <button
                 type="button"
                 onClick={() => setShowAuthModal(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1.5 rounded-full hover:bg-slate-100 transition-colors"
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-2 rounded-full hover:bg-slate-100 transition-colors"
               >
-                ✕
+                <X size={18} />
               </button>
 
               <div className="text-center mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 border border-emerald-200">
-                  <LogIn size={22} />
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto mb-3">
+                  <User size={22} />
                 </div>
-                <h3 className="text-xl font-black text-slate-900">Sign In to Book Exchange</h3>
+                <h3 className="text-xl font-black text-slate-900">
+                  {authOtpSent ? 'Enter Verification OTP' : 'Sign In to Confirm Exchange'}
+                </h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  Log in so your exchange order is saved to your account and trackable in &ldquo;My Orders&rdquo;
+                  {authOtpSent
+                    ? `We sent a 4-digit code to +91 ${authPhone}`
+                    : 'Verify your mobile number to link your trade-in and track your order in My Orders.'}
                 </p>
               </div>
 
               <form onSubmit={handleQuickLoginSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Your Full Name</label>
-                  <div className="relative">
-                    <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="e.g. Adarsh"
-                      required
-                      value={authName}
-                      onChange={(e) => setAuthName(e.target.value)}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Mobile Phone Number</label>
-                  <div className="relative">
-                    <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="tel"
-                      placeholder="10-digit phone number"
-                      required
-                      value={authPhone}
-                      onChange={(e) => setAuthPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                    />
-                  </div>
-                </div>
-
-                {authOtpSent && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Enter 6-Digit OTP</label>
-                    <input
-                      type="text"
-                      placeholder="Enter OTP (e.g. 123456)"
-                      required
-                      value={authOtp}
-                      onChange={(e) => setAuthOtp(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-emerald-300 text-center tracking-widest text-sm font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 bg-emerald-50/40"
-                    />
-                    <p className="text-[10px] text-slate-400 text-center mt-1">Demo mode: Enter any 6 digits</p>
-                  </div>
+                {!authOtpSent ? (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Your Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Adarsh Sachan"
+                        value={authName}
+                        onChange={(e) => setAuthName(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">10-Digit Mobile Number</label>
+                      <div className="flex">
+                        <span className="inline-flex items-center px-3.5 rounded-l-xl border border-r-0 border-slate-200 bg-slate-50 text-xs font-bold text-slate-500">
+                          +91
+                        </span>
+                        <input
+                          type="tel"
+                          required
+                          placeholder="e.g. 9876543210"
+                          value={authPhone}
+                          onChange={(e) => setAuthPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                          className="w-full px-4 py-3 rounded-r-xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={authPhone.length < 10}
+                      className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-emerald-600/20 mt-2"
+                    >
+                      Get Verification Code &rarr;
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Enter OTP (Any 4 digits)</label>
+                      <input
+                        type="text"
+                        required
+                        maxLength={4}
+                        placeholder="• • • •"
+                        value={authOtp}
+                        onChange={(e) => setAuthOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-center tracking-[1em] text-lg font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={authOtp.length < 4}
+                      className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-emerald-600/20 mt-2"
+                    >
+                      Verify &amp; Confirm Order &rarr;
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAuthOtpSent(false)}
+                      className="w-full text-center text-xs font-bold text-slate-500 hover:text-slate-800 mt-2"
+                    >
+                      Change Mobile Number
+                    </button>
+                  </>
                 )}
-
-                <button
-                  type="submit"
-                  className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
-                >
-                  {authOtpSent ? 'Verify & Continue' : 'Send OTP'}
-                </button>
               </form>
             </div>
           </div>
