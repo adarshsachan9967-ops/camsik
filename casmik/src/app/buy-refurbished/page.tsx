@@ -21,6 +21,10 @@ import {
   Tablet,
   Watch,
   X,
+  ThumbsUp,
+  Tag,
+  ChevronRight,
+  Info,
 } from 'lucide-react';
 import CustomerHeader from '@/components/CustomerHeader';
 import CustomerFooter from '@/components/CustomerFooter';
@@ -30,6 +34,7 @@ import {
   ProductCondition,
   getRefurbishedProducts,
   DEFAULT_REFURBISHED_PRODUCTS,
+  getModelKey,
 } from '@/lib/refurbishedCatalog';
 
 export default function BuyRefurbishedPage() {
@@ -42,6 +47,7 @@ export default function BuyRefurbishedPage() {
   const [currentView, setCurrentView] = useState<'list' | 'details' | 'checkout' | 'confirmed'>('list');
   const [selectedProduct, setSelectedProduct] = useState<RefurbishedProduct | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [activeDetailCondition, setActiveDetailCondition] = useState<ProductCondition>('Superb');
 
   // Checkout form state
   const [address, setAddress] = useState('');
@@ -82,9 +88,32 @@ export default function BuyRefurbishedPage() {
 
   const handleSelectProduct = (product: RefurbishedProduct) => {
     setSelectedProduct(product);
+    setActiveDetailCondition(product.condition);
     setActiveImageIndex(0);
     setCurrentView('details');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectConditionTab = (cond: ProductCondition) => {
+    setActiveDetailCondition(cond);
+    if (!selectedProduct) return;
+    const currentModelKey = getModelKey(selectedProduct);
+    const matchingConditionUnits = products.filter(
+      (p) => getModelKey(p) === currentModelKey && p.condition === cond && p.status !== 'sold'
+    );
+    if (matchingConditionUnits.length > 0) {
+      // Auto-switch to the first unit of that condition if current unit is in a different condition
+      if (selectedProduct.condition !== cond) {
+        setSelectedProduct(matchingConditionUnits[0]);
+        setActiveImageIndex(0);
+      }
+    }
+  };
+
+  const handleSwitchUnit = (unit: RefurbishedProduct) => {
+    setSelectedProduct(unit);
+    setActiveDetailCondition(unit.condition);
+    setActiveImageIndex(0);
   };
 
   const handleStartCheckout = () => {
@@ -111,6 +140,54 @@ export default function BuyRefurbishedPage() {
       default:
         return 'bg-slate-50 text-slate-700 border-slate-200';
     }
+  };
+
+  const conditionInfo: Record<
+    ProductCondition,
+    {
+      title: string;
+      subtitle: string;
+      batteryGuide: string;
+      icon: typeof Sparkles;
+      activeBorder: string;
+      activeBadge: string;
+    }
+  > = {
+    Superb: {
+      title: 'Superb',
+      subtitle: 'Pristine • Like New',
+      batteryGuide: '95%+ Battery',
+      icon: Sparkles,
+      activeBorder: 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/30',
+      activeBadge: 'bg-emerald-500 text-white',
+    },
+    Good: {
+      title: 'Good',
+      subtitle: 'Lightly Used • Best Value',
+      batteryGuide: '88-94% Battery',
+      icon: ThumbsUp,
+      activeBorder: 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/30',
+      activeBadge: 'bg-blue-500 text-white',
+    },
+    Fair: {
+      title: 'Fair',
+      subtitle: 'Budget Deal • Fully Tested',
+      batteryGuide: '80-87% Battery',
+      icon: Tag,
+      activeBorder: 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/30',
+      activeBadge: 'bg-amber-500 text-white',
+    },
+  };
+
+  const currentModelKey = selectedProduct ? getModelKey(selectedProduct) : '';
+  const siblingVariants = selectedProduct
+    ? products.filter((p) => getModelKey(p) === currentModelKey && p.status !== 'sold')
+    : [];
+
+  const conditionGroups: Record<ProductCondition, RefurbishedProduct[]> = {
+    Superb: siblingVariants.filter((p) => p.condition === 'Superb'),
+    Good: siblingVariants.filter((p) => p.condition === 'Good'),
+    Fair: siblingVariants.filter((p) => p.condition === 'Fair'),
   };
 
   return (
@@ -445,6 +522,221 @@ export default function BuyRefurbishedPage() {
                     <span className="text-xs sm:text-sm font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
                       {selectedProduct.discount}% OFF
                     </span>
+                  </div>
+
+                  {/* ─────────────────────────────────────────────────────────────
+                      STEP 1: CHOOSE CONDITION GRADE (Superb / Good / Fair)
+                  ────────────────────────────────────────────────────────────── */}
+                  <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-slate-50/90 border border-slate-200/90 shadow-xs">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-xs font-black flex items-center justify-center shadow-xs">
+                          1
+                        </span>
+                        <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                          Select Condition Grade
+                        </h3>
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200/60">
+                        {siblingVariants.length} certified {siblingVariants.length === 1 ? 'unit' : 'units'} listed
+                      </span>
+                    </div>
+
+                    {/* 3 Condition Option Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {(['Superb', 'Good', 'Fair'] as ProductCondition[]).map((cond) => {
+                        const isSelected = activeDetailCondition === cond;
+                        const count = conditionGroups[cond].length;
+                        const prices = conditionGroups[cond].map((p) => p.sellingPrice);
+                        const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+                        const info = conditionInfo[cond];
+                        const Icon = info.icon;
+
+                        return (
+                          <button
+                            key={cond}
+                            type="button"
+                            onClick={() => handleSelectConditionTab(cond)}
+                            className={`relative p-3 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between group ${
+                              isSelected
+                                ? `${info.activeBorder} shadow-sm`
+                                : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                            }`}
+                          >
+                            {/* Active Checkmark Pill on Top-Right */}
+                            {isSelected && (
+                              <span className="absolute -top-2 -right-1 bg-slate-900 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                                <Check size={11} strokeWidth={3} /> Selected
+                              </span>
+                            )}
+
+                            <div>
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`p-1 rounded-lg ${isSelected ? info.activeBadge : 'bg-slate-100 text-slate-600'}`}>
+                                    <Icon size={13} />
+                                  </span>
+                                  <span className={`text-sm font-black ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>
+                                    {cond}
+                                  </span>
+                                </div>
+                                <span
+                                  className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                                    count > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'
+                                  }`}
+                                >
+                                  {count > 0 ? `${count} available` : 'Out of stock'}
+                                </span>
+                              </div>
+
+                              <p className="text-[11px] font-medium text-slate-500 leading-tight">
+                                {info.subtitle}
+                              </p>
+                              <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+                                {info.batteryGuide}
+                              </p>
+                            </div>
+
+                            <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-slate-400">Starting</span>
+                              <span className="text-xs font-black text-slate-900">
+                                {minPrice ? `₹${minPrice.toLocaleString('en-IN')}` : '—'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* ─────────────────────────────────────────────────────────────
+                        STEP 2: AVAILABLE UNITS UNDER THE SELECTED CONDITION
+                    ────────────────────────────────────────────────────────────── */}
+                    <div className="mt-4 pt-4 border-t border-slate-200/70">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-xs font-black flex items-center justify-center shadow-xs">
+                            2
+                          </span>
+                          <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <span>Available Units in</span>
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold border ${conditionBadgeColor(activeDetailCondition)}`}>
+                              {activeDetailCondition} Condition
+                            </span>
+                          </h4>
+                        </div>
+                        <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">
+                          Tap any unit to switch details & price
+                        </span>
+                      </div>
+
+                      {/* If units exist for this condition */}
+                      {conditionGroups[activeDetailCondition].length > 0 ? (
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                          {conditionGroups[activeDetailCondition].map((unit) => {
+                            const isCurrentUnit = selectedProduct.id === unit.id;
+                            return (
+                              <button
+                                key={unit.id}
+                                type="button"
+                                onClick={() => handleSwitchUnit(unit)}
+                                className={`w-full p-3 rounded-2xl border text-left transition-all duration-200 flex items-center justify-between gap-3 group cursor-pointer ${
+                                  isCurrentUnit
+                                    ? 'border-emerald-500 bg-white ring-2 ring-emerald-500/20 shadow-md'
+                                    : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 shadow-xs'
+                                }`}
+                              >
+                                {/* Left: Thumbnail & Main Specs */}
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200/80 p-1 flex items-center justify-center shrink-0">
+                                    <img
+                                      src={unit.gallery && unit.gallery[0] ? unit.gallery[0] : unit.image}
+                                      alt={unit.model}
+                                      className="max-w-full max-h-full object-contain"
+                                    />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-xs font-black text-slate-900">
+                                        {unit.storage}
+                                      </span>
+                                      <span className="text-slate-300">·</span>
+                                      <span className="text-xs font-semibold text-slate-600 truncate">
+                                        {unit.color}
+                                      </span>
+                                      {isCurrentUnit && (
+                                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                                          Currently Selected
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <div className="flex items-center gap-2 mt-1 text-[11px] font-medium text-slate-500 flex-wrap">
+                                      <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
+                                        <BatteryCharging size={12} className="text-emerald-600" />
+                                        {typeof unit.batteryHealth === 'number' ? `${unit.batteryHealth}% Battery` : unit.batteryHealth}
+                                      </span>
+                                      <span className="text-slate-300">·</span>
+                                      <span className="inline-flex items-center gap-1 text-slate-600">
+                                        <ShieldCheck size={12} className="text-blue-600" />
+                                        {unit.warranty}
+                                      </span>
+                                      <span className="text-slate-300">·</span>
+                                      <span className="text-slate-500 truncate max-w-[140px] sm:max-w-none">
+                                        {unit.conditionNote}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Right: Price & Selection Status */}
+                                <div className="text-right shrink-0">
+                                  <div className="flex items-baseline justify-end gap-1.5">
+                                    <span className="text-sm sm:text-base font-black text-slate-900">
+                                      ₹{unit.sellingPrice.toLocaleString('en-IN')}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 line-through hidden sm:inline">
+                                      ₹{unit.originalPrice.toLocaleString('en-IN')}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                                    <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                      {unit.discount}% OFF
+                                    </span>
+                                    <span className="text-[10px] text-slate-400">
+                                      {unit.stock > 1 ? `Stock: ${unit.stock}` : 'Only 1 left!'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        /* Empty State when no units for this condition */
+                        <div className="p-4 rounded-2xl bg-white border border-slate-200 text-center space-y-2">
+                          <p className="text-xs font-bold text-slate-700">
+                            No units currently listed in <span className="font-extrabold text-slate-900">{activeDetailCondition}</span> condition for {selectedProduct.model}.
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            Explore available certified units in other conditions:
+                          </p>
+                          <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+                            {(['Superb', 'Good', 'Fair'] as ProductCondition[])
+                              .filter((c) => c !== activeDetailCondition && conditionGroups[c].length > 0)
+                              .map((c) => (
+                                <button
+                                  key={c}
+                                  type="button"
+                                  onClick={() => handleSelectConditionTab(c)}
+                                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer"
+                                >
+                                  View {c} ({conditionGroups[c].length} available)
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* 4 Feature Metric Cards in 2x2 Grid (matches Screenshot 3) */}

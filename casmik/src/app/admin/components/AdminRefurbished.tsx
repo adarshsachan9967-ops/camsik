@@ -26,6 +26,7 @@ import {
   getRefurbishedProducts,
   saveRefurbishedProducts,
   resetRefurbishedProducts,
+  getModelKey,
 } from '@/lib/refurbishedCatalog';
 
 const conditionColors: Record<ProductCondition, string> = {
@@ -44,12 +45,14 @@ export default function AdminRefurbished() {
   const [search, setSearch] = useState('');
   const [filterCondition, setFilterCondition] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
+  const [filterModel, setFilterModel] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editProduct, setEditProduct] = useState<RefurbishedProduct | null>(null);
   const [devices, setDevices] = useState<RefurbishedProduct[]>([]);
 
   // Form fields for Add / Edit
   const [formModel, setFormModel] = useState('');
+  const [formModelId, setFormModelId] = useState('');
   const [formBrand, setFormBrand] = useState('Apple');
   const [formCategory, setFormCategory] = useState<ProductCategory>('Smartphones');
   const [formCondition, setFormCondition] = useState<ProductCondition>('Superb');
@@ -72,6 +75,7 @@ export default function AdminRefurbished() {
   const openAddModal = () => {
     setEditProduct(null);
     setFormModel('');
+    setFormModelId('');
     setFormBrand('Apple');
     setFormCategory('Smartphones');
     setFormCondition('Superb');
@@ -89,9 +93,56 @@ export default function AdminRefurbished() {
     setShowAddModal(true);
   };
 
+  const openAddVariantModal = (source: RefurbishedProduct) => {
+    setEditProduct(null);
+    setFormModel(source.model);
+    setFormModelId(getModelKey(source));
+    setFormBrand(source.brand);
+    setFormCategory(source.category);
+
+    let nextCond: ProductCondition = 'Good';
+    let nextNote = 'Flawless display, minor back scuffs';
+    let priceMult = 0.88;
+    let nextBattery = '92';
+    let nextWarranty = '12 months';
+
+    if (source.condition === 'Superb') {
+      nextCond = 'Good';
+      nextNote = 'Flawless display, light body marks';
+      priceMult = 0.88;
+      nextBattery = '92';
+    } else if (source.condition === 'Good') {
+      nextCond = 'Fair';
+      nextNote = 'Visible exterior scuffs, 100% functional';
+      priceMult = 0.80;
+      nextBattery = '85';
+      nextWarranty = '6 months';
+    } else {
+      nextCond = 'Superb';
+      nextNote = 'Like new, minimal marks';
+      priceMult = 1.15;
+      nextBattery = '98';
+    }
+
+    setFormCondition(nextCond);
+    setFormConditionNote(nextNote);
+    setFormStorage(source.storage);
+    setFormColor(source.color);
+    setFormSellingPrice(Math.round(source.sellingPrice * priceMult).toString());
+    setFormOriginalPrice(source.originalPrice.toString());
+    setFormBattery(nextBattery);
+    setFormWarranty(nextWarranty);
+    setFormStock('2');
+    setFormImage(source.image);
+    setFormSpecs(source.specs || '');
+    setFormStatus('available');
+    setShowAddModal(true);
+  };
+
   const openEditModal = (p: RefurbishedProduct) => {
     setEditProduct(p);
     setFormModel(p.model);
+    setFormModelId(p.modelId || getModelKey(p));
     setFormBrand(p.brand);
     setFormCategory(p.category);
     setFormCondition(p.condition);
@@ -145,9 +196,14 @@ export default function AdminRefurbished() {
         return item;
       });
     } else {
+      const computedModelId =
+        formModelId && formModelId.trim() !== ''
+          ? formModelId.trim().toLowerCase()
+          : formModel.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
       const newProduct: RefurbishedProduct = {
         id: 'ref-' + Date.now(),
-        modelId: formModel.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        modelId: computedModelId,
         brand: formBrand,
         model: formModel,
         category: formCategory,
@@ -201,14 +257,32 @@ export default function AdminRefurbished() {
     }
   };
 
+  const uniqueModels = Array.from(
+    new Map(
+      devices.map((d) => [
+        getModelKey(d),
+        {
+          modelKey: getModelKey(d),
+          model: d.model,
+          brand: d.brand,
+          category: d.category,
+          image: d.image,
+          specs: d.specs || '',
+        },
+      ])
+    ).values()
+  );
+
   const filtered = devices.filter((d) => {
     const matchSearch =
       d.model.toLowerCase().includes(search.toLowerCase()) ||
       d.brand.toLowerCase().includes(search.toLowerCase()) ||
-      d.category.toLowerCase().includes(search.toLowerCase());
+      d.category.toLowerCase().includes(search.toLowerCase()) ||
+      getModelKey(d).includes(search.toLowerCase());
     const matchCond = filterCondition === 'all' || d.condition.toLowerCase() === filterCondition.toLowerCase();
     const matchCat = filterCategory === 'all' || d.category.toLowerCase() === filterCategory.toLowerCase();
-    return matchSearch && matchCond && matchCat;
+    const matchModel = filterModel === 'all' || getModelKey(d) === filterModel;
+    return matchSearch && matchCond && matchCat && matchModel;
   });
 
   const totalStock = devices.reduce((s, d) => s + d.stock, 0);
@@ -310,6 +384,22 @@ export default function AdminRefurbished() {
 
         <div className="relative">
           <select
+            value={filterModel}
+            onChange={(e) => setFilterModel(e.target.value)}
+            className="appearance-none pl-3 pr-8 py-2 text-xs font-bold border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 bg-white max-w-[200px] truncate"
+          >
+            <option value="all">All Models Family</option>
+            {uniqueModels.map((m) => (
+              <option key={m.modelKey} value={m.modelKey}>
+                {m.brand} {m.model}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        </div>
+
+        <div className="relative">
+          <select
             value={filterCondition}
             onChange={(e) => setFilterCondition(e.target.value)}
             className="appearance-none pl-3 pr-8 py-2 text-xs font-bold border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 bg-white"
@@ -380,11 +470,20 @@ export default function AdminRefurbished() {
 
             <div className="p-4 pt-0 border-t border-gray-100 flex items-center justify-between mt-2">
               <span className="text-xs font-bold text-gray-500">{device.category}</span>
-              <div className="flex gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => openAddVariantModal(device)}
+                  className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-extrabold transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Add another condition variant for this model"
+                >
+                  <Plus size={12} />
+                  <span>Variant</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => openEditModal(device)}
-                  className="p-2 rounded-xl hover:bg-blue-50 text-blue-600 transition-colors"
+                  className="p-2 rounded-xl hover:bg-blue-50 text-blue-600 transition-colors cursor-pointer"
                   title="Edit product"
                 >
                   <Edit2 size={15} />
@@ -392,7 +491,7 @@ export default function AdminRefurbished() {
                 <button
                   type="button"
                   onClick={() => handleDelete(device.id)}
-                  className="p-2 rounded-xl hover:bg-red-50 text-red-500 transition-colors"
+                  className="p-2 rounded-xl hover:bg-red-50 text-red-500 transition-colors cursor-pointer"
                   title="Delete product"
                 >
                   <Trash2 size={15} />
@@ -425,11 +524,50 @@ export default function AdminRefurbished() {
 
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-gray-700 mb-1 block">Model Name</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-gray-700">Model Family & Name</label>
+                  {uniqueModels.length > 0 && (
+                    <span className="text-[10px] text-emerald-600 font-bold">Quick pick existing to link variants</span>
+                  )}
+                </div>
+
+                {uniqueModels.length > 0 && !editProduct && (
+                  <div className="mb-2">
+                    <select
+                      value={formModelId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormModelId(val);
+                        const match = uniqueModels.find((m) => m.modelKey === val);
+                        if (match) {
+                          setFormModel(match.model);
+                          setFormBrand(match.brand);
+                          setFormCategory(match.category);
+                          setFormImage(match.image);
+                          if (match.specs) setFormSpecs(match.specs);
+                        }
+                      }}
+                      className="w-full border border-emerald-200 bg-emerald-50/40 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 mb-1.5"
+                    >
+                      <option value="">-- Or Select Existing Model to Add Variant --</option>
+                      {uniqueModels.map((m) => (
+                        <option key={m.modelKey} value={m.modelKey}>
+                          {m.brand} {m.model} ({m.modelKey})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <input
                   required
                   value={formModel}
-                  onChange={(e) => setFormModel(e.target.value)}
+                  onChange={(e) => {
+                    setFormModel(e.target.value);
+                    if (!formModelId) {
+                      setFormModelId(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+                    }
+                  }}
                   placeholder="e.g. iPhone 15 Pro, Sony Alpha A7 IV, MacBook Air M2"
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                 />
@@ -467,12 +605,18 @@ export default function AdminRefurbished() {
                   <label className="text-xs font-bold text-gray-700 mb-1 block">Condition Grade</label>
                   <select
                     value={formCondition}
-                    onChange={(e) => setFormCondition(e.target.value as ProductCondition)}
+                    onChange={(e) => {
+                      const cond = e.target.value as ProductCondition;
+                      setFormCondition(cond);
+                      if (cond === 'Superb') setFormConditionNote('Like new, minimal marks');
+                      if (cond === 'Good') setFormConditionNote('Flawless display, minor back scuffs');
+                      if (cond === 'Fair') setFormConditionNote('Visible signs of use, 100% functional');
+                    }}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 bg-white"
                   >
-                    <option value="Superb">Superb</option>
-                    <option value="Good">Good</option>
-                    <option value="Fair">Fair</option>
+                    <option value="Superb">Superb (Pristine / Like New)</option>
+                    <option value="Good">Good (Lightly Used)</option>
+                    <option value="Fair">Fair (Budget / Visible signs)</option>
                   </select>
                 </div>
                 <div>
