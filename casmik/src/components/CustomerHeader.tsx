@@ -18,8 +18,12 @@ import {
   LogIn,
   ShieldCheck,
   Phone,
+  User,
+  Package,
+  LogOut,
 } from 'lucide-react';
 import { deviceModels, brands, categories } from '@/lib/casmikData';
+import { getCurrentUser, logoutUser, CustomerUser } from '@/lib/auth';
 
 const popularCities = [
   { id: 'all', name: 'All Cities', areas: [] },
@@ -63,6 +67,19 @@ export default function CustomerHeader() {
   const searchRef = useRef<HTMLDivElement>(null);
   const megaMenuRef = useRef<HTMLDivElement>(null);
 
+  const [user, setUser] = useState<CustomerUser | null>(null);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setUser(getCurrentUser());
+    const onAuthChange = () => {
+      setUser(getCurrentUser());
+    };
+    window.addEventListener('casmik_auth_change', onAuthChange);
+    return () => window.removeEventListener('casmik_auth_change', onAuthChange);
+  }, []);
+
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 15);
     window.addEventListener('scroll', handler, { passive: true });
@@ -90,6 +107,9 @@ export default function CustomerHeader() {
       }
       if (megaMenuRef.current && !megaMenuRef.current.contains(e.target as Node)) {
         setMegaMenuOpen(false);
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) {
+        setUserDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -295,14 +315,68 @@ export default function CustomerHeader() {
                 <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 flex-shrink-0" />
               </button>
 
-              {/* Login / Auth */}
-              <Link
-                href="/login"
-                className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 text-sm font-semibold text-slate-700 hover:text-purple-700 transition-colors"
-              >
-                <LogIn size={15} />
-                <span>Login</span>
-              </Link>
+              {/* Login / Auth Dropdown or Button */}
+              {user ? (
+                <div ref={userDropdownRef} className="relative hidden md:block">
+                  <button
+                    type="button"
+                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100/70 text-slate-800 text-xs sm:text-sm font-semibold transition-all duration-150"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-xs">
+                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <span className="max-w-[90px] truncate font-bold text-purple-900">
+                      {user.name || user.phone}
+                    </span>
+                    <ChevronDown size={14} className={`text-purple-600 transition-transform duration-200 ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {userDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl border border-slate-200 shadow-2xl p-2 z-50 animate-in fade-in-50 duration-150">
+                      <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                        <p className="text-xs font-bold text-slate-900 truncate">{user.name || 'Verified Customer'}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{user.phone}</p>
+                      </div>
+                      <Link
+                        href="/my-orders"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
+                      >
+                        <Package size={15} className="text-purple-600" />
+                        <span>My Orders & Exchanges</span>
+                      </Link>
+                      <Link
+                        href="/track-order"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
+                      >
+                        <MapPin size={15} className="text-indigo-600" />
+                        <span>Track Active Order</span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          logoutUser();
+                          setUserDropdownOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left mt-1"
+                      >
+                        <LogOut size={15} />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 text-sm font-semibold text-slate-700 hover:text-purple-700 transition-colors"
+                >
+                  <LogIn size={15} />
+                  <span>Login</span>
+                </Link>
+              )}
 
               {/* Instant Sell CTA - hidden on small mobile to keep header clean and prevent right-shift */}
               <Link
@@ -505,6 +579,12 @@ export default function CustomerHeader() {
                 className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
               >
                 Exchange Device
+              </Link>
+              <Link
+                href="/my-orders"
+                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
+              >
+                My Orders
               </Link>
               <Link
                 href="/track-order"
@@ -723,6 +803,13 @@ export default function CustomerHeader() {
                   Exchange Device
                 </Link>
                 <Link
+                  href="/my-orders"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 p-2.5 rounded-xl text-sm font-medium text-purple-700 hover:bg-purple-50 font-bold"
+                >
+                  My Orders & Exchanges
+                </Link>
+                <Link
                   href="/track-order"
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-3 p-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-purple-50"
@@ -761,14 +848,44 @@ export default function CustomerHeader() {
             </div>
 
             <div className="pt-4 border-t border-slate-100">
-              <Link
-                href="/login"
-                onClick={() => setMobileOpen(false)}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 hover:bg-slate-50 mb-2.5"
-              >
-                <LogIn size={16} />
-                <span>Account Login</span>
-              </Link>
+              {user ? (
+                <div className="space-y-2 mb-2.5">
+                  <div className="p-3 bg-purple-50 rounded-xl border border-purple-100 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">{user.name || 'Account'}</p>
+                      <p className="text-[11px] text-slate-500">{user.phone}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        logoutUser();
+                        setMobileOpen(false);
+                      }}
+                      className="text-xs font-bold text-rose-600 hover:underline flex items-center gap-1"
+                    >
+                      <LogOut size={13} />
+                      Logout
+                    </button>
+                  </div>
+                  <Link
+                    href="/my-orders"
+                    onClick={() => setMobileOpen(false)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-100/70 text-purple-800 text-sm font-bold hover:bg-purple-200/70"
+                  >
+                    <Package size={16} />
+                    <span>View My Orders</span>
+                  </Link>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 hover:bg-slate-50 mb-2.5"
+                >
+                  <LogIn size={16} />
+                  <span>Account Login</span>
+                </Link>
+              )}
               <Link
                 href="/sell-device-get-quote"
                 onClick={() => setMobileOpen(false)}

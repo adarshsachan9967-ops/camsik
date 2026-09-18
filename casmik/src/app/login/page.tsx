@@ -5,6 +5,8 @@ import { Eye, EyeOff, Phone, Mail, Lock, User, ArrowLeft, CheckCircle, Smartphon
 import CustomerHeader from '@/components/CustomerHeader';
 import CustomerFooter from '@/components/CustomerFooter';
 
+import { setCurrentUser } from '@/lib/auth';
+
 type AuthMode = 'login' | 'register' | 'otp';
 
 export default function LoginPage() {
@@ -42,8 +44,15 @@ export default function LoginPage() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      window.location.href = '/';
-    }, 1200);
+      setCurrentUser({
+        id: 'user-' + Date.now(),
+        name: name.trim() || (loginMethod === 'phone' ? `User ${phone.slice(-4)}` : email.split('@')[0]),
+        phone: phone.trim() || '9876543210',
+        email: email.trim() || undefined,
+        createdAt: new Date().toISOString(),
+      });
+      window.location.href = '/my-orders';
+    }, 1000);
   };
 
   return (
