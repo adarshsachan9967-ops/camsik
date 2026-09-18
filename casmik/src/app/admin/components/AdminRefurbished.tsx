@@ -719,14 +719,17 @@ export default function AdminRefurbished() {
                 <label className="text-xs font-bold text-gray-700 mb-1 block">Quick Image Presets</label>
                 <div className="flex flex-wrap gap-1.5 text-[11px]">
                   {[
-                    { label: 'iPhone 15 Pro', url: '/assets/images/refurbished/iphone-15-pro.png' },
-                    { label: 'Galaxy S24', url: '/assets/images/refurbished/galaxy-s24-ultra.png' },
+                    { label: 'iPhone 15 Natural', url: '/assets/images/refurbished/iphone-15-pro.png' },
+                    { label: 'iPhone 15 Blue', url: '/assets/images/refurbished/iphone-15-pro-blue.jpg' },
+                    { label: 'iPhone 15 Black', url: '/assets/images/refurbished/iphone-15-pro-black.jpg' },
+                    { label: 'iPhone 15 White', url: '/assets/images/refurbished/iphone-15-pro-white.jpg' },
+                    { label: 'iPhone 14 Purple', url: '/assets/images/refurbished/iphone-14-pro-max.png' },
+                    { label: 'iPhone 14 Gold', url: '/assets/images/refurbished/iphone-14-pro-gold.jpg' },
+                    { label: 'Galaxy S24 Black', url: '/assets/images/refurbished/galaxy-s24-ultra.png' },
+                    { label: 'Galaxy S24 Violet', url: '/assets/images/refurbished/galaxy-s24-violet.jpg' },
                     { label: 'MacBook Air', url: '/assets/images/refurbished/macbook-air-m2.png' },
                     { label: 'MacBook Pro', url: '/assets/images/refurbished/macbook-pro-14.png' },
-                    { label: 'Dell XPS', url: '/assets/images/refurbished/dell-xps-15.png' },
                     { label: 'Sony A7 Camera', url: '/assets/images/refurbished/sony-a7.jpg' },
-                    { label: 'Canon RP Camera', url: '/assets/images/refurbished/canon-eos-rp.jpg' },
-                    { label: 'Sony 16-35 Lens', url: '/assets/images/refurbished/sony-1635gm.jpg' },
                     { label: 'iPad Pro', url: '/assets/images/refurbished/ipad-pro-m2.jpg' },
                   ].map((preset) => (
                     <button

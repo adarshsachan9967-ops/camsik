@@ -452,10 +452,11 @@ export default function BuyRefurbishedPage() {
               {/* Left Column: Image Gallery (matches Screenshot 3) */}
               <div className="lg:col-span-6 flex flex-col items-center">
                 {/* Main Active Image Showcase */}
-                <div className="relative w-full aspect-square max-w-[420px] rounded-2xl bg-slate-50 border border-slate-200/80 p-6 flex items-center justify-center mb-4">
+                <div className="relative w-full aspect-square max-w-[420px] rounded-2xl bg-slate-50 border border-slate-200/80 p-6 flex items-center justify-center mb-4 overflow-hidden">
                   <img
-                    src={selectedProduct.gallery[activeImageIndex] || selectedProduct.image}
-                    alt={selectedProduct.model}
+                    key={`${selectedProduct.id}-${activeImageIndex}`}
+                    src={selectedProduct.gallery && selectedProduct.gallery[activeImageIndex] ? selectedProduct.gallery[activeImageIndex] : selectedProduct.image}
+                    alt={`${selectedProduct.brand} ${selectedProduct.model} - ${selectedProduct.color}`}
                     className="max-w-full max-h-full object-contain filter drop-shadow-md transition-all duration-300"
                   />
                   <div className="absolute top-3 left-3">
@@ -468,21 +469,26 @@ export default function BuyRefurbishedPage() {
                       {selectedProduct.discount}% OFF
                     </span>
                   </div>
+                  {/* Selected Color & Storage Badge on Image */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-white/95 backdrop-blur-xs border border-slate-200/80 text-[11px] font-bold text-slate-700 shadow-xs flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span>{selectedProduct.color} · {selectedProduct.storage}</span>
+                  </div>
                 </div>
 
-                {/* 3 Clickable Thumbnails Underneath */}
-                <div className="flex items-center gap-3 w-full max-w-[420px] justify-center">
-                  {(selectedProduct.gallery.length > 0 ? selectedProduct.gallery : [selectedProduct.image]).map((img, idx) => {
+                {/* Clickable Thumbnails Underneath */}
+                <div className="flex items-center gap-3 w-full max-w-[420px] justify-center overflow-x-auto py-1">
+                  {(selectedProduct.gallery && selectedProduct.gallery.length > 0 ? selectedProduct.gallery : [selectedProduct.image]).map((img, idx) => {
                     const isSelected = activeImageIndex === idx;
                     return (
                       <button
-                        key={idx}
+                        key={`${selectedProduct.id}-thumb-${idx}`}
                         type="button"
                         onClick={() => setActiveImageIndex(idx)}
-                        className={`w-20 h-20 rounded-xl bg-slate-50 p-2 border transition-all flex items-center justify-center ${
+                        className={`w-20 h-20 rounded-xl bg-slate-50 p-2 border transition-all flex items-center justify-center cursor-pointer shrink-0 ${
                           isSelected
-                            ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-white'
-                            : 'border-slate-200 hover:border-slate-300'
+                            ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-white shadow-sm'
+                            : 'border-slate-200 hover:border-slate-300 bg-white/50'
                         }`}
                       >
                         <img src={img} alt={`Angle ${idx + 1}`} className="max-w-full max-h-full object-contain" />
