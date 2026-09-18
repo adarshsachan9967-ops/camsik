@@ -59,15 +59,21 @@ export default function BuyRefurbishedPage() {
 
   // Load products & listen to admin updates
   useEffect(() => {
-    setProducts(getRefurbishedProducts());
+    const loaded = getRefurbishedProducts();
+    setProducts(loaded);
+    setSelectedProduct((prev) => {
+      if (!prev) return null;
+      return loaded.find((p) => p.id === prev.id) || prev;
+    });
 
     const handleUpdate = (e: Event) => {
       const customEvent = e as CustomEvent<RefurbishedProduct[]>;
-      if (customEvent.detail) {
-        setProducts(customEvent.detail);
-      } else {
-        setProducts(getRefurbishedProducts());
-      }
+      const nextProducts = customEvent.detail || getRefurbishedProducts();
+      setProducts(nextProducts);
+      setSelectedProduct((prev) => {
+        if (!prev) return null;
+        return nextProducts.find((p) => p.id === prev.id) || prev;
+      });
     };
 
     window.addEventListener('casmik_refurbished_updated', handleUpdate);
@@ -87,8 +93,9 @@ export default function BuyRefurbishedPage() {
   });
 
   const handleSelectProduct = (product: RefurbishedProduct) => {
-    setSelectedProduct(product);
-    setActiveDetailCondition(product.condition);
+    const fresh = products.find((p) => p.id === product.id) || product;
+    setSelectedProduct(fresh);
+    setActiveDetailCondition(fresh.condition);
     setActiveImageIndex(0);
     setCurrentView('details');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -111,8 +118,9 @@ export default function BuyRefurbishedPage() {
   };
 
   const handleSwitchUnit = (unit: RefurbishedProduct) => {
-    setSelectedProduct(unit);
-    setActiveDetailCondition(unit.condition);
+    const fresh = products.find((p) => p.id === unit.id) || unit;
+    setSelectedProduct(fresh);
+    setActiveDetailCondition(fresh.condition);
     setActiveImageIndex(0);
   };
 

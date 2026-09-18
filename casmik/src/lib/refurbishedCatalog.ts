@@ -59,8 +59,8 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/iphone-15-pro.png',
     gallery: [
       '/assets/images/refurbished/iphone-15-pro.png',
-      '/assets/images/refurbished/iphone-15-pro-blue.jpg',
-      '/assets/images/refurbished/iphone-15-pro-black.jpg',
+      '/assets/images/refurbished/iphone-15-pro-natural-back.jpg',
+      '/assets/images/refurbished/iphone-15-pro-natural-camera.jpg',
     ],
     stock: 4,
     status: 'available',
@@ -95,8 +95,8 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/iphone-15-pro-blue.jpg',
     gallery: [
       '/assets/images/refurbished/iphone-15-pro-blue.jpg',
-      '/assets/images/refurbished/iphone-15-pro.png',
-      '/assets/images/refurbished/iphone-15-pro-white.jpg',
+      '/assets/images/refurbished/iphone-15-pro-blue-front.jpg',
+      '/assets/images/refurbished/iphone-15-pro-blue-angle.jpg',
     ],
     stock: 2,
     status: 'available',
@@ -131,8 +131,8 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/iphone-15-pro-black.jpg',
     gallery: [
       '/assets/images/refurbished/iphone-15-pro-black.jpg',
-      '/assets/images/refurbished/iphone-15-pro-blue.jpg',
-      '/assets/images/refurbished/iphone-15-pro.png',
+      '/assets/images/refurbished/iphone-15-pro-black-front.jpg',
+      '/assets/images/refurbished/iphone-15-pro-black-angle.jpg',
     ],
     stock: 3,
     status: 'available',
@@ -164,11 +164,11 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     rating: 4.8,
     reviews: 167,
     deliveryDays: 2,
-    image: '/assets/images/refurbished/iphone-15-pro.png',
+    image: '/assets/images/refurbished/iphone-15-pro-natural-back.jpg',
     gallery: [
+      '/assets/images/refurbished/iphone-15-pro-natural-back.jpg',
       '/assets/images/refurbished/iphone-15-pro.png',
-      '/assets/images/refurbished/iphone-15-pro-black.jpg',
-      '/assets/images/refurbished/iphone-15-pro-white.jpg',
+      '/assets/images/refurbished/iphone-15-pro-natural-camera.jpg',
     ],
     stock: 2,
     status: 'available',
@@ -203,8 +203,8 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/iphone-15-pro-white.jpg',
     gallery: [
       '/assets/images/refurbished/iphone-15-pro-white.jpg',
-      '/assets/images/refurbished/iphone-15-pro.png',
-      '/assets/images/refurbished/iphone-15-pro-black.jpg',
+      '/assets/images/refurbished/iphone-15-pro-white-front.jpg',
+      '/assets/images/refurbished/iphone-15-pro-white-angle.jpg',
     ],
     stock: 2,
     status: 'available',
@@ -236,11 +236,11 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     rating: 4.6,
     reviews: 114,
     deliveryDays: 2,
-    image: '/assets/images/refurbished/iphone-15-pro-black.jpg',
+    image: '/assets/images/refurbished/iphone-15-pro-black-angle.jpg',
     gallery: [
+      '/assets/images/refurbished/iphone-15-pro-black-angle.jpg',
       '/assets/images/refurbished/iphone-15-pro-black.jpg',
-      '/assets/images/refurbished/iphone-15-pro-white.jpg',
-      '/assets/images/refurbished/iphone-15-pro.png',
+      '/assets/images/refurbished/iphone-15-pro-black-front.jpg',
     ],
     stock: 1,
     status: 'available',
@@ -275,8 +275,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/iphone-14-pro-max.png',
     gallery: [
       '/assets/images/refurbished/iphone-14-pro-max.png',
-      '/assets/images/refurbished/iphone-15-pro.png',
-      '/assets/images/refurbished/iphone-13-pro-max.png',
     ],
     stock: 3,
     status: 'available',
@@ -311,7 +309,7 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/iphone-14-pro-gold.jpg',
     gallery: [
       '/assets/images/refurbished/iphone-14-pro-gold.jpg',
-      '/assets/images/refurbished/iphone-14-pro-max.png',
+      '/assets/images/refurbished/iphone-14-pro-gold-camera.jpg',
     ],
     stock: 2,
     status: 'available',
@@ -346,8 +344,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/iphone-14-pro-max.png',
     gallery: [
       '/assets/images/refurbished/iphone-14-pro-max.png',
-      '/assets/images/refurbished/iphone-15-pro.png',
-      '/assets/images/refurbished/iphone-13-pro-max.png',
     ],
     stock: 3,
     status: 'available',
@@ -382,8 +378,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/galaxy-s24-ultra.png',
     gallery: [
       '/assets/images/refurbished/galaxy-s24-ultra.png',
-      '/assets/images/refurbished/iphone-15-pro.png',
-      '/assets/images/refurbished/pixel-8-pro.png',
     ],
     stock: 5,
     status: 'available',
@@ -418,7 +412,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/galaxy-s24-ultra.png',
     gallery: [
       '/assets/images/refurbished/galaxy-s24-ultra.png',
-      '/assets/images/refurbished/galaxy-s24-violet.jpg',
     ],
     stock: 3,
     status: 'available',
@@ -453,7 +446,7 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/galaxy-s24-violet.jpg',
     gallery: [
       '/assets/images/refurbished/galaxy-s24-violet.jpg',
-      '/assets/images/refurbished/galaxy-s24-ultra.png',
+      '/assets/images/refurbished/galaxy-s24-violet-camera.jpg',
     ],
     stock: 2,
     status: 'available',
@@ -488,8 +481,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/oneplus-12.png',
     gallery: [
       '/assets/images/refurbished/oneplus-12.png',
-      '/assets/images/refurbished/pixel-8-pro.png',
-      '/assets/images/refurbished/galaxy-s24-ultra.png',
     ],
     stock: 4,
     status: 'available',
@@ -524,8 +515,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/pixel-8-pro.png',
     gallery: [
       '/assets/images/refurbished/pixel-8-pro.png',
-      '/assets/images/refurbished/galaxy-s24-ultra.png',
-      '/assets/images/refurbished/oneplus-12.png',
     ],
     stock: 3,
     status: 'available',
@@ -560,8 +549,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/iphone-13-pro-max.png',
     gallery: [
       '/assets/images/refurbished/iphone-13-pro-max.png',
-      '/assets/images/refurbished/iphone-14-pro-max.png',
-      '/assets/images/refurbished/iphone-15-pro.png',
     ],
     stock: 2,
     status: 'available',
@@ -598,8 +585,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/sony-a7.jpg',
     gallery: [
       '/assets/images/refurbished/sony-a7.jpg',
-      '/assets/images/refurbished/sony-1635gm.jpg',
-      '/assets/images/refurbished/canon-eos-rp.jpg',
     ],
     stock: 3,
     status: 'available',
@@ -635,7 +620,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     gallery: [
       '/assets/images/refurbished/canon-eos-rp.jpg',
       '/assets/images/refurbished/canon-eos-r.webp',
-      '/assets/images/refurbished/sony-a7.jpg',
     ],
     stock: 2,
     status: 'available',
@@ -670,8 +654,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/nikon-z50ii.png',
     gallery: [
       '/assets/images/refurbished/nikon-z50ii.png',
-      '/assets/images/refurbished/sony-a7.jpg',
-      '/assets/images/refurbished/fujifilm-xt5.jpg',
     ],
     stock: 4,
     status: 'available',
@@ -706,8 +688,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/sony-1635gm.jpg',
     gallery: [
       '/assets/images/refurbished/sony-1635gm.jpg',
-      '/assets/images/refurbished/sony-a7.jpg',
-      '/assets/images/refurbished/canon-eos-rp.jpg',
     ],
     stock: 2,
     status: 'available',
@@ -744,8 +724,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/macbook-air-m2.png',
     gallery: [
       '/assets/images/refurbished/macbook-air-m2.png',
-      '/assets/images/refurbished/macbook-pro-14.png',
-      '/assets/images/refurbished/dell-xps-15.png',
     ],
     stock: 4,
     status: 'available',
@@ -780,8 +758,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/macbook-pro-14.png',
     gallery: [
       '/assets/images/refurbished/macbook-pro-14.png',
-      '/assets/images/refurbished/macbook-air-m2.png',
-      '/assets/images/refurbished/dell-xps-15.png',
     ],
     stock: 2,
     status: 'available',
@@ -816,8 +792,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/dell-xps-15.png',
     gallery: [
       '/assets/images/refurbished/dell-xps-15.png',
-      '/assets/images/refurbished/macbook-air-m2.png',
-      '/assets/images/refurbished/macbook-pro-14.png',
     ],
     stock: 3,
     status: 'available',
@@ -854,8 +828,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/ipad-pro-m2.jpg',
     gallery: [
       '/assets/images/refurbished/ipad-pro-m2.jpg',
-      '/assets/images/refurbished/galaxy-tab-s9.jpg',
-      '/assets/images/refurbished/macbook-air-m2.png',
     ],
     stock: 3,
     status: 'available',
@@ -890,8 +862,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/galaxy-tab-s9.jpg',
     gallery: [
       '/assets/images/refurbished/galaxy-tab-s9.jpg',
-      '/assets/images/refurbished/ipad-pro-m2.jpg',
-      '/assets/images/refurbished/galaxy-s24-ultra.png',
     ],
     stock: 3,
     status: 'available',
@@ -926,7 +896,6 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
     image: '/assets/images/refurbished/apple-watch-ultra.jpg',
     gallery: [
       '/assets/images/refurbished/apple-watch-ultra.jpg',
-      '/assets/images/refurbished/iphone-15-pro.png',
     ],
     stock: 4,
     status: 'available',
@@ -942,7 +911,7 @@ export const defaultRefurbishedProducts: RefurbishedProduct[] = [
   },
 ];
 
-const STORAGE_KEY = 'casmik_refurbished_catalog_v4';
+const STORAGE_KEY = 'casmik_refurbished_catalog_v6';
 
 export function getModelKey(p: { modelId?: string; model: string }): string {
   if (p.modelId && p.modelId.trim() !== '') {
@@ -976,6 +945,19 @@ export function getRefurbishedProducts(): RefurbishedProduct[] {
     return defaultRefurbishedProducts;
   }
   try {
+    // Purge old storage versions to avoid stale images
+    [
+      'casmik_refurbished_catalog_v1',
+      'casmik_refurbished_catalog_v2',
+      'casmik_refurbished_catalog_v3',
+      'casmik_refurbished_catalog_v4',
+      'casmik_refurbished_catalog_v5',
+    ].forEach((k) => {
+      try {
+        localStorage.removeItem(k);
+      } catch (_) {}
+    });
+
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultRefurbishedProducts));
@@ -983,7 +965,36 @@ export function getRefurbishedProducts(): RefurbishedProduct[] {
     }
     const parsed = JSON.parse(saved);
     if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed;
+      // Auto-sync images and galleries with defaultRefurbishedProducts so code updates take effect immediately
+      const defaultMap = new Map(defaultRefurbishedProducts.map((p) => [p.id, p]));
+      let changed = false;
+      const synced = parsed.map((p) => {
+        const def = defaultMap.get(p.id);
+        if (def) {
+          if (p.image !== def.image || JSON.stringify(p.gallery) !== JSON.stringify(def.gallery)) {
+            changed = true;
+            return {
+              ...p,
+              image: def.image,
+              gallery: def.gallery,
+            };
+          }
+        }
+        return p;
+      });
+
+      // Ensure any new products in defaultRefurbishedProducts exist in the synced catalog
+      for (const def of defaultRefurbishedProducts) {
+        if (!synced.some((p) => p.id === def.id)) {
+          synced.push(def);
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(synced));
+      }
+      return synced;
     }
   } catch (err) {
     console.error('Error reading refurbished catalog:', err);
