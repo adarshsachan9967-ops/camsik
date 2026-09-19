@@ -187,17 +187,30 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
                     <button onClick={() => setNotifOpen(false)}><X size={16} className="text-gray-400" /></button>
                   </div>
                   <div className="divide-y divide-gray-50 max-h-72 overflow-y-auto">
-                    {notifications.map(n => (
-                      <div key={n.id} className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${!n.read ? 'bg-primary/5' : ''}`}>
-                        <div className="flex items-start gap-2">
-                          <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!n.read ? 'bg-primary' : 'bg-gray-300'}`} />
-                          <div>
-                            <p className="text-xs text-gray-800 font-medium">{n.msg}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">{n.time}</p>
+                    {notifications.map(n => {
+                      const targetSection: AdminSection =
+                        n.type === 'order' ? 'orders' :
+                        n.type === 'partner' ? 'partners' :
+                        n.type === 'delivery' ? 'delivery' : 'notifications';
+                      return (
+                        <div
+                          key={n.id}
+                          onClick={() => {
+                            onSectionChange(targetSection);
+                            setNotifOpen(false);
+                          }}
+                          className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${!n.read ? 'bg-primary/5' : ''}`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!n.read ? 'bg-primary' : 'bg-gray-300'}`} />
+                            <div>
+                              <p className="text-xs text-gray-800 font-medium hover:text-primary transition-colors">{n.msg}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">{n.time} · Go to {targetSection} →</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   <div className="px-4 py-3 border-t border-gray-100">
                     <button onClick={() => { onSectionChange('notifications'); setNotifOpen(false); }} className="text-xs text-primary font-bold hover:underline">View all notifications →</button>

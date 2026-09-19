@@ -112,7 +112,7 @@ export default function CustomerFooter() {
               </div>
               <div>
                 <p className="text-sm font-bold text-white">Best Market Valuation</p>
-                <p className="text-xs text-slate-400">Objective AI camera pricing</p>
+                <p className="text-xs text-slate-400">Objective AI tech & gadget pricing</p>
               </div>
             </div>
           </div>
@@ -200,7 +200,7 @@ export default function CustomerFooter() {
         {/* Operating Cities Tag Cloud */}
         <div className="mt-12 pt-8 border-t border-slate-800">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
-            Popular Cities for Free Camera Pickup:
+            Popular Cities for Free Doorstep Pickup & Certified Delivery:
           </p>
           <div className="flex flex-wrap gap-2 text-xs text-slate-400">
             {popularCities.map((city) => (

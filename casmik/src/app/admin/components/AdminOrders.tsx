@@ -99,18 +99,51 @@ const getStoredOrders = (): Order[] => {
   return defaultOrders;
 };
 
-export default function AdminOrders() {
+interface AdminOrdersProps {
+  initialFilterStatus?: string;
+  initialFilterType?: string;
+  initialOrderId?: string | null;
+  onClearFilters?: () => void;
+}
+
+export default function AdminOrders({
+  initialFilterStatus = 'all',
+  initialFilterType = 'all',
+  initialOrderId = null,
+  onClearFilters,
+}: AdminOrdersProps = {}) {
   const [orderList, setOrderList] = useState<Order[]>(getStoredOrders);
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [query, setQuery] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterType, setFilterType] = useState(initialFilterType || 'all');
+  const [filterStatus, setFilterStatus] = useState(initialFilterStatus || 'all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [assignModal, setAssignModal] = useState<Order | null>(null);
   const [selectedPartner, setSelectedPartner] = useState('');
   const [activeTab, setActiveTab] = useState<'list' | 'live'>('list');
   const supabase = createClient();
+
+  useEffect(() => {
+    if (initialFilterStatus) {
+      setFilterStatus(initialFilterStatus);
+    }
+  }, [initialFilterStatus]);
+
+  useEffect(() => {
+    if (initialFilterType) {
+      setFilterType(initialFilterType);
+    }
+  }, [initialFilterType]);
+
+  useEffect(() => {
+    if (initialOrderId && orderList.length > 0) {
+      const found = orderList.find(o => o.id === initialOrderId || o.orderNumber === initialOrderId);
+      if (found) {
+        setSelectedOrder(found);
+      }
+    }
+  }, [initialOrderId, orderList]);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -165,7 +198,10 @@ export default function AdminOrders() {
      o.deviceName.toLowerCase().includes(query.toLowerCase()) ||
      (o.city && o.city.toLowerCase().includes(query.toLowerCase()))) &&
     (filterType === 'all' || o.type === filterType) &&
-    (filterStatus === 'all' || o.status === filterStatus)
+    (filterStatus === 'all' || 
+     (filterStatus === 'pending'
+       ? ['created', 'assigned', 'accepted', 'pickup_scheduled'].includes(o.status)
+       : o.status === filterStatus))
   );
 
   const handleAssign = async () => {
@@ -253,25 +289,55 @@ export default function AdminOrders() {
         <LiveOrderTracker panel="admin" title="Admin Live Order Tracker" maxItems={50} />
       ) : (
         <>
-          {/* Stats */}
+          {/* Stats Cards (Interactive Click-to-filter) */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Total Orders', value: stats.total, icon: '📦', color: 'bg-blue-50 text-blue-700' },
-              { label: 'Pending', value: stats.pending, icon: '⏳', color: 'bg-yellow-50 text-yellow-700' },
-              { label: 'Active', value: stats.active, icon: '🔄', color: 'bg-purple-50 text-purple-700' },
-              { label: 'Completed', value: stats.completed, icon: '✅', color: 'bg-green-50 text-green-700' },
+              { label: 'Total Orders', value: stats.total, icon: '📦', color: 'bg-blue-50 text-blue-700', statusKey: 'all' },
+              { label: 'Pending', value: stats.pending, icon: '⏳', color: 'bg-yellow-50 text-yellow-700', statusKey: 'pending' },
+              { label: 'Active', value: stats.active, icon: '🔄', color: 'bg-purple-50 text-purple-700', statusKey: 'accepted' },
+              { label: 'Completed', value: stats.completed, icon: '✅', color: 'bg-green-50 text-green-700', statusKey: 'completed' },
             ].map(s => (
-              <div key={s.label} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+              <div
+                key={s.label}
+                onClick={() => setFilterStatus(s.statusKey)}
+                className={`bg-white rounded-2xl p-4 border shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] ${
+                  filterStatus === s.statusKey
+                    ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
+                    : 'border-gray-100 hover:border-gray-300'
+                }`}
+                title={`Click to filter by ${s.label}`}
+              >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{s.icon}</span>
                   <div>
                     <p className="text-2xl font-black text-gray-900">{s.value}</p>
-                    <p className="text-xs text-gray-500">{s.label}</p>
+                    <p className="text-xs font-semibold text-gray-500">{s.label}</p>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Active Filter Banner */}
+          {(filterStatus !== 'all' || filterType !== 'all' || query) && (
+            <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-bold text-primary">
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                Filtered View: {filterStatus !== 'all' ? `Status: "${filterStatus.replace(/_/g, ' ')}"` : ''} {filterType !== 'all' ? `· Type: "${filterType}"` : ''} {query ? `· Search: "${query}"` : ''} ({filtered.length} results)
+              </span>
+              <button
+                onClick={() => {
+                  setFilterStatus('all');
+                  setFilterType('all');
+                  setQuery('');
+                  if (onClearFilters) onClearFilters();
+                }}
+                className="hover:underline font-black text-xs text-gray-800 bg-white px-2.5 py-1 rounded-lg border border-primary/30"
+              >
+                Clear All Filters ✕
+              </button>
+            </div>
+          )}
 
           {/* Filters */}
           <div className="flex flex-wrap gap-3">
@@ -291,6 +357,7 @@ export default function AdminOrders() {
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
               className="px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white">
               <option value="all">All Status</option>
+              <option value="pending">Pending Attention</option>
               <option value="created">Created</option>
               <option value="assigned">Assigned</option>
               <option value="inspection">Inspection</option>

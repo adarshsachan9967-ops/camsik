@@ -254,7 +254,7 @@ export default function CustomerHeader() {
                   {searchResults.length > 0 ? (
                     <div className="p-2 max-h-96 overflow-y-auto divide-y divide-slate-100">
                       <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                        Matching Cameras & Brands
+                        Matching Devices & Brands
                       </div>
                       {searchResults.map((res) => (
                         <Link
@@ -286,7 +286,7 @@ export default function CustomerHeader() {
                               {res.name}
                             </p>
                             <p className="text-xs text-slate-500">
-                              {res.type === 'model' ? `${res.brandName || ''} · Get Instant Quote` : 'Camera Brand'}
+                              {res.type === 'model' ? `${res.brandName || ''} · Get Instant Quote` : 'Device Brand'}
                             </p>
                           </div>
                           <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-600 transition-colors" />
@@ -295,7 +295,7 @@ export default function CustomerHeader() {
                     </div>
                   ) : (
                     <div className="p-6 text-center text-sm text-slate-500">
-                      No camera products found matching &ldquo;{searchQuery}&rdquo;.
+                      No tech or camera devices found matching &ldquo;{searchQuery}&rdquo;.
                     </div>
                   )}
                 </div>
@@ -644,7 +644,7 @@ export default function CustomerHeader() {
               <div>
                 <h3 className="text-xl font-black text-slate-900">Select Your City</h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Select your location to get accurate pickup dates and local camera technicians
+                  Select your location to get accurate pickup dates and local doorstep technicians
                 </p>
               </div>
               <button

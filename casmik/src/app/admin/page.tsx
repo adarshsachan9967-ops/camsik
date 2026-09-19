@@ -25,10 +25,20 @@ import AdminCoupons from './components/AdminCoupons';
 
 export type AdminSection = 'overview' | 'orders' | 'categories' | 'brands' | 'models' | 'pricing' | 'partners' | 'delivery' | 'customers' | 'payouts' | 'cms' | 'reports' | 'settings' | 'notifications' | 'push_notifications' | 'refurbished' | 'repair_issues' | 'inventory' | 'support_tickets' | 'coupons';
 
+export interface AdminNavigationOptions {
+  filterStatus?: string;
+  filterType?: string;
+  orderId?: string;
+  tab?: string;
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [activeSection, setActiveSection] = useState<AdminSection>('overview');
+  const [ordersFilterStatus, setOrdersFilterStatus] = useState<string>('all');
+  const [ordersFilterType, setOrdersFilterType] = useState<string>('all');
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -53,10 +63,36 @@ export default function AdminPage() {
     );
   }
 
+  const handleNavigate = (section: AdminSection, options?: AdminNavigationOptions) => {
+    setActiveSection(section);
+    if (options?.filterStatus !== undefined) {
+      setOrdersFilterStatus(options.filterStatus);
+    }
+    if (options?.filterType !== undefined) {
+      setOrdersFilterType(options.filterType);
+    }
+    if (options?.orderId !== undefined) {
+      setSelectedOrderId(options.orderId);
+    }
+  };
+
   const renderSection = () => {
     switch (activeSection) {
-      case 'overview': return <AdminOverview />;
-      case 'orders': return <AdminOrders />;
+      case 'overview':
+        return <AdminOverview onNavigate={handleNavigate} />;
+      case 'orders':
+        return (
+          <AdminOrders
+            initialFilterStatus={ordersFilterStatus}
+            initialFilterType={ordersFilterType}
+            initialOrderId={selectedOrderId}
+            onClearFilters={() => {
+              setOrdersFilterStatus('all');
+              setOrdersFilterType('all');
+              setSelectedOrderId(null);
+            }}
+          />
+        );
       case 'categories': return <AdminCategories />;
       case 'brands': return <AdminBrands />;
       case 'models': return <AdminModels />;
@@ -75,12 +111,16 @@ export default function AdminPage() {
       case 'inventory': return <AdminInventory />;
       case 'support_tickets': return <AdminSupportTickets />;
       case 'coupons': return <AdminCoupons />;
-      default: return <AdminOverview />;
+      default: return <AdminOverview onNavigate={handleNavigate} />;
     }
   };
 
   return (
-    <AdminPanelLayout activeSection={activeSection} onSectionChange={setActiveSection}>
+    <AdminPanelLayout activeSection={activeSection} onSectionChange={(section) => {
+      // When navigating via sidebar, reset explicit order drill-down
+      setSelectedOrderId(null);
+      setActiveSection(section);
+    }}>
       {renderSection()}
     </AdminPanelLayout>
   );
