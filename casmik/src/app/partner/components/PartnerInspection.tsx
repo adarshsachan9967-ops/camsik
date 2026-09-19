@@ -188,13 +188,16 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
     ? parseInt(customPriceOverride, 10) || calculatedExactPayout
     : calculatedExactPayout;
 
+  const [payoutDisbursed, setPayoutDisbursed] = useState(false);
+
   const handleSubmit = () => {
     if (!selectedOrder) return;
     const updatedOrder: Order = {
       ...selectedOrder,
       finalPrice: finalPayoutToUser,
       inspectionScore: scorePercent,
-      status: 'completed',
+      status: 'inspection', // Ready for payout: updated inspection price will appear on order page
+      paymentStatus: 'pending',
       notes: notes || selectedOrder.notes,
       updatedAt: new Date().toISOString(),
     };
@@ -221,6 +224,42 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
     }
 
     setSubmitted(true);
+    setPayoutDisbursed(false);
+  };
+
+  const handleInstantPayout = () => {
+    if (!selectedOrder) return;
+    const completedOrder: Order = {
+      ...selectedOrder,
+      finalPrice: finalPayoutToUser,
+      inspectionScore: scorePercent,
+      status: 'completed', // Shifts to completed after payout
+      paymentStatus: 'paid',
+      notes: `${notes || selectedOrder.notes || ''} [Spot Payout Disbursed: ₹${finalPayoutToUser.toLocaleString('en-IN')}]`.trim(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (typeof window !== 'undefined') {
+      try {
+        const partnerOrders = localStorage.getItem('casmik_partner_orders_v1');
+        if (partnerOrders) {
+          const list = JSON.parse(partnerOrders);
+          if (Array.isArray(list)) {
+            const updated = list.map((o: Order) => o.id === selectedOrder.id ? completedOrder : o);
+            localStorage.setItem('casmik_partner_orders_v1', JSON.stringify(updated));
+          }
+        }
+        const globalOrders = localStorage.getItem('casmik_orders_v1');
+        if (globalOrders) {
+          const list = JSON.parse(globalOrders);
+          if (Array.isArray(list)) {
+            const updated = list.map((o: Order) => o.id === selectedOrder.id ? completedOrder : o);
+            localStorage.setItem('casmik_orders_v1', JSON.stringify(updated));
+          }
+        }
+      } catch {}
+    }
+    setPayoutDisbursed(true);
   };
 
   // Orders available for inspection
@@ -231,22 +270,30 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
 
   if (submitted) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center max-w-xl mx-auto bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-        <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-4 shadow-inner">
-          <CheckCircle size={44} className="text-emerald-600" />
+      <div className="flex flex-col items-center justify-center py-16 text-center max-w-xl mx-auto bg-white rounded-3xl p-8 border border-gray-100 shadow-sm font-sans">
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-inner ${
+          payoutDisbursed ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'
+        }`}>
+          <CheckCircle size={44} />
         </div>
-        <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-wider mb-2">
-          Inspection Completed &amp; Payout Locked
+        <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2 ${
+          payoutDisbursed ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+        }`}>
+          {payoutDisbursed ? 'Order Completed & Locked' : 'Inspection Completed · Price Locked'}
         </span>
-        <h2 className="text-2xl font-black text-gray-900 mb-1">Report Generated Successfully!</h2>
+        <h2 className="text-2xl font-black text-gray-900 mb-1">
+          {payoutDisbursed ? 'Payout Complete & Order Finalized!' : 'Inspection Report Generated!'}
+        </h2>
         <p className="text-gray-600 text-sm mb-4">
           Device: <strong>{selectedOrder?.deviceName}</strong> ({selectedOrder?.orderNumber})
         </p>
 
         {/* Payout Card */}
-        <div className="w-full bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-5 mb-6 text-left shadow-lg">
+        <div className="w-full bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-5 mb-5 text-left shadow-lg">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-xs text-emerald-200 uppercase font-bold tracking-wider">Exact Payout to Customer</span>
+            <span className="text-xs text-emerald-200 uppercase font-bold tracking-wider">
+              {payoutDisbursed ? 'Disbursed Payout' : 'Exact Payout to Customer'}
+            </span>
             <span className="text-xs font-bold bg-white/20 px-2.5 py-0.5 rounded-md">Score: {scorePercent}%</span>
           </div>
           <p className="text-3xl font-black">₹{finalPayoutToUser.toLocaleString('en-IN')}</p>
@@ -256,15 +303,35 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
           </div>
         </div>
 
-        <p className="text-xs text-gray-400 mb-6">
-          The customer has been notified with the official inspection report. Spot IMPS / UPI payout is ready to be disbursed.
-        </p>
+        {payoutDisbursed ? (
+          <div className="w-full p-4 bg-emerald-50 border border-emerald-300 rounded-2xl mb-6 text-left">
+            <p className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+              <CheckCircle size={15} className="text-emerald-600 flex-shrink-0" />
+              Order Shifted to Completed (Permanently Locked)
+            </p>
+            <p className="text-xs text-emerald-800 mt-1">
+              The payout of ₹{finalPayoutToUser.toLocaleString('en-IN')} has been disbursed and verified. This order cannot be reverted or changed.
+            </p>
+          </div>
+        ) : (
+          <div className="w-full space-y-3 mb-6">
+            <button
+              onClick={handleInstantPayout}
+              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-sm shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              💳 Disburse Spot Payout Now (₹{finalPayoutToUser.toLocaleString('en-IN')}) &amp; Complete Order
+            </button>
+            <p className="text-xs text-gray-500">
+              Or return to Orders to disburse payout later. The updated price is now active on the order card.
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-3 w-full">
           {onBackToOrders && (
             <button
               onClick={onBackToOrders}
-              className="flex-1 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 shadow-md shadow-primary/20 transition-all"
+              className="flex-1 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 shadow-md shadow-primary/20 transition-all cursor-pointer"
             >
               &larr; Back to Orders Management
             </button>
@@ -272,12 +339,13 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
           <button
             onClick={() => {
               setSubmitted(false);
+              setPayoutDisbursed(false);
               setInspectionResults({});
               setPhotos({});
               setIsCustomPrice(false);
               setCustomPriceOverride('');
             }}
-            className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors"
+            className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors cursor-pointer"
           >
             Inspect Next Device
           </button>
