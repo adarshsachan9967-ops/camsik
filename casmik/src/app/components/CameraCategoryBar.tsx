@@ -1,48 +1,58 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
-import { ArrowRight, Camera, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles, Smartphone, Laptop, Camera, Tablet } from 'lucide-react';
 import { categories } from '@/lib/casmikData';
 
 export default function CameraCategoryBar() {
   return (
-    <section className="py-6 sm:py-8 bg-white border-b border-slate-100">
-      <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 xl:px-10">
+    <section className="py-8 sm:py-10 bg-white border-b border-slate-100">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-5 gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-6 gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-200/60 text-xs font-bold text-purple-700 mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 mb-2">
               <Sparkles size={12} className="text-purple-600" />
-              <span>OFFICIAL DEVICE & CAMERA CATEGORIES</span>
+              <span>SUPPORTED ELECTRONICS &amp; OPTICS</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Sell Your <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Electronics & Cameras</span>
+              Explore All <span className="bg-gradient-to-r from-purple-600 via-indigo-600 to-emerald-600 bg-clip-text text-transparent">8 Tech Categories</span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Select your device or gear type to get an instant AI-calculated resale valuation
+              Select your gadget category to calculate instant AI sell value, browse certified refurbished units, or initiate exchange
             </p>
           </div>
 
-          <Link
-            href="/sell-device-get-quote"
-            className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-purple-700 hover:text-purple-900 transition-colors group"
-          >
-            <span>View all device models</span>
-            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/sell-device-get-quote"
+              className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-emerald-700 hover:text-emerald-900 transition-colors group"
+            >
+              <span>Sell a Device</span>
+              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+            <span className="text-slate-300">|</span>
+            <Link
+              href="/buy-refurbished"
+              className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-indigo-700 hover:text-indigo-900 transition-colors group"
+            >
+              <span>Buy Refurbished</span>
+              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
 
         {/* 8 Category Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-4">
           {categories.filter(c => c.active).map((cat) => (
             <Link
               key={cat.id}
               href={`/sell-device-get-quote?cat=${cat.id}`}
-              className="group relative flex flex-col items-center p-4 rounded-2xl bg-slate-50/70 hover:bg-white border border-slate-200/70 hover:border-purple-300 shadow-sm hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1.5 transition-all duration-300 text-center"
+              className="group relative flex flex-col items-center p-4 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-purple-300 shadow-sm hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1.5 transition-all duration-300 text-center"
             >
               {/* Image with subtle spotlight glow */}
               <div className="relative w-20 h-20 mb-3 flex items-center justify-center">
-                <div className="absolute inset-2 rounded-full bg-purple-100/60 group-hover:bg-purple-200/60 blur-md transition-colors" />
+                <div className="absolute inset-2 rounded-full bg-purple-100/50 group-hover:bg-purple-200/60 blur-md transition-colors" />
                 <img
                   src={cat.image}
                   alt={cat.alt}

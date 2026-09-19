@@ -16,56 +16,65 @@ interface FeatureComparison {
 const comparisonData: FeatureComparison[] = [
   {
     feature: 'Valuation Method',
-    camsik: 'Objective AI algorithm based on live market pricing & shutter health',
+    camsik: 'Objective AI algorithm based on live market liquidity, battery cycles & hardware diagnostics',
     camsikPositive: true,
-    localShops: 'Arbitrary verbal quote, heavy dealer profit margin deducted',
+    localShops: 'Arbitrary verbal quote, heavy dealer margin deducted',
     localPositive: false,
-    classifieds: 'Random buyer lowballing and tire-kickers',
+    classifieds: 'Tire-kickers, lowballers, and unpredictable bargaining',
     classifiedsPositive: false,
   },
   {
     feature: 'Payment Speed & Mode',
-    camsik: 'Instant UPI/IMPS directly to bank within 2 mins before handover',
+    camsik: 'Instant UPI / IMPS directly to bank within 2 mins before device handover',
     camsikPositive: true,
-    localShops: 'Cheque or deferred payment after selling to their customer',
+    localShops: 'Deferred payment or cheque after selling to their customer',
     localPositive: false,
-    classifieds: 'High risk of fake payment screenshots or counterfeit cash',
+    classifieds: 'High risk of fraudulent payment screenshots or counterfeit cash',
     classifiedsPositive: false,
   },
   {
     feature: 'Doorstep Convenience',
-    camsik: 'Free doorstep inspection & pickup across 200+ Indian cities',
+    camsik: 'Free doorstep inspection, delivery & trade-in swap across 200+ Indian cities',
     camsikPositive: true,
-    localShops: 'You must travel with bulky, expensive camera bodies & lenses',
+    localShops: 'Must travel in traffic with fragile, expensive phones, laptops & cameras',
     localPositive: false,
     classifieds: 'Meet strangers in parking lots or invite unknown people home',
     classifiedsPositive: false,
   },
   {
-    feature: 'Sensor & Shutter Count Check',
-    camsik: 'Digital automated diagnostics right in front of your eyes',
+    feature: 'Hardware & Screen Diagnostics',
+    camsik: 'Automated 45-point digital diagnostics (OLED, battery health, sensor & optics)',
     camsikPositive: true,
-    localShops: 'Subjective visual guessing to artificially decrease quote',
+    localShops: 'Subjective visual inspection used to artificially drop price',
     localPositive: false,
-    classifieds: 'Buyers demanding free testing periods without deposit',
+    classifieds: 'Buyers demanding free testing days without deposit',
     classifiedsPositive: false,
   },
   {
-    feature: 'Data Privacy & Buffer Wipe',
-    camsik: 'Certified factory wipe of internal buffer, memory & EXIF profiles',
+    feature: 'Data Privacy & Wipe',
+    camsik: 'Certified DoD 5220.22-M military-grade purge on SSDs, phones & camera buffers',
     camsikPositive: true,
-    localShops: 'Rarely done, risk of sensitive photos or client data lingering',
+    localShops: 'Rarely performed, risk of personal photos & accounts lingering',
     localPositive: false,
-    classifieds: 'Completely on seller, no technical assistance',
+    classifieds: 'Completely on seller, no technical assistance provided',
+    classifiedsPositive: false,
+  },
+  {
+    feature: '1-Step Device Exchange',
+    camsik: 'Doorstep 1-step swap with extra ₹5,000 bonus; pay only remaining balance',
+    camsikPositive: true,
+    localShops: 'Must sell first, bear downtime, then buy at full retail price',
+    localPositive: false,
+    classifieds: 'Virtually impossible to coordinate safely',
     classifiedsPositive: false,
   },
   {
     feature: 'Legal Indemnity & Bill of Sale',
     camsik: 'Official digital GST invoice & liability waiver certificate provided',
     camsikPositive: true,
-    localShops: 'Kachha receipt or no formal transfer paperwork',
+    localShops: 'Kachha receipt or no formal legal transfer paperwork',
     localPositive: false,
-    classifieds: 'Zero documentation, leaves you liable if gear is misused',
+    classifieds: 'Zero documentation, leaves you legally liable if misused',
     classifiedsPositive: false,
   },
 ];
@@ -77,15 +86,15 @@ export default function CompetitiveComparisonTable() {
     <section className="py-8 lg:py-12 bg-white relative overflow-hidden w-full max-w-full">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
         <div className="text-center max-w-3xl mx-auto mb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 text-xs font-bold uppercase tracking-wider mb-2 border border-purple-200/60">
-            <Sparkles size={13} />
-            Honest Comparison
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 text-slate-800 text-xs font-bold uppercase tracking-wider mb-2 border border-slate-200">
+            <Sparkles size={13} className="text-purple-600" />
+            Honest Market Comparison
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
-            Why Photographers Choose <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Camsik</span>
+            Why Smart Customers Choose <span className="bg-gradient-to-r from-emerald-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">Camsik</span>
           </h2>
           <p className="text-slate-500 mt-2 text-xs sm:text-sm lg:text-base max-w-xl mx-auto">
-            See how selling on Camsik compares against traditional offline camera markets and peer-to-peer classified websites.
+            See how buying, selling, or exchanging tech on Camsik compares against traditional offline shops and risky classifieds.
           </p>
         </div>
 

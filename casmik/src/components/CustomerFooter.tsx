@@ -30,22 +30,24 @@ const YoutubeIcon = ({ size = 15 }: { size?: number }) => (
 );
 
 const footerLinks = {
-  'Sell Camera Gear': [
-    { label: 'Sell DSLR Cameras', href: '/sell-device-get-quote?cat=cat-dslr' },
+  'Sell Tech & Gear': [
+    { label: 'Sell Smartphones & iPhones', href: '/sell-device-get-quote?cat=cat-smartphone' },
+    { label: 'Sell Laptops & MacBooks', href: '/sell-device-get-quote?cat=cat-laptop' },
+    { label: 'Sell DSLR & Mirrorless', href: '/sell-device-get-quote?cat=cat-dslr' },
+    { label: 'Sell Tablets & iPads', href: '/sell-device-get-quote?cat=cat-tablet' },
     { label: 'Sell Camera Lenses', href: '/sell-device-get-quote?cat=cat-lens' },
-    { label: 'Sell Video Cameras & Camcorders', href: '/sell-device-get-quote?cat=cat-video-camera' },
-    { label: 'Sell Action Cameras', href: '/sell-device-get-quote?cat=cat-action-camera' },
-    { label: 'Sell Gimbals & Stabilizers', href: '/sell-device-get-quote?cat=cat-gimbal' },
+    { label: 'Sell Action Cameras & Gimbals', href: '/sell-device-get-quote?cat=cat-action-camera' },
   ],
-  'Top Camera Brands': [
-    { label: 'Sell Canon Cameras', href: '/sell-device-get-quote?brand=canon' },
-    { label: 'Sell Nikon Cameras', href: '/sell-device-get-quote?brand=nikon' },
-    { label: 'Sell Sony Alpha Cameras', href: '/sell-device-get-quote?brand=sony' },
-    { label: 'Sell LUMIX / Panasonic', href: '/sell-device-get-quote?brand=lumix' },
-    { label: 'Sell GoPro & DJI', href: '/sell-device-get-quote?brand=gopro' },
+  'Buy & Exchange': [
+    { label: 'Buy Refurbished iPhones', href: '/buy-refurbished?category=Smartphones' },
+    { label: 'Buy Refurbished MacBooks', href: '/buy-refurbished?category=Laptops' },
+    { label: 'Buy Pre-Owned Cameras', href: '/buy-refurbished?category=Cameras' },
+    { label: '1-Step Device Exchange', href: '/exchange-device' },
+    { label: 'Track Order Status', href: '/track-order' },
+    { label: 'Customer Order History', href: '/my-orders' },
   ],
   'Company & Trust': [
-    { label: 'About Camsik', href: '/why-camsik' },
+    { label: 'About Camsik ReCommerce', href: '/why-camsik' },
     { label: 'How Camsik Works', href: '/how-it-works' },
     { label: 'Why People Choose Camsik', href: '/why-camsik' },
     { label: 'Customer Video Reviews', href: '/#testimonials' },
@@ -53,10 +55,10 @@ const footerLinks = {
   ],
   'Support & Policies': [
     { label: 'Contact Us', href: '/contact-us' },
-    { label: 'Track Camera Order', href: '/track-order' },
-    { label: 'Doorstep Pickup Policy', href: '#how-it-works' },
-    { label: 'Privacy & Data Protection', href: '#privacy' },
-    { label: 'Terms & Conditions', href: '#terms' },
+    { label: 'Track Order', href: '/track-order' },
+    { label: 'Doorstep Pickup Policy', href: '/how-it-works' },
+    { label: 'DoD Certified Data Wipe', href: '/why-camsik' },
+    { label: 'Terms & Conditions', href: '/faq' },
     { label: 'Partner Program', href: '/partner/login' },
   ],
 };
@@ -129,12 +131,12 @@ export default function CustomerFooter() {
               <div>
                 <span className="font-black text-2xl text-white tracking-tight">CAMSIK</span>
                 <span className="block text-[10px] font-semibold text-purple-400 uppercase tracking-widest -mt-1">
-                  Camera Electronics
+                  Tech &amp; Cameras ReCommerce
                 </span>
               </div>
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed mb-6">
-              India&apos;s leading camera buyback platform. Turn your old DSLR, mirrorless cameras, lenses, video camcorders, action cameras &amp; gimbals into instant cash with safe doorstep inspection.
+              India&apos;s leading tech ReCommerce platform. Buy, sell, or exchange smartphones, iPhones, MacBooks, laptops, tablets, DSLRs, mirrorless cameras &amp; creator gear with instant bank payout, 45-point testing &amp; certified warranty.
             </p>
 
             <div className="space-y-2.5 text-xs text-slate-400 mb-6">

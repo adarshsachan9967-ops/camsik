@@ -2,8 +2,10 @@ import React from 'react';
 import CustomerHeader from '@/components/CustomerHeader';
 import CustomerFooter from '@/components/CustomerFooter';
 import HeroBannerCarousel from '@/app/components/HeroBannerCarousel';
+import QuickActionHub from '@/app/components/QuickActionHub';
 import CameraCategoryBar from '@/app/components/CameraCategoryBar';
-import TopCamerasCarousel from '@/app/components/TopCamerasCarousel';
+import TopDealsShowcase from '@/app/components/TopDealsShowcase';
+import DeviceEcosystemShowcase from '@/app/components/DeviceEcosystemShowcase';
 import CamsikTrustScore from '@/app/components/CamsikTrustScore';
 import WhyCamsik from '@/app/components/WhyCamsik';
 import HowItWorks from '@/app/components/HowItWorks';
@@ -19,40 +21,46 @@ export default function CustomerHomePage() {
     <main className="min-h-screen bg-background flex flex-col overflow-x-hidden w-full max-w-full">
       <CustomerHeader />
       
-      {/* Carousel 1: Hero Banner Promo Carousel with search & live navigation */}
+      {/* 1. Hero Banner Promo Carousel with search & live navigation */}
       <HeroBannerCarousel />
 
-      {/* Camera-Exclusive Quick Category Bar */}
+      {/* 2. Three Action Hub: Sell, Buy, Exchange (Prominent world-class boxes below banners) */}
+      <QuickActionHub />
+
+      {/* 3. Explore All 8 Device Categories Bar (Phones, Laptops, Tablets, Cameras, etc.) */}
       <CameraCategoryBar />
 
-      {/* Carousel 2: Top Selling Camera Gear Carousel with Category Filters & Instant Sell */}
-      <TopCamerasCarousel />
+      {/* 4. Top Deals Showcase: Top Selling, Top Buying (Refurbished) & Top Exchange with Category Filters */}
+      <TopDealsShowcase />
 
-      {/* Live Trust & Verification Stats (camsik.com parity) */}
+      {/* 5. Complete Device Ecosystem (Smartphones, MacBooks, DSLRs, iPads with Sell/Buy/Exchange tags) */}
+      <DeviceEcosystemShowcase />
+
+      {/* 6. Live Trust & ReCommerce Stats (₹18,400+ Cr disbursed, 3.4L+ devices handled) */}
       <CamsikTrustScore />
 
-      {/* 3-Step Camera Liquidation Process (No Repair!) */}
+      {/* 7. 3-Step Process for Selling, Buying Refurbished & 1-Step Doorstep Exchange */}
       <HowItWorks />
 
-      {/* Why Camsik: 9 Value Propositions & Objective AI Valuation */}
+      {/* 8. Why Camsik: 9 Value Propositions covering all tech (DoD data wipe, 45-pt QA, instant payout) */}
       <WhyCamsik />
 
-      {/* Carousel 3: Customer Video Reviews & Stories with Verified Payout Badges */}
+      {/* 9. Customer Video Reviews & Stories (iPhones, MacBooks, DSLRs, Tablets & Exchange) */}
       <CustomerVideoReviewsCarousel />
 
-      {/* Safe & Reliable Section: 3D Shield & Diagnostic Guarantees */}
+      {/* 10. Safe & Reliable Section: 4 Pillars of Protection (Diagnostics, DoD wipe, Indemnity, Payout) */}
       <SafeAndReliableSection />
 
-      {/* Carousel 4: Top Camera & Optics Brands Carousel */}
+      {/* 11. Top Tech & Camera Brands Carousel (Apple, Samsung, Dell, HP, Sony, Canon, DJI) */}
       <CameraBrandsCarousel />
 
-      {/* Market Comparison Table: Camsik vs Offline Shops vs Classifieds */}
+      {/* 12. Market Comparison Table: Camsik vs Offline Shops vs Classifieds */}
       <CompetitiveComparisonTable />
 
-      {/* Camera Resale & Inspection FAQs */}
+      {/* 13. Comprehensive FAQs on Selling, Refurbished Warranties & Exchange */}
       <CamsikFaqSection />
 
-      {/* Official Camsik App Download Banner */}
+      {/* 14. Official Camsik App Download Banner */}
       <AppDownloadCTA />
 
       <CustomerFooter />

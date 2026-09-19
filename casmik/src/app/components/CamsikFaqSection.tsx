@@ -8,16 +8,20 @@ import {
   Search, 
   X, 
   MessageCircle, 
-  Camera, 
+  Smartphone, 
   ArrowRight,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Laptop,
+  Camera,
+  RefreshCw,
+  ShoppingBag
 } from 'lucide-react';
 import Link from 'next/link';
 
 interface FAQ {
   id: string;
-  category: 'Valuation & Pricing' | 'Doorstep Inspection' | 'Payment & Safety' | 'Lenses & Gear';
+  category: 'Selling & Valuation' | 'Buying Refurbished' | 'Exchange & Upgrade' | 'Doorstep & Privacy';
   question: string;
   answer: string;
   badge: string;
@@ -26,89 +30,88 @@ interface FAQ {
 const faqs: FAQ[] = [
   {
     id: 'faq-1',
-    category: 'Valuation & Pricing',
-    badge: 'AI Price Engine',
-    question: 'How is the price of my camera or lens calculated on Camsik?',
-    answer: 'Our proprietary valuation engine analyzes live secondary camera market demand across India, sensor resolution, mechanical shutter count actuations, body cosmetics (scratches, scuffs, grip rubber condition), autofocus calibration, and included original accessories (OEM charger, battery, neck strap, lens hood) to calculate the highest guaranteed payout.',
+    category: 'Selling & Valuation',
+    badge: 'AI Valuation Engine',
+    question: 'How is the resale price of my phone, laptop, or camera calculated on Camsik?',
+    answer: 'Our proprietary pricing algorithm analyzes live secondary market demand across India, processor/sensor generation, physical cosmetics, battery cycle health, display condition (OLED burn-in, scratches), camera sensor health, and included original accessories to calculate the highest guaranteed payout.',
   },
   {
     id: 'faq-2',
-    category: 'Valuation & Pricing',
+    category: 'Selling & Valuation',
     badge: 'KYC & Paperwork',
-    question: 'Do I need the original box and invoice to sell my camera?',
-    answer: 'No! An original bill and retail packaging are not mandatory. Having them will fetch you a slightly higher valuation, but you can always sell your camera or lens with just a valid government photo ID proof (Aadhaar Card, Driving License, or Voter ID) for standard KYC transfer.',
+    question: 'Do I need the original box and bill to sell my device on Camsik?',
+    answer: 'No! An original bill and retail packaging are not mandatory. Having them adds a small value bonus, but you can sell your smartphone, MacBook, tablet, or camera with just a valid government photo ID (Aadhaar Card, Driving License, or Passport) for legal KYC compliance.',
   },
   {
     id: 'faq-3',
-    category: 'Doorstep Inspection',
-    badge: 'Automated Diagnostics',
-    question: 'How does the doorstep inspection and shutter count verification work?',
-    answer: 'Our certified camera evaluation specialist visits your home or photography studio at your selected time slot. They connect the camera to diagnostic software to read the exact mechanical shutter count from the EXIF buffer, test sensor cleanlines at f/22, verify autofocus motors, and check optical glass for fungus or haze in under 15 minutes right before your eyes.',
+    category: 'Buying Refurbished',
+    badge: '45-Point Inspection',
+    question: 'What quality checks do certified refurbished devices go through?',
+    answer: 'Every device undergoes a 45-point hardware inspection conducted by certified diagnostic technicians. We test touchscreen responsiveness, battery health (guaranteed 85%+), motherboard thermals, camera optics, biometric sensors (Face ID/Touch ID/Shutter), and speaker audio clarity. Defective units are rejected.',
   },
   {
     id: 'faq-4',
-    category: 'Payment & Safety',
-    badge: 'Instant Transfer',
-    question: 'When and how will I receive payment for my camera?',
-    answer: 'Payment is initiated on the spot before our technician leaves your doorstep. You can choose Instant UPI (Google Pay, PhonePe, Paytm) or direct IMPS bank transfer. We only pack and collect your camera after you verify receipt of funds in your account.',
+    category: 'Buying Refurbished',
+    badge: 'Warranty & Returns',
+    question: 'What warranty and return policy do I get when buying refurbished tech?',
+    answer: 'All certified refurbished devices purchased from Camsik come with a 6 to 12 months comprehensive warranty covering manufacturing and hardware defects, along with a 7-day hassle-free replacement guarantee if the device fails to meet expectations.',
   },
   {
     id: 'faq-5',
-    category: 'Lenses & Gear',
-    badge: 'Independent Liquidation',
-    question: 'Can I sell individual lenses, gimbals, or action cameras without a camera body?',
-    answer: 'Yes, absolutely! Camsik purchases prime lenses, zoom lenses, cinema glass, 3-axis motorized gimbals (DJI Ronin, Zhiyun), action cameras (GoPro, Insta360, DJI Action), and studio lighting gear individually without requiring a camera body.',
+    category: 'Exchange & Upgrade',
+    badge: '1-Step Doorstep Swap',
+    question: 'How does the 1-step device exchange process work?',
+    answer: 'Select the upgraded device you want and enter the details of your old phone, laptop, or camera. We add an exclusive exchange bonus (up to ₹5,000) directly to your trade-in credit. Our specialist arrives at your doorstep with your upgraded device, inspects your old gadget, and you pay only the remaining balance on the spot.',
   },
   {
     id: 'faq-6',
-    category: 'Lenses & Gear',
-    badge: 'Optical Grading',
-    question: 'What if my lens has minor dust or minor fungus inside the element?',
-    answer: 'You can still sell it! During the valuation questions on Camsik, simply select the option for minor optical imperfections. Our algorithm will adjust the price transparently based on the optical restoration cost rather than rejecting your gear.',
+    category: 'Exchange & Upgrade',
+    badge: 'Cashback Balance',
+    question: 'What happens if my old gadget is worth more than the device I want to buy?',
+    answer: 'If your trade-in valuation exceeds the cost of your selected upgrade, Camsik pays YOU the remaining balance! The technician immediately transfers the surplus cash to your UPI or bank account right at your doorstep.',
   },
   {
     id: 'faq-7',
-    category: 'Payment & Safety',
-    badge: '100% Free Doorstep',
-    question: 'Are there any pickup charges or cancellation fees if I decline the quote?',
-    answer: 'Zero pickup charges! Doorstep evaluation is 100% free across 200+ cities in India. If the final on-site quote does not meet your expectations for any reason, you are free to cancel without paying a single rupee.',
+    category: 'Doorstep & Privacy',
+    badge: 'DoD 5220.22-M Wipe',
+    question: 'How is my private data and photos protected before device resale?',
+    answer: 'Data security is our highest priority. Before any device leaves your hands, our technician performs a certified DoD 5220.22-M military-grade data sanitization wiping all internal SSDs, storage buffers, and user accounts. You receive a digitally signed legal bill of sale and liability indemnity certificate.',
   },
   {
     id: 'faq-8',
-    category: 'Doorstep Inspection',
-    badge: 'Studio & Bulk Trade-In',
-    question: 'Do you buy bulk camera gear from wedding studios or rental houses?',
-    answer: 'Yes! We have a dedicated Camsik Pro Studio Liquidation team that handles bulk sales of 5+ cameras, cine kits, lighting, and heavy lenses with custom valuation and single-day consolidated bank settlement.',
+    category: 'Doorstep & Privacy',
+    badge: '100% Free Doorstep',
+    question: 'Are there any pickup or cancellation fees if I decline the doorstep quote?',
+    answer: 'Zero hidden fees and zero travel charges! Doorstep evaluation is 100% free across 200+ cities in India. If the final on-site quote does not meet your expectations for any reason, you can decline with zero penalty.',
   },
   {
     id: 'faq-9',
-    category: 'Payment & Safety',
-    badge: 'Privacy & Data Protection',
-    question: 'How is my private data and photos protected before camera resale?',
-    answer: 'Every camera undergoes our certified factory buffer wipe process. Internal buffers, saved camera profiles, WiFi credentials, and EXIF storage are scrubbed to military standards. A legal bill of sale and liability release certificate is issued immediately.',
+    category: 'Selling & Valuation',
+    badge: '7-Day Price Lock',
+    question: 'How long is my online price quote valid?',
+    answer: 'Once you generate a quote on Camsik, your price is locked for 7 days. You have complete flexibility to schedule your free doorstep pickup at any convenient slot within that period without worrying about market price fluctuations.',
   },
   {
     id: 'faq-10',
-    category: 'Valuation & Pricing',
-    badge: '7-Day Guarantee',
-    question: 'How long is the online camera price quote valid?',
-    answer: 'Once you generate an instant price quote on Camsik, your valuation is locked for 7 days. You have full flexibility to schedule your free doorstep pickup at any date and time slot within that window without worrying about price drops.',
+    category: 'Doorstep & Privacy',
+    badge: 'Instant Spot Transfer',
+    question: 'When and how will I receive payment for my device?',
+    answer: 'Payment is initiated immediately before the technician packs the equipment. You can choose Instant UPI (Google Pay, PhonePe, Paytm) or direct IMPS bank transfer. The technician waits until you receive the bank confirmation SMS.',
   },
 ];
 
 const categories = [
   'All Questions',
-  'Valuation & Pricing',
-  'Doorstep Inspection',
-  'Payment & Safety',
-  'Lenses & Gear',
+  'Selling & Valuation',
+  'Buying Refurbished',
+  'Exchange & Upgrade',
+  'Doorstep & Privacy',
 ] as const;
 
 type CategoryTab = typeof categories[number];
 
 export default function CamsikFaqSection() {
-  // Store set of open FAQ ids for independent accordion toggling
-  const [openIds, setOpenIds] = useState<Set<string>>(new Set(['faq-1']));
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set(['faq-1', 'faq-3', 'faq-5']));
   const [activeCategory, setActiveCategory] = useState<CategoryTab>('All Questions');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -138,38 +141,37 @@ export default function CamsikFaqSection() {
   }, [activeCategory, searchQuery]);
 
   return (
-    <section id="faq" className="py-8 lg:py-12 bg-surface border-t border-border/80 w-full overflow-hidden">
+    <section id="faq" className="py-10 lg:py-16 bg-slate-50 border-t border-slate-200/80 w-full overflow-hidden">
       <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
         
         {/* Section Header */}
-        <div className="text-center max-w-4xl mx-auto mb-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-2">
-            <Sparkles size={13} />
+        <div className="text-center max-w-4xl mx-auto mb-8">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-200/80 text-slate-800 text-xs font-bold uppercase tracking-wider mb-2.5">
+            <Sparkles size={13} className="text-purple-600" />
             Got Questions? We&apos;ve Got Answers
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-foreground tracking-tight">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
             Frequently Asked Questions
           </h2>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto">
-            Everything you need to know about selling, upgrading, or evaluating your camera equipment safely on Camsik.
+          <p className="text-slate-600 mt-2 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto">
+            Everything you need to know about selling, buying refurbished tech, or exchanging devices safely on Camsik.
           </p>
         </div>
 
-        {/* Filter Tabs & Search Bar — Full Width Row */}
-        <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
-          
+        {/* Filter Tabs & Search Bar */}
+        <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           {/* Category Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none w-full md:w-auto">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar w-full md:w-auto">
             {categories.map((cat) => {
               const isActive = activeCategory === cat;
               return (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
-                  className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 btn-press ${
+                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all duration-200 ${
                     isActive
-                      ? 'gradient-green text-white shadow-green ring-2 ring-primary/20'
-                      : 'bg-white border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 shadow-sm'
+                      ? 'bg-slate-900 text-white shadow-md'
+                      : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-sm'
                   }`}
                 >
                   {cat}
@@ -180,18 +182,18 @@ export default function CamsikFaqSection() {
 
           {/* Search Box */}
           <div className="relative w-full md:w-80 lg:w-96 shrink-0">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search questions, e.g. shutter count, box, UPI..."
+              placeholder="Search e.g. warranty, data wipe, exchange..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-9 py-2.5 bg-white border border-border rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm transition-all"
+              className="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600 shadow-sm transition-all text-slate-900"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 aria-label="Clear search"
               >
                 <X size={15} />
@@ -200,130 +202,90 @@ export default function CamsikFaqSection() {
           </div>
         </div>
 
-        {/* Full-Width Responsive 2-Column Grid of Accordion Cards */}
-        {filteredFaqs.length === 0 ? (
-          <div className="w-full bg-white rounded-3xl border border-border p-12 text-center my-8">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
-              <Search size={26} />
-            </div>
-            <h3 className="font-bold text-lg text-foreground mb-1">No matching questions found</h3>
-            <p className="text-sm text-muted-foreground mb-5">
-              Try searching with another keyword or browse by category.
-            </p>
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setActiveCategory('All Questions');
-              }}
-              className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-foreground transition-colors"
-            >
-              Reset Filters
-            </button>
-          </div>
-        ) : (
-          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
-            {filteredFaqs.map((faq) => {
+        {/* FAQ Accordion List */}
+        <div className="w-full space-y-3">
+          {filteredFaqs.length > 0 ? (
+            filteredFaqs.map((faq) => {
               const isOpen = openIds.has(faq.id);
               return (
                 <div
                   key={faq.id}
-                  className={`w-full bg-white rounded-2xl sm:rounded-3xl border transition-all duration-200 overflow-hidden shadow-sm hover:shadow-md ${
+                  className={`w-full rounded-2xl border transition-all duration-200 overflow-hidden ${
                     isOpen
-                      ? 'border-primary/50 shadow-md ring-1 ring-primary/10'
-                      : 'border-border/80 hover:border-primary/40'
+                      ? 'bg-white border-purple-200 shadow-md'
+                      : 'bg-white/80 hover:bg-white border-slate-200/80 shadow-sm'
                   }`}
                 >
                   <button
                     onClick={() => toggleAccordion(faq.id)}
-                    className="w-full text-left p-5 sm:p-6 flex items-start justify-between gap-4 transition-colors group"
-                    aria-expanded={isOpen}
+                    className="w-full p-4 sm:p-5 flex items-center justify-between text-left gap-4 transition-colors"
                   >
-                    <div className="flex-1 pr-2">
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
-                          {faq.category}
-                        </span>
-                        <span className="text-[11px] font-semibold text-muted-foreground bg-slate-100 px-2 py-0.5 rounded-md">
-                          {faq.badge}
-                        </span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                        <HelpCircle size={18} />
                       </div>
-                      <h3 className="font-extrabold text-base sm:text-lg text-foreground group-hover:text-primary transition-colors leading-snug">
-                        {faq.question}
-                      </h3>
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-purple-600 block mb-0.5">
+                          {faq.badge} · {faq.category}
+                        </span>
+                        <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
+                          {faq.question}
+                        </h3>
+                      </div>
                     </div>
-
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 mt-1 ${
-                        isOpen
-                          ? 'rotate-180 bg-primary text-white shadow-sm'
-                          : 'bg-slate-100 text-slate-600 group-hover:bg-primary/10 group-hover:text-primary'
-                      }`}
-                    >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-purple-600' : ''}`}>
                       <ChevronDown size={18} />
                     </div>
                   </button>
 
                   {isOpen && (
-                    <div className="px-5 pb-6 sm:px-6 pt-0 text-sm sm:text-base text-muted-foreground leading-relaxed animate-fade-in">
-                      <div className="pt-3 border-t border-border/60">
-                        <p>{faq.answer}</p>
-                      </div>
+                    <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 mt-1">
+                      {faq.answer}
                     </div>
                   )}
                 </div>
               );
-            })}
-          </div>
-        )}
-
-        {/* Full-Width Bottom Help & Support Banner */}
-        <div className="mt-12 sm:mt-16 w-full rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-6 sm:p-8 lg:p-10 shadow-xl border border-slate-700/60 relative overflow-hidden">
-          {/* Subtle glow decorative shapes */}
-          <div className="absolute top-0 right-1/4 w-80 h-80 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 right-10 w-60 h-60 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3 border border-slate-700">
-                <CheckCircle2 size={13} />
-                Dedicated Camera Resale Support
-              </div>
-              <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                Still have questions about your specific camera model?
-              </h3>
-              <p className="text-slate-300 text-sm sm:text-base mt-2 leading-relaxed">
-                Our camera specialists and optical technicians are available 7 days a week to answer condition queries, explain shutter count readings, or assist with studio kit liquidations.
-              </p>
+            })
+          ) : (
+            <div className="p-8 bg-white rounded-2xl border border-slate-200 text-center text-slate-500">
+              No matching questions found for &ldquo;{searchQuery}&rdquo;.
             </div>
-
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
-              <a
-                href="tel:+918976000010"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs sm:text-sm backdrop-blur-sm transition-all"
-              >
-                <PhoneCall size={16} className="text-emerald-400" />
-                Call: +91 8976000010
-              </a>
-              <a
-                href="https://wa.me/918976000010?text=Hi%20Camsik%20team,%20I%20have%20a%20question%20about%20selling%20my%20camera"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-md transition-all"
-              >
-                <MessageCircle size={16} />
-                WhatsApp Live
-              </a>
-              <Link
-                href="/sell-device-get-quote"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl gradient-green text-white font-extrabold text-xs sm:text-sm shadow-green hover:shadow-lg transition-all btn-press"
-              >
-                <Camera size={16} />
-                Get Exact Price Now <ArrowRight size={15} />
-              </Link>
-            </div>
-          </div>
+          )}
         </div>
 
+        {/* Still Have Questions Bar */}
+        <div className="mt-8 p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200">
+              <PhoneCall size={22} />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-sm sm:text-base text-slate-900">
+                Have a specific gadget or questions about bulk liquidation?
+              </h4>
+              <p className="text-xs text-slate-500">
+                Our gadget specialists are available Mon–Sun 9 AM – 9 PM to assist you.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <Link
+              href="/contact-us"
+              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm shadow-sm transition-all"
+            >
+              Contact Support
+            </Link>
+            <a
+              href="https://wa.me/918976000010"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm flex items-center gap-1.5 transition-all"
+            >
+              <MessageCircle size={15} />
+              <span>WhatsApp Us</span>
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   );

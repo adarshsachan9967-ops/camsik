@@ -180,15 +180,15 @@ export default function CameraBrandsCarousel() {
         {/* Header with Badges */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-5 gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-2.5">
-              <Sparkles size={12} />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-800 text-xs font-bold uppercase tracking-wider mb-2.5">
+              <Sparkles size={12} className="text-purple-600" />
               Supported Manufacturers
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
-              Sell Cameras & Optics by Top Brands
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Top Tech &amp; Camera Brands We Buy, Sell &amp; Exchange
             </h2>
-            <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-              Select your gear brand to get a direct valuation model calibrated for market demand.
+            <p className="text-slate-500 text-xs sm:text-sm mt-1">
+              Guaranteed top valuations and certified inventory across Apple, Samsung, Dell, HP, Lenovo, Sony, Canon, and DJI.
             </p>
           </div>
 
