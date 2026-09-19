@@ -60,6 +60,7 @@ const footerLinks = {
     { label: 'DoD Certified Data Wipe', href: '/why-camsik' },
     { label: 'Terms & Conditions', href: '/faq' },
     { label: 'Partner Program', href: '/partner/login' },
+    { label: 'Delivery Executive Portal', href: '/delivery/login' },
   ],
 };
 
