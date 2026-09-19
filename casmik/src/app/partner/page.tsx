@@ -8,6 +8,9 @@ import PartnerInspection from './components/PartnerInspection';
 import PartnerPayouts from './components/PartnerPayouts';
 import SupportTicketsPanel from '@/components/SupportTicketsPanel';
 import PartnerProfile from './components/PartnerProfile';
+import PartnerCustomers from './components/PartnerCustomers';
+import PartnerReports from './components/PartnerReports';
+import PartnerSettings from './components/PartnerSettings';
 import { Clock, ShieldAlert, RefreshCw, LogOut, ArrowRight } from 'lucide-react';
 import { partners, Partner } from '@/lib/casmikData';
 
@@ -167,13 +170,16 @@ export default function PartnerPage() {
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'dashboard': return <PartnerDashboard />;
+      case 'dashboard': return <PartnerDashboard onNavigate={setActiveSection} />;
       case 'orders': return <PartnerOrders onStartInspection={handleStartInspection} />;
       case 'inspection': return <PartnerInspection initialOrderId={inspectingOrderId} onBackToOrders={() => setActiveSection('orders')} />;
       case 'payouts': return <PartnerPayouts />;
-      case 'support': return <SupportTicketsPanel panelType="partner" userName={session.name || "Partner"} />;
-      case 'profile': return <PartnerProfile />;
-      default: return <PartnerDashboard />;
+      case 'customers': return <PartnerCustomers onNavigate={setActiveSection} />;
+      case 'reports': return <PartnerReports />;
+      case 'settings': return <PartnerSettings partner={session} onUpdateSession={setSession} />;
+      case 'support': return <SupportTicketsPanel panelType="partner" userName={session?.name || "Partner"} />;
+      case 'profile': return <PartnerProfile partner={session} onUpdateSession={setSession} />;
+      default: return <PartnerDashboard onNavigate={setActiveSection} />;
     }
   };
 

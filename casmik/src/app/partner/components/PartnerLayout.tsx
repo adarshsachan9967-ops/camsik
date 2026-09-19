@@ -136,7 +136,19 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-16 bg-white border-b border-gray-100 flex items-center px-4 lg:px-6 gap-4 flex-shrink-0">
           <button onClick={() => setMobileOpen(true)} className="md:hidden p-2 rounded-lg hover:bg-gray-100"><Menu size={20} /></button>
-          <div className="flex-1" />
+          <div className="flex-1">
+            <h2 className="text-base font-bold text-gray-900 capitalize">
+              {activeSection === 'profile' ? 'My Store Profile' :
+               activeSection === 'dashboard' ? 'Store Dashboard' :
+               activeSection === 'orders' ? 'Orders Management' :
+               activeSection === 'inspection' ? 'Device Inspection Hub' :
+               activeSection === 'payouts' ? 'Wallet & Payouts' :
+               activeSection === 'customers' ? 'Store Customers' :
+               activeSection === 'reports' ? 'Performance Reports' :
+               activeSection === 'support' ? 'Support Tickets' :
+               activeSection === 'settings' ? 'Store Settings' : activeSection}
+            </h2>
+          </div>
           <div className="flex items-center gap-3">
             <button className="relative p-2 rounded-xl hover:bg-gray-100" title="Notifications">
               <Bell size={18} className="text-gray-600" />

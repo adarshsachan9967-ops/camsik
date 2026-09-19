@@ -1,7 +1,6 @@
 'use client';
 import React, { useState } from 'react';
 import { orders, partners } from '@/lib/casmikData';
-
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const partner = partners[1] || partners[0] || {
@@ -23,36 +22,40 @@ const earningsData = [
 
 const topCategories = [
   { name: 'Mobile Phones', pct: 62, count: 78, color: 'bg-green-500' },
-  { name: 'Laptops', pct: 18, count: 23, color: 'bg-blue-500' },
-  { name: 'TVs', pct: 10, count: 13, color: 'bg-purple-500' },
-  { name: 'Tablets', pct: 6, count: 8, color: 'bg-orange-500' },
-  { name: 'Accessories', pct: 4, count: 5, color: 'bg-gray-400' },
+  { name: 'Laptops & MacBooks', pct: 18, count: 23, color: 'bg-blue-500' },
+  { name: 'DSLR & Cameras', pct: 12, count: 16, color: 'bg-purple-500' },
+  { name: 'iPads & Tablets', pct: 6, count: 8, color: 'bg-orange-500' },
+  { name: 'Accessories', pct: 2, count: 3, color: 'bg-gray-400' },
 ];
 
-const recentOrders = orders.filter(o => o.partnerId === 'partner-002').slice(0, 4);
+const recentOrders = orders.slice(0, 4);
 
-export default function PartnerDashboard() {
+interface PartnerDashboardProps {
+  onNavigate?: (section: any) => void;
+}
+
+export default function PartnerDashboard({ onNavigate }: PartnerDashboardProps = {}) {
   const [dateRange, setDateRange] = useState('This Week');
 
   const kpis = [
-    { label: 'TOTAL EARNINGS', value: `₹${partner.totalEarnings.toLocaleString('en-IN')}`, sub: '↑ 18.6% vs last week', icon: '💰', color: 'text-green-600' },
-    { label: 'TOTAL ORDERS', value: partner.totalOrders.toString(), sub: '↑ 12.4% vs last week', icon: '🛒', color: 'text-blue-600' },
-    { label: 'TOTAL COMMISSION', value: `₹${Math.round(partner.totalEarnings * partner.commission / 100).toLocaleString('en-IN')}`, sub: '↑ 15.3% vs last week', icon: '🏅', color: 'text-yellow-600' },
-    { label: 'PRODUCTS SOLD', value: '156', sub: '↑ 10.7% vs last week', icon: '📦', color: 'text-purple-600' },
-    { label: 'PENDING PAYOUT', value: `₹${partner.pendingPayout.toLocaleString('en-IN')}`, sub: 'Will be paid on 15 May 2025', icon: '⏳', color: 'text-orange-600' },
+    { label: 'TOTAL EARNINGS', value: `₹${partner.totalEarnings.toLocaleString('en-IN')}`, sub: '↑ 18.6% vs last week', icon: '💰', color: 'text-green-600', action: () => onNavigate?.('payouts') },
+    { label: 'TOTAL ORDERS', value: partner.totalOrders.toString(), sub: '↑ 12.4% vs last week', icon: '🛒', color: 'text-blue-600', action: () => onNavigate?.('orders') },
+    { label: 'TOTAL COMMISSION', value: `₹${Math.round(partner.totalEarnings * partner.commission / 100).toLocaleString('en-IN')}`, sub: '↑ 15.3% vs last week', icon: '🏅', color: 'text-yellow-600', action: () => onNavigate?.('reports') },
+    { label: 'PRODUCTS SOLD', value: '156', sub: '↑ 10.7% vs last week', icon: '📦', color: 'text-purple-600', action: () => onNavigate?.('orders') },
+    { label: 'PENDING PAYOUT', value: `₹${partner.pendingPayout.toLocaleString('en-IN')}`, sub: 'Will be paid on 15 May 2025', icon: '⏳', color: 'text-orange-600', action: () => onNavigate?.('payouts') },
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 w-full max-w-7xl mx-auto font-sans">
       {/* Welcome */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-black text-gray-900">Welcome back, MobileHub Store! 👋</h2>
-          <p className="text-sm text-gray-500">Here&apos;s what&apos;s happening with your business today.</p>
+          <h2 className="text-xl sm:text-2xl font-black text-gray-900">Welcome back, MobileHub Store! 👋</h2>
+          <p className="text-xs sm:text-sm text-gray-500">Here&apos;s what&apos;s happening with your business today.</p>
         </div>
-        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm">
+        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm shadow-sm self-start sm:self-auto">
           <span className="text-gray-500">📅</span>
-          <select value={dateRange} onChange={e => setDateRange(e.target.value)} className="text-sm font-semibold text-gray-700 bg-transparent focus:outline-none">
+          <select value={dateRange} onChange={e => setDateRange(e.target.value)} className="text-xs sm:text-sm font-semibold text-gray-700 bg-transparent focus:outline-none">
             <option>This Week</option>
             <option>This Month</option>
             <option>Last Month</option>
@@ -63,7 +66,12 @@ export default function PartnerDashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <div
+            key={kpi.label}
+            onClick={kpi.action}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md hover:border-primary/40 cursor-pointer transition-all hover:scale-[1.02]"
+            title={`Click to view details in ${kpi.label}`}
+          >
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wide leading-tight">{kpi.label}</p>
               <span className="text-xl">{kpi.icon}</span>
@@ -77,13 +85,15 @@ export default function PartnerDashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Earnings Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-gray-900 uppercase text-sm tracking-wide">Earnings Overview</h3>
-            <select className="text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 focus:outline-none">
-              <option>This Week</option>
-              <option>This Month</option>
-            </select>
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h3 className="font-bold text-gray-900 uppercase text-xs sm:text-sm tracking-wide">Earnings Overview</h3>
+            <button
+              onClick={() => onNavigate?.('reports')}
+              className="text-xs font-bold text-primary hover:underline bg-primary/10 px-2.5 py-1 rounded-lg"
+            >
+              Full Analytics Report &rarr;
+            </button>
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={earningsData}>
@@ -103,10 +113,15 @@ export default function PartnerDashboard() {
         </div>
 
         {/* Top Categories */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-gray-900 uppercase text-sm tracking-wide">Top Selling Categories</h3>
-            <span className="text-xs text-primary font-bold cursor-pointer hover:underline">View All</span>
+            <h3 className="font-bold text-gray-900 uppercase text-xs sm:text-sm tracking-wide">Top Selling Categories</h3>
+            <span
+              onClick={() => onNavigate?.('reports')}
+              className="text-xs text-primary font-bold cursor-pointer hover:underline"
+            >
+              View All
+            </span>
           </div>
           <div className="space-y-3">
             {topCategories.map((cat) => (
@@ -132,12 +147,21 @@ export default function PartnerDashboard() {
         {/* Recent Orders */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-gray-900 uppercase text-sm tracking-wide">Recent Orders</h3>
-            <span className="text-xs text-primary font-bold cursor-pointer hover:underline">View All</span>
+            <h3 className="font-bold text-gray-900 uppercase text-xs sm:text-sm tracking-wide">Recent Orders</h3>
+            <span
+              onClick={() => onNavigate?.('orders')}
+              className="text-xs text-primary font-bold cursor-pointer hover:underline"
+            >
+              View All &rarr;
+            </span>
           </div>
           <div className="space-y-3">
             {recentOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+              <div
+                key={order.id}
+                onClick={() => onNavigate?.('orders')}
+                className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 px-2 rounded-xl cursor-pointer transition-colors"
+              >
                 <div>
                   <p className="text-sm font-bold text-gray-900">{order.deviceName.split(' ').slice(0, 4).join(' ')}</p>
                   <p className="text-xs text-gray-400">ID: {order.orderNumber} · {new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
@@ -157,15 +181,25 @@ export default function PartnerDashboard() {
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-gray-900 uppercase text-sm tracking-wide">Payout Overview</h3>
-              <span className="text-xs text-primary font-bold cursor-pointer hover:underline">View All</span>
+              <h3 className="font-bold text-gray-900 uppercase text-xs sm:text-sm tracking-wide">Payout Overview</h3>
+              <span
+                onClick={() => onNavigate?.('payouts')}
+                className="text-xs text-primary font-bold cursor-pointer hover:underline"
+              >
+                View Ledger &rarr;
+              </span>
             </div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <div>
                 <p className="text-xs text-gray-500">AVAILABLE BALANCE</p>
                 <p className="text-2xl font-black text-gray-900">₹{partner.availableBalance.toLocaleString('en-IN')}</p>
               </div>
-              <button className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 shadow-lg shadow-primary/20">Request Payout</button>
+              <button
+                onClick={() => onNavigate?.('payouts')}
+                className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 shadow-lg shadow-primary/20"
+              >
+                Request Payout
+              </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-green-50 rounded-xl p-3">
@@ -180,7 +214,7 @@ export default function PartnerDashboard() {
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h3 className="font-bold text-gray-900 uppercase text-sm tracking-wide mb-3">Account Summary</h3>
+            <h3 className="font-bold text-gray-900 uppercase text-xs sm:text-sm tracking-wide mb-3">Account Summary</h3>
             <div className="space-y-2">
               {[
                 { label: 'Partner Name', value: partner.storeName },
