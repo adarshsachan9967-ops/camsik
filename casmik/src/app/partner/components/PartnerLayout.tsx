@@ -154,7 +154,6 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
               <Bell size={18} className="text-gray-600" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
             </button>
-            <Link href="/admin" className="text-xs font-medium text-gray-500 hover:text-primary hidden sm:inline-block">Admin Panel</Link>
             
             <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-1.5 border border-gray-100">
               <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">

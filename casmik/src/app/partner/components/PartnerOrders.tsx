@@ -243,11 +243,9 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
         <div>
           <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
             Order Management
-            <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
-              isConnected ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-            }`}>
-              {isConnected ? <Wifi size={10} /> : <WifiOff size={10} />}
-              {isConnected ? 'Live' : 'Connecting...'}
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <CheckCircle size={11} className="text-emerald-600" />
+              {isConnected ? 'Live Synced' : `Active Store Orders (${orderList.length})`}
             </span>
           </h2>
           <p className="text-sm text-gray-500">Manage your assigned orders and update order statuses</p>
