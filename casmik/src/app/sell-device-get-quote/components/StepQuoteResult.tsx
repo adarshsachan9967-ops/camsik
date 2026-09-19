@@ -1,8 +1,10 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle, Shield, Truck, Zap, Ban, TrendingUp, Clock, MapPin, Calendar, User, Phone } from 'lucide-react';
+import { CheckCircle, Shield, Truck, Zap, Ban, TrendingUp, Clock, MapPin, Calendar, User, Phone, ArrowRight, BellRing } from 'lucide-react';
 import type { SellState } from './SellDeviceWorkflow';
+import { triggerNotification } from '@/lib/notifications';
+import { createClient } from '@/lib/supabase/client';
 
 interface Props {
   sellState: SellState;
@@ -31,29 +33,167 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('UPI');
+  const [bookedOrderNumber, setBookedOrderNumber] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const price = sellState.currentPrice;
+
+  const handleConfirmBooking = async () => {
+    if (!name || !phone || !address || !pinCode || !selectedDate || !selectedSlot || isSubmitting) return;
+    setIsSubmitting(true);
+
+    const generatedNumber = `CSM-2024-${Math.floor(120 + Math.random() * 870)}`;
+    const newOrderId = `ord-${Date.now()}`;
+    const deviceFullName = `${sellState.brandName} ${sellState.modelName}`;
+
+    const newOrder = {
+      id: newOrderId,
+      orderNumber: generatedNumber,
+      type: 'sell',
+      status: 'assigned',
+      customerId: `cust-${Date.now()}`,
+      customerName: name,
+      customerPhone: phone,
+      customerEmail: '',
+      customerAddress: address,
+      pinCode: pinCode,
+      city: 'Delhi NCR',
+      deviceName: deviceFullName,
+      deviceBrand: sellState.brandName,
+      deviceModel: sellState.modelName,
+      deviceStorage: sellState.storage || '128GB',
+      deviceColor: 'Standard',
+      quotedPrice: price,
+      finalPrice: price,
+      partnerId: 'partner-001',
+      partnerName: 'Camsik Certified Camera & Tech Hub',
+      deliveryAgentId: null,
+      deliveryAgentName: null,
+      pickupDate: selectedDate,
+      pickupSlot: selectedSlot,
+      paymentStatus: 'pending',
+      inspectionScore: null,
+      notes: `Customer booking placed. Preferred payout via ${paymentMethod}. Slot: ${selectedDate} (${selectedSlot})`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // 1. Save to local storage for instant sync across tabs & dashboards
+    if (typeof window !== 'undefined') {
+      try {
+        const existingGlobal = JSON.parse(localStorage.getItem('casmik_orders_v1') || '[]');
+        localStorage.setItem('casmik_orders_v1', JSON.stringify([newOrder, ...existingGlobal]));
+
+        const existingPartner = JSON.parse(localStorage.getItem('casmik_partner_orders_v1') || '[]');
+        localStorage.setItem('casmik_partner_orders_v1', JSON.stringify([newOrder, ...existingPartner]));
+      } catch (err) {
+        console.error('Failed storing local order:', err);
+      }
+    }
+
+    // 2. Try remote Supabase insert if available
+    try {
+      const supabase = createClient();
+      await supabase.from('orders').insert({
+        id: newOrderId,
+        order_number: generatedNumber,
+        order_type: 'sell',
+        status: 'assigned',
+        customer_name: name,
+        customer_phone: phone,
+        customer_address: address,
+        pin_code: pinCode,
+        city: 'Delhi NCR',
+        device_name: deviceFullName,
+        device_brand: sellState.brandName,
+        device_model: sellState.modelName,
+        quoted_price: price,
+        final_price: price,
+        partner_id: 'partner-001',
+        partner_name: 'Camsik Certified Camera & Tech Hub',
+        pickup_date: selectedDate,
+        pickup_slot: selectedSlot,
+        payment_status: 'pending',
+        notes: newOrder.notes,
+      });
+    } catch (err) {
+      console.log('Remote order sync info:', err);
+    }
+
+    // 3. Trigger Real-Time Notification across all dashboards with Sound Chime
+    triggerNotification({
+      type: 'new_booking',
+      targetRole: 'all',
+      title: `🎉 New Booking Booked: #${generatedNumber}`,
+      shortDetails: `${name} booked pickup for ${deviceFullName} (₹${price.toLocaleString('en-IN')}) · Slot: ${selectedDate} (${selectedSlot})`,
+      orderNumber: generatedNumber,
+      deviceName: deviceFullName,
+      customerName: name,
+      price: price,
+      status: 'assigned',
+    });
+
+    setBookedOrderNumber(generatedNumber);
+    setIsSubmitting(false);
+    setView('confirmed');
+  };
 
   if (view === 'confirmed') {
     return (
       <div className="space-y-5 fade-in">
-        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
-          <div className="gradient-green p-8 text-white text-center">
-            <div className="text-5xl mb-3">🎉</div>
-            <h2 className="text-2xl font-extrabold mb-2">Pickup Scheduled!</h2>
-            <p className="text-white/80">Your order has been placed. Check My Orders to track your pickup.</p>
+        <div className="bg-white rounded-3xl border border-border shadow-xl overflow-hidden">
+          <div className="gradient-green p-8 text-white text-center relative overflow-hidden">
+            <div className="text-5xl mb-3 animate-bounce">🎉</div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white font-bold text-xs uppercase tracking-wider mb-2">
+              Booking Confirmed
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black mb-1">Free Pickup Scheduled!</h2>
+            <p className="text-white/90 text-sm max-w-md mx-auto">
+              Your order <span className="font-mono font-bold underline">#{bookedOrderNumber || 'CSM-2024-LIVE'}</span> has been confirmed. Our executive will arrive at your scheduled slot.
+            </p>
           </div>
-          <div className="p-6 space-y-3">
-            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Device</span><span className="font-semibold">{sellState.brandName} {sellState.modelName}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Quoted Price</span><span className="font-bold text-primary">₹{price.toLocaleString('en-IN')}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Pickup Date</span><span className="font-semibold">{selectedDate}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Time Slot</span><span className="font-semibold">{selectedSlot}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Payment</span><span className="font-semibold">{paymentMethod}</span></div>
+          <div className="p-6 space-y-3 bg-slate-50/50">
+            <div className="flex justify-between items-center text-sm py-2 border-b border-border/50">
+              <span className="text-muted-foreground font-medium">Order Number</span>
+              <span className="font-mono font-bold text-primary">{bookedOrderNumber || 'CSM-2024-LIVE'}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm py-2 border-b border-border/50">
+              <span className="text-muted-foreground font-medium">Device</span>
+              <span className="font-semibold text-slate-800">{sellState.brandName} {sellState.modelName}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm py-2 border-b border-border/50">
+              <span className="text-muted-foreground font-medium">Guaranteed Quoted Value</span>
+              <span className="font-black text-lg text-emerald-600">₹{price.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm py-2 border-b border-border/50">
+              <span className="text-muted-foreground font-medium">Customer</span>
+              <span className="font-semibold text-slate-800">{name} ({phone})</span>
+            </div>
+            <div className="flex justify-between items-center text-sm py-2 border-b border-border/50">
+              <span className="text-muted-foreground font-medium">Pickup Schedule</span>
+              <span className="font-semibold text-indigo-700">{selectedDate} · {selectedSlot}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm py-2">
+              <span className="text-muted-foreground font-medium">Payment Mode</span>
+              <span className="font-bold text-slate-800 bg-white px-2.5 py-1 rounded-lg border border-border">{paymentMethod} Instant Transfer</span>
+            </div>
+          </div>
+          <div className="p-5 bg-white border-t border-border flex flex-col sm:flex-row gap-3">
+            <Link
+              href={`/track-order?orderId=${bookedOrderNumber}`}
+              className="flex-1 py-3 px-4 bg-primary text-white rounded-xl font-bold text-sm text-center shadow-md hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+            >
+              <span>Track Live Order</span>
+              <ArrowRight size={16} />
+            </Link>
+            <Link
+              href="/my-orders"
+              className="py-3 px-4 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm text-center hover:bg-slate-200 transition-all"
+            >
+              View My Orders
+            </Link>
           </div>
         </div>
-        <Link href="/" className="flex items-center justify-center gap-2 w-full py-3.5 gradient-green text-white rounded-xl font-semibold shadow-green btn-press">
-          Back to Home
-        </Link>
       </div>
     );
   }
@@ -139,10 +279,19 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
         </div>
 
         <button
-          onClick={() => { if (name && phone && address && pinCode && selectedDate && selectedSlot) setView('confirmed'); }}
-          disabled={!name || !phone || !address || !pinCode || !selectedDate || !selectedSlot}
+          onClick={handleConfirmBooking}
+          disabled={!name || !phone || !address || !pinCode || !selectedDate || !selectedSlot || isSubmitting}
           className="w-full py-4 gradient-green text-white rounded-xl font-bold shadow-green btn-press disabled:opacity-50 flex items-center justify-center gap-2">
-          <CheckCircle size={18} /> Confirm Pickup Booking
+          {isSubmitting ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Scheduling & Alerting Partner...
+            </span>
+          ) : (
+            <>
+              <CheckCircle size={18} /> Confirm Pickup Booking
+            </>
+          )}
         </button>
       </div>
     );

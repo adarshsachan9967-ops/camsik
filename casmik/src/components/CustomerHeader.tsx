@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { deviceModels, brands, categories } from '@/lib/casmikData';
 import { getCurrentUser, logoutUser, CustomerUser } from '@/lib/auth';
+import NotificationBell from '@/components/NotificationBell';
 
 const popularCities = [
   { id: 'all', name: 'All Cities', areas: [] },
@@ -302,7 +303,7 @@ export default function CustomerHeader() {
               )}
             </div>
 
-            {/* Right Actions: City Selector + Login + CTA + Mobile hamburger */}
+            {/* Right Actions: City Selector + NotificationBell + Login + CTA + Mobile hamburger */}
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               {/* City Selector Button */}
               <button
@@ -314,6 +315,9 @@ export default function CustomerHeader() {
                 <span className="max-w-[70px] sm:max-w-[110px] truncate text-xs sm:text-sm">{selectedCity}</span>
                 <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 flex-shrink-0" />
               </button>
+
+              {/* Real-time Web & App Notifications with chime sound */}
+              <NotificationBell role="user" />
 
               {/* Login / Auth Dropdown or Button */}
               {user ? (

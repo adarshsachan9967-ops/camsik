@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { PartnerSection } from '../page';
 import { LayoutDashboard, ShoppingBag, ClipboardCheck, DollarSign, Users, BarChart3, Settings, Bell, Menu, ChevronLeft, ChevronRight, Store, MessageSquare, UserCircle, LogOut } from 'lucide-react';
 import { Partner, partners } from '@/lib/casmikData';
+import NotificationBell from '@/components/NotificationBell';
 
 interface NavItem { id: PartnerSection; icon: React.ElementType; label: string; badge?: number; }
 
@@ -150,10 +151,11 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            <button className="relative p-2 rounded-xl hover:bg-gray-100" title="Notifications">
-              <Bell size={18} className="text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
+            <NotificationBell
+              role="partner"
+              onNavigateSection={(section) => onSectionChange(section as PartnerSection)}
+              onNavigateToOrder={() => onSectionChange('orders')}
+            />
             
             <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-1.5 border border-gray-100">
               <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">

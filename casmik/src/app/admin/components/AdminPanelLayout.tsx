@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { AdminSection } from '../page';
 import { LayoutDashboard, ShoppingBag, Tag, Globe, Package, Calculator, Users, Handshake, Truck, FileText, BarChart3, Settings, ChevronLeft, ChevronRight, Bell, Menu, X, CreditCard, Send, LogOut, Wrench, Warehouse, MessageSquare, Percent, RefreshCw } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
 
 interface NavItem { id: AdminSection; icon: React.ElementType; label: string; badge?: string | number; badgeColor?: string; }
 interface NavGroup { group: string; items: NavItem[]; }
@@ -51,7 +52,6 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
@@ -62,16 +62,6 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
     }
     router.replace('/admin/login');
   };
-
-  const notifications = [
-    { id: 1, type: 'order', msg: 'New sell order CSM-2024-021 from Rahul Sharma', time: '2m ago', read: false },
-    { id: 2, type: 'partner', msg: 'DigiWorld (Delhi) submitted signup documents', time: '15m ago', read: false },
-    { id: 3, type: 'delivery', msg: 'New delivery agent Mohit Sharma onboarded', time: '1h ago', read: false },
-    { id: 4, type: 'order', msg: 'Order CSM-2024-014 inspection completed', time: '2h ago', read: true },
-    { id: 5, type: 'partner', msg: 'TechHub Store requested payout ₹28,500', time: '3h ago', read: true },
-  ];
-
-  const unreadCount = notifications.filter(n => !n.read).length;
 
   const sectionLabel = (s: AdminSection): string => {
     const map: Partial<Record<AdminSection, string>> = {
@@ -172,52 +162,12 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
             <h1 className="text-base font-bold text-gray-900 capitalize">{sectionLabel(activeSection)}</h1>
           </div>
           <div className="flex items-center gap-3">
-            {/* Notifications Bell */}
-            <div className="relative">
-              <button onClick={() => setNotifOpen(o => !o)} className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors">
-                <Bell size={18} className="text-gray-600" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">{unreadCount}</span>
-                )}
-              </button>
-              {notifOpen && (
-                <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                    <h3 className="font-bold text-gray-900 text-sm">Notifications</h3>
-                    <button onClick={() => setNotifOpen(false)}><X size={16} className="text-gray-400" /></button>
-                  </div>
-                  <div className="divide-y divide-gray-50 max-h-72 overflow-y-auto">
-                    {notifications.map(n => {
-                      const targetSection: AdminSection =
-                        n.type === 'order' ? 'orders' :
-                        n.type === 'partner' ? 'partners' :
-                        n.type === 'delivery' ? 'delivery' : 'notifications';
-                      return (
-                        <div
-                          key={n.id}
-                          onClick={() => {
-                            onSectionChange(targetSection);
-                            setNotifOpen(false);
-                          }}
-                          className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${!n.read ? 'bg-primary/5' : ''}`}
-                        >
-                          <div className="flex items-start gap-2">
-                            <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!n.read ? 'bg-primary' : 'bg-gray-300'}`} />
-                            <div>
-                              <p className="text-xs text-gray-800 font-medium hover:text-primary transition-colors">{n.msg}</p>
-                              <p className="text-xs text-gray-400 mt-0.5">{n.time} · Go to {targetSection} →</p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="px-4 py-3 border-t border-gray-100">
-                    <button onClick={() => { onSectionChange('notifications'); setNotifOpen(false); }} className="text-xs text-primary font-bold hover:underline">View all notifications →</button>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Live Notifications Bell with Audio */}
+            <NotificationBell
+              role="admin"
+              onNavigateSection={(s) => onSectionChange(s as AdminSection)}
+              onNavigateToOrder={() => onSectionChange('orders')}
+            />
             <Link href="/" className="text-xs font-medium text-primary hover:underline">← Customer Site</Link>
             <button
               onClick={handleLogout}

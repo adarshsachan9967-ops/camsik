@@ -5,6 +5,7 @@ import { orders as defaultOrders, getOrderStatusColor, getOrderStatusLabel, getT
 import type { Order, OrderStatus } from '@/lib/casmikData';
 import { Search, CheckCircle, XCircle, Eye, Phone, MapPin, X, Truck, Wifi, WifiOff, ChevronDown, SlidersHorizontal, ClipboardCheck, Sparkles, Lock, CreditCard, ArrowRight, ShieldAlert } from 'lucide-react';
 import LiveOrderTracker from '@/components/LiveOrderTracker';
+import { triggerNotification } from '@/lib/notifications';
 
 const PARTNER_ID = 'partner-002';
 
@@ -243,6 +244,19 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
     }
     setTimeout(() => setStatusToast(null), 4500);
 
+    // 4.1. Trigger real-time notification with sound chime across Admin, Partner, and User
+    triggerNotification({
+      type: 'status_update',
+      targetRole: 'all',
+      title: `Order #${currentOrder.orderNumber} Status Updated`,
+      shortDetails: `Status advanced to "${label}" for ${currentOrder.deviceName} (${currentOrder.customerName || 'Customer'})`,
+      orderNumber: currentOrder.orderNumber,
+      deviceName: currentOrder.deviceName,
+      customerName: currentOrder.customerName,
+      price: currentOrder.finalPrice || currentOrder.quotedPrice,
+      status: newStatus,
+    });
+
     // 5. Try remote supabase update
     try {
       await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
@@ -310,6 +324,19 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
       message: `🎉 Payout of ₹${amount.toLocaleString('en-IN')} complete! Order ${targetOrderNumber} moved to Completed and permanently locked.`,
     });
     setTimeout(() => setStatusToast(null), 5000);
+
+    // Trigger payout notification with chime sound
+    triggerNotification({
+      type: 'payout',
+      targetRole: 'all',
+      title: `💳 Payout Disbursed: ₹${amount.toLocaleString('en-IN')}`,
+      shortDetails: `Spot payout of ₹${amount.toLocaleString('en-IN')} successfully completed for #${targetOrderNumber} (${payoutOrder.deviceName}) via ${payoutMethod.toUpperCase()}. Order is now Completed & Locked.`,
+      orderNumber: targetOrderNumber,
+      deviceName: payoutOrder.deviceName,
+      customerName: payoutOrder.customerName,
+      price: amount,
+      status: 'completed',
+    });
   };
 
   const handleAccept = (id: string) => handleStatusChange(id, 'accepted');

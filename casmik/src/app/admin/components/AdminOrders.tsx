@@ -5,6 +5,7 @@ import { orders as defaultOrders, partners, getOrderStatusLabel, getOrderStatusC
 import type { Order, OrderStatus } from '@/lib/casmikData';
 import { Search, Eye, UserCheck, X, AlertCircle, Wifi, WifiOff, RefreshCw, CheckCircle2, ChevronDown, SlidersHorizontal, CheckCircle } from 'lucide-react';
 import LiveOrderTracker from '@/components/LiveOrderTracker';
+import { triggerNotification } from '@/lib/notifications';
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: 'created', label: 'Order Created' },
@@ -225,17 +226,47 @@ export default function AdminOrders({
     } catch (err: any) {
       console.log('Assign error:', err.message);
     }
+
+    // Trigger notification to partner, admin and customer
+    triggerNotification({
+      type: 'status_update',
+      targetRole: 'all',
+      title: `Order #${assignModal.orderNumber} Assigned to Partner`,
+      shortDetails: `Admin assigned Order #${assignModal.orderNumber} (${assignModal.deviceName}) to partner "${partner?.storeName || 'Camsik Partner'}" for pickup & processing.`,
+      orderNumber: assignModal.orderNumber,
+      deviceName: assignModal.deviceName,
+      customerName: assignModal.customerName,
+      price: assignModal.quotedPrice,
+      status: 'assigned',
+    });
+
     setAssignModal(null);
     setSelectedPartner('');
   };
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    const targetOrder = orderList.find(o => o.id === orderId);
     const updated = orderList.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
     setOrderList(updated);
     if (typeof window !== 'undefined') {
       localStorage.setItem('casmik_orders_v1', JSON.stringify(updated));
     }
     setSelectedOrder(prev => prev && prev.id === orderId ? { ...prev, status: newStatus } : prev);
+
+    if (targetOrder) {
+      const label = getOrderStatusLabel(newStatus);
+      triggerNotification({
+        type: 'status_update',
+        targetRole: 'all',
+        title: `Admin Updated Order #${targetOrder.orderNumber}`,
+        shortDetails: `Status of Order #${targetOrder.orderNumber} (${targetOrder.deviceName}) updated to "${label}".`,
+        orderNumber: targetOrder.orderNumber,
+        deviceName: targetOrder.deviceName,
+        customerName: targetOrder.customerName,
+        price: targetOrder.finalPrice || targetOrder.quotedPrice,
+        status: newStatus,
+      });
+    }
 
     try {
       await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);

@@ -21,18 +21,19 @@ if (!uri) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env');
 }
 
-if (process.env.NODE_ENV === 'development') {
-  // In development mode, use a global variable so that the value
-  // is preserved across module reloads caused by HMR (Hot Module Replacement).
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    global._mongoClientPromise = client.connect();
+export function getClientPromise(): Promise<MongoClient> {
+  if (process.env.NODE_ENV === 'development') {
+    if (!global._mongoClientPromise) {
+      client = new MongoClient(uri, options);
+      global._mongoClientPromise = client.connect();
+    }
+    return global._mongoClientPromise;
   }
-  clientPromise = global._mongoClientPromise;
-} else {
-  // In production mode, it's best to not use a global variable.
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+  if (!clientPromise) {
+    client = new MongoClient(uri, options);
+    clientPromise = client.connect();
+  }
+  return clientPromise;
 }
 
 /**
@@ -40,7 +41,7 @@ if (process.env.NODE_ENV === 'development') {
  * Defaults to the database name configured in MONGODB_DB_NAME ('casmik').
  */
 export async function getDatabase(customDbName?: string): Promise<Db> {
-  const connectedClient = await clientPromise;
+  const connectedClient = await getClientPromise();
   return connectedClient.db(customDbName || dbName);
 }
 
@@ -52,4 +53,11 @@ export async function getCollection<T extends Document = Document>(collectionNam
   return db.collection<T>(collectionName);
 }
 
-export default clientPromise;
+export default {
+  then(onfulfilled?: any, onrejected?: any) {
+    return getClientPromise().then(onfulfilled, onrejected);
+  },
+  catch(onrejected?: any) {
+    return getClientPromise().catch(onrejected);
+  },
+};
