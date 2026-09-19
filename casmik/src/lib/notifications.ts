@@ -2,7 +2,7 @@
 // Unified real-time notifications for Admin, Partner, and User across all tabs
 
 export type NotificationType = 'new_booking' | 'status_update' | 'inspection' | 'payout' | 'partner' | 'general';
-export type NotificationRole = 'all' | 'admin' | 'partner' | 'user';
+export type NotificationRole = 'all' | 'admin' | 'partner' | 'user' | 'delivery';
 
 export interface CasmikNotification {
   id: string;
@@ -238,6 +238,20 @@ export function markNotificationAsRead(id: string) {
     window.dispatchEvent(new CustomEvent('casmik_notification_updated'));
   } catch {}
 }
+
+export function markNotificationAsUnread(id: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const list: CasmikNotification[] = JSON.parse(raw);
+    const updated = list.map(n => n.id === id ? { ...n, read: false } : n);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('casmik_notification_updated'));
+  } catch {}
+}
+
+export const markNotificationUnread = markNotificationAsUnread;
 
 export function markAllNotificationsAsRead(role: NotificationRole = 'all') {
   if (typeof window === 'undefined') return;

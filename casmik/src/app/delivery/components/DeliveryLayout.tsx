@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { DeliverySection } from '../page';
 import { LayoutDashboard, Package, DollarSign, User, Bell, MessageSquare, LogOut } from 'lucide-react';
 import { deliveryAgents, DeliveryAgent } from '@/lib/casmikData';
+import NotificationBell from '@/components/NotificationBell';
 
 interface NavItem { id: DeliverySection; icon: React.ElementType; label: string; badge?: number; }
 const navItems: NavItem[] = [
@@ -59,10 +60,8 @@ export default function DeliveryLayout({ activeSection, onSectionChange, childre
             </button>
           </div>
 
-          <button className="relative p-2 rounded-xl hover:bg-gray-100">
-            <Bell size={18} className="text-gray-600" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-          </button>
+          {/* Live Notification Bell with Sound & Shifts between Unread/Read */}
+          <NotificationBell role="delivery" onNavigateSection={(sec) => onSectionChange(sec as any)} />
 
           <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-2.5 py-1.5 border border-gray-100">
             {agent?.avatar ? (

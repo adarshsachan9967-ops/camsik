@@ -18,12 +18,16 @@ import {
   CreditCard,
   RefreshCw,
   Clock,
+  CheckCheck,
+  RotateCcw,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   CasmikNotification,
   getStoredNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  markNotificationAsUnread,
   clearAllNotifications,
   addNotificationListener,
   playNotificationSound,
@@ -35,8 +39,7 @@ import {
 
 export default function AdminNotifications() {
   const [notifications, setNotifications] = useState<CasmikNotification[]>([]);
-  const [filter, setFilter] = useState<'all' | 'new_booking' | 'status_update' | 'payout'>('all');
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const [filter, setFilter] = useState<'unread' | 'read' | 'all' | 'new_booking' | 'status_update' | 'payout'>('unread');
   const [muted, setMuted] = useState(false);
   const [soundFeedback, setSoundFeedback] = useState(false);
 
@@ -128,13 +131,32 @@ export default function AdminNotifications() {
     loadNotifications();
   };
 
-  const filtered = notifications.filter((n) => {
-    const matchesFilter = filter === 'all' || n.type === filter;
-    const matchesUnread = !showUnreadOnly || !n.read;
-    return matchesFilter && matchesUnread;
-  });
+  const handleShiftToRead = (id: string) => {
+    markNotificationRead(id);
+    loadNotifications();
+  };
+
+  const handleShiftToUnread = (id: string) => {
+    markNotificationAsUnread(id);
+    loadNotifications();
+  };
+
+  const handleShiftAllToRead = () => {
+    markAllNotificationsRead('admin');
+    loadNotifications();
+  };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const readCount = notifications.filter((n) => n.read).length;
+
+  const filtered = notifications.filter((n) => {
+    if (filter === 'unread') return !n.read;
+    if (filter === 'read') return n.read;
+    if (filter === 'new_booking') return n.type === 'new_booking';
+    if (filter === 'status_update') return n.type === 'status_update' || n.type === 'inspection';
+    if (filter === 'payout') return n.type === 'payout';
+    return true;
+  });
 
   const getTypeStyle = (type: CasmikNotification['type']) => {
     switch (type) {
@@ -315,11 +337,13 @@ export default function AdminNotifications() {
         })}
       </div>
 
-      {/* Filter Tabs & Toggle */}
+      {/* Filter Tabs & Quick Actions */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex gap-1.5 bg-slate-100 p-1 rounded-2xl">
+        <div className="flex gap-1.5 bg-slate-100 p-1 rounded-2xl flex-wrap">
           {[
-            { id: 'all', label: 'All Alerts' },
+            { id: 'unread', label: `Unread (${unreadCount})`, highlight: unreadCount > 0 },
+            { id: 'read', label: `Read (${readCount})` },
+            { id: 'all', label: `All (${notifications.length})` },
             { id: 'new_booking', label: 'Bookings' },
             { id: 'status_update', label: 'Status' },
             { id: 'payout', label: 'Payouts' },
@@ -327,28 +351,29 @@ export default function AdminNotifications() {
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id as any)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                 filter === tab.id
-                  ? 'bg-white text-slate-900 shadow-sm'
+                  ? 'bg-white text-primary shadow-sm font-black'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {tab.label}
+              <span>{tab.label}</span>
+              {tab.highlight && filter !== tab.id && (
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              )}
             </button>
           ))}
         </div>
 
-        <button
-          onClick={() => setShowUnreadOnly((prev) => !prev)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-            showUnreadOnly
-              ? 'bg-primary text-white border-primary shadow-sm'
-              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
-          }`}
-        >
-          <Filter size={12} />
-          <span>Unread Only ({unreadCount})</span>
-        </button>
+        {unreadCount > 0 && (
+          <button
+            onClick={handleShiftAllToRead}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+          >
+            <CheckCheck size={14} />
+            <span>Shift All to Read ({unreadCount})</span>
+          </button>
+        )}
       </div>
 
       {/* Notification List */}
@@ -410,15 +435,25 @@ export default function AdminNotifications() {
                 )}
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-1.5 flex-shrink-0 self-start">
-                {!n.read && (
+              {/* Actions: Shift to Read or Shift to Unread */}
+              <div className="flex items-center gap-2 flex-shrink-0 self-start">
+                {!n.read ? (
                   <button
-                    onClick={() => handleMarkRead(n.id)}
-                    className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
-                    title="Mark read"
+                    onClick={() => handleShiftToRead(n.id)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-black transition-colors border border-emerald-200/80 shadow-xs"
+                    title="Shift this notification to Read"
                   >
-                    <CheckCircle size={16} />
+                    <CheckCheck size={13} />
+                    <span>Shift to Read</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleShiftToUnread(n.id)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition-colors"
+                    title="Move back to Unread"
+                  >
+                    <RotateCcw size={12} />
+                    <span>Move to Unread</span>
                   </button>
                 )}
               </div>
@@ -426,21 +461,55 @@ export default function AdminNotifications() {
           );
         })}
 
-        {filtered.length === 0 && (
+        {filtered.length === 0 && filter === 'unread' && (
+          <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-emerald-200 p-8">
+            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+              <CheckCheck size={28} />
+            </div>
+            <h3 className="text-base font-black text-slate-800">All Caught Up!</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
+              All notifications have been read and shifted to the <strong>Read</strong> tab.
+            </p>
+            {readCount > 0 && (
+              <button
+                onClick={() => setFilter('read')}
+                className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-colors"
+              >
+                View Read Notifications ({readCount})
+              </button>
+            )}
+          </div>
+        )}
+
+        {filtered.length === 0 && filter === 'read' && (
+          <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 p-8">
+            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
+              <Sparkles size={26} />
+            </div>
+            <h3 className="text-base font-bold text-slate-800">No Read Notifications</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
+              When you read or click unread alerts, they will automatically shift here.
+            </p>
+            {unreadCount > 0 && (
+              <button
+                onClick={() => setFilter('unread')}
+                className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-colors"
+              >
+                Go to Unread ({unreadCount})
+              </button>
+            )}
+          </div>
+        )}
+
+        {filtered.length === 0 && filter !== 'unread' && filter !== 'read' && (
           <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 p-8">
             <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
               <Bell size={26} />
             </div>
             <h3 className="text-base font-bold text-slate-800">No Notifications</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
-              When a new booking is made or an order status is updated by Partner or Admin, alerts will appear here in real-time with sound chime.
+              No notifications found in this view.
             </p>
-            <button
-              onClick={() => handleCreateSampleNotification('new_booking')}
-              className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-colors"
-            >
-              Simulate Test Notification
-            </button>
           </div>
         )}
       </div>

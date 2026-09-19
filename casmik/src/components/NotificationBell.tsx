@@ -14,13 +14,17 @@ import {
   Info, 
   Trash2,
   ExternalLink,
-  Play
+  Play,
+  CheckCircle2,
+  RotateCcw,
+  ArrowRight
 } from 'lucide-react';
 import { 
   CasmikNotification, 
   NotificationRole, 
   getStoredNotifications, 
   markNotificationAsRead, 
+  markNotificationAsUnread,
   markAllNotificationsAsRead, 
   deleteNotification, 
   playNotificationSound, 
@@ -39,14 +43,16 @@ export default function NotificationBell({ role, onNavigateToOrder, onNavigateSe
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<CasmikNotification[]>([]);
   const [muted, setMuted] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'unread' | 'orders' | 'payouts'>('all');
+  const [filter, setFilter] = useState<'unread' | 'read' | 'all' | 'orders' | 'payouts'>('unread');
   const [hasNewAlert, setHasNewAlert] = useState(false);
   const [toastAlert, setToastAlert] = useState<CasmikNotification | null>(null);
+  const [recentlyShiftedId, setRecentlyShiftedId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
   const refreshNotifications = () => {
-    setNotifications(getStoredNotifications(role));
+    const list = getStoredNotifications(role);
+    setNotifications(list);
     setMuted(isSoundMuted());
   };
 
@@ -106,6 +112,9 @@ export default function NotificationBell({ role, onNavigateToOrder, onNavigateSe
   }, [role]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const readCount = notifications.filter(n => n.read).length;
+  const ordersCount = notifications.filter(n => ['new_booking', 'status_update', 'inspection'].includes(n.type)).length;
+  const payoutsCount = notifications.filter(n => n.type === 'payout').length;
 
   const handleToggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -113,39 +122,61 @@ export default function NotificationBell({ role, onNavigateToOrder, onNavigateSe
     setMuted(next);
     setSoundMuted(next);
     if (!next) {
-      playNotificationSound();
+      playNotificationSound(true);
     }
   };
 
   const handleTestChime = (e: React.MouseEvent) => {
     e.stopPropagation();
-    playNotificationSound();
+    playNotificationSound(true);
     requestBrowserNotificationPermission();
   };
 
-  const handleMarkAllRead = (e: React.MouseEvent) => {
+  // Shift single notification to Read
+  const handleShiftToRead = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setRecentlyShiftedId(id);
+    markNotificationAsRead(id);
+    refreshNotifications();
+    setTimeout(() => setRecentlyShiftedId(null), 1000);
+  };
+
+  // Shift single notification back to Unread
+  const handleShiftToUnread = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    markNotificationAsUnread(id);
+    refreshNotifications();
+  };
+
+  // Shift all unread notifications to Read
+  const handleShiftAllToRead = (e: React.MouseEvent) => {
     e.stopPropagation();
     markAllNotificationsAsRead(role);
     refreshNotifications();
   };
 
+  // Click on notification body (marks as read and allows navigation)
   const handleItemClick = (notif: CasmikNotification) => {
-    markNotificationAsRead(notif.id);
-    refreshNotifications();
-    setIsOpen(false);
+    if (!notif.read) {
+      handleShiftToRead(notif.id);
+    }
 
     if (notif.orderNumber && onNavigateToOrder) {
       onNavigateToOrder(notif.orderNumber);
+      setIsOpen(false);
     } else if (notif.type === 'payout' && onNavigateSection) {
       onNavigateSection('payouts');
+      setIsOpen(false);
     } else if (onNavigateSection) {
       onNavigateSection('orders');
+      setIsOpen(false);
     }
   };
 
   const filtered = notifications.filter(n => {
     if (filter === 'unread') return !n.read;
-    if (filter === 'orders') return n.type === 'new_booking' || n.type === 'status_update' || n.type === 'inspection';
+    if (filter === 'read') return n.read;
+    if (filter === 'orders') return ['new_booking', 'status_update', 'inspection'].includes(n.type);
     if (filter === 'payouts') return n.type === 'payout';
     return true;
   });
@@ -214,21 +245,23 @@ export default function NotificationBell({ role, onNavigateToOrder, onNavigateSe
                 <span className="text-[10px] text-gray-400 flex-shrink-0">Just now</span>
               </div>
               <p className="text-xs text-gray-300 leading-snug line-clamp-2">{toastAlert.shortDetails}</p>
-              <div className="mt-2 flex items-center gap-2">
+              <div className="mt-2 flex items-center justify-between">
                 <span className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline">
-                  View Details <ExternalLink size={10} />
+                  View & Shift to Read <ExternalLink size={10} />
                 </span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setToastAlert(null);
-                  }}
-                  className="text-[10px] text-gray-500 hover:text-gray-300 ml-auto p-1"
-                >
-                  Dismiss
-                </button>
+                <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-gray-300">Click to read</span>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setToastAlert(null);
+              }}
+              className="text-gray-400 hover:text-white p-1"
+            >
+              <X size={14} />
+            </button>
           </div>
         </div>
       )}
@@ -240,9 +273,13 @@ export default function NotificationBell({ role, onNavigateToOrder, onNavigateSe
           <div className="p-3.5 bg-gradient-to-r from-gray-50 via-white to-gray-50 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h3 className="font-black text-gray-900 text-sm">Notifications</h3>
-              {unreadCount > 0 && (
+              {unreadCount > 0 ? (
                 <span className="px-2 py-0.5 text-[10px] font-extrabold bg-red-100 text-red-700 rounded-full">
-                  {unreadCount} new
+                  {unreadCount} unread
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 rounded-full">
+                  All Read
                 </span>
               )}
             </div>
@@ -256,7 +293,7 @@ export default function NotificationBell({ role, onNavigateToOrder, onNavigateSe
                 title="Test Sound Chime"
                 className="p-1.5 rounded-lg text-gray-500 hover:text-primary hover:bg-gray-100 transition-colors flex items-center gap-1 text-[11px] font-bold"
               >
-                <Play size={11} className="fill-current" /> Chime
+                <Play size={11} className="fill-current text-primary" /> Chime
               </button>
 
               {/* Sound Toggle (Mute/Unmute) */}
@@ -271,15 +308,16 @@ export default function NotificationBell({ role, onNavigateToOrder, onNavigateSe
                 {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
               </button>
 
-              {/* Mark All Read */}
+              {/* Shift All to Read */}
               {unreadCount > 0 && (
                 <button
                   type="button"
-                  onClick={handleMarkAllRead}
-                  title="Mark All Read"
-                  className="p-1.5 rounded-lg text-gray-500 hover:text-emerald-600 hover:bg-gray-100 transition-colors"
+                  onClick={handleShiftAllToRead}
+                  title="Shift All to Read"
+                  className="px-2 py-1 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors text-[10px] font-black flex items-center gap-1"
                 >
-                  <CheckCheck size={15} />
+                  <CheckCheck size={13} />
+                  <span>Shift All to Read</span>
                 </button>
               )}
 
@@ -294,40 +332,48 @@ export default function NotificationBell({ role, onNavigateToOrder, onNavigateSe
             </div>
           </div>
 
-          {/* Filter Tabs */}
-          <div className="flex gap-1 p-2 bg-gray-50/70 border-b border-gray-100 text-xs overflow-x-auto scrollbar-hide">
+          {/* Filter Tabs (Unread vs Read vs All) */}
+          <div className="flex gap-1 p-2 bg-gray-50/80 border-b border-gray-100 text-xs overflow-x-auto scrollbar-hide">
             {[
+              { id: 'unread', label: `Unread (${unreadCount})`, highlight: unreadCount > 0 },
+              { id: 'read', label: `Read (${readCount})` },
               { id: 'all', label: `All (${notifications.length})` },
-              { id: 'unread', label: `Unread (${unreadCount})` },
-              { id: 'orders', label: 'Orders' },
-              { id: 'payouts', label: 'Payouts' },
+              { id: 'orders', label: `Orders (${ordersCount})` },
+              { id: 'payouts', label: `Payouts (${payoutsCount})` },
             ].map(tab => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setFilter(tab.id as any)}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all whitespace-nowrap cursor-pointer ${
+                className={`px-2.5 py-1.5 rounded-lg font-bold text-[11px] transition-all whitespace-nowrap cursor-pointer flex items-center gap-1 ${
                   filter === tab.id
-                    ? 'bg-white text-primary shadow-sm border border-gray-200/80'
-                    : 'text-gray-500 hover:text-gray-900'
+                    ? 'bg-white text-primary shadow-sm border border-gray-200 font-extrabold'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
                 }`}
               >
-                {tab.label}
+                <span>{tab.label}</span>
+                {tab.highlight && filter !== tab.id && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                )}
               </button>
             ))}
           </div>
 
           {/* Notification List */}
-          <div className="divide-y divide-gray-50 max-h-80 overflow-y-auto">
+          <div className="divide-y divide-gray-100 max-h-84 overflow-y-auto">
             {filtered.map(notif => {
               const { icon, bg } = getNotifIcon(notif.type);
+              const isRecentlyShifted = recentlyShiftedId === notif.id;
+
               return (
                 <div
                   key={notif.id}
                   onClick={() => handleItemClick(notif)}
-                  className={`p-3.5 hover:bg-gray-50/90 transition-colors cursor-pointer group flex items-start gap-3 relative ${
-                    !notif.read ? 'bg-primary/5' : ''
-                  }`}
+                  className={`p-3.5 hover:bg-gray-50 transition-all cursor-pointer group flex items-start gap-3 relative ${
+                    !notif.read 
+                      ? 'bg-emerald-50/30 hover:bg-emerald-50/50 border-l-3 border-primary' 
+                      : 'bg-white opacity-85 hover:opacity-100'
+                  } ${isRecentlyShifted ? 'scale-[0.98] transition-transform bg-emerald-100/50' : ''}`}
                 >
                   {/* Icon Avatar */}
                   <div className={`w-8 h-8 rounded-xl ${bg} flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm`}>
@@ -336,9 +382,25 @@ export default function NotificationBell({ role, onNavigateToOrder, onNavigateSe
 
                   {/* Body */}
                   <div className="flex-1 min-w-0 pr-6">
-                    <div className="flex items-center justify-between gap-1 mb-0.5">
-                      <p className="text-xs font-black text-gray-900 truncate">{notif.title}</p>
-                      <span className="text-[10px] text-gray-400 font-medium flex-shrink-0">
+                    <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                      <p className={`text-xs truncate ${!notif.read ? 'font-black text-gray-900' : 'font-semibold text-gray-700'}`}>
+                        {notif.title}
+                      </p>
+
+                      {/* Status Tag */}
+                      {!notif.read ? (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                          Unread
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.2 rounded">
+                          <CheckCircle2 size={10} className="text-gray-400" />
+                          Read
+                        </span>
+                      )}
+
+                      <span className="text-[10px] text-gray-400 font-medium ml-auto flex-shrink-0">
                         {formatTimeAgo(notif.timestamp)}
                       </span>
                     </div>
@@ -348,13 +410,44 @@ export default function NotificationBell({ role, onNavigateToOrder, onNavigateSe
                     </p>
 
                     {notif.price && (
-                      <p className="text-[11px] font-extrabold text-emerald-700 mt-1">
-                        Amount: ₹{notif.price.toLocaleString('en-IN')}
-                      </p>
+                      <div className="mt-1 flex items-center justify-between">
+                        <span className="text-[11px] font-extrabold text-emerald-700">
+                          ₹{notif.price.toLocaleString('en-IN')}
+                        </span>
+                      </div>
                     )}
+
+                    {/* Action Bar (Shift to Read / Shift to Unread) */}
+                    <div className="mt-2 flex items-center gap-2 pt-1 border-t border-gray-100/70">
+                      {!notif.read ? (
+                        <button
+                          type="button"
+                          onClick={(e) => handleShiftToRead(notif.id, e)}
+                          className="text-[10px] font-bold text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors"
+                          title="Click to shift to Read"
+                        >
+                          <CheckCheck size={11} /> Shift to Read
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => handleShiftToUnread(notif.id, e)}
+                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors"
+                          title="Move back to Unread"
+                        >
+                          <RotateCcw size={10} /> Shift back to Unread
+                        </button>
+                      )}
+
+                      {notif.orderNumber && (
+                        <span className="text-[10px] text-gray-400 font-mono">
+                          #{notif.orderNumber}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Delete / Dismiss Icon */}
+                  {/* Delete Icon */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -367,37 +460,85 @@ export default function NotificationBell({ role, onNavigateToOrder, onNavigateSe
                   >
                     <Trash2 size={13} />
                   </button>
-
-                  {/* Unread indicator pip */}
-                  {!notif.read && (
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary" />
-                  )}
                 </div>
               );
             })}
 
-            {filtered.length === 0 && (
+            {/* Empty State for Unread Tab */}
+            {filtered.length === 0 && filter === 'unread' && (
+              <div className="py-10 px-4 text-center">
+                <div className="w-10 h-10 mx-auto mb-2 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                  <CheckCheck size={20} />
+                </div>
+                <p className="text-xs font-black text-gray-800">All caught up!</p>
+                <p className="text-[11px] text-gray-500 mt-1 max-w-xs mx-auto">
+                  All notifications have been read and shifted to the <strong>Read</strong> tab.
+                </p>
+                {readCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setFilter('read')}
+                    className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-xl transition-colors"
+                  >
+                    <span>View Read Notifications ({readCount})</span>
+                    <ArrowRight size={12} />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Empty State for Read Tab */}
+            {filtered.length === 0 && filter === 'read' && (
+              <div className="py-10 px-4 text-center">
+                <div className="w-10 h-10 mx-auto mb-2 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center">
+                  <Sparkles size={20} />
+                </div>
+                <p className="text-xs font-bold text-gray-700">No Read Notifications</p>
+                <p className="text-[11px] text-gray-500 mt-1 max-w-xs mx-auto">
+                  When you read or click unread notifications, they will automatically shift here.
+                </p>
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setFilter('unread')}
+                    className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-xl transition-colors"
+                  >
+                    <span>Go to Unread ({unreadCount})</span>
+                    <ArrowRight size={12} />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Generic Empty State for Other Tabs */}
+            {filtered.length === 0 && filter !== 'unread' && filter !== 'read' && (
               <div className="py-10 text-center text-gray-400">
-                <Sparkles size={28} className="mx-auto mb-2 text-gray-300" />
-                <p className="text-xs font-bold text-gray-600">All caught up!</p>
+                <Sparkles size={26} className="mx-auto mb-2 text-gray-300" />
+                <p className="text-xs font-bold text-gray-600">No Notifications</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">No notifications in this filter view</p>
               </div>
             )}
           </div>
 
           {/* Footer */}
-          <div className="p-2.5 bg-gray-50 border-t border-gray-100 text-center flex items-center justify-between text-[11px] text-gray-500 px-4">
-            <span className="flex items-center gap-1">
-              <Volume2 size={12} className={muted ? 'text-gray-400' : 'text-emerald-600'} />
-              Audio Chime: <strong>{muted ? 'Muted' : 'Active'}</strong>
+          <div className="p-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500 px-4">
+            <span className="flex items-center gap-1.5">
+              <Volume2 size={13} className={muted ? 'text-gray-400' : 'text-emerald-600'} />
+              <span>Chime: <strong className={muted ? 'text-gray-500' : 'text-emerald-700'}>{muted ? 'Muted' : 'Active'}</strong></span>
             </span>
-            <button
-              type="button"
-              onClick={handleMarkAllRead}
-              className="font-bold text-primary hover:underline cursor-pointer"
-            >
-              Clear Unread
-            </button>
+
+            {unreadCount > 0 ? (
+              <button
+                type="button"
+                onClick={handleShiftAllToRead}
+                className="font-black text-primary hover:underline cursor-pointer flex items-center gap-1"
+              >
+                <span>Shift All to Read</span>
+                <CheckCheck size={12} />
+              </button>
+            ) : (
+              <span className="text-gray-400">All caught up</span>
+            )}
           </div>
         </div>
       )}
