@@ -90,9 +90,9 @@ export default function SellDeviceWorkflow() {
 
         setSellState({
           category: matchedModel.categoryId,
-          categoryName: matchedCategory?.name || 'Camera Equipment',
+          categoryName: matchedCategory?.name || 'Device',
           brand: matchedModel.brandId,
-          brandName: matchedBrand?.name || 'Camera Brand',
+          brandName: matchedBrand?.name || 'Brand',
           model: matchedModel.id,
           modelName: matchedModel.name,
           storage: chosenStorage,
@@ -129,7 +129,7 @@ export default function SellDeviceWorkflow() {
         }
 
         const resolvedCatId = matchedCategory ? matchedCategory.id : matchedBrand.categoryId;
-        const resolvedCatName = matchedCategory ? matchedCategory.name : 'Camera Equipment';
+        const resolvedCatName = matchedCategory ? matchedCategory.name : 'Device';
 
         setSellState(prev => ({
           ...prev,

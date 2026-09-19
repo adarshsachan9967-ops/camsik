@@ -9,8 +9,8 @@ import CompetitiveComparisonTable from '@/app/components/CompetitiveComparisonTa
 import CamsikTrustScore from '@/app/components/CamsikTrustScore';
 
 export const metadata = {
-  title: 'Why Camsik — Highest Resale Valuation, Digital Sensor Inspection & Instant Payment',
-  description: 'Discover why photographers, cinematographers, and creators across India choose Camsik for camera buyback, exchange, and certified pre-owned gear.',
+  title: 'Why Camsik — Highest Resale Valuation, 45-Point Diagnostics & Instant Payment',
+  description: 'Discover why over 2,50,000 customers and creators across India choose Camsik for smartphone, laptop, tablet, and camera buyback, exchange, and certified refurbished gear.',
 };
 
 export default function WhyCamsikPage() {
@@ -39,7 +39,7 @@ export default function WhyCamsikPage() {
               Why Choose Camsik
             </h1>
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              We engineered India&apos;s first camera-exclusive trade-in ecosystem. No lowball offers from pawn shops, no risky meetings with online strangers. Just algorithmic valuations, professional shutter diagnostics, and instant doorstep payouts.
+              We engineered India&apos;s leading tech ReCommerce ecosystem. No lowball offers from offline shops, no risky meetings with online strangers. Just algorithmic valuations, 45-point hardware diagnostics, certified DoD data wipes, and instant doorstep payouts.
             </p>
           </div>
         </div>
@@ -61,17 +61,24 @@ export default function WhyCamsikPage() {
       <section className="py-8 sm:py-10 bg-purple-50/60 border-t border-purple-100">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 text-center">
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3">
-            Experience India&apos;s Highest Camera Payouts
+            Experience India&apos;s Highest Device Payouts
           </h2>
           <p className="text-sm text-slate-600 max-w-xl mx-auto mb-6">
-            Join over 1,85,000 photographers and content creators who turned their old DSLR and mirrorless bodies into instant cash.
+            Join over 2,50,000 customers, professionals, and creators who turned their old phones, laptops, and cameras into instant cash.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/sell-device-get-quote"
               className="px-6 py-3.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-600/25 flex items-center gap-2 transition-all btn-press"
             >
-              <span>Sell Your Camera Now</span>
+              <span>Sell Your Device Now</span>
+              <ArrowRight size={16} />
+            </Link>
+            <Link
+              href="/exchange-device"
+              className="px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-600/25 flex items-center gap-2 transition-all btn-press"
+            >
+              <span>1-Step Exchange</span>
               <ArrowRight size={16} />
             </Link>
             <Link

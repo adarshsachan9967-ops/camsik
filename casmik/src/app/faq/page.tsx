@@ -6,8 +6,8 @@ import CustomerFooter from '@/components/CustomerFooter';
 import CamsikFaqSection from '@/app/components/CamsikFaqSection';
 
 export const metadata = {
-  title: 'Frequently Asked Questions (FAQ) — Camsik Camera Resale & Inspection',
-  description: 'Find answers to common questions about selling your DSLR camera, mirrorless bodies, lenses, shutter count calculations, sensor inspection, and doorstep payouts on Camsik.',
+  title: 'Frequently Asked Questions (FAQ) — Camsik Device ReCommerce & Warranty',
+  description: 'Find answers to common questions about selling your smartphone, MacBook, laptop, tablet, or DSLR camera, 45-point inspection, refurbished warranty, and doorstep payouts on Camsik.',
 };
 
 export default function FaqPage() {
@@ -36,7 +36,7 @@ export default function FaqPage() {
               Frequently Asked Questions
             </h1>
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              Have questions about how we value your shutter count, check sensor glass, or conduct doorstep verification? Explore our comprehensive FAQ or connect with our camera technicians directly.
+              Have questions about how we value your phone, inspect laptops and MacBooks, perform certified data wipe, or conduct doorstep exchange? Explore our comprehensive FAQ or connect with our specialists directly.
             </p>
           </div>
         </div>
@@ -52,10 +52,10 @@ export default function FaqPage() {
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
           <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center max-w-2xl mx-auto shadow-sm">
             <h3 className="text-xl sm:text-2xl font-black text-slate-900 mb-2">
-              Still have questions about your camera?
+              Still have questions about your device or order?
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 mb-8">
-              Our camera specialists are available 7 days a week (9:00 AM – 9:00 PM IST) to guide you through quotes and studio liquidations.
+              Our gadget specialists are available 7 days a week (9:00 AM – 9:00 PM IST) to guide you through valuations, refurbished warranties, and trade-in orders.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -68,7 +68,7 @@ export default function FaqPage() {
               </a>
 
               <a
-                href="https://wa.me/918976000010?text=Hi%20Camsik%20team,%20I%20have%20a%20question%20about%20my%20camera"
+                href="https://wa.me/918976000010?text=Hi%20Camsik%20team,%20I%20have%20a%20question%20about%20my%20device"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/25 transition-all btn-press"

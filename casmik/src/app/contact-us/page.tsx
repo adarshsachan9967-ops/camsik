@@ -30,29 +30,29 @@ import CustomerHeader from '@/components/CustomerHeader';
 import CustomerFooter from '@/components/CustomerFooter';
 
 const INQUIRY_TYPES = [
-  { id: 'sell', label: '📷 Sell Camera / Lens', desc: 'Instant valuation & doorstep pickup' },
-  { id: 'exchange', label: '🔄 Exchange / Upgrade', desc: 'Trade-in old gear for refurbished' },
-  { id: 'buy', label: '🛒 Buy Refurbished Unit', desc: 'Warranty & condition inquiries' },
-  { id: 'studio', label: '🏢 Studio / Bulk Liquidation', desc: 'Multi-device production kit sale' },
-  { id: 'support', label: '💬 General Support', desc: 'Order tracking & payout questions' },
+  { id: 'sell', label: '📱 Sell Phone / Laptop / Camera', desc: 'Instant valuation & free doorstep pickup' },
+  { id: 'exchange', label: '🔄 1-Step Device Exchange', desc: 'Trade-in old gadget with extra bonus' },
+  { id: 'buy', label: '🛒 Buy Refurbished Tech', desc: 'Warranty & 45-point certification queries' },
+  { id: 'studio', label: '🏢 Corporate & Bulk Liquidation', desc: 'Multi-device office / studio sale' },
+  { id: 'support', label: '💬 General Customer Support', desc: 'Order tracking & payout questions' },
 ];
 
 const FAQS = [
   {
     q: 'Do I need an appointment before visiting the Mumbai hub?',
-    a: 'Walk-ins are always welcome during our working hours (9:00 AM – 9:00 PM IST, Monday to Sunday). However, booking in advance via WhatsApp or phone guarantees zero waiting time with our optical technician.'
+    a: 'Walk-ins are always welcome during our working hours (9:00 AM – 9:00 PM IST, Monday to Sunday). However, booking in advance via WhatsApp or phone guarantees zero waiting time with our certified diagnostic technician.'
   },
   {
     q: 'Can I choose free doorstep pickup instead of visiting in person?',
-    a: 'Absolutely! If you are located in Mumbai, Thane, Navi Mumbai, Pune, Delhi NCR, Bangalore, or any of our 12+ covered cities, a certified Camsik executive will visit your home or studio, inspect the gear, and transfer your payout instantly on the spot.'
+    a: 'Absolutely! If you are located in Mumbai, Thane, Navi Mumbai, Pune, Delhi NCR, Bangalore, or any of our 200+ covered cities, a certified Camsik executive will visit your home or office, inspect the device, and transfer your payout instantly on the spot.'
   },
   {
     q: 'What accessories should I bring to get the maximum valuation?',
-    a: 'To receive the top estimated price, bring original batteries, original charger, lens caps, body caps, neck straps, original box, and invoice/bill if available. Missing items slightly adjust the final offer.'
+    a: 'To receive the top estimated price, bring original charger, power adapters, original box, and invoice/bill if available. Missing accessories slightly adjust the final offer.'
   },
   {
     q: 'How is the payout transferred when selling at the office?',
-    a: 'Payouts are made instantly via IMPS Bank Transfer, NEFT, or UPI (Google Pay, PhonePe, Paytm). The funds reflect in your bank account before you hand over the equipment.'
+    a: 'Payouts are made instantly via IMPS Bank Transfer, NEFT, or UPI (Google Pay, PhonePe, Paytm). The funds reflect in your bank account before you hand over the device.'
   }
 ];
 
@@ -118,13 +118,13 @@ export default function ContactUsPage() {
             <div className="relative z-10 max-w-3xl">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-4 backdrop-blur-md">
                 <Sparkles size={14} className="text-emerald-400" />
-                Direct Camera Valuation &amp; Experience Desk
+                Direct Tech Valuation &amp; ReCommerce Experience Desk
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight sm:leading-tight">
-                Let&apos;s Connect with Our <span className="text-emerald-400">Camera Specialists</span>
+                Let&apos;s Connect with Our <span className="text-emerald-400">Tech Specialists</span>
               </h1>
               <p className="mt-3 sm:mt-4 text-slate-300 text-sm sm:text-base lg:text-lg leading-relaxed max-w-2xl">
-                Looking to sell used DSLR bodies, trade-in prime lenses, upgrade your studio rig, or visit our registered Mumbai inspection hub? We&apos;re here 7 days a week.
+                Looking to sell used smartphones, MacBooks, tablets, DSLR bodies, trade-in lenses, or visit our registered Mumbai inspection hub? We&apos;re here 7 days a week.
               </p>
             </div>
 
@@ -193,7 +193,7 @@ export default function ContactUsPage() {
                   Contact Details
                 </h2>
                 <p className="text-slate-500 text-xs sm:text-sm mb-6">
-                  Direct channels for instant camera valuations, trade-in approvals, and verification inquiries.
+                  Direct channels for instant tech valuations, trade-in approvals, and order verification inquiries.
                 </p>
 
                 <div className="space-y-4">
@@ -307,7 +307,7 @@ export default function ContactUsPage() {
               {/* Action Buttons: WhatsApp & Call */}
               <div className="pt-4 border-t border-slate-200/80 space-y-3">
                 <a
-                  href="https://wa.me/918976000010?text=Hi%20Camsik%20team,%20I%20want%20to%20sell/trade-in%20my%20camera%20gear"
+                  href="https://wa.me/918976000010?text=Hi%20Camsik%20team,%20I%20want%20to%20sell/trade-in%20my%20device"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 btn-press"
@@ -346,7 +346,7 @@ export default function ContactUsPage() {
                   Submit Your Inquiry
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  Tell us what camera body, lens, or setup you are dealing with and our valuation team will connect promptly.
+                  Tell us what smartphone, laptop, tablet, camera, or gear you are dealing with and our valuation team will connect promptly.
                 </p>
               </div>
 
@@ -382,7 +382,7 @@ export default function ContactUsPage() {
                     Inquiry Submitted Successfully!
                   </h3>
                   <p className="text-sm text-emerald-800 max-w-md mx-auto mb-6 leading-relaxed">
-                    Thank you, <strong>{formData.name}</strong>. Your inquiry regarding <strong>{INQUIRY_TYPES.find(t => t.id === selectedInquiry)?.label}</strong> has been routed to our Mumbai desk. A camera advisor will reach out to you via <strong>{formData.phone}</strong> shortly.
+                    Thank you, <strong>{formData.name}</strong>. Your inquiry regarding <strong>{INQUIRY_TYPES.find(t => t.id === selectedInquiry)?.label}</strong> has been routed to our Mumbai desk. A Camsik advisor will reach out to you via <strong>{formData.phone}</strong> shortly.
                   </p>
                   <div className="flex flex-wrap justify-center gap-3">
                     <button
@@ -509,12 +509,12 @@ export default function ContactUsPage() {
                   {/* Message */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                      Message &amp; Camera Details <span className="text-rose-500">*</span>
+                      Message &amp; Device Details <span className="text-rose-500">*</span>
                     </label>
                     <textarea
                       required
                       rows={4}
-                      placeholder="Mention camera body (e.g. Sony A7 IV, Canon EOS R6), lenses, accessories, shutter count, or questions..."
+                      placeholder="Mention device (e.g. iPhone 15 Pro, MacBook M3, Sony A7 IV), storage, condition, accessories, or questions..."
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all resize-none"
@@ -554,7 +554,7 @@ export default function ContactUsPage() {
                   Visit Our Mumbai Inspection Center
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
-                  Drop by our registered facility for on-the-spot physical inspection, optical condition audit, and instant bank payout.
+                  Drop by our registered facility for on-the-spot physical inspection, hardware diagnostics, and instant bank payout.
                 </p>
               </div>
 
@@ -685,10 +685,10 @@ export default function ContactUsPage() {
                   1
                 </div>
                 <h3 className="text-base font-black text-white mb-2">
-                  Bring Your Camera &amp; ID Proof
+                  Bring Your Device &amp; ID Proof
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Bring your camera body, lenses, accessories, charger, and any Govt ID (Aadhaar / PAN / Driving License).
+                  Bring your phone, laptop, tablet, or camera body, accessories, charger, and any Govt ID (Aadhaar / PAN / Driving License).
                 </p>
               </div>
 
@@ -700,7 +700,7 @@ export default function ContactUsPage() {
                   10-Min Live Technical Check
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Our certified optical technician inspects optical glass, tests sensor cleanliness, and audits shutter count in front of you.
+                  Our certified technician conducts 45-point hardware diagnostics, tests battery &amp; display health, and verifies certified data wipe in front of you.
                 </p>
               </div>
 

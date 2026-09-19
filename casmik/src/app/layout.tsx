@@ -18,9 +18,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Camsik — Sell Used DSLR, Lenses, Video & Action Cameras | Instant Cash & Free Doorstep Pickup',
-  description: 'Sell your old or used DSLR camera, mirrorless lenses, 4K video camcorders, action cameras & gimbals at the best market price. Instant AI valuation, free doorstep pickup, and instant cash transfer across India.',
-  keywords: 'sell old camera, sell dslr camera, sell camera lens, sell used mirrorless, camsik electronics, camera buyback, canon, nikon, sony alpha, lumix, gopro, dji osmo',
+  title: 'Camsik — Buy, Sell & Exchange Used Smartphones, Laptops, MacBooks, Tablets & Cameras | Instant Cash & Free Doorstep Pickup',
+  description: "India's leading ReCommerce platform. Sell, buy certified refurbished, or exchange old smartphones, iPhones, MacBooks, laptops, iPads, tablets, DSLRs, mirrorless cameras & lenses with instant AI valuation, free doorstep pickup, 45-point testing & certified warranty.",
+  keywords: 'sell old phone, sell used iphone, sell laptop, sell macbook, sell used tablet, sell dslr camera, buy refurbished iphone, buy refurbished macbook, 1-step device exchange, camsik recommerce, apple, samsung, sony, canon, dell',
   icons: {
     icon: [{ url: '/favicon.ico', type: 'image/x-icon' }],
   },

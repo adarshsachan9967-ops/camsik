@@ -27,10 +27,10 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
         {!hasDevice ? (
           <div className="text-center py-8">
             <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
-              <span className="text-2xl">📷</span>
+              <span className="text-2xl">📱</span>
             </div>
-            <p className="text-sm font-semibold text-foreground mb-1">No camera selected yet</p>
-            <p className="text-xs text-muted-foreground">Select your camera brand and model to see the quote summary here.</p>
+            <p className="text-sm font-semibold text-foreground mb-1">No device selected yet</p>
+            <p className="text-xs text-muted-foreground">Select your device brand and model to see the quote summary here.</p>
           </div>
         ) : (
           <>
@@ -38,8 +38,8 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
             <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border">
               <div className="w-14 h-14 rounded-xl overflow-hidden bg-muted flex-shrink-0 p-1 flex items-center justify-center border border-border/80">
                 <img
-                  src={matchedModel?.image || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=80&h=80&fit=crop"}
-                  alt={`${sellState.brandName} ${sellState.modelName} camera`}
+                  src={matchedModel?.image || "/assets/images/categories/smartphone.png"}
+                  alt={`${sellState.brandName} ${sellState.modelName}`}
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -165,7 +165,7 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
             <span className="text-sm font-semibold text-foreground">+91 8976000010</span>
           </a>
           <a
-            href="https://wa.me/918976000010?text=Hi%20Camsik%20team,%20I%20need%20help%20with%20my%20camera%20valuation"
+            href="https://wa.me/918976000010?text=Hi%20Camsik%20team,%20I%20need%20help%20with%20my%20device%20valuation"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted hover:border-emerald-500/30 transition-all duration-150"

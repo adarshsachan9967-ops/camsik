@@ -8,8 +8,8 @@ import SafeAndReliableSection from '@/app/components/SafeAndReliableSection';
 import CamsikTrustScore from '@/app/components/CamsikTrustScore';
 
 export const metadata = {
-  title: 'How It Works — Camsik Camera Buyback & Trade-In Process',
-  description: 'Learn how to sell, trade-in, or buy certified cameras, lenses, and cine gear on Camsik with instant online quote, free doorstep pickup, and instant bank transfer.',
+  title: 'How It Works — Camsik Device Buyback, Refurbished Sales & Exchange Process',
+  description: 'Learn how to sell, trade-in, or buy certified smartphones, laptops, MacBooks, tablets, and DSLR cameras on Camsik with instant online quote, free doorstep pickup, and instant bank transfer.',
 };
 
 export default function HowItWorksPage() {
@@ -38,7 +38,7 @@ export default function HowItWorksPage() {
               How Camsik Works
             </h1>
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              Selling, exchanging, or upgrading camera equipment in India used to mean haggling with offline dealers or dealing with unverified online buyers. Camsik makes it effortless, transparent, and completely risk-free.
+              Selling, exchanging, or buying pre-owned gadgets in India used to mean haggling with local shops or dealing with unverified online buyers. Camsik makes it effortless, transparent, and completely risk-free across smartphones, laptops, tablets, and cameras.
             </p>
           </div>
         </div>
@@ -57,10 +57,10 @@ export default function HowItWorksPage() {
       <section className="py-8 sm:py-10 bg-purple-50/60 border-t border-purple-100">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 text-center">
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3">
-            Ready to Check Your Camera&apos;s Resale Value?
+            Ready to Check Your Device&apos;s Resale Value?
           </h2>
           <p className="text-sm text-slate-600 max-w-xl mx-auto mb-6">
-            Get an instant AI valuation based on real shutter actuations, optics condition, and sensor health in under 60 seconds.
+            Get an instant AI valuation based on real hardware diagnostics, battery health, and market liquidity in under 60 seconds.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -74,7 +74,14 @@ export default function HowItWorksPage() {
               href="/buy-refurbished"
               className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm transition-all"
             >
-              <span>Explore Pre-Owned Gear</span>
+              <span>Explore Refurbished Store</span>
+            </Link>
+            <Link
+              href="/exchange-device"
+              className="px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-600/25 flex items-center gap-2 transition-all btn-press"
+            >
+              <span>1-Step Device Exchange</span>
+              <ArrowRight size={16} />
             </Link>
           </div>
         </div>

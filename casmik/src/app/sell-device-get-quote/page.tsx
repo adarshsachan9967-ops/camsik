@@ -10,7 +10,7 @@ export default function SellDevicePage() {
       <Suspense fallback={
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
           <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-xs font-semibold text-muted-foreground">Loading camera valuation workflow...</p>
+          <p className="text-xs font-semibold text-muted-foreground">Loading device valuation workflow...</p>
         </div>
       }>
         <SellDeviceWorkflow />
