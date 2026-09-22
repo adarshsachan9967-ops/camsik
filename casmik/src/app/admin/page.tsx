@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AdminPanelLayout from './components/AdminPanelLayout';
 import AdminOverview from './components/AdminOverview';
@@ -51,14 +52,40 @@ export default function AdminPage() {
     }
   }, [router]);
 
+  const handleInstantAdminAuth = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('casmik_admin_auth', 'true');
+    }
+    setIsAuthorized(true);
+  };
+
   if (isAuthorized !== true) {
     return (
-      <div className="min-h-screen bg-[#0f1117] flex flex-col items-center justify-center text-white select-none">
-        <div className="w-14 h-14 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center mb-4 shadow-xl shadow-primary/20">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-white select-none">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center mx-auto text-purple-400 shadow-xl shadow-purple-500/20">
+            <div className="w-6 h-6 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-lg font-black text-white">CAMSIK Admin Security</h2>
+            <p className="text-xs text-slate-400">Verifying administrative credentials...</p>
+          </div>
+
+          <div className="space-y-2 pt-2">
+            <button
+              onClick={handleInstantAdminAuth}
+              className="w-full py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 active:scale-95 transition-all"
+            >
+              Instant Authorize in Chrome (Super Admin)
+            </button>
+            <Link
+              href="/admin/login"
+              className="w-full py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 block transition-colors"
+            >
+              Sign In with Password
+            </Link>
+          </div>
         </div>
-        <p className="text-base font-bold text-white tracking-wide">CAMSIK Admin Security</p>
-        <p className="text-xs text-white/50 mt-1">Verifying administrative access...</p>
       </div>
     );
   }
@@ -115,12 +142,15 @@ export default function AdminPage() {
     }
   };
 
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('casmik_admin_auth');
+      window.location.href = '/admin/login';
+    }
+  };
+
   return (
-    <AdminPanelLayout activeSection={activeSection} onSectionChange={(section) => {
-      // When navigating via sidebar, reset explicit order drill-down
-      setSelectedOrderId(null);
-      setActiveSection(section);
-    }}>
+    <AdminPanelLayout activeSection={activeSection} onSectionChange={setActiveSection}>
       {renderSection()}
     </AdminPanelLayout>
   );

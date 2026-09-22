@@ -139,7 +139,7 @@ export default function AdminDelivery() {
               <div className="flex items-start gap-3 mb-3">
                 <div className="relative">
                   <img src={agent?.avatar} alt={agent?.name} className="w-12 h-12 rounded-xl object-cover" />
-                  <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${statusDots?.[agent?.status]}`} />
+                  <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${statusDots?.[agent?.status as keyof typeof statusDots] || 'bg-gray-400'}`} />
                 </div>
                 <div className="flex-1">
                   <p className="font-bold text-gray-900 text-sm">{agent?.name}</p>
@@ -147,7 +147,7 @@ export default function AdminDelivery() {
                   <p className="text-xs text-gray-400">{agent?.vehicle} · {agent?.vehicleNumber}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColors?.[agent?.status]}`}>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColors?.[agent?.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-700'}`}>
                     {agent?.status?.replace('_', ' ')}
                   </span>
                   {agent.approvalStatus === 'pending' && (
@@ -256,7 +256,7 @@ export default function AdminDelivery() {
                 <p className="font-bold text-gray-900 text-sm">{assignModal.name}</p>
                 <p className="text-xs text-gray-500">{assignModal.city} · {assignModal.vehicle}</p>
               </div>
-              <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${statusColors[assignModal.status]}`}>{assignModal.status.replace('_', ' ')}</span>
+              <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${statusColors[assignModal.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-700'}`}>{assignModal.status.replace('_', ' ')}</span>
             </div>
             <div className="space-y-3">
               <div>

@@ -90,6 +90,7 @@ export default function AdminModels() {
         colors: ['Default'],
         active: true,
         popular: false,
+        specs: {},
       };
       updated = [newModel, ...modelsList];
     }

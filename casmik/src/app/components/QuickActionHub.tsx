@@ -36,10 +36,10 @@ export default function QuickActionHub() {
                 Instant Cash Payout
               </span>
               <div className="flex items-center gap-1.5 text-slate-400">
-                <Smartphone size={15} title="Smartphones" />
-                <Laptop size={15} title="Laptops" />
-                <Camera size={15} title="Cameras" />
-                <Tablet size={15} title="Tablets" />
+                <Smartphone size={15} />
+                <Laptop size={15} />
+                <Camera size={15} />
+                <Tablet size={15} />
               </div>
             </div>
 
@@ -103,9 +103,9 @@ export default function QuickActionHub() {
                 Up to 70% Off Retail
               </span>
               <div className="flex items-center gap-1.5 text-slate-400">
-                <Percent size={15} title="Discounts" />
-                <ShieldCheck size={15} title="Warranty" />
-                <Truck size={15} title="Free Shipping" />
+                <Percent size={15} />
+                <ShieldCheck size={15} />
+                <Truck size={15} />
               </div>
             </div>
 
@@ -169,9 +169,9 @@ export default function QuickActionHub() {
                 Extra ₹5,000 Trade Bonus
               </span>
               <div className="flex items-center gap-1.5 text-slate-400">
-                <Coins size={15} title="Cash Back" />
-                <TrendingUp size={15} title="Upgrade" />
-                <Sparkles size={15} title="Best Deals" />
+                <Coins size={15} />
+                <TrendingUp size={15} />
+                <Sparkles size={15} />
               </div>
             </div>
 

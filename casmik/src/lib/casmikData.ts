@@ -102,6 +102,7 @@ export type OrderStatus =
   | 'accepted'
   | 'pickup_scheduled'
   | 'picked_up'
+  | 'in_transit'
   | 'inspection'
   | 'inspection_completed'
   | 'final_price'
@@ -121,6 +122,7 @@ export interface Partner {
   email: string;
   city: string;
   state: string;
+  address?: string;
   pinCodes: string[];
   categories: string[];
   status: 'active' | 'inactive' | 'pending' | 'suspended';
@@ -3164,6 +3166,7 @@ export function getOrderStatusLabel(status: OrderStatus): string {
     accepted: 'Pickup Confirmed',
     pickup_scheduled: 'Pickup Scheduled',
     picked_up: 'Camera Picked Up',
+    in_transit: 'In Transit',
     inspection: 'Under Inspection',
     inspection_completed: 'Inspection Completed',
     final_price: 'Price Offered',

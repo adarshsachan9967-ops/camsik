@@ -54,9 +54,31 @@ export default function AdminCoupons() {
 
   const handleSave = () => {
     if (editCoupon) {
-      setCoupons(prev => prev.map(c => c.id === editCoupon.id ? { ...c, ...form, discountValue: Number(form.discountValue), minOrderValue: Number(form.minOrderValue), maxDiscount: Number(form.maxDiscount), usageLimit: Number(form.usageLimit) } : c));
+      setCoupons(prev => prev.map(c => c.id === editCoupon.id ? { 
+        ...c, 
+        ...form, 
+        discountType: form.discountType as any,
+        applicableTo: form.applicableTo as any,
+        userType: form.userType as 'all' | 'new' | 'existing',
+        discountValue: Number(form.discountValue), 
+        minOrderValue: Number(form.minOrderValue), 
+        maxDiscount: Number(form.maxDiscount), 
+        usageLimit: Number(form.usageLimit) 
+      } : c));
     } else {
-      const newCoupon: Coupon = { id: `cpn-${Date.now()}`, ...form, discountValue: Number(form.discountValue), minOrderValue: Number(form.minOrderValue), maxDiscount: Number(form.maxDiscount), usageLimit: Number(form.usageLimit), usedCount: 0, status: 'active' };
+      const newCoupon: Coupon = { 
+        id: `cpn-${Date.now()}`, 
+        ...form, 
+        discountType: form.discountType as any,
+        applicableTo: form.applicableTo as any,
+        userType: form.userType as 'all' | 'new' | 'existing',
+        discountValue: Number(form.discountValue), 
+        minOrderValue: Number(form.minOrderValue), 
+        maxDiscount: Number(form.maxDiscount), 
+        usageLimit: Number(form.usageLimit), 
+        usedCount: 0, 
+        status: 'active' 
+      };
       setCoupons(prev => [...prev, newCoupon]);
     }
     setShowModal(false);

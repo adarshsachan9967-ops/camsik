@@ -10,7 +10,8 @@ import {
   ShoppingBag, 
   CheckCircle2, 
   ArrowUpRight,
-  Filter
+  Filter,
+  Clock
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 

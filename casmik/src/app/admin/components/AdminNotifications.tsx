@@ -381,7 +381,8 @@ export default function AdminNotifications() {
         {filtered.map((n) => {
           const config = getTypeStyle(n.type);
           const Icon = config.icon;
-          const timeAgo = Math.floor((Date.now() - n.timestamp) / 60000);
+          const ts = typeof n.timestamp === 'number' ? n.timestamp : new Date(n.timestamp).getTime();
+          const timeAgo = Math.floor((Date.now() - (isNaN(ts) ? Date.now() : ts)) / 60000);
           const timeLabel =
             timeAgo < 1 ? 'Just now' : timeAgo < 60 ? `${timeAgo}m ago` : `${Math.floor(timeAgo / 60)}h ago`;
 
