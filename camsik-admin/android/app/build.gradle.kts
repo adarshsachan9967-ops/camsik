@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "in.camsik.admin"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
