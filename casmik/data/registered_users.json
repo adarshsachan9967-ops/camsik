@@ -1,5 +1,13 @@
 [
   {
+    "id": "usr-1790139685436",
+    "name": "Aarav Verma",
+    "phone": "9811223344",
+    "email": "aarav@camsik.in",
+    "passwordHash": "Password@123",
+    "createdAt": "2026-09-23T05:01:25.437Z"
+  },
+  {
     "id": "usr-1790099450773",
     "name": "Rohit Sharma",
     "phone": "9820011223",
