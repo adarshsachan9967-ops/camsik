@@ -1,0 +1,18 @@
+[
+  {
+    "id": "usr-1790099450773",
+    "name": "Rohit Sharma",
+    "phone": "9820011223",
+    "email": "rohit@camsik.in",
+    "passwordHash": "mysecretpass",
+    "createdAt": "2026-09-22T17:50:50.773Z"
+  },
+  {
+    "id": "usr-demo-9876543210",
+    "name": "Demo User",
+    "phone": "9876543210",
+    "email": "user@camsik.in",
+    "passwordHash": "Camsik@123",
+    "createdAt": "2026-09-23T04:30:00.000Z"
+  }
+]

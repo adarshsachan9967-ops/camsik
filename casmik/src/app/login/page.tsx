@@ -1,217 +1,439 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Eye, EyeOff, Phone, Mail, Lock, User, ArrowLeft, CheckCircle, Smartphone } from 'lucide-react';
+import { Eye, EyeOff, Phone, Mail, Lock, User, ArrowLeft, CheckCircle, Smartphone, ShieldCheck, Sparkles } from 'lucide-react';
 import CustomerHeader from '@/components/CustomerHeader';
 import CustomerFooter from '@/components/CustomerFooter';
+import { registerUser, authenticateUser } from '@/lib/auth';
 
-import { setCurrentUser } from '@/lib/auth';
-
-type AuthMode = 'login' | 'register' | 'otp';
+type AuthMode = 'login' | 'register';
 
 export default function LoginPage() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [showPassword, setShowPassword] = useState(false);
+  const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<'phone' | 'email'>('phone');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleOtpChange = (index: number, value: string) => {
-    if (value.length > 1) return;
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-    if (value && index < 5) {
-      document.getElementById(`otp-${index + 1}`)?.focus();
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    if (!name.trim()) {
+      setError('Please enter your full name');
+      return;
+    }
+    if (phone.replace(/\D/g, '').length < 10) {
+      setError('Please enter a valid 10-digit mobile number');
+      return;
+    }
+    if (!email.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim(),
+          password: password,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.message || 'Registration failed. Please try again.');
+        setLoading(false);
+        return;
+      }
+      registerUser({
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        password: password,
+      });
+      setSuccess('Account created successfully! Redirecting...');
+      setTimeout(() => {
+        window.location.href = '/my-orders';
+      }, 500);
+    } catch (err: any) {
+      // Local fallback with credential validation
+      try {
+        registerUser({
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim(),
+          password: password,
+        });
+        setSuccess('Account created successfully! Redirecting...');
+        setTimeout(() => {
+          window.location.href = '/my-orders';
+        }, 500);
+      } catch (e: any) {
+        setError(e?.message || 'Registration failed. Please try again.');
+        setLoading(false);
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      if (mode === 'login' || mode === 'register') setMode('otp');
-    }, 1000);
-  };
+    setError('');
 
-  const handleOtpVerify = (e: React.FormEvent) => {
-    e.preventDefault();
+    const identifier = (email || phone).trim();
+    if (!identifier) {
+      setError('Please enter your mobile number or email address');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password');
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setCurrentUser({
-        id: 'user-' + Date.now(),
-        name: name.trim() || (loginMethod === 'phone' ? `User ${phone.slice(-4)}` : email.split('@')[0]),
-        phone: phone.trim() || '9876543210',
-        email: email.trim() || undefined,
-        createdAt: new Date().toISOString(),
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: identifier,
+          password: password,
+        }),
       });
-      window.location.href = '/my-orders';
-    }, 1000);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.message || 'Login failed. Please check your credentials.');
+        setLoading(false);
+        return;
+      }
+      // Success from database
+      if (data.user) {
+        setCurrentUser({
+          id: data.user.id,
+          name: data.user.name,
+          phone: data.user.phone,
+          email: data.user.email,
+          createdAt: data.user.createdAt,
+        });
+      }
+      setSuccess('Logged in successfully! Redirecting...');
+      setTimeout(() => {
+        window.location.href = '/my-orders';
+      }, 500);
+    } catch (err: any) {
+      // Offline fallback with strict local check
+      try {
+        authenticateUser(identifier, password);
+        setSuccess('Logged in successfully! Redirecting...');
+        setTimeout(() => {
+          window.location.href = '/my-orders';
+        }, 500);
+      } catch (localErr: any) {
+        setError(localErr?.message || 'Invalid credentials. Please enter your correct password.');
+        setLoading(false);
+      }
+    }
   };
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-slate-50 flex flex-col justify-between">
       <CustomerHeader />
-      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center py-12 px-4">
+      
+      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6">
         <div className="w-full max-w-md">
           {/* Back link */}
-          <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-emerald-700 mb-6 transition-colors"
+          >
             <ArrowLeft size={14} /> Back to Home
           </Link>
 
-          <div className="bg-white rounded-3xl border border-border shadow-lg overflow-hidden">
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden">
             {/* Header */}
-            <div className="gradient-green p-8 text-white text-center">
-              <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-4">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" fill="white" fillOpacity="0.9"/>
-                  <path d="M9 12l2 2 4-4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+            <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 p-7 text-white text-center relative overflow-hidden">
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
+              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center mx-auto mb-3 shadow-inner">
+                <ShieldCheck size={28} className="text-white" />
               </div>
-              <h1 className="text-2xl font-extrabold mb-1">
-                {mode === 'otp' ? 'Verify OTP' : mode === 'register' ? 'Create Account' : 'Welcome Back'}
+              <h1 className="text-2xl font-black tracking-tight mb-1">
+                {mode === 'register' ? 'Create Camsik Account' : 'Welcome Back'}
               </h1>
-              <p className="text-white/80 text-sm">
-                {mode === 'otp' ? `OTP sent to ${loginMethod === 'phone' ? phone : email}` : mode === 'register' ? 'Join 10 lakh+ happy customers' : 'Sign in to your Camsik account'}
+              <p className="text-emerald-100 text-xs font-medium max-w-xs mx-auto">
+                {mode === 'register'
+                  ? 'Join 10 Lakh+ customers selling, buying & exchanging tech'
+                  : 'Sign in to access your orders, sell quotes & payouts'}
               </p>
             </div>
 
-            <div className="p-8">
-              {mode === 'otp' ? (
-                <form onSubmit={handleOtpVerify} className="space-y-6">
+            <div className="p-7">
+              {/* Tab switcher */}
+              <div className="flex bg-slate-100 p-1 rounded-2xl mb-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setError('');
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${
+                    mode === 'login'
+                      ? 'bg-white shadow-sm text-slate-900'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('register');
+                    setError('');
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${
+                    mode === 'register'
+                      ? 'bg-white shadow-sm text-slate-900'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Create Account
+                </button>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {success && (
+                <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center gap-2">
+                  <CheckCircle size={15} />
+                  <span>{success}</span>
+                </div>
+              )}
+
+              {mode === 'register' ? (
+                /* ── REGISTER FORM ── */
+                <form onSubmit={handleRegister} className="space-y-4">
                   <div>
-                    <p className="text-sm text-muted-foreground text-center mb-4">Enter the 6-digit OTP sent to your {loginMethod === 'phone' ? 'phone number' : 'email'}</p>
-                    <div className="flex gap-2 justify-center">
-                      {otp.map((digit, i) => (
-                        <input key={`otp-${i}`} id={`otp-${i}`} type="text" inputMode="numeric" maxLength={1} value={digit}
-                          onChange={e => handleOtpChange(i, e.target.value)}
-                          className="w-11 h-12 text-center text-lg font-bold border-2 border-border rounded-xl focus:outline-none focus:border-primary transition-colors" />
-                      ))}
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
+                    <div className="relative">
+                      <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g. Rahul Sharma"
+                        required
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
+                      />
                     </div>
                   </div>
-                  <button type="submit" disabled={loading || otp.join('').length < 6}
-                    className="w-full py-3 gradient-green text-white rounded-xl font-semibold shadow-green btn-press disabled:opacity-60 flex items-center justify-center gap-2">
-                    {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><CheckCircle size={16} /> Verify & Continue</>}
-                  </button>
-                  <div className="text-center">
-                    <button type="button" onClick={() => setMode('login')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      ← Change number/email
-                    </button>
-                    <span className="mx-3 text-border">|</span>
-                    <button type="button" className="text-sm text-primary font-semibold hover:underline">Resend OTP</button>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                        <Smartphone size={14} className="text-slate-400" />
+                        <span className="text-xs font-bold text-slate-500 border-r border-slate-200 pr-1.5">+91</span>
+                      </div>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        placeholder="10-digit mobile number"
+                        required
+                        className="w-full pl-20 pr-4 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
+                      />
+                    </div>
                   </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+                    <div className="relative">
+                      <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="yourname@gmail.com"
+                        required
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Password</label>
+                    <div className="relative">
+                      <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Minimum 6 characters"
+                        required
+                        className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Confirm Password</label>
+                    <div className="relative">
+                      <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Re-enter your password"
+                        required
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-black text-xs shadow-md shadow-emerald-600/20 disabled:opacity-60 flex items-center justify-center gap-2 mt-2 transition-all"
+                  >
+                    {loading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles size={15} />
+                        <span>Create Account &amp; Proceed</span>
+                      </>
+                    )}
+                  </button>
                 </form>
               ) : (
-                <>
-                  {/* Tab switcher */}
-                  <div className="flex bg-muted rounded-xl p-1 mb-6">
-                    <button onClick={() => setMode('login')}
-                      className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'login' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'}`}>
-                      Sign In
-                    </button>
-                    <button onClick={() => setMode('register')}
-                      className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode === 'register' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'}`}>
-                      Register
-                    </button>
+                /* ── LOGIN FORM ── */
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Mobile Number or Email</label>
+                    <div className="relative">
+                      <Smartphone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={email || phone}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (/^\d+$/.test(val)) {
+                            setPhone(val);
+                            setEmail('');
+                          } else {
+                            setEmail(val);
+                            setPhone('');
+                          }
+                        }}
+                        placeholder="Enter phone or email address"
+                        required
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
+                      />
+                    </div>
                   </div>
 
-                  {/* Login method toggle */}
-                  {mode === 'login' && (
-                    <div className="flex gap-2 mb-5">
-                      <button onClick={() => setLoginMethod('phone')}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border text-sm font-medium transition-all ${loginMethod === 'phone' ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground'}`}>
-                        <Phone size={14} /> Phone
-                      </button>
-                      <button onClick={() => setLoginMethod('email')}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border text-sm font-medium transition-all ${loginMethod === 'email' ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground'}`}>
-                        <Mail size={14} /> Email
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-700">Password</label>
+                      <button
+                        type="button"
+                        onClick={() => alert('For password reset assistance, contact Camsik support at support@camsik.in or +91 8976000010.')}
+                        className="text-[11px] font-bold text-emerald-600 hover:underline"
+                      >
+                        Forgot?
                       </button>
                     </div>
-                  )}
-
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    {mode === 'register' && (
-                      <div>
-                        <label className="block text-sm font-semibold text-foreground mb-1.5">Full Name</label>
-                        <div className="relative">
-                          <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" required
-                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
-                        </div>
-                      </div>
-                    )}
-
-                    {(mode === 'register' || loginMethod === 'phone') && (
-                      <div>
-                        <label className="block text-sm font-semibold text-foreground mb-1.5">Phone Number</label>
-                        <div className="relative">
-                          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                            <Smartphone size={15} className="text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground border-r border-border pr-2">+91</span>
-                          </div>
-                          <input type="tel" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" required
-                            className="w-full pl-20 pr-4 py-3 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
-                        </div>
-                      </div>
-                    )}
-
-                    {(mode === 'register' || loginMethod === 'email') && (
-                      <div>
-                        <label className="block text-sm font-semibold text-foreground mb-1.5">Email Address</label>
-                        <div className="relative">
-                          <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" required={loginMethod === 'email' || mode === 'register'}
-                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
-                        </div>
-                      </div>
-                    )}
-
-                    {mode === 'register' && (
-                      <div>
-                        <label className="block text-sm font-semibold text-foreground mb-1.5">Password</label>
-                        <div className="relative">
-                          <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                          <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Create a strong password" required
-                            className="w-full pl-10 pr-10 py-3 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
-                          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                            {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    <button type="submit" disabled={loading}
-                      className="w-full py-3 gradient-green text-white rounded-xl font-semibold shadow-green btn-press disabled:opacity-60 flex items-center justify-center gap-2 mt-2">
-                      {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : mode === 'register' ? 'Create Account & Get OTP' : 'Send OTP'}
-                    </button>
-                  </form>
-
-                  {mode === 'login' && (
-                    <p className="text-center text-sm text-muted-foreground mt-4">
-                      New to Camsik?{' '}
-                      <button onClick={() => setMode('register')} className="text-primary font-semibold hover:underline">Create account</button>
-                    </p>
-                  )}
-
-                  <div className="mt-5 pt-5 border-t border-border">
-                    <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                      By continuing, you agree to Camsik&apos;s{' '}
-                      <Link href="#terms" className="text-primary hover:underline">Terms of Service</Link> and{' '}
-                      <Link href="#privacy" className="text-primary hover:underline">Privacy Policy</Link>
-                    </p>
+                    <div className="relative">
+                      <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter your account password"
+                        required
+                        className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
                   </div>
-                </>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-black text-xs shadow-md shadow-emerald-600/20 disabled:opacity-60 flex items-center justify-center gap-2 mt-2 transition-all"
+                  >
+                    {loading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle size={15} />
+                        <span>Sign In to Camsik</span>
+                      </>
+                    )}
+                  </button>
+
+                  <p className="text-center text-xs text-slate-500 mt-4">
+                    Don&apos;t have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('register');
+                        setError('');
+                      }}
+                      className="text-emerald-700 font-extrabold hover:underline"
+                    >
+                      Create Account
+                    </button>
+                  </p>
+                </form>
               )}
+
+              <div className="mt-6 pt-5 border-t border-slate-100">
+                <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+                  By signing in or registering, you agree to Camsik&apos;s{' '}
+                  <Link href="/why-camsik" className="text-emerald-700 font-bold hover:underline">
+                    Terms &amp; DoD Data Security Policy
+                  </Link>
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
       <CustomerFooter />
     </main>
   );

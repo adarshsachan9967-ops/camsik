@@ -124,3 +124,86 @@ export function getCustomerOrders(phone?: string): CustomerOrderRecord[] {
     return [];
   }
 }
+
+// Credential-based Registered Users Database
+const USERS_DB_KEY = 'camsik_registered_users_db';
+
+export interface RegisteredUser {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  password?: string;
+  createdAt: string;
+}
+
+export function getRegisteredUsers(): RegisteredUser[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(USERS_DB_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function registerUser(user: { name: string; phone: string; email: string; password?: string }): CustomerUser {
+  const existing = getRegisteredUsers();
+  const cleanPhone = user.phone.trim().replace(/\D/g, '').slice(-10);
+  const cleanEmail = user.email.trim().toLowerCase();
+
+  const newUser: RegisteredUser = {
+    id: 'user-' + Date.now(),
+    name: user.name.trim(),
+    phone: cleanPhone,
+    email: cleanEmail,
+    password: user.password || '',
+    createdAt: new Date().toISOString(),
+  };
+  const updated = [...existing.filter((u) => u.email !== newUser.email && u.phone !== newUser.phone), newUser];
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(USERS_DB_KEY, JSON.stringify(updated));
+  }
+  const customerUser: CustomerUser = {
+    id: newUser.id,
+    name: newUser.name,
+    phone: newUser.phone,
+    email: newUser.email,
+    createdAt: newUser.createdAt,
+  };
+  setCurrentUser(customerUser);
+  return customerUser;
+}
+
+export function authenticateUser(identifier: string, password?: string): CustomerUser {
+  const users = getRegisteredUsers();
+  const cleanId = identifier.trim().toLowerCase();
+  const cleanPhone = identifier.trim().replace(/\D/g, '').slice(-10);
+
+  const matched = users.find(
+    (u) =>
+      u.email.toLowerCase() === cleanId ||
+      u.phone.replace(/\D/g, '').slice(-10) === cleanPhone
+  );
+
+  if (matched) {
+    if (password && matched.password && matched.password !== password.trim()) {
+      throw new Error('Incorrect password. Please enter your valid password.');
+    }
+    const customerUser: CustomerUser = {
+      id: matched.id,
+      name: matched.name,
+      phone: matched.phone,
+      email: matched.email,
+      createdAt: matched.createdAt,
+    };
+    setCurrentUser(customerUser);
+    return customerUser;
+  }
+
+  // If no user found, throw error instead of auto-logging in with random credentials
+  throw new Error('Account not found. Please create an account or verify your credentials.');
+}
+
