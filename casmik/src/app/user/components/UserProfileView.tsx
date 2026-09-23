@@ -86,21 +86,27 @@ export default function UserProfileView() {
             />
           </div>
 
-          <div className="flex items-center justify-between p-2 rounded-2xl bg-slate-900/60 border border-slate-800">
+          <Link 
+            href="/privacy" 
+            className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-purple-500/40 hover:bg-slate-900 transition-colors"
+          >
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-blue-400" />
-              <span>Data Protection & Privacy Policy</span>
+              <span className="text-xs text-slate-300">Data Protection &amp; Privacy Policy</span>
             </div>
             <ChevronRight className="w-4 h-4 text-slate-500" />
-          </div>
+          </Link>
 
-          <div className="flex items-center justify-between p-2 rounded-2xl bg-slate-900/60 border border-slate-800">
+          <Link 
+            href="/contact-us" 
+            className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-purple-500/40 hover:bg-slate-900 transition-colors"
+          >
             <div className="flex items-center gap-2">
               <HelpCircle className="w-4 h-4 text-purple-400" />
-              <span>Help & 24/7 WhatsApp Support</span>
+              <span className="text-xs text-slate-300">Help &amp; 24/7 WhatsApp Support</span>
             </div>
             <ChevronRight className="w-4 h-4 text-slate-500" />
-          </div>
+          </Link>
         </div>
       </div>
 

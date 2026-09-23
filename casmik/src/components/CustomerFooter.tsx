@@ -57,8 +57,10 @@ const footerLinks = {
     { label: 'Contact Us', href: '/contact-us' },
     { label: 'Track Order', href: '/track-order' },
     { label: 'Doorstep Pickup Policy', href: '/how-it-works' },
-    { label: 'DoD Certified Data Wipe', href: '/why-camsik' },
-    { label: 'Terms & Conditions', href: '/faq' },
+    { label: 'DoD Certified Data Wipe', href: '/privacy#data-wipe' },
+    { label: 'Terms & Conditions', href: '/terms' },
+    { label: 'Valuation Disclaimer', href: '/disclaimer' },
+    { label: 'Platform Sitemap', href: '/sitemap' },
     { label: 'Partner Program', href: '/partner/login' },
     { label: 'Delivery Executive Portal', href: '/delivery/login' },
   ],
@@ -218,11 +220,11 @@ export default function CustomerFooter() {
         {/* Bottom Copyright */}
         <div className="mt-8 pt-6 border-t border-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>© 2026 Camsik Electronics Pvt. Ltd. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <Link href="#privacy" className="hover:text-slate-300 transition-colors">Privacy Policy</Link>
-            <Link href="#terms" className="hover:text-slate-300 transition-colors">Terms of Service</Link>
-            <Link href="#disclaimer" className="hover:text-slate-300 transition-colors">Valuation Disclaimer</Link>
-            <Link href="#sitemap" className="hover:text-slate-300 transition-colors">Sitemap</Link>
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+            <Link href="/privacy" className="hover:text-slate-300 transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-slate-300 transition-colors">Terms of Service</Link>
+            <Link href="/disclaimer" className="hover:text-slate-300 transition-colors">Valuation Disclaimer</Link>
+            <Link href="/sitemap" className="hover:text-slate-300 transition-colors">Sitemap</Link>
           </div>
         </div>
       </div>

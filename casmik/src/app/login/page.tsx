@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Eye, EyeOff, Phone, Mail, Lock, User, ArrowLeft, CheckCircle, Smartphone, ShieldCheck, Sparkles } from 'lucide-react';
 import CustomerHeader from '@/components/CustomerHeader';
 import CustomerFooter from '@/components/CustomerFooter';
-import { registerUser, authenticateUser } from '@/lib/auth';
+import { registerUser, authenticateUser, setCurrentUser } from '@/lib/auth';
 
 type AuthMode = 'login' | 'register';
 
