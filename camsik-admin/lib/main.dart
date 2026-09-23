@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'models/admin_models.dart';
+import 'services/api_service.dart';
+import 'services/session_service.dart';
 
 void main() {
   runZonedGuarded(() {
@@ -20,12 +23,12 @@ class CamsikAdminApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Camsik Admin',
+      title: 'CAMSIK Admin',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF7C3AED), // Premium Violet
+          seedColor: const Color(0xFF7C3AED), // Premium Purple
           primary: const Color(0xFF7C3AED),
           secondary: const Color(0xFF2563EB),
           surface: const Color(0xFFF8FAFC),
@@ -38,165 +41,311 @@ class CamsikAdminApp extends StatelessWidget {
           color: Colors.white,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF090D16), // Dark Luxury Slate
+          backgroundColor: Color(0xFF0F172A), // Dark Luxury Slate
           foregroundColor: Colors.white,
           elevation: 0,
         ),
       ),
-      home: const AdminMainNavigationScreen(),
+      home: const AdminAuthCheckScreen(),
     );
   }
 }
 
-class AdminMainNavigationScreen extends StatefulWidget {
-  const AdminMainNavigationScreen({super.key});
+class AdminAuthCheckScreen extends StatefulWidget {
+  const AdminAuthCheckScreen({super.key});
 
   @override
-  State<AdminMainNavigationScreen> createState() => _AdminMainNavigationScreenState();
+  State<AdminAuthCheckScreen> createState() => _AdminAuthCheckScreenState();
 }
 
-class _AdminMainNavigationScreenState extends State<AdminMainNavigationScreen> {
-  int _currentIndex = 0;
+class _AdminAuthCheckScreenState extends State<AdminAuthCheckScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
 
-  // Mock Admin Orders
-  final List<Map<String, dynamic>> _adminOrders = [
-    {
-      'id': 'ORD-9831',
-      'type': 'Sell Phone',
-      'customer': 'Ananya Verma',
-      'phone': '+91 98765 43210',
-      'device': 'iPhone 14 Pro 128GB Deep Purple',
-      'quote': '₹48,500',
-      'assignedRider': 'Rahul Sharma (RD-8842)',
-      'status': 'Out for Pickup',
-      'date': 'Today, 11:30 AM',
-      'hub': 'South Delhi Hub',
-    },
-    {
-      'id': 'ORD-9832',
-      'type': 'Buy Refurbished',
-      'customer': 'Vikram Mehra',
-      'phone': '+91 98112 34567',
-      'device': 'MacBook Pro M2 512GB Space Gray',
-      'quote': '₹89,999',
-      'assignedRider': 'Praveen Kumar (RD-4412)',
-      'status': 'Processing',
-      'date': 'Today, 10:15 AM',
-      'hub': 'Noida Central Hub',
-    },
-    {
-      'id': 'ORD-9833',
-      'type': 'Screen Repair',
-      'customer': 'Sneha Nair',
-      'phone': '+91 99001 22334',
-      'device': 'Samsung S22 Ultra Phantom Black',
-      'quote': '₹8,499',
-      'assignedRider': 'Unassigned',
-      'status': 'Pending Dispatch',
-      'date': 'Today, 09:45 AM',
-      'hub': 'Indiranagar Lab Hub',
-    },
-    {
-      'id': 'ORD-9828',
-      'type': 'Sell Laptop',
-      'customer': 'Arun Kapoor',
-      'phone': '+91 97712 99881',
-      'device': 'Dell XPS 15 16GB / 512GB SSD',
-      'quote': '₹54,000',
-      'assignedRider': 'Amit Joshi (RD-1092)',
-      'status': 'Completed',
-      'date': 'Yesterday, 04:20 PM',
-      'hub': 'Gurgaon Cyber Hub',
-    },
-  ];
+  Future<void> _checkAuth() async {
+    final loggedIn = await SessionService.isLoggedIn();
+    if (!mounted) return;
+    if (loggedIn) {
+      final user = await SessionService.getUser();
+      if (!mounted) return;
+      if (user != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => AdminMainShell(user: user)),
+        );
+        return;
+      }
+    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+    );
+  }
 
-  // Mock Partners
-  final List<Map<String, dynamic>> _partners = [
-    {
-      'name': 'Croma Mobile Exchange Desk',
-      'location': 'South Extension, New Delhi',
-      'owner': 'Rajesh Gupta',
-      'margin': '8.5%',
-      'devicesSold': '142 units',
-      'kyc': 'Approved',
-      'active': true,
-    },
-    {
-      'name': 'Vijay Sales Device Counter',
-      'location': 'Koramangala, Bengaluru',
-      'owner': 'Kiran Patel',
-      'margin': '9.0%',
-      'devicesSold': '98 units',
-      'kyc': 'Approved',
-      'active': true,
-    },
-    {
-      'name': 'Sangeetha Tech Corner',
-      'location': 'Bandra West, Mumbai',
-      'owner': 'Farhan Khan',
-      'margin': '8.0%',
-      'devicesSold': '64 units',
-      'kyc': 'Pending Review',
-      'active': false,
-    },
-  ];
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFF0F172A),
+      body: Center(
+        child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 1. ADMIN LOGIN SCREEN
+// ==========================================
+class AdminLoginScreen extends StatefulWidget {
+  const AdminLoginScreen({super.key});
+
+  @override
+  State<AdminLoginScreen> createState() => _AdminLoginScreenState();
+}
+
+class _AdminLoginScreenState extends State<AdminLoginScreen> {
+  final _emailController = TextEditingController(text: 'admin@camsik.com');
+  final _passwordController = TextEditingController(text: 'Casmik@9967');
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+  String? _errorMessage;
+
+  Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Please enter both admin email and password');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final adminUser = await ApiService.login(email, password);
+
+    if (!mounted) return;
+
+    if (adminUser != null) {
+      await SessionService.saveUser(adminUser);
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => AdminMainShell(user: adminUser)),
+      );
+    } else {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Invalid admin credentials or unauthorized account';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)],
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.shield, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 10),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: const Color(0xFF0F172A),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('CAMSIK ADMIN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 0.5)),
-                Text('Master Control • Super Admin', style: TextStyle(fontSize: 11, color: Color(0xFFA78BFA))),
+                // Logo & Header
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7C3AED).withAlpha(35),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFF7C3AED).withAlpha(80), width: 2),
+                  ),
+                  child: const Icon(Icons.admin_panel_settings_rounded, size: 52, color: Color(0xFFC4B5FD)),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'CAMSIK ADMIN',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2.0,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Central Command & Control Center',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                ),
+                const SizedBox(height: 36),
+
+                // Card container
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E293B),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFF334155)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(80),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_errorMessage != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.withAlpha(30),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.redAccent.withAlpha(80)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      const Text(
+                        'Admin Email / ID',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF94A3B8)),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _emailController,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF64748B), size: 20),
+                          filled: true,
+                          fillColor: const Color(0xFF0F172A),
+                          hintText: 'admin@camsik.com',
+                          hintStyle: const TextStyle(color: Color(0xFF475569)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Master Password',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF94A3B8)),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF64748B), size: 20),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              color: const Color(0xFF64748B),
+                              size: 20,
+                            ),
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF0F172A),
+                          hintText: '••••••••',
+                          hintStyle: const TextStyle(color: Color(0xFF475569)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _handleLogin,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7C3AED),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Text(
+                                'Sign In to Super Admin',
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+                const Text(
+                  'Secured by CAMSIK Enterprise Auth • Role-based Access Control',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                ),
               ],
             ),
-          ],
+          ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Synchronized latest system telemetry!'), duration: Duration(seconds: 1)),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.campaign_outlined),
-            onPressed: () => _openBroadcastDialog(context),
-          ),
-        ],
       ),
+    );
+  }
+}
+
+// ==========================================
+// 2. ADMIN MAIN NAVIGATION SHELL
+// ==========================================
+class AdminMainShell extends StatefulWidget {
+  final AdminUser user;
+
+  const AdminMainShell({super.key, required this.user});
+
+  @override
+  State<AdminMainShell> createState() => _AdminMainShellState();
+}
+
+class _AdminMainShellState extends State<AdminMainShell> {
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final screens = [
+      AdminOverviewScreen(user: widget.user, onNavigateToOrders: () => setState(() => _currentIndex = 1)),
+      const AdminOrdersScreen(),
+      const AdminPartnersScreen(),
+      const AdminFleetScreen(),
+      AdminProfileScreen(user: widget.user),
+    ];
+
+    return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: [
-          _buildOverviewTab(),
-          _buildOrdersTab(),
-          _buildPartnersTab(),
-          _buildMarketingTab(),
-          _buildSettingsTab(),
-        ],
+        children: screens,
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
         backgroundColor: Colors.white,
         elevation: 8,
+        indicatorColor: const Color(0xFF7C3AED).withAlpha(40),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
@@ -204,8 +353,8 @@ class _AdminMainNavigationScreenState extends State<AdminMainNavigationScreen> {
             label: 'Overview',
           ),
           NavigationDestination(
-            icon: Icon(Icons.shopping_bag_outlined),
-            selectedIcon: Icon(Icons.shopping_bag, color: Color(0xFF7C3AED)),
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long, color: Color(0xFF7C3AED)),
             label: 'Orders',
           ),
           NavigationDestination(
@@ -214,620 +363,1779 @@ class _AdminMainNavigationScreenState extends State<AdminMainNavigationScreen> {
             label: 'Partners',
           ),
           NavigationDestination(
-            icon: Icon(Icons.campaign_outlined),
-            selectedIcon: Icon(Icons.campaign, color: Color(0xFF7C3AED)),
-            label: 'Marketing',
+            icon: Icon(Icons.two_wheeler_outlined),
+            selectedIcon: Icon(Icons.two_wheeler, color: Color(0xFF7C3AED)),
+            label: 'Fleet',
           ),
           NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings, color: Color(0xFF7C3AED)),
-            label: 'Settings',
+            icon: Icon(Icons.admin_panel_settings_outlined),
+            selectedIcon: Icon(Icons.admin_panel_settings, color: Color(0xFF7C3AED)),
+            label: 'System',
           ),
         ],
       ),
     );
   }
+}
 
-  // TAB 1: EXECUTIVE OVERVIEW
-  Widget _buildOverviewTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Executive GMV Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0F172A), Color(0xFF1E1B4B)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+// ==========================================
+// 3. TAB 1: ADMIN OVERVIEW / ANALYTICS
+// ==========================================
+class AdminOverviewScreen extends StatefulWidget {
+  final AdminUser user;
+  final VoidCallback onNavigateToOrders;
+
+  const AdminOverviewScreen({super.key, required this.user, required this.onNavigateToOrders});
+
+  @override
+  State<AdminOverviewScreen> createState() => _AdminOverviewScreenState();
+}
+
+class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
+  bool _isLoading = true;
+  AdminOverviewStats? _stats;
+  List<AdminOrder> _recentOrders = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOverview();
+  }
+
+  Future<void> _loadOverview() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final overviewData = await ApiService.fetchOverview();
+    if (overviewData != null) {
+      final rawStats = overviewData['stats'] as Map<String, dynamic>? ?? {};
+      final rawRecent = overviewData['recentOrders'] as List? ?? [];
+      setState(() {
+        _stats = AdminOverviewStats.fromJson(rawStats);
+        _recentOrders = rawRecent.map((e) => AdminOrder.fromJson(e as Map<String, dynamic>)).toList();
+        _isLoading = false;
+      });
+    } else {
+      // Fallback: fetch orders count directly
+      final orders = await ApiService.fetchOrders();
+      final partners = await ApiService.fetchPartners();
+      final agents = await ApiService.fetchDeliveryAgents();
+
+      int pending = 0;
+      int completed = 0;
+      double rev = 0.0;
+      for (final o in orders) {
+        if (o.status == 'completed') completed++;
+        if (o.status == 'pending' || o.status == 'assigned') pending++;
+        rev += o.finalPrice;
+      }
+
+      setState(() {
+        _stats = AdminOverviewStats(
+          totalOrders: orders.length,
+          totalRevenue: rev,
+          pendingOrders: pending,
+          activeOrders: orders.length - completed,
+          completedOrders: completed,
+          cancelledOrders: 0,
+          totalPartners: partners.length,
+          activePartners: partners.where((p) => p.status == 'active').length,
+          totalDeliveryAgents: agents.length,
+          activeDeliveryAgents: agents.where((a) => a.dutyStatus == 'online').length,
+          totalModels: 48,
+          totalBrands: 12,
+        );
+        _recentOrders = orders.take(5).toList();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('CAMSIK Central Hub', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            Text('Live Ecosystem Overview', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadOverview,
+            tooltip: 'Sync Data',
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)))
+          : RefreshIndicator(
+              onRefresh: _loadOverview,
+              color: const Color(0xFF7C3AED),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Today's Gross Volume (GMV)", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    // Welcome & Live Badge
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
-                      child: const Text('+18.4% vs yday', style: TextStyle(color: Color(0xFF34D399), fontSize: 11, fontWeight: FontWeight.bold)),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'API Gateway: Online & Synchronized',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                          ),
+                          const Spacer(),
+                          Text(
+                            widget.user.name,
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(height: 16),
+
+                    // Primary Metric Banner: Total Platform GMV
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF7C3AED).withAlpha(70),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'TOTAL PLATFORM VOLUME',
+                                style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1.1),
+                              ),
+                              Icon(Icons.trending_up, color: Colors.white, size: 20),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '₹${(_stats?.totalRevenue ?? 0).toStringAsFixed(0)}',
+                            style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              _MetricPill(label: 'Total Orders', value: '${_stats?.totalOrders ?? 0}'),
+                              const SizedBox(width: 10),
+                              _MetricPill(label: 'Completed', value: '${_stats?.completedOrders ?? 0}'),
+                              const SizedBox(width: 10),
+                              _MetricPill(label: 'Active Hubs', value: '${_stats?.activePartners ?? 0}'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Key Metric Grid
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SummaryCard(
+                            title: 'Pending Tasks',
+                            value: '${_stats?.pendingOrders ?? 0}',
+                            subtitle: 'Requires Dispatch/QA',
+                            icon: Icons.pending_actions,
+                            color: const Color(0xFFF59E0B),
+                            onTap: widget.onNavigateToOrders,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _SummaryCard(
+                            title: 'Active Riders',
+                            value: '${_stats?.activeDeliveryAgents ?? 0}/${_stats?.totalDeliveryAgents ?? 0}',
+                            subtitle: 'On Field Right Now',
+                            icon: Icons.two_wheeler,
+                            color: const Color(0xFF2563EB),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SummaryCard(
+                            title: 'Partner Stores',
+                            value: '${_stats?.totalPartners ?? 0}',
+                            subtitle: '${_stats?.activePartners ?? 0} Verified Active',
+                            icon: Icons.storefront,
+                            color: const Color(0xFF059669),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _SummaryCard(
+                            title: 'Catalog Models',
+                            value: '${_stats?.totalModels ?? 0}',
+                            subtitle: '${_stats?.totalBrands ?? 0} Active Brands',
+                            icon: Icons.devices,
+                            color: const Color(0xFF9333EA),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Recent Activity Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Live Pipeline Orders',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                        ),
+                        TextButton(
+                          onPressed: widget.onNavigateToOrders,
+                          child: const Text('View All', style: TextStyle(color: Color(0xFF7C3AED), fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    if (_recentOrders.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(28),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Center(
+                          child: Text('No active pipeline orders found', style: TextStyle(color: Color(0xFF94A3B8))),
+                        ),
+                      )
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _recentOrders.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (ctx, idx) {
+                          final o = _recentOrders[idx];
+                          return _RecentOrderTile(order: o);
+                        },
+                      ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                const Text('₹24,85,920', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-                const SizedBox(height: 16),
-                const Divider(color: Colors.white24, height: 1),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildOverviewMetric('142 Orders', '86 Pickups', const Color(0xFFA78BFA)),
-                    Container(width: 1, height: 28, color: Colors.white24),
-                    _buildOverviewMetric('38 Fleet Active', '96% on-time', const Color(0xFF60A5FA)),
-                    Container(width: 1, height: 28, color: Colors.white24),
-                    _buildOverviewMetric('₹3.4L Profit', '13.8% Margin', const Color(0xFF34D399)),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
+    );
+  }
+}
 
-          // Action Items & Alerts
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF3C7),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFFDE68A)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 24),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Action Required: 3 Pending Approvals', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF92400E))),
-                      Text('1 Partner Store KYC awaiting review, 2 high-value payouts > ₹50,000.', style: TextStyle(fontSize: 11, color: Color(0xFF78350F))),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD97706),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    minimumSize: Size.zero,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () {
-                    setState(() => _currentIndex = 2); // Switch to partners
-                  },
-                  child: const Text('Review', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
+class _MetricPill extends StatelessWidget {
+  final String label;
+  final String value;
 
-          // Live Infrastructure Health
-          const Text('Platform & Cloud Health', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _buildHealthCard('API Cluster', '42ms Latency', Icons.bolt, const Color(0xFF10B981))),
-              const SizedBox(width: 10),
-              Expanded(child: _buildHealthCard('Payments (Razorpay)', '99.9% Success', Icons.credit_card, const Color(0xFF10B981))),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(child: _buildHealthCard('Rider GPS Dispatch', '34 Active Nodes', Icons.radar, const Color(0xFF2563EB))),
-              const SizedBox(width: 10),
-              Expanded(child: _buildHealthCard('SMS & WhatsApp', '100% Delivered', Icons.sms, const Color(0xFF10B981))),
-            ],
-          ),
-          const SizedBox(height: 20),
+  const _MetricPill({required this.label, required this.value});
 
-          // Recent Activity Feed
-          const Text('Live Platform Audit Log', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-          const SizedBox(height: 10),
-          _buildActivityTile('New Order Placed', 'ORD-9834: iPhone 15 Pro Max 256GB - Quote ₹68,000', '2 mins ago', Icons.add_shopping_cart, const Color(0xFF2563EB)),
-          _buildActivityTile('Rider Assigned', 'Rahul Sharma assigned to ORD-9831 (Pickup in 15 mins)', '8 mins ago', Icons.two_wheeler, const Color(0xFF7C3AED)),
-          _buildActivityTile('Payout Completed', '₹48,500 transferred to Ananya Verma via IMPS', '24 mins ago', Icons.check_circle, const Color(0xFF10B981)),
-          _buildActivityTile('Price Overwrite', 'Manager adjusted trade-in value on ORD-9825 (+₹1,200)', '1 hour ago', Icons.edit_note, const Color(0xFFF59E0B)),
-        ],
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(45),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        '$label: $value',
+        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
       ),
     );
   }
+}
 
-  Widget _buildOverviewMetric(String title, String subtitle, Color color) {
-    return Column(
-      children: [
-        Text(title, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 2),
-        Text(subtitle, style: const TextStyle(color: Colors.white60, fontSize: 11)),
-      ],
+class _SummaryCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _SummaryCard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(8),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withAlpha(25),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+            ),
+          ],
+        ),
+      ),
     );
   }
+}
 
-  Widget _buildHealthCard(String title, String desc, IconData icon, Color color) {
+class _RecentOrderTile extends StatelessWidget {
+  final AdminOrder order;
+
+  const _RecentOrderTile({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0xFF7C3AED).withAlpha(20),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 18),
+            child: const Icon(Icons.phone_android, color: Color(0xFF7C3AED), size: 20),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A))),
-                Text(desc, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivityTile(String title, String desc, String time, IconData icon, Color color) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        dense: true,
-        leading: CircleAvatar(
-          radius: 16,
-          backgroundColor: color.withValues(alpha: 0.1),
-          child: Icon(icon, color: color, size: 16),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-        subtitle: Text(desc, style: const TextStyle(fontSize: 11, color: Color(0xFF475569))),
-        trailing: Text(time, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-      ),
-    );
-  }
-
-  // TAB 2: ORDER MANAGEMENT & DISPATCH
-  Widget _buildOrdersTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Orders & Fulfillment Hub', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-              Text('${_adminOrders.length} active', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...List.generate(_adminOrders.length, (idx) {
-            final o = _adminOrders[idx];
-            return _buildOrderAdminCard(o, idx);
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOrderAdminCard(Map<String, dynamic> o, int index) {
-    final bool isUnassigned = o['assignedRider'] == 'Unassigned';
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 14),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(o['id'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF7C3AED))),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(o['status'], style: const TextStyle(fontSize: 11, color: Color(0xFF1D4ED8), fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(o['device'], style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.person_outline, size: 14, color: Color(0xFF64748B)),
-                const SizedBox(width: 4),
-                Text('${o['customer']} (${o['phone']})', style: const TextStyle(fontSize: 12, color: Color(0xFF475569))),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Payout / Price: ${o['quote']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF059669))),
-                  Text(o['hub'], style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.two_wheeler, size: 16, color: Color(0xFF64748B)),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Rider: ${o['assignedRider']}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: isUnassigned ? FontWeight.bold : FontWeight.normal,
-                      color: isUnassigned ? const Color(0xFFDC2626) : const Color(0xFF334155),
-                    ),
-                  ),
-                ),
-                if (isUnassigned)
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7C3AED),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      minimumSize: Size.zero,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        o['assignedRider'] = 'Rahul Sharma (RD-8842)';
-                        o['status'] = 'Assigned';
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Dispatched order ${o['id']} to Rahul Sharma!')),
-                      );
-                    },
-                    child: const Text('Assign Rider', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // TAB 3: PARTNER STORES
-  Widget _buildPartnersTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Registered Partner Stores', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-              Text('${_partners.length} stores', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...List.generate(_partners.length, (idx) {
-            final p = _partners[idx];
-            final bool isApproved = p['kyc'] == 'Approved';
-
-            return Card(
-              margin: const EdgeInsets.only(bottom: 14),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(p['name'], style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isApproved ? const Color(0xFFDCFCE7) : const Color(0xFFFEF3C7),
-                            borderRadius: BorderRadius.circular(6),
+                    Text(
+                      order.id,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        order.type.toUpperCase(),
+                        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${order.customerName} • ${order.deviceModel}',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF475569)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '₹${order.finalPrice.toStringAsFixed(0)}',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+              ),
+              const SizedBox(height: 2),
+              _StatusBadge(status: order.status),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 4. TAB 2: ORDER COMMAND CENTER
+// ==========================================
+class AdminOrdersScreen extends StatefulWidget {
+  const AdminOrdersScreen({super.key});
+
+  @override
+  State<AdminOrdersScreen> createState() => _AdminOrdersScreenState();
+}
+
+class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
+  bool _isLoading = true;
+  List<AdminOrder> _allOrders = [];
+  List<AdminPartner> _partners = [];
+  List<AdminDeliveryAgent> _agents = [];
+
+  String _searchQuery = '';
+  String _selectedStatus = 'all';
+  String _selectedType = 'all';
+
+  final _searchController = TextEditingController();
+
+  final List<String> _statuses = [
+    'all',
+    'pending',
+    'assigned',
+    'out_for_pickup',
+    'picked_up',
+    'inspection_in_progress',
+    'completed',
+    'cancelled',
+  ];
+
+  final List<String> _types = [
+    'all',
+    'sell',
+    'buy',
+    'repair',
+    'exchange',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+
+    final orders = await ApiService.fetchOrders(
+      search: _searchQuery,
+      status: _selectedStatus,
+      type: _selectedType,
+    );
+    final partners = await ApiService.fetchPartners();
+    final agents = await ApiService.fetchDeliveryAgents();
+
+    if (!mounted) return;
+    setState(() {
+      _allOrders = orders;
+      _partners = partners;
+      _agents = agents;
+      _isLoading = false;
+    });
+  }
+
+  void _showOrderDetailSheet(AdminOrder order) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _AdminOrderDetailModal(
+        order: order,
+        partners: _partners,
+        agents: _agents,
+        onOrderUpdated: () {
+          Navigator.pop(ctx);
+          _loadData();
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Orders Command Center', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Search & Filters Header
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            color: Colors.white,
+            child: Column(
+              children: [
+                TextField(
+                  controller: _searchController,
+                  onChanged: (val) {
+                    setState(() => _searchQuery = val);
+                    _loadData();
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search Order ID, Customer, Phone, Device...',
+                    hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B), size: 20),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                              _loadData();
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Status Filter Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _statuses.map((s) {
+                      final isSelected = _selectedStatus == s;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: FilterChip(
+                          label: Text(s == 'all' ? 'All Status' : s.replaceAll('_', ' ').toUpperCase()),
+                          labelStyle: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? Colors.white : const Color(0xFF475569),
                           ),
-                          child: Text(
-                            p['kyc'],
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: isApproved ? const Color(0xFF166534) : const Color(0xFF92400E),
+                          selected: isSelected,
+                          selectedColor: const Color(0xFF7C3AED),
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          showCheckmark: false,
+                          onSelected: (_) {
+                            setState(() => _selectedStatus = s);
+                            _loadData();
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                // Type Filter Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _types.map((t) {
+                      final isSelected = _selectedType == t;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: ChoiceChip(
+                          label: Text(t == 'all' ? 'All Types' : t.toUpperCase()),
+                          labelStyle: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFF64748B),
+                          ),
+                          selected: isSelected,
+                          selectedColor: const Color(0xFF7C3AED).withAlpha(35),
+                          backgroundColor: Colors.transparent,
+                          onSelected: (_) {
+                            setState(() => _selectedType = t);
+                            _loadData();
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Order Card List
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)))
+                : _allOrders.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.inventory_2_outlined, size: 54, color: Color(0xFF94A3B8)),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'No matching orders found',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
                             ),
-                          ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Try clearing filters or search term',
+                              style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF7C3AED),
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                  _selectedStatus = 'all';
+                                  _selectedType = 'all';
+                                });
+                                _loadData();
+                              },
+                              child: const Text('Reset All Filters'),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text('${p['location']} • Owner: ${p['owner']}', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Commission: ${p['margin']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED))),
-                        Text('Volume: ${p['devicesSold']}', style: const TextStyle(fontSize: 12, color: Color(0xFF334155))),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    if (!isApproved)
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.check_circle, size: 16, color: Colors.white),
-                          label: const Text('Approve KYC & Activate Store Portal', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF059669),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              p['kyc'] = 'Approved';
-                              p['active'] = true;
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('${p['name']} is now approved & active!')),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _loadData,
+                        color: const Color(0xFF7C3AED),
+                        child: ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _allOrders.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 12),
+                          itemBuilder: (ctx, idx) {
+                            final o = _allOrders[idx];
+                            return _AdminOrderCard(
+                              order: o,
+                              onTap: () => _showOrderDetailSheet(o),
                             );
                           },
                         ),
                       ),
-                  ],
-                ),
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  // TAB 4: MARKETING & PUSH BROADCASTS
-  Widget _buildMarketingTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Push Campaigns & Coupons', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-          const SizedBox(height: 6),
-          const Text('Broadcast announcements and manage discount promotions across customer devices.', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-          const SizedBox(height: 16),
-
-          // Broadcast Card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.notifications_active, color: Colors.white, size: 22),
-                    SizedBox(width: 8),
-                    Text('Send Instant Push Notification', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text('Deliver real-time alerts to all 12,450+ installed customer & rider apps.', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.send, size: 16, color: Color(0xFF4F46E5)),
-                  label: const Text('Compose Broadcast', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4F46E5))),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () => _openBroadcastDialog(context),
-                ),
-              ],
-            ),
           ),
-          const SizedBox(height: 20),
-
-          // Active Coupons
-          const Text('Active Promo Codes', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-          const SizedBox(height: 10),
-          _buildCouponCard('CAMSIK1000', 'Flat ₹1,000 Off on Refurbished Laptops & Phones', 'Used 418 times', 'Active'),
-          _buildCouponCard('SELLBONUS500', 'Get Extra ₹500 trade-in credit when selling phone', 'Used 892 times', 'Active'),
-          _buildCouponCard('FREEDELIVERY', 'Zero pickup fee for first-time doorstep inspections', 'Used 1,240 times', 'Active'),
         ],
       ),
     );
   }
+}
 
-  Widget _buildCouponCard(String code, String desc, String usage, String status) {
+class _AdminOrderCard extends StatelessWidget {
+  final AdminOrder order;
+  final VoidCallback onTap;
+
+  const _AdminOrderCard({required this.order, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3E8FF),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.local_offer, color: Color(0xFF7C3AED), size: 20),
-        ),
-        title: Text(code, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(desc, style: const TextStyle(fontSize: 11, color: Color(0xFF475569))),
-            Text(usage, style: const TextStyle(fontSize: 10, color: Color(0xFF059669), fontWeight: FontWeight.bold)),
-          ],
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: const Color(0xFFDCFCE7),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(status, style: const TextStyle(color: Color(0xFF166534), fontSize: 10, fontWeight: FontWeight.bold)),
-        ),
-      ),
-    );
-  }
-
-  // TAB 5: SYSTEM SETTINGS
-  Widget _buildSettingsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Card(
-            child: Column(
-              children: [
-                _buildSettingsTile(Icons.admin_panel_settings, 'Admin Access Control', '3 Super Admins, 12 Dispatch Managers'),
-                const Divider(height: 1, indent: 56),
-                _buildSettingsTile(Icons.price_change, 'Dynamic Valuation Algorithm', 'Standard 1.0x Base Multiplier Active'),
-                const Divider(height: 1, indent: 56),
-                _buildSettingsTile(Icons.verified_user, 'Biometric / 2FA Security', 'Mandatory for all admin logins'),
-                const Divider(height: 1, indent: 56),
-                _buildSettingsTile(Icons.cloud_sync, 'Cloud Database Backups', 'Hourly snapshots enabled (PostgreSQL)'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          OutlinedButton.icon(
-            icon: const Icon(Icons.logout, color: Color(0xFFDC2626)),
-            label: const Text('Exit Admin Console', style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.bold)),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFDC2626)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Admin session terminated.')),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingsTile(IconData icon, String title, String subtitle) {
-    return ListTile(
-      leading: Icon(icon, color: const Color(0xFF7C3AED)),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-      trailing: const Icon(Icons.chevron_right, size: 18, color: Color(0xFF94A3B8)),
-    );
-  }
-
-  // Broadcast Composer Modal
-  void _openBroadcastDialog(BuildContext context) {
-    final titleCtrl = TextEditingController(text: 'Festive Flash Deal!');
-    final bodyCtrl = TextEditingController(text: 'Extra ₹1,500 exchange bonus on all iPhones today only. Tap to sell!');
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.campaign, color: Color(0xFF7C3AED)),
-              SizedBox(width: 8),
-              Text('Push Notification Broadcast', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Notification Title',
-                  border: OutlineInputBorder(),
+              // Top Bar: Order ID, Type badge, Price
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        order.id,
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A)),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7C3AED).withAlpha(20),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          order.type.toUpperCase(),
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '₹${order.finalPrice.toStringAsFixed(0)}',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                  ),
+                ],
+              ),
+              const Divider(height: 20, color: Color(0xFFF1F5F9)),
+
+              // Device & Customer
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.phone_iphone, color: Color(0xFF64748B), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          order.deviceModel,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        ),
+                        if (order.deviceVariant.isNotEmpty)
+                          Text(
+                            order.deviceVariant,
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              Row(
+                children: [
+                  const Icon(Icons.person_outline, color: Color(0xFF64748B), size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${order.customerName} (${order.customerPhone})',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF475569)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Assignments: Partner Hub & Rider
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.storefront, size: 14, color: Color(0xFF64748B)),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              order.assignedPartnerName,
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF334155), fontWeight: FontWeight.w500),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.two_wheeler, size: 14, color: Color(0xFF64748B)),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              order.assignedRiderName,
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF334155), fontWeight: FontWeight.w500),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: bodyCtrl,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Message Body',
-                  border: OutlineInputBorder(),
-                ),
+
+              // Bottom status & Action
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _StatusBadge(status: order.status),
+                  Row(
+                    children: const [
+                      Text(
+                        'Manage Order',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)),
+                      ),
+                      Icon(Icons.chevron_right, size: 16, color: Color(0xFF7C3AED)),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.pop(ctx),
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 5. ORDER DETAIL BOTTOM SHEET
+// ==========================================
+class _AdminOrderDetailModal extends StatefulWidget {
+  final AdminOrder order;
+  final List<AdminPartner> partners;
+  final List<AdminDeliveryAgent> agents;
+  final VoidCallback onOrderUpdated;
+
+  const _AdminOrderDetailModal({
+    required this.order,
+    required this.partners,
+    required this.agents,
+    required this.onOrderUpdated,
+  });
+
+  @override
+  State<_AdminOrderDetailModal> createState() => _AdminOrderDetailModalState();
+}
+
+class _AdminOrderDetailModalState extends State<_AdminOrderDetailModal> {
+  bool _isUpdating = false;
+
+  Future<void> _updateStatus(String newStatus) async {
+    setState(() => _isUpdating = true);
+    final ok = await ApiService.updateOrder(
+      orderId: widget.order.id,
+      status: newStatus,
+      notes: 'Status updated by Super Admin',
+    );
+    if (!mounted) return;
+    setState(() => _isUpdating = false);
+    if (ok) {
+      widget.onOrderUpdated();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update status on server')),
+      );
+    }
+  }
+
+  void _showAssignPartnerDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Assign Partner Hub', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: widget.partners.length,
+            separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: (_, idx) {
+              final p = widget.partners[idx];
+              return ListTile(
+                title: Text(p.storeName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                subtitle: Text('${p.ownerName} • ${p.city}', style: const TextStyle(fontSize: 11)),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  setState(() => _isUpdating = true);
+                  await ApiService.updateOrder(
+                    orderId: widget.order.id,
+                    assignedPartnerId: p.id,
+                    assignedPartnerName: p.storeName,
+                  );
+                  if (mounted) {
+                    setState(() => _isUpdating = false);
+                    widget.onOrderUpdated();
+                  }
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAssignRiderDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Assign Delivery Rider', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: widget.agents.length,
+            separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: (_, idx) {
+              final a = widget.agents[idx];
+              return ListTile(
+                title: Text(a.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                subtitle: Text('${a.zone} • ${a.vehicleType} (${a.dutyStatus})', style: const TextStyle(fontSize: 11)),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  setState(() => _isUpdating = true);
+                  await ApiService.updateOrder(
+                    orderId: widget.order.id,
+                    assignedRiderId: a.id,
+                    assignedRiderName: a.name,
+                  );
+                  if (mounted) {
+                    setState(() => _isUpdating = false);
+                    widget.onOrderUpdated();
+                  }
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final o = widget.order;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          // Drag handle
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(o.id, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                    Text('Type: ${o.type.toUpperCase()}', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                  ],
+                ),
+                _StatusBadge(status: o.status),
+              ],
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7C3AED),
-              ),
-              onPressed: () {
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Push Broadcast dispatched to 12,450 devices!'),
-                    backgroundColor: Color(0xFF059669),
+          ),
+          const Divider(height: 1),
+
+          // Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Customer & Location
+                  _DetailSection(
+                    title: 'Customer Information',
+                    children: [
+                      _DetailRow(label: 'Name', value: o.customerName),
+                      _DetailRow(label: 'Phone', value: o.customerPhone),
+                      _DetailRow(label: 'Address', value: '${o.pickupAddress}, ${o.pickupCity}'),
+                    ],
                   ),
-                );
-              },
-              child: const Text('Dispatch Push', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 18),
+
+                  // Device Valuation
+                  _DetailSection(
+                    title: 'Device & Financial Valuation',
+                    children: [
+                      _DetailRow(label: 'Device', value: o.deviceModel),
+                      if (o.deviceVariant.isNotEmpty) _DetailRow(label: 'Variant', value: o.deviceVariant),
+                      _DetailRow(label: 'Final Payout', value: '₹${o.finalPrice.toStringAsFixed(0)}'),
+                      _DetailRow(label: 'Payment Status', value: o.paymentStatus.toUpperCase()),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Assignment Control
+                  _DetailSection(
+                    title: 'Hub & Delivery Allocation',
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Assigned Hub:', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                              Text(o.assignedPartnerName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                            ],
+                          ),
+                          OutlinedButton(
+                            onPressed: _showAssignPartnerDialog,
+                            style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
+                            child: const Text('Reassign Hub'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Assigned Rider:', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                              Text(o.assignedRiderName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                            ],
+                          ),
+                          OutlinedButton(
+                            onPressed: _showAssignRiderDialog,
+                            style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
+                            child: const Text('Reassign Rider'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Status Transitions
+                  const Text(
+                    'Override Order Status',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _ActionButton(
+                        label: 'Assign Hub/Rider',
+                        color: const Color(0xFF2563EB),
+                        onPressed: () => _updateStatus('assigned'),
+                      ),
+                      _ActionButton(
+                        label: 'Out for Pickup',
+                        color: const Color(0xFF7C3AED),
+                        onPressed: () => _updateStatus('out_for_pickup'),
+                      ),
+                      _ActionButton(
+                        label: 'Inspection In Progress',
+                        color: const Color(0xFFF59E0B),
+                        onPressed: () => _updateStatus('inspection_in_progress'),
+                      ),
+                      _ActionButton(
+                        label: 'Mark Completed',
+                        color: const Color(0xFF059669),
+                        onPressed: () => _updateStatus('completed'),
+                      ),
+                      _ActionButton(
+                        label: 'Cancel Order',
+                        color: Colors.redAccent,
+                        onPressed: () => _updateStatus('cancelled'),
+                      ),
+                    ],
+                  ),
+                  if (_isUpdating) ...[
+                    const SizedBox(height: 20),
+                    const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED))),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailSection extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _DetailSection({required this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+          const SizedBox(height: 8),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 110, child: Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)))),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)))),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+
+  const _ActionButton({required this.label, required this.color, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color.withAlpha(25),
+        foregroundColor: color,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+      onPressed: onPressed,
+      child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+    );
+  }
+}
+
+// ==========================================
+// 6. TAB 3: PARTNERS MANAGEMENT
+// ==========================================
+class AdminPartnersScreen extends StatefulWidget {
+  const AdminPartnersScreen({super.key});
+
+  @override
+  State<AdminPartnersScreen> createState() => _AdminPartnersScreenState();
+}
+
+class _AdminPartnersScreenState extends State<AdminPartnersScreen> {
+  bool _isLoading = true;
+  List<AdminPartner> _partners = [];
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPartners();
+  }
+
+  Future<void> _loadPartners() async {
+    setState(() => _isLoading = true);
+    final list = await ApiService.fetchPartners();
+    if (!mounted) return;
+    setState(() {
+      _partners = list;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _togglePartnerStatus(AdminPartner partner) async {
+    final newStatus = partner.status == 'active' ? 'suspended' : 'active';
+    final ok = await ApiService.updatePartnerStatus(partnerId: partner.id, status: newStatus);
+    if (!mounted) return;
+    if (ok) {
+      _loadPartners();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: newStatus == 'active' ? const Color(0xFF059669) : Colors.redAccent,
+          content: Text('${partner.storeName} status updated to ${newStatus.toUpperCase()}'),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _partners.where((p) {
+      final q = _searchQuery.toLowerCase();
+      return p.storeName.toLowerCase().contains(q) ||
+          p.ownerName.toLowerCase().contains(q) ||
+          p.city.toLowerCase().contains(q);
+    }).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Partner Network', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadPartners),
+        ],
+      ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: TextField(
+              onChanged: (v) => setState(() => _searchQuery = v),
+              decoration: InputDecoration(
+                hintText: 'Search Store Name, Owner, City...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                filled: true,
+                fillColor: const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)))
+                : RefreshIndicator(
+                    onRefresh: _loadPartners,
+                    color: const Color(0xFF7C3AED),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (ctx, idx) {
+                        final p = filtered[idx];
+                        final isActive = p.status == 'active';
+                        return Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF7C3AED).withAlpha(20),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: const Icon(Icons.store, color: Color(0xFF7C3AED), size: 20),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              p.storeName,
+                                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                            ),
+                                            Text(
+                                              '${p.ownerName} • ${p.city}',
+                                              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: isActive ? const Color(0xFF10B981).withAlpha(25) : Colors.redAccent.withAlpha(25),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        p.status.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: isActive ? const Color(0xFF059669) : Colors.redAccent,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 20, color: Color(0xFFF1F5F9)),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('Rating: ⭐ ${p.rating.toStringAsFixed(1)}', style: const TextStyle(fontSize: 12, color: Color(0xFF334155))),
+                                    Text('Commission: ${p.commissionRate.toStringAsFixed(1)}%', style: const TextStyle(fontSize: 12, color: Color(0xFF334155))),
+                                    Text('Total QA: ${p.totalOrders}', style: const TextStyle(fontSize: 12, color: Color(0xFF334155))),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: isActive ? Colors.redAccent : const Color(0xFF059669),
+                                        side: BorderSide(color: isActive ? Colors.redAccent : const Color(0xFF059669)),
+                                      ),
+                                      icon: Icon(isActive ? Icons.block : Icons.check_circle, size: 16),
+                                      label: Text(isActive ? 'Suspend Hub' : 'Activate Hub'),
+                                      onPressed: () => _togglePartnerStatus(p),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 7. TAB 4: DELIVERY FLEET MANAGEMENT
+// ==========================================
+class AdminFleetScreen extends StatefulWidget {
+  const AdminFleetScreen({super.key});
+
+  @override
+  State<AdminFleetScreen> createState() => _AdminFleetScreenState();
+}
+
+class _AdminFleetScreenState extends State<AdminFleetScreen> {
+  bool _isLoading = true;
+  List<AdminDeliveryAgent> _agents = [];
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAgents();
+  }
+
+  Future<void> _loadAgents() async {
+    setState(() => _isLoading = true);
+    final list = await ApiService.fetchDeliveryAgents();
+    if (!mounted) return;
+    setState(() {
+      _agents = list;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _toggleDuty(AdminDeliveryAgent agent) async {
+    final newDuty = agent.dutyStatus == 'online' ? 'offline' : 'online';
+    final ok = await ApiService.updateAgentDutyStatus(agentId: agent.id, dutyStatus: newDuty);
+    if (!mounted) return;
+    if (ok) {
+      _loadAgents();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _agents.where((a) {
+      final q = _searchQuery.toLowerCase();
+      return a.name.toLowerCase().contains(q) ||
+          a.zone.toLowerCase().contains(q) ||
+          a.phone.toLowerCase().contains(q);
+    }).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Delivery Fleet Logistics', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadAgents),
+        ],
+      ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: TextField(
+              onChanged: (v) => setState(() => _searchQuery = v),
+              decoration: InputDecoration(
+                hintText: 'Search Rider Name, Phone, Zone...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                filled: true,
+                fillColor: const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)))
+                : RefreshIndicator(
+                    onRefresh: _loadAgents,
+                    color: const Color(0xFF7C3AED),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (ctx, idx) {
+                        final a = filtered[idx];
+                        final isOnline = a.dutyStatus == 'online';
+                        return Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF2563EB).withAlpha(20),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: const Icon(Icons.two_wheeler, color: Color(0xFF2563EB), size: 20),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              a.name,
+                                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                            ),
+                                            Text(
+                                              '${a.phone} • ${a.zone}',
+                                              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: isOnline ? const Color(0xFF10B981).withAlpha(25) : Colors.grey.withAlpha(30),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        a.dutyStatus.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: isOnline ? const Color(0xFF059669) : Colors.grey[700],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 20, color: Color(0xFFF1F5F9)),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('Vehicle: ${a.vehicleType}', style: const TextStyle(fontSize: 12, color: Color(0xFF334155))),
+                                    Text('Rating: ⭐ ${a.rating.toStringAsFixed(1)}', style: const TextStyle(fontSize: 12, color: Color(0xFF334155))),
+                                    Text('Active Tasks: ${a.activeOrders}', style: const TextStyle(fontSize: 12, color: Color(0xFF334155))),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: isOnline ? Colors.orange[800] : const Color(0xFF059669),
+                                      ),
+                                      icon: Icon(isOnline ? Icons.bedtime_outlined : Icons.wb_sunny_outlined, size: 16),
+                                      label: Text(isOnline ? 'Set Offline' : 'Set Online'),
+                                      onPressed: () => _toggleDuty(a),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 8. TAB 5: ADMIN PROFILE & SYSTEM CONTROLS
+// ==========================================
+class AdminProfileScreen extends StatelessWidget {
+  final AdminUser user;
+
+  const AdminProfileScreen({super.key, required this.user});
+
+  Future<void> _logout(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Log Out Super Admin?'),
+        content: const Text('You will need master credentials to re-enter the administrative dashboard.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Log Out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await SessionService.clearSession();
+      if (!context.mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+        (route) => false,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Admin System & Controls', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Admin Identity Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: const Color(0xFF7C3AED).withAlpha(30),
+                    child: const Icon(Icons.security, size: 32, color: Color(0xFF7C3AED)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.name,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                        ),
+                        Text(
+                          user.email,
+                          style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF7C3AED).withAlpha(20),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            user.role.toUpperCase(),
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Server & System Information
+            Card(
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.cloud_sync, color: Color(0xFF7C3AED)),
+                    title: const Text('Backend API Gateway', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('https://casmik-one.vercel.app', style: TextStyle(fontSize: 12)),
+                    trailing: const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 20),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.security, color: Color(0xFF2563EB)),
+                    title: const Text('RBAC Security Protocol', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('Full Superadmin Read/Write Access', style: TextStyle(fontSize: 12)),
+                    trailing: const Icon(Icons.verified_user, color: Color(0xFF2563EB), size: 20),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.phone_android, color: Color(0xFF059669)),
+                    title: const Text('App Version', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('CAMSIK Admin v2.4.0 (Build 36)', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Logout Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent.withAlpha(20),
+                  foregroundColor: Colors.redAccent,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.logout),
+                label: const Text('Sign Out Super Admin Session', style: TextStyle(fontWeight: FontWeight.bold)),
+                onPressed: () => _logout(context),
+              ),
             ),
           ],
-        );
-      },
+        ),
+      ),
+    );
+  }
+}
+
+// Status Badge Component
+class _StatusBadge extends StatelessWidget {
+  final String status;
+
+  const _StatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    Color bg;
+    Color fg;
+
+    switch (status.toLowerCase()) {
+      case 'completed':
+        bg = const Color(0xFF10B981).withAlpha(25);
+        fg = const Color(0xFF059669);
+        break;
+      case 'out_for_pickup':
+      case 'assigned':
+        bg = const Color(0xFF2563EB).withAlpha(25);
+        fg = const Color(0xFF2563EB);
+        break;
+      case 'inspection_in_progress':
+        bg = const Color(0xFFF59E0B).withAlpha(25);
+        fg = const Color(0xFFD97706);
+        break;
+      case 'cancelled':
+        bg = Colors.redAccent.withAlpha(25);
+        fg = Colors.redAccent;
+        break;
+      default:
+        bg = const Color(0xFF64748B).withAlpha(25);
+        fg = const Color(0xFF475569);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        status.replaceAll('_', ' ').toUpperCase(),
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: fg),
+      ),
     );
   }
 }

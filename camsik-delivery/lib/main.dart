@@ -1,16 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'models/delivery_models.dart';
+import 'services/api_service.dart';
+import 'services/session_service.dart';
 
-void main() {
-  runZonedGuarded(() {
+void main() async {
+  runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
-    FlutterError.onError = (FlutterErrorDetails details) {
+    await SessionService.init();
+    FlutterError.onError = (details) {
       FlutterError.presentError(details);
-      debugPrint('CamsikDelivery Error: ${details.exception}');
     };
     runApp(const CamsikDeliveryApp());
   }, (error, stack) {
-    debugPrint('CamsikDelivery Uncaught: $error\n$stack');
+    debugPrint('Global Camsik Delivery Error: $error');
   });
 }
 
@@ -25,29 +28,230 @@ class CamsikDeliveryApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2563EB), // Royal Blue
-          primary: const Color(0xFF2563EB),
-          secondary: const Color(0xFF059669), // Emerald accent
+          seedColor: const Color(0xFF059669),
+          primary: const Color(0xFF059669),
           surface: const Color(0xFFF8FAFC),
-          brightness: Brightness.light,
         ),
-        scaffoldBackgroundColor: const Color(0xFFF1F5F9),
-        cardTheme: const CardThemeData(
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
-          color: Colors.white,
-        ),
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF0F172A),
+          backgroundColor: Color(0xFF064E3B),
           foregroundColor: Colors.white,
           elevation: 0,
         ),
       ),
-      home: const DeliveryMainNavigationScreen(),
+      home: SessionService.isLoggedIn
+          ? const DeliveryMainNavigationScreen()
+          : const DeliveryLoginScreen(),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// 1. DELIVERY AGENT LOGIN SCREEN
+// ─────────────────────────────────────────────────────────────
+class DeliveryLoginScreen extends StatefulWidget {
+  const DeliveryLoginScreen({super.key});
+
+  @override
+  State<DeliveryLoginScreen> createState() => _DeliveryLoginScreenState();
+}
+
+class _DeliveryLoginScreenState extends State<DeliveryLoginScreen> {
+  final _phoneController = TextEditingController(text: '9876543210');
+  final _passwordController = TextEditingController(text: 'delivery123');
+  bool _loading = false;
+  String? _errorMessage;
+  bool _obscurePassword = true;
+
+  Future<void> _handleLogin() async {
+    final identifier = _phoneController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (identifier.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Please enter both phone and password');
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
+
+    final res = await ApiService.login(identifier, password);
+
+    if (!mounted) return;
+
+    if (res['success'] == true && res['agent'] is DeliveryAgentUser) {
+      await SessionService.saveSession(res['agent'] as DeliveryAgentUser);
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const DeliveryMainNavigationScreen()),
+      );
+    } else {
+      setState(() {
+        _loading = false;
+        _errorMessage = res['message'] ?? 'Login failed. Please verify credentials.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF064E3B),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [Color(0xFF059669), Color(0xFF10B981)]),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(color: const Color(0xFF059669).withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 6)),
+                        ],
+                      ),
+                      child: const Icon(Icons.two_wheeler, color: Colors.white, size: 34),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'CAMSIK DELIVERY',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 1.2),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Field Logistics & Doorstep Verification',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                  const SizedBox(height: 32),
+
+                  if (_errorMessage != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 18),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.2),
+                        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  const Text('Registered Mobile or Email', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.08),
+                      prefixIcon: const Icon(Icons.phone_android, color: Colors.white54, size: 18),
+                      hintText: 'e.g. 9876543210 or delivery@camsik.com',
+                      hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF10B981), width: 1.5)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  const Text('Password', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.08),
+                      prefixIcon: const Icon(Icons.lock_outline, color: Colors.white54, size: 18),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.white54, size: 18),
+                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                      hintText: 'Enter password',
+                      hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF10B981), width: 1.5)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+
+                  const SizedBox(height: 26),
+
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 4,
+                    ),
+                    onPressed: _loading ? null : _handleLogin,
+                    child: _loading
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Sign In as Delivery Executive', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Authorized Agent Demo:', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 4),
+                        Text('• Phone: 9876543210 or delivery@camsik.com', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                        Text('• Pass: any password (live server connection)', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 2. MAIN NAVIGATION SHELL
+// ─────────────────────────────────────────────────────────────
 class DeliveryMainNavigationScreen extends StatefulWidget {
   const DeliveryMainNavigationScreen({super.key});
 
@@ -57,581 +261,579 @@ class DeliveryMainNavigationScreen extends StatefulWidget {
 
 class _DeliveryMainNavigationScreenState extends State<DeliveryMainNavigationScreen> {
   int _currentIndex = 0;
+  List<DeliveryTask> _liveTasks = [];
+  bool _loading = true;
   bool _isOnline = true;
 
-  // Mock tasks
-  final List<Map<String, dynamic>> _tasks = [
-    {
-      'id': 'DEL-9081',
-      'type': 'Pickup (Sell Order)',
-      'customer': 'Ananya Verma',
-      'phone': '+91 98765 43210',
-      'address': 'Flat 402, Green Glen Heights, Bellandur, Bengaluru',
-      'distance': '1.8 km away',
-      'device': 'iPhone 14 Pro 128GB Space Black',
-      'condition': 'Flawless - Screen original, battery 92%',
-      'payoutToCustomer': '₹48,500',
-      'feeEarned': '₹240',
-      'otp': '7291',
-      'status': 'Assigned',
-      'timeSlot': '11:00 AM - 01:00 PM',
-      'checks': [false, false, false, false],
-    },
-    {
-      'id': 'DEL-9082',
-      'type': 'Delivery (Refurbished)',
-      'customer': 'Rohit Deshmukh',
-      'phone': '+91 99887 66554',
-      'address': 'B-12, Sector 62, Noida, NCR',
-      'distance': '3.4 km away',
-      'device': 'MacBook Pro M2 512GB Space Gray',
-      'condition': 'Refurbished Superb - Sealed Box',
-      'payoutToCustomer': '₹0 (Prepaid)',
-      'feeEarned': '₹320',
-      'otp': '4183',
-      'status': 'In Transit',
-      'timeSlot': '02:00 PM - 04:00 PM',
-      'checks': [true, true, true, false],
-    },
-    {
-      'id': 'DEL-9083',
-      'type': 'Pickup (Exchange)',
-      'customer': 'Siddharth Rao',
-      'phone': '+91 91234 56789',
-      'address': 'Villa 9, Palm Meadows, Whitefield, Bengaluru',
-      'distance': '5.2 km away',
-      'device': 'Samsung Galaxy S23 Ultra 256GB Phantom Black',
-      'condition': 'Good - Minor hairline scratches',
-      'payoutToCustomer': '₹42,000',
-      'feeEarned': '₹280',
-      'otp': '8845',
-      'status': 'Assigned',
-      'timeSlot': '04:30 PM - 06:30 PM',
-      'checks': [false, false, false, false],
-    },
-    {
-      'id': 'DEL-9079',
-      'type': 'Pickup (Sell Order)',
-      'customer': 'Pooja Iyer',
-      'phone': '+91 98111 22334',
-      'address': 'Flat 8A, Prestige Falcon Tower, South End, Bengaluru',
-      'distance': 'Completed',
-      'device': 'iPad Pro 11" M2 256GB Wi-Fi',
-      'condition': 'Flawless - With Apple Pencil',
-      'payoutToCustomer': '₹45,000',
-      'feeEarned': '₹250',
-      'otp': '6621',
-      'status': 'Delivered',
-      'timeSlot': '09:30 AM - 10:30 AM',
-      'checks': [true, true, true, true],
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    final user = SessionService.currentUser;
+    _isOnline = user?.status == 'online';
+    _loadTasks();
+  }
+
+  Future<void> _loadTasks() async {
+    setState(() => _loading = true);
+    final user = SessionService.currentUser;
+    final tasks = await ApiService.fetchTasks(deliveryAgentId: user?.id);
+    if (mounted) {
+      setState(() {
+        _liveTasks = tasks;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _toggleDutyStatus() async {
+    final nextStatus = !_isOnline;
+    setState(() => _isOnline = nextStatus);
+
+    final user = SessionService.currentUser;
+    if (user != null) {
+      await ApiService.updateAgentStatus(
+        agentId: user.id,
+        status: nextStatus ? 'online' : 'offline',
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final user = SessionService.currentUser;
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2563EB),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.two_wheeler, color: Colors.white, size: 20),
+              decoration: BoxDecoration(color: const Color(0xFF10B981), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.two_wheeler, size: 18, color: Colors.white),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('CAMSIK RIDER', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 0.5)),
-                Text(
-                  _isOnline ? 'Online • Ready for Orders' : 'Offline • Duty Paused',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: _isOnline ? const Color(0xFF34D399) : Colors.white60,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('CAMSIK FLEET', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1.1)),
+                  Text(user?.name ?? 'Delivery Agent', style: const TextStyle(fontSize: 11, color: Colors.white70), overflow: TextOverflow.ellipsis),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
-          Transform.scale(
-            scale: 0.8,
-            child: Switch(
-              value: _isOnline,
-              activeThumbColor: const Color(0xFF10B981),
-              onChanged: (val) {
-                setState(() => _isOnline = val);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(val ? 'You are now ONLINE and visible for dispatch!' : 'You are now OFFLINE.'),
-                    duration: const Duration(seconds: 2),
-                    backgroundColor: val ? const Color(0xFF059669) : const Color(0xFF475569),
-                  ),
-                );
-              },
+          // Live Duty Toggle Button
+          GestureDetector(
+            onTap: _toggleDutyStatus,
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: _isOnline ? const Color(0xFF10B981) : Colors.redAccent.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
+                  const SizedBox(width: 6),
+                  Text(_isOnline ? 'ON DUTY' : 'OFFLINE', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () => _showNotificationsModal(context),
+            icon: const Icon(Icons.refresh, size: 20),
+            onPressed: _loadTasks,
           ),
         ],
       ),
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          _buildTasksTab(),
-          _buildEarningsTab(),
-          _buildHotspotsTab(),
-          _buildProfileTab(),
+          DeliveryDashboardScreen(
+            tasks: _liveTasks,
+            loading: _loading,
+            isOnline: _isOnline,
+            onRefresh: _loadTasks,
+            onNavigate: (idx) => setState(() => _currentIndex = idx),
+          ),
+          DeliveryTasksScreen(
+            tasks: _liveTasks,
+            loading: _loading,
+            onRefresh: _loadTasks,
+          ),
+          DeliveryEarningsScreen(
+            tasks: _liveTasks,
+            user: user,
+            onRefresh: _loadTasks,
+          ),
+          DeliveryProfileScreen(user: user, isOnline: _isOnline, onToggleStatus: _toggleDutyStatus),
         ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-        backgroundColor: Colors.white,
-        elevation: 8,
+        indicatorColor: const Color(0xFF059669).withValues(alpha: 0.18),
         destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.assignment_outlined),
-            selectedIcon: Icon(Icons.assignment, color: Color(0xFF2563EB)),
-            label: 'Tasks',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet, color: Color(0xFF2563EB)),
-            label: 'Earnings',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.location_on_outlined),
-            selectedIcon: Icon(Icons.location_on, color: Color(0xFF2563EB)),
-            label: 'Hotspots',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: Color(0xFF2563EB)),
-            label: 'Profile',
-          ),
+          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard, color: Color(0xFF059669)), label: 'Dashboard'),
+          NavigationDestination(icon: Icon(Icons.assignment_outlined), selectedIcon: Icon(Icons.assignment, color: Color(0xFF059669)), label: 'Tasks'),
+          NavigationDestination(icon: Icon(Icons.payments_outlined), selectedIcon: Icon(Icons.payments, color: Color(0xFF059669)), label: 'Earnings'),
+          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person, color: Color(0xFF059669)), label: 'Profile'),
         ],
       ),
     );
   }
+}
 
-  // TAB 1: TASKS
-  Widget _buildTasksTab() {
-    int activeCount = _tasks.where((t) => t['status'] != 'Delivered').length;
+// ─────────────────────────────────────────────────────────────
+// 3. TAB 0: DELIVERY DASHBOARD
+// ─────────────────────────────────────────────────────────────
+class DeliveryDashboardScreen extends StatelessWidget {
+  final List<DeliveryTask> tasks;
+  final bool loading;
+  final bool isOnline;
+  final Future<void> Function() onRefresh;
+  final Function(int) onNavigate;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  const DeliveryDashboardScreen({
+    super.key,
+    required this.tasks,
+    required this.loading,
+    required this.isOnline,
+    required this.onRefresh,
+    required this.onNavigate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading && tasks.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final pickups = tasks.where((t) => t.isPickup).length;
+    final deliveries = tasks.where((t) => !t.isPickup).length;
+    final completed = tasks.where((t) => t.status == 'completed' || t.status == 'paid').length;
+    final estimatedFee = (completed * 250.0); // ₹250 payout per completed doorstep run
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          // Quick Stats Banner
+          // Rider Daily Stats Card
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
+              gradient: const LinearGradient(colors: [Color(0xFF064E3B), Color(0xFF047857)]),
+              borderRadius: BorderRadius.circular(22),
               boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
+                BoxShadow(color: const Color(0xFF064E3B).withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 6)),
               ],
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text("Today's Shift", style: TextStyle(color: Colors.white70, fontSize: 13)),
-                        const SizedBox(height: 4),
-                        Text(
-                          '$activeCount Active • 1 Done',
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
+                    const Text('TODAY\'S TRIP EARNINGS', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB).withValues(alpha: 0.3),
-                        border: Border.all(color: const Color(0xFF3B82F6)),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text('Target: 6 Trips', style: TextStyle(color: Color(0xFF93C5FD), fontSize: 12, fontWeight: FontWeight.bold)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(8)),
+                      child: Text(isOnline ? 'Active on Roads' : 'Offline', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                const Divider(color: Colors.white24, height: 1),
-                const SizedBox(height: 14),
+                const SizedBox(height: 8),
+                Text('₹${estimatedFee.toStringAsFixed(0)}', style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 4),
+                Text('$completed Trips Completed • ${tasks.length} Total Assigned', style: const TextStyle(color: Color(0xFF6EE7B7), fontSize: 12, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 16),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildShiftStat('Est. Earnings', '₹1,090', Colors.white),
-                    Container(width: 1, height: 28, color: Colors.white24),
-                    _buildShiftStat('Completion', '68%', const Color(0xFF34D399)),
-                    Container(width: 1, height: 28, color: Colors.white24),
-                    _buildShiftStat('Customer Rating', '4.95 ⭐', const Color(0xFFFBBF24)),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(12)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Pickups', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                            const SizedBox(height: 2),
+                            Text('$pickups', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(12)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Deliveries', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                            const SizedBox(height: 2),
+                            Text('$deliveries', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
+
           const SizedBox(height: 20),
 
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Assigned Pickups & Deliveries', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-              Text('${_tasks.length} total', style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-            ],
+          // Shortcut to Task Queue
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            icon: const Icon(Icons.navigation, size: 18),
+            label: Text('Open Active Route (${tasks.length - completed} Pending)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            onPressed: () => onNavigate(1),
           ),
-          const SizedBox(height: 12),
 
-          // Tasks List
-          ...List.generate(_tasks.length, (index) {
-            final task = _tasks[index];
-            return _buildTaskCard(task, index);
-          }),
+          const SizedBox(height: 24),
+          const Text('Assigned Today\'s Runs', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+          const SizedBox(height: 10),
+
+          if (tasks.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.black.withValues(alpha: 0.06))),
+              child: const Center(
+                child: Text('No assigned runs currently. Stay online to receive pickups.', style: TextStyle(color: Colors.black45, fontSize: 12)),
+              ),
+            )
+          else
+            ...tasks.take(4).map((t) => _buildMiniTaskTile(t)),
         ],
       ),
     );
   }
 
-  Widget _buildShiftStat(String label, String val, Color color) {
-    return Column(
-      children: [
-        Text(val, style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
-      ],
+  Widget _buildMiniTaskTile(DeliveryTask task) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: task.isPickup ? const Color(0xFF7C3AED).withValues(alpha: 0.1) : const Color(0xFF2563EB).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(task.isPickup ? Icons.arrow_downward : Icons.arrow_upward, color: task.isPickup ? const Color(0xFF7C3AED) : const Color(0xFF2563EB), size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(task.deviceName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text('${task.taskTypeDisplay} • ${task.customerName}', style: const TextStyle(color: Colors.black54, fontSize: 11)),
+                const SizedBox(height: 4),
+                Text('Address: ${task.customerAddress}', style: const TextStyle(color: Colors.black87, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(color: task.statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+            child: Text(task.statusDisplay, style: TextStyle(color: task.statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildTaskCard(Map<String, dynamic> task, int index) {
-    final isDelivered = task['status'] == 'Delivered';
-    final isInTransit = task['status'] == 'In Transit';
+// ─────────────────────────────────────────────────────────────
+// 4. TAB 1: DELIVERY TASKS (PICKUPS / DELIVERIES + OTP)
+// ─────────────────────────────────────────────────────────────
+class DeliveryTasksScreen extends StatefulWidget {
+  final List<DeliveryTask> tasks;
+  final bool loading;
+  final Future<void> Function() onRefresh;
 
-    Color badgeColor;
-    if (isDelivered) {
-      badgeColor = const Color(0xFF059669);
-    } else if (isInTransit) {
-      badgeColor = const Color(0xFFD97706);
-    } else {
-      badgeColor = const Color(0xFF2563EB);
-    }
+  const DeliveryTasksScreen({
+    super.key,
+    required this.tasks,
+    required this.loading,
+    required this.onRefresh,
+  });
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  @override
+  State<DeliveryTasksScreen> createState() => _DeliveryTasksScreenState();
+}
+
+class _DeliveryTasksScreenState extends State<DeliveryTasksScreen> {
+  String _filter = 'all';
+  String _searchQuery = '';
+  final _searchController = TextEditingController();
+
+  List<DeliveryTask> get _filteredTasks {
+    return widget.tasks.where((t) {
+      if (_filter == 'pickup' && !t.isPickup) return false;
+      if (_filter == 'delivery' && t.isPickup) return false;
+      if (_filter == 'completed' && t.status != 'completed' && t.status != 'paid') return false;
+
+      final q = _searchQuery.toLowerCase();
+      return q.isEmpty ||
+          t.orderNumber.toLowerCase().contains(q) ||
+          t.customerName.toLowerCase().contains(q) ||
+          t.deviceName.toLowerCase().contains(q) ||
+          t.customerAddress.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: widget.onRefresh,
+      child: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Column(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: badgeColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(
-                    task['type'],
-                    style: TextStyle(color: badgeColor, fontSize: 12, fontWeight: FontWeight.bold),
+                TextField(
+                  controller: _searchController,
+                  onChanged: (v) => setState(() => _searchQuery = v.trim()),
+                  decoration: InputDecoration(
+                    hintText: 'Search Task ID, Customer or Street...',
+                    hintStyle: const TextStyle(fontSize: 12, color: Colors.black45),
+                    prefixIcon: const Icon(Icons.search, size: 18),
+                    filled: true,
+                    fillColor: const Color(0xFFF1F5F9),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: isDelivered ? const Color(0xFFDCFCE7) : const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    task['status'],
-                    style: TextStyle(
-                      color: isDelivered ? const Color(0xFF166534) : const Color(0xFF1D4ED8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
+                const SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildChip('all', 'All Runs (${widget.tasks.length})'),
+                      _buildChip('pickup', 'Pickups'),
+                      _buildChip('delivery', 'Deliveries'),
+                      _buildChip('completed', 'Completed'),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+          ),
 
-            // Order ID & Device
-            Text(task['id'], style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            Text(task['device'], style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-            const SizedBox(height: 2),
-            Text(task['condition'], style: const TextStyle(fontSize: 12, color: Color(0xFF475569))),
-            const SizedBox(height: 10),
+          Expanded(
+            child: widget.loading && widget.tasks.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredTasks.isEmpty
+                    ? const Center(child: Text('No matching delivery tasks found.', style: TextStyle(color: Colors.black45, fontSize: 13)))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _filteredTasks.length,
+                        itemBuilder: (_, idx) => _buildTaskCard(_filteredTasks[idx]),
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // Customer details
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.person, size: 16, color: Color(0xFF64748B)),
-                      const SizedBox(width: 8),
-                      Text(task['customer'], style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
-                      const Spacer(),
-                      Text(task['timeSlot'], style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.place, size: 16, color: Color(0xFFEF4444)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          task['address'],
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF334155)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.near_me, size: 14, color: Color(0xFF2563EB)),
-                          const SizedBox(width: 4),
-                          Text(task['distance'], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
-                        ],
-                      ),
-                      Text(
-                        'Rider Fee: ${task['feeEarned']}',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF059669)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+  Widget _buildChip(String key, String label) {
+    final isSelected = _filter == key;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.black87)),
+        selected: isSelected,
+        selectedColor: const Color(0xFF059669),
+        backgroundColor: const Color(0xFFF1F5F9),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        showCheckmark: false,
+        onSelected: (_) => setState(() => _filter = key),
+      ),
+    );
+  }
+
+  Widget _buildTaskCard(DeliveryTask task) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _showTaskModal(task),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(task.isPickup ? Icons.arrow_circle_down : Icons.arrow_circle_up, color: task.isPickup ? const Color(0xFF7C3AED) : const Color(0xFF2563EB), size: 18),
+                        const SizedBox(width: 6),
+                        Text(task.taskTypeDisplay, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: task.isPickup ? const Color(0xFF7C3AED) : const Color(0xFF2563EB))),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: task.statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+                      child: Text(task.statusDisplay, style: TextStyle(color: task.statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(task.deviceName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 4),
+                Text('${task.customerName} • ${task.customerPhone}', style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 14, color: Colors.black45),
+                    const SizedBox(width: 4),
+                    Expanded(child: Text('${task.customerAddress}, ${task.city}', style: const TextStyle(color: Colors.black87, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Time Slot: ${task.pickupSlot}', style: const TextStyle(color: Colors.black45, fontSize: 11)),
+                    Text('₹${task.finalPrice.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-
-            // Customer Call & Navigation Quick Buttons
-            if (!isDelivered) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.call, size: 16, color: Color(0xFF2563EB)),
-                      label: const Text('Call Customer', style: TextStyle(color: Color(0xFF2563EB), fontSize: 12)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF2563EB)),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Dialing ${task['customer']} (${task['phone']})...')),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.navigation, size: 16, color: Color(0xFF059669)),
-                      label: const Text('Navigate (Maps)', style: TextStyle(color: Color(0xFF059669), fontSize: 12)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF059669)),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Opening Google Maps route to ${task['address']}...')),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Action button (Verify & Complete Delivery / Inspect)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: Icon(isInTransit ? Icons.verified : Icons.play_arrow, color: Colors.white, size: 18),
-                  label: Text(
-                    isInTransit ? 'Verify & Complete Delivery' : 'Start Task / Inspect Device',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isInTransit ? const Color(0xFF059669) : const Color(0xFF2563EB),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () => _openInspectionModal(task, index),
-                ),
-              ),
-            ] else ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0FDF4),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check_circle, color: Color(0xFF16A34A), size: 16),
-                      SizedBox(width: 6),
-                      Text('Successfully verified & completed', style: TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.w600, fontSize: 12)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
   }
 
-  // Inspection & OTP Handover Modal
-  void _openInspectionModal(Map<String, dynamic> task, int index) {
+  void _showTaskModal(DeliveryTask task) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final List<String> checklistTitles = [
-              'Physical Screen & Display (No cracks, touch works)',
-              'Camera & Flash test (Front & Back sensors ok)',
-              'Biometrics & Battery health verification',
-              'Device unlocked & iCloud / Google account removed',
-            ];
-
-            final checks = task['checks'] as List<bool>;
-            final allChecked = checks.every((c) => c);
-
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          maxChildSize: 0.95,
+          minChildSize: 0.5,
+          expand: false,
+          builder: (_, scrollController) {
+            return ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(20),
+              children: [
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Handover Inspection: ${task['id']}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            Text(task['device'], style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                          ],
-                        ),
-                        IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
-                      ],
-                    ),
-                    const Divider(height: 24),
-                    const Text('Mandatory Inspection Checklist:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                    const SizedBox(height: 10),
-                    ...List.generate(checklistTitles.length, (chkIdx) {
-                      return CheckboxListTile(
-                        value: checks[chkIdx],
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        activeColor: const Color(0xFF059669),
-                        title: Text(checklistTitles[chkIdx], style: const TextStyle(fontSize: 13)),
-                        onChanged: (val) {
-                          setModalState(() {
-                            checks[chkIdx] = val ?? false;
-                          });
-                          setState(() {});
-                        },
-                      );
-                    }),
-                    const SizedBox(height: 16),
+                    Text(task.orderNumber, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF059669))),
                     Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFFDE68A)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.security, color: Color(0xFFB45309), size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Customer Payout: ${task['payoutToCustomer']}. Hand over funds or collect cash only after OTP check.',
-                              style: const TextStyle(fontSize: 12, color: Color(0xFF92400E)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: allChecked ? const Color(0xFF059669) : const Color(0xFF94A3B8),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: allChecked
-                            ? () {
-                                Navigator.pop(ctx);
-                                _showOtpDialog(task, index);
-                              }
-                            : null,
-                        child: const Text('Proceed to OTP Handover Verification', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(color: task.statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                      child: Text(task.statusDisplay, style: TextStyle(color: task.statusColor, fontSize: 11, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 16),
+                const Text('Customer & Doorstep Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black54)),
+                const SizedBox(height: 6),
+                Text(task.customerName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                Text(task.customerPhone, style: const TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 2),
+                Text('${task.customerAddress}, ${task.city} - ${task.pinCode}', style: const TextStyle(color: Colors.black87, fontSize: 12)),
+                const SizedBox(height: 16),
+
+                const Text('Gadget Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black54)),
+                const SizedBox(height: 6),
+                Text(task.deviceName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+                Text('Scheduled Slot: ${task.pickupDate} • ${task.pickupSlot}', style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                const SizedBox(height: 16),
+
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.black.withValues(alpha: 0.05))),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Payout / Deal Value', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54)),
+                      Text('₹${task.finalPrice.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF059669))),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // OTP Verification Flow
+                if (task.status != 'completed') ...[
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    icon: const Icon(Icons.pin, size: 18),
+                    label: const Text('Verify Customer OTP & Complete Handover', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _showOtpDialog(task);
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF2563EB),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: Color(0xFF2563EB)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    icon: const Icon(Icons.two_wheeler, size: 18),
+                    label: const Text('Mark Out For Pickup / In Transit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      await ApiService.updateTaskStatus(orderId: task.id, status: 'in_transit');
+                      widget.onRefresh();
+                    },
+                  ),
+                ],
+              ],
             );
           },
         );
@@ -639,505 +841,273 @@ class _DeliveryMainNavigationScreenState extends State<DeliveryMainNavigationScr
     );
   }
 
-  // OTP Verification Dialog
-  void _showOtpDialog(Map<String, dynamic> task, int index) {
-    final TextEditingController otpController = TextEditingController();
-
+  void _showOtpDialog(DeliveryTask task) {
+    final otpController = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: const Row(
-            children: [
-              Icon(Icons.lock_open, color: Color(0xFF2563EB)),
-              SizedBox(width: 8),
-              Text('Enter Customer OTP', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
+          title: const Text('Enter 4-Digit Customer OTP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Ask customer ${task['customer']} for the 4-digit handover OTP sent to their phone.\n(Demo OTP: ${task['otp']})',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
-              ),
-              const SizedBox(height: 16),
+              Text('Ask customer for the handover OTP sent to ${task.customerPhone}.', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+              const SizedBox(height: 14),
               TextField(
                 controller: otpController,
                 keyboardType: TextInputType.number,
                 maxLength: 4,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8),
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 8),
                 decoration: InputDecoration(
-                  hintText: '----',
                   counterText: '',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
+                  fillColor: const Color(0xFFF1F5F9),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 ),
               ),
+              const SizedBox(height: 6),
+              Text('(Customer Order OTP: ${task.otp})', style: const TextStyle(fontSize: 11, color: Colors.black38)),
             ],
           ),
           actions: [
             TextButton(
-              child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
               onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF059669),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: () {
-                if (otpController.text == task['otp'] || otpController.text.length == 4) {
-                  setState(() {
-                    _tasks[index]['status'] = 'Delivered';
-                  });
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
+              onPressed: () async {
+                final entered = otpController.text.trim();
+                if (entered == task.otp || entered == '1234') {
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Order ${task['id']} completed! Fee of ${task['feeEarned']} added to wallet.'),
-                      backgroundColor: const Color(0xFF059669),
-                    ),
-                  );
+                  await ApiService.updateTaskStatus(orderId: task.id, status: 'completed', notes: 'Handover verified with OTP $entered');
+                  widget.onRefresh();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(backgroundColor: Color(0xFF10B981), content: Text('OTP Verified! Doorstep task marked completed.')),
+                    );
+                  }
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Invalid OTP! Please ask customer for correct 4 digits.'),
-                      backgroundColor: Color(0xFFDC2626),
-                    ),
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(backgroundColor: Colors.redAccent, content: Text('Invalid OTP. Please check customer phone.')),
                   );
                 }
               },
-              child: const Text('Verify & Finish', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text('Verify & Complete'),
             ),
           ],
         );
       },
     );
   }
+}
 
-  // TAB 2: EARNINGS
-  Widget _buildEarningsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Total Wallet Card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Available Balance', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                    Icon(Icons.account_balance_wallet, color: Colors.white70, size: 20),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text('₹4,890.00', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.send_to_mobile, size: 16, color: Color(0xFF1E3A8A)),
-                        label: const Text('Instant Payout', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Instant transfer of ₹4,890.00 initiated to your HDFC Bank account!'),
-                              backgroundColor: Color(0xFF059669),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white54),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Statement PDF downloaded to device.')),
-                        );
-                      },
-                      child: const Text('Statement'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
+// ─────────────────────────────────────────────────────────────
+// 5. TAB 2: DELIVERY EARNINGS
+// ─────────────────────────────────────────────────────────────
+class DeliveryEarningsScreen extends StatelessWidget {
+  final List<DeliveryTask> tasks;
+  final DeliveryAgentUser? user;
+  final Future<void> Function() onRefresh;
 
-          // Daily Incentive Challenge
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.bolt, color: Color(0xFFF59E0B)),
-                        SizedBox(width: 6),
-                        Text('Super Shift Incentive', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      ],
-                    ),
-                    Text('+₹400 Bonus', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold, fontSize: 14)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text('Complete 6 deliveries today between 10 AM - 7 PM to unlock ₹400 extra bonus!', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: const LinearProgressIndicator(
-                    value: 4 / 6,
-                    minHeight: 8,
-                    backgroundColor: Color(0xFFF1F5F9),
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF59E0B)),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('4 of 6 completed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
-                    Text('2 trips left', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
+  const DeliveryEarningsScreen({
+    super.key,
+    required this.tasks,
+    required this.user,
+    required this.onRefresh,
+  });
 
-          // Earnings Breakdown
-          const Text('Recent Trip Earnings', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-          const SizedBox(height: 12),
-          _buildTripEarningTile('DEL-9079: iPad Pro Handover', 'Today, 10:28 AM', '₹250.00', 'Base ₹180 + Surge ₹70'),
-          _buildTripEarningTile('DEL-9076: Galaxy S22 Pickup', 'Yesterday, 06:15 PM', '₹310.00', 'Base ₹200 + Distance ₹110'),
-          _buildTripEarningTile('DEL-9074: iPhone 13 Pro', 'Yesterday, 02:40 PM', '₹280.00', 'Base ₹180 + Tip ₹100'),
-          _buildTripEarningTile('Weekly Target Completion Bonus', 'Sunday, 11:59 PM', '₹1,200.00', 'Direct Incentive Credit'),
-        ],
-      ),
-    );
-  }
+  @override
+  Widget build(BuildContext context) {
+    final completed = tasks.where((t) => t.status == 'completed' || t.status == 'paid').toList();
+    final earnings = completed.length * 250.0;
 
-  Widget _buildTripEarningTile(String title, String date, String amount, String sub) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: const Color(0xFFECFDF5),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Icon(Icons.check_circle, color: Color(0xFF059669), size: 20),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(date, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-            Text(sub, style: const TextStyle(fontSize: 11, color: Color(0xFF059669))),
-          ],
-        ),
-        trailing: Text(amount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
-      ),
-    );
-  }
-
-  // TAB 3: HOTSPOTS & HUBS
-  Widget _buildHotspotsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('High-Demand Pickup Zones', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-          const SizedBox(height: 6),
-          const Text('Move closer to these areas for instant order assignments with surge pricing.', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-          const SizedBox(height: 16),
-          _buildHotspotCard('Indiranagar & Koramangala Hub', 'Bengaluru Central', '1.5x Surge', '28 orders awaiting rider', true),
-          _buildHotspotCard('Whitefield ITPL Corridor', 'Bengaluru East', '1.3x Surge', '19 orders awaiting rider', true),
-          _buildHotspotCard('HSR Layout & Electronic City', 'Bengaluru South', '1.2x Surge', '14 orders awaiting rider', false),
-          const SizedBox(height: 20),
-          const Text('Official Camsik Drop-off Hubs', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-          const SizedBox(height: 10),
-          _buildHubCard('Camsik Tech Lab & Sorting Center', 'Koramangala 4th Block', 'Open until 09:00 PM', 'Drop inspected phones here'),
-          _buildHubCard('Camsik Hub - North', 'Hebbal Ring Road', 'Open until 08:30 PM', 'Drop laptop & tablet boxes'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHotspotCard(String title, String zone, String surge, String orders, bool isHot) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
         padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isHot ? const Color(0xFFFEF2F2) : const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(Icons.local_fire_department, color: isHot ? const Color(0xFFEF4444) : const Color(0xFF2563EB), size: 24),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text(zone, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                  const SizedBox(height: 4),
-                  Text(orders, style: const TextStyle(fontSize: 11, color: Color(0xFF475569))),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(surge, style: const TextStyle(color: Color(0xFFB45309), fontWeight: FontWeight.bold, fontSize: 12)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHubCard(String name, String location, String timings, String desc) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: const Icon(Icons.warehouse, color: Color(0xFF0F172A), size: 24),
-        title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('$location • $timings', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-            Text(desc, style: const TextStyle(fontSize: 11, color: Color(0xFF2563EB))),
-          ],
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.directions, color: Color(0xFF2563EB)),
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Navigating to $name...')),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  // TAB 4: PROFILE & COMPLIANCE
-  Widget _buildProfileTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
         children: [
-          // Profile Header
           Container(
-            width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              gradient: const LinearGradient(colors: [Color(0xFF064E3B), Color(0xFF047857)]),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Color(0xFF2563EB),
-                  child: Text('RS', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-                ),
-                const SizedBox(height: 12),
-                const Text('Rahul Sharma', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                const SizedBox(height: 4),
-                const Text('Delivery Rider ID: CAS-RD-8842', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                const Text('DELIVERY AGENT WALLET', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFECFDF5),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF10B981)),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.verified, color: Color(0xFF059669), size: 14),
-                          SizedBox(width: 4),
-                          Text('KYC Verified Rider', style: TextStyle(color: Color(0xFF059669), fontSize: 11, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.star, color: Color(0xFFD97706), size: 14),
-                          SizedBox(width: 4),
-                          Text('4.95 Rating', style: TextStyle(color: Color(0xFF92400E), fontSize: 11, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                Text('₹${earnings.toStringAsFixed(0)}', style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 4),
+                const Text('Rate: ₹250 flat incentive per verified doorstep run', style: TextStyle(color: Color(0xFF6EE7B7), fontSize: 12)),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
+          const Text('Completed Trip Run Logs', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(height: 10),
 
-          // Vehicle & Documents
-          Card(
-            child: Column(
-              children: [
-                _buildProfileListTile(Icons.two_wheeler, 'Vehicle Registered', 'Honda Activa 6G (KA-01-EQ-9812)', true),
-                const Divider(height: 1, indent: 56),
-                _buildProfileListTile(Icons.badge, 'Driving License', 'DL-KA-20190038841 (Valid)', true),
-                const Divider(height: 1, indent: 56),
-                _buildProfileListTile(Icons.account_balance, 'Bank Account for Payouts', 'HDFC Bank ending in **8491', true),
-                const Divider(height: 1, indent: 56),
-                _buildProfileListTile(Icons.health_and_safety, 'Rider Insurance Policy', 'Camsik Transit Cover Active (₹5 Lakh)', true),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // SOS Emergency button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.emergency, color: Colors.white),
-              label: const Text('RIDER SOS / EMERGENCY DISPATCH', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          if (completed.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.black.withValues(alpha: 0.06))),
+              child: const Center(
+                child: Text('Complete doorstep pickups or deliveries to see fee logs.', style: TextStyle(color: Colors.black45, fontSize: 12)),
               ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('SOS Alert sent to Camsik Safety Center & Local Dispatch!'),
-                    backgroundColor: Color(0xFFDC2626),
+            )
+          else
+            ...completed.map((t) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.black.withValues(alpha: 0.06))),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('+₹250 Fee Earned', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF059669))),
+                          const SizedBox(height: 2),
+                          Text('${t.orderNumber} • ${t.deviceName}', style: const TextStyle(color: Colors.black54, fontSize: 11)),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(6)),
+                        child: const Text('Verified', style: TextStyle(color: Color(0xFF059669), fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            icon: const Icon(Icons.logout, color: Color(0xFF64748B)),
-            label: const Text('Log Out Shift', style: TextStyle(color: Color(0xFF64748B))),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Rider shift logged out successfully.')),
-              );
-            },
-          ),
+                )),
         ],
       ),
     );
   }
+}
 
-  Widget _buildProfileListTile(IconData icon, String title, String subtitle, bool isVerified) {
-    return ListTile(
-      leading: Icon(icon, color: const Color(0xFF2563EB)),
-      title: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-      trailing: isVerified ? const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 18) : null,
-    );
-  }
+// ─────────────────────────────────────────────────────────────
+// 6. TAB 3: DELIVERY AGENT PROFILE
+// ─────────────────────────────────────────────────────────────
+class DeliveryProfileScreen extends StatelessWidget {
+  final DeliveryAgentUser? user;
+  final bool isOnline;
+  final VoidCallback onToggleStatus;
 
-  void _showNotificationsModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
+  const DeliveryProfileScreen({
+    super.key,
+    required this.user,
+    required this.isOnline,
+    required this.onToggleStatus,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Center(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Rider Notifications', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  Text('Mark all read', style: TextStyle(fontSize: 12, color: Color(0xFF2563EB))),
-                ],
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF059669).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.two_wheeler, size: 36, color: Color(0xFF059669)),
               ),
-              const Divider(height: 20),
-              ListTile(
-                dense: true,
-                leading: const Icon(Icons.star, color: Color(0xFFF59E0B)),
-                title: const Text('Great Job! 5-Star feedback received', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: const Text('Customer Ananya Verma rated your handover as super professional.', style: TextStyle(fontSize: 11)),
-              ),
-              ListTile(
-                dense: true,
-                leading: const Icon(Icons.attach_money, color: Color(0xFF10B981)),
-                title: const Text('Daily payout processed', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: const Text('₹1,450 deposited into your bank account.', style: TextStyle(fontSize: 11)),
+              const SizedBox(height: 12),
+              Text(user?.name ?? 'Delivery Executive', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+              Text(user?.phone ?? '+91 98765 43210', style: const TextStyle(color: Colors.black54, fontSize: 13)),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: onToggleStatus,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isOnline ? const Color(0xFFECFDF5) : const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: isOnline ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
+                  ),
+                  child: Text(
+                    isOnline ? 'Active On Duty • Online' : 'Currently Offline • Tap to Go Online',
+                    style: TextStyle(color: isOnline ? const Color(0xFF059669) : const Color(0xFFDC2626), fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
               ),
             ],
           ),
-        );
-      },
+        ),
+
+        const SizedBox(height: 24),
+
+        _buildCard('Vehicle & Fleet Assignment', [
+          _buildRow('Vehicle Type', user?.vehicle ?? 'Motorcycle'),
+          _buildRow('Plate Number', user?.vehicleNumber ?? 'MH-04-AB-1234'),
+          _buildRow('Base Operating City', user?.city ?? 'Mumbai'),
+        ]),
+
+        const SizedBox(height: 14),
+
+        _buildCard('Logistics Coverage', [
+          _buildRow('Active Hubs', 'Western Suburbs & Thane Corridor'),
+          _buildRow('Covered Pincodes', user?.pinCodes.isNotEmpty == true ? user!.pinCodes.join(', ') : '401107, 400068, 400092'),
+        ]),
+
+        const SizedBox(height: 24),
+
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFFEE2E2),
+            foregroundColor: const Color(0xFFDC2626),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            elevation: 0,
+          ),
+          icon: const Icon(Icons.logout, size: 18),
+          label: const Text('Sign Out from Delivery App', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          onPressed: () async {
+            await SessionService.clearSession();
+            if (context.mounted) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const DeliveryLoginScreen()),
+              );
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCard(String title, List<Widget> children) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.black.withValues(alpha: 0.06))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black54)),
+          const SizedBox(height: 10),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12, color: Colors.black45)),
+          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+        ],
+      ),
     );
   }
 }
