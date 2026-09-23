@@ -52,39 +52,18 @@ export default function AdminPage() {
     }
   }, [router]);
 
-  const handleInstantAdminAuth = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('casmik_admin_auth', 'true');
-    }
-    setIsAuthorized(true);
-  };
-
   if (isAuthorized !== true) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-white select-none">
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-sm w-full text-center space-y-4 shadow-2xl">
           <div className="w-14 h-14 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center mx-auto text-purple-400 shadow-xl shadow-purple-500/20">
             <div className="w-6 h-6 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
           </div>
           <div className="space-y-1">
             <h2 className="text-lg font-black text-white">CAMSIK Admin Security</h2>
-            <p className="text-xs text-slate-400">Verifying administrative credentials...</p>
+            <p className="text-xs text-slate-400">Verifying super admin authorization...</p>
           </div>
-
-          <div className="space-y-2 pt-2">
-            <button
-              onClick={handleInstantAdminAuth}
-              className="w-full py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 active:scale-95 transition-all"
-            >
-              Instant Authorize in Chrome (Super Admin)
-            </button>
-            <Link
-              href="/admin/login"
-              className="w-full py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 block transition-colors"
-            >
-              Sign In with Password
-            </Link>
-          </div>
+          <p className="text-[11px] text-slate-500">Redirecting to Super Admin Login...</p>
         </div>
       </div>
     );

@@ -74,52 +74,24 @@ export default function DeliveryPage() {
     );
   }
 
-  // Not logged in -> Prompt to sign in
+  // Not logged in -> Redirect immediately to delivery login
   if (!session) {
-    const handleQuickDemoAgentLogin = () => {
-      const activeAgent = deliveryAgents.find(a => a.status === 'online') || deliveryAgents[0];
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('casmik_delivery_session', JSON.stringify(activeAgent));
-      }
-      setSession(activeAgent);
-    };
-
+    if (typeof window !== 'undefined') {
+      window.location.href = '/delivery/login';
+    }
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
-        <div className="bg-slate-900 rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-800 space-y-4">
+        <div className="bg-slate-900 rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border border-slate-800 space-y-4">
           <div className="w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center mx-auto text-amber-400 border border-amber-500/20">
             <Truck size={28} />
           </div>
           <div className="space-y-1">
-            <h2 className="text-lg font-black text-white">Delivery Executive Portal</h2>
+            <h2 className="text-lg font-black text-white">Delivery Executive Portal Security</h2>
             <p className="text-slate-400 text-xs">
-              Sign in with registered mobile number or launch instantly with active test agent.
+              Verifying delivery executive authorization...
             </p>
           </div>
-
-          <div className="space-y-2.5 pt-2">
-            <button
-              onClick={handleQuickDemoAgentLogin}
-              className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 active:scale-95"
-            >
-              <span>Instant Test in Chrome (Vikram Singh)</span>
-              <ArrowRight size={14} />
-            </button>
-
-            <Link
-              href="/delivery/login"
-              className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-2xl font-semibold text-xs transition-colors block border border-slate-700"
-            >
-              Sign In with Mobile OTP
-            </Link>
-
-            <Link
-              href="/"
-              className="w-full py-2 text-slate-400 hover:text-slate-200 text-[11px] font-medium block"
-            >
-              Back to Casmik Home
-            </Link>
-          </div>
+          <p className="text-[11px] text-slate-500">Redirecting to Delivery Login...</p>
         </div>
       </div>
     );

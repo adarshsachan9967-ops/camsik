@@ -297,6 +297,10 @@ export default function BuyRefurbishedPage() {
                   src={selectedProduct.image}
                   alt={selectedProduct.model}
                   className="max-w-full max-h-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = '/assets/images/categories/dslr.png';
+                  }}
                 />
               </div>
               <div className="flex-1 min-w-0">
@@ -466,6 +470,10 @@ export default function BuyRefurbishedPage() {
                     src={selectedProduct.gallery && selectedProduct.gallery[activeImageIndex] ? selectedProduct.gallery[activeImageIndex] : selectedProduct.image}
                     alt={`${selectedProduct.brand} ${selectedProduct.model} - ${selectedProduct.color}`}
                     className="max-w-full max-h-full object-contain filter drop-shadow-md transition-all duration-300"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/assets/images/categories/dslr.png';
+                    }}
                   />
                   <div className="absolute top-3 left-3">
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${conditionBadgeColor(selectedProduct.condition)}`}>
@@ -499,7 +507,15 @@ export default function BuyRefurbishedPage() {
                             : 'border-slate-200 hover:border-slate-300 bg-white/50'
                         }`}
                       >
-                        <img src={img} alt={`Angle ${idx + 1}`} className="max-w-full max-h-full object-contain" />
+                        <img
+                          src={img}
+                          alt={`Angle ${idx + 1}`}
+                          className="max-w-full max-h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = '/assets/images/categories/dslr.png';
+                          }}
+                        />
                       </button>
                     );
                   })}
@@ -1067,6 +1083,10 @@ export default function BuyRefurbishedPage() {
                             src={product.image}
                             alt={product.model}
                             className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = '/assets/images/categories/dslr.png';
+                            }}
                           />
                         </div>
 

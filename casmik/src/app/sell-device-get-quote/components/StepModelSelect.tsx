@@ -65,7 +65,15 @@ export default function StepModelSelect({ brand, brandId, categoryId, selectedMo
           <button key={`model-btn-${model.id}`} onClick={() => { setChosenModel(model); setChosenStorage(model.storages[0] || null); setChosenColor(model.colors[0] || null); }}
             className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all duration-150 btn-press ${chosenModel?.id === model.id ? 'border-primary bg-primary-50 shadow-sm ring-1 ring-primary/20' : 'border-border bg-white hover:border-primary/40 hover:bg-primary-50/30'}`}>
             <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-              <img src={model.image} alt={model.alt} className="w-full h-full object-cover" />
+              <img
+                src={model.image}
+                alt={model.alt}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = '/assets/images/categories/dslr.png';
+                }}
+              />
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground">{model.name}</p>

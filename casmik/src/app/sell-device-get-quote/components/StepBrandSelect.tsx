@@ -43,7 +43,15 @@ export default function StepBrandSelect({ selected, categoryId, onSelect, onBack
           <button key={`brand-btn-${brand.id}`} onClick={() => onSelect(brand.id, brand.name)}
             className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-150 btn-press ${selected === brand.id ? 'border-primary bg-primary-50 shadow-green' : 'border-border bg-white hover:border-primary/40 hover:bg-primary-50/30'}`}>
             <div className="w-10 h-10 flex items-center justify-center">
-              <img src={brand.logo} alt={brand.alt} className="max-w-full max-h-full object-contain" />
+              <img
+                src={brand.logo}
+                alt={brand.alt}
+                className="max-w-full max-h-full object-contain"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = '/assets/images/app_logo.png';
+                }}
+              />
             </div>
             <span className="text-xs font-semibold text-foreground text-center leading-tight">{brand.name}</span>
             <span className="text-xs text-muted-foreground">{brand.modelCount} models</span>

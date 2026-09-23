@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { PartnerSection } from '../page';
 import { LayoutDashboard, ShoppingBag, ClipboardCheck, DollarSign, Users, BarChart3, Settings, Bell, Menu, ChevronLeft, ChevronRight, Store, MessageSquare, UserCircle, LogOut } from 'lucide-react';
@@ -30,8 +30,21 @@ interface Props {
 export default function PartnerLayout({ activeSection, onSectionChange, children, currentPartner }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-  const getPartner = (): Partner => {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const session = localStorage.getItem('casmik_partner_session');
+      if (!session) {
+        setIsAuthenticated(false);
+        window.location.href = '/partner/login';
+      } else {
+        setIsAuthenticated(true);
+      }
+    }
+  }, []);
+
+  const getPartner = (): Partner | null => {
     if (currentPartner) return currentPartner;
     if (typeof window !== 'undefined') {
       try {
@@ -42,10 +55,21 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
         }
       } catch {}
     }
-    return partners[0];
+    return null;
   };
 
-  const partner: Partner = getPartner();
+  const partner: Partner = getPartner() || partners[0];
+
+  if (isAuthenticated === false) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
+        <div className="text-center p-8">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm font-semibold">Redirecting to Partner Login...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {

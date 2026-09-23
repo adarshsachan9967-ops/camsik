@@ -39,10 +39,32 @@ interface Props {
 }
 
 export default function DeliveryLayout({ activeSection, onSectionChange, children, currentAgent }: Props) {
-  const agent: DeliveryAgent = currentAgent || (typeof window !== 'undefined' && localStorage.getItem('casmik_delivery_session')
-    ? JSON.parse(localStorage.getItem('casmik_delivery_session')!)
-    : deliveryAgents[0]);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const session = localStorage.getItem('casmik_delivery_session');
+      if (!session) {
+        setIsAuthenticated(false);
+        window.location.href = '/delivery/login';
+      } else {
+        setIsAuthenticated(true);
+      }
+    }
+  }, []);
+
+  const getAgent = (): DeliveryAgent | null => {
+    if (currentAgent) return currentAgent;
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('casmik_delivery_session');
+        if (raw) return JSON.parse(raw);
+      } catch {}
+    }
+    return null;
+  };
+
+  const agent: DeliveryAgent = getAgent() || deliveryAgents[0];
   const [isOnline, setIsOnline] = useState(agent?.status !== 'offline');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [taskCount, setTaskCount] = useState(5);

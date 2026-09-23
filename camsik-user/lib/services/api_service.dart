@@ -188,22 +188,144 @@ class ApiService {
     };
   }
 
+  // ── IMAGE & DATA SANITIZATION HELPERS ──
+  static String cleanImagePath(dynamic path, {String? categoryId}) {
+    if (path == null) {
+      return _categoryFallback(categoryId);
+    }
+    var s = path.toString().trim();
+    if (s.isEmpty) return _categoryFallback(categoryId);
+    if (s.startsWith('http://') || s.startsWith('https://')) return s;
+    while (s.startsWith('/')) {
+      s = s.substring(1);
+    }
+    return s;
+  }
+
+  static String _categoryFallback(String? categoryId) {
+    switch (categoryId) {
+      case 'cat-dslr':
+      case 'Cameras':
+        return 'assets/images/categories/dslr.png';
+      case 'cat-lens':
+        return 'assets/images/categories/lens.png';
+      case 'cat-video':
+      case 'cat-video-camera':
+        return 'assets/images/categories/video.png';
+      case 'cat-action':
+      case 'cat-action-camera':
+        return 'assets/images/categories/action.png';
+      case 'cat-gimbal':
+        return 'assets/images/categories/gimbal.png';
+      case 'cat-smartphone':
+      case 'Smartphones':
+        return 'assets/images/categories/smartphone.png';
+      case 'cat-laptop':
+      case 'Laptops':
+        return 'assets/images/categories/laptop.png';
+      case 'cat-tablet':
+      case 'Tablets':
+        return 'assets/images/categories/tablet.png';
+      default:
+        return 'assets/images/categories/dslr.png';
+    }
+  }
+
+  static void _sanitizeCategories(List<Map<String, dynamic>> list) {
+    for (final cat in list) {
+      cat['image'] = cleanImagePath(cat['image'], categoryId: cat['id']?.toString());
+    }
+  }
+
+  static void _sanitizeModels(List<Map<String, dynamic>> list) {
+    for (final m in list) {
+      m['image'] = cleanImagePath(m['image'], categoryId: m['categoryId']?.toString());
+      if (m['specs'] is Map) {
+        final entries = (m['specs'] as Map).entries.map((e) => '${e.key}: ${e.value}').take(2);
+        m['specs'] = entries.isNotEmpty ? entries.join(' · ') : '';
+      } else if (m['specs'] == null) {
+        m['specs'] = '';
+      } else {
+        m['specs'] = m['specs'].toString();
+      }
+      if (m['basePrice'] != null) {
+        m['basePrice'] = (m['basePrice'] as num).toInt();
+      }
+    }
+  }
+
+  static void _sanitizeRefurbished(List<Map<String, dynamic>> list) {
+    for (final p in list) {
+      p['image'] = cleanImagePath(p['image'], categoryId: p['category']?.toString());
+      if (p['gallery'] is List) {
+        p['gallery'] = (p['gallery'] as List).map((g) => cleanImagePath(g, categoryId: p['category']?.toString())).toList();
+      }
+      final bRaw = p['batteryHealth'];
+      if (bRaw is num) {
+        p['batteryHealth'] = '$bRaw% Battery';
+      } else if (bRaw != null) {
+        final bStr = bRaw.toString().trim();
+        if (RegExp(r'^\d+$').hasMatch(bStr)) {
+          p['batteryHealth'] = '$bStr% Battery';
+        } else {
+          p['batteryHealth'] = bStr;
+        }
+      } else {
+        p['batteryHealth'] = '98% Battery';
+      }
+      p['sellingPrice'] = (p['sellingPrice'] as num?)?.toInt() ?? 0;
+      p['originalPrice'] = (p['originalPrice'] as num?)?.toInt() ?? 0;
+      p['discount'] = (p['discount'] as num?)?.toInt() ?? 0;
+
+      final existingUnits = p['availableUnits'];
+      if (existingUnits == null || (existingUnits is List && existingUnits.isEmpty)) {
+        final brand = p['brand']?.toString() ?? 'Camsik';
+        final cond = p['condition']?.toString() ?? 'Superb';
+        final sellP = p['sellingPrice'] as int;
+        final origP = p['originalPrice'] as int;
+        final batt = p['batteryHealth'] as String;
+        final stock = (p['stock'] as num?)?.toInt() ?? 3;
+        final count = stock > 0 ? (stock > 4 ? 4 : stock) : 2;
+
+        p['availableUnits'] = List.generate(count, (uIdx) => {
+          'unitId': 'U-${p['id']}-0${uIdx + 1}',
+          'storage': p['storage']?.toString() ?? 'Standard',
+          'color': p['color']?.toString() ?? 'Standard',
+          'condition': cond,
+          'batteryHealth': batt,
+          'price': sellP,
+          'originalPrice': origP,
+          'serial': 'CSM-${brand.toUpperCase().replaceAll(' ', '')}-${8810 + uIdx}',
+          'note': 'Unit ${uIdx + 1} · $batt · $cond Condition · 45-Point Inspected',
+        });
+      }
+    }
+  }
+
   // ── SILENT BACKGROUND SYNC ──
   static Future<void> syncDataInBackground() async {
     try {
       final bannersRes = await _get('/api/banners');
       if (bannersRes != null && bannersRes['banners'] is List) {
-        cachedBanners = (bannersRes['banners'] as List).cast<Map<String, dynamic>>();
+        final bList = (bannersRes['banners'] as List).cast<Map<String, dynamic>>();
+        for (final b in bList) {
+          b['image'] = cleanImagePath(b['image'], categoryId: b['categoryFilter']?.toString());
+        }
+        cachedBanners = bList;
       }
 
       final catRes = await _get('/api/categories');
       if (catRes != null && catRes['categories'] is List) {
-        cachedCategories = (catRes['categories'] as List).cast<Map<String, dynamic>>();
+        final cList = (catRes['categories'] as List).cast<Map<String, dynamic>>();
+        _sanitizeCategories(cList);
+        cachedCategories = cList;
       }
 
       final refRes = await _get('/api/refurbished');
       if (refRes != null && refRes['products'] is List) {
-        cachedRefurbished = (refRes['products'] as List).cast<Map<String, dynamic>>();
+        final rList = (refRes['products'] as List).cast<Map<String, dynamic>>();
+        _sanitizeRefurbished(rList);
+        cachedRefurbished = rList;
       }
     } catch (e) {
       debugPrint('Background sync note: $e');
@@ -217,6 +339,9 @@ class ApiService {
       if (json != null && json['banners'] is List) {
         final list = (json['banners'] as List).cast<Map<String, dynamic>>();
         if (list.isNotEmpty) {
+          for (final b in list) {
+            b['image'] = cleanImagePath(b['image'], categoryId: b['categoryFilter']?.toString());
+          }
           cachedBanners = list;
           return list;
         }
@@ -232,6 +357,7 @@ class ApiService {
       if (json != null && json['categories'] is List) {
         final list = (json['categories'] as List).cast<Map<String, dynamic>>();
         if (list.isNotEmpty) {
+          _sanitizeCategories(list);
           cachedCategories = list;
           return list;
         }
@@ -242,7 +368,9 @@ class ApiService {
 
   // ── 3. MODELS & BRANDS ──
   static List<Map<String, dynamic>> getFallbackModelsSync({String? categoryId, String? search}) {
-    return _getFallbackModels(categoryId: categoryId, search: search);
+    final list = _getFallbackModels(categoryId: categoryId, search: search);
+    _sanitizeModels(list);
+    return list;
   }
 
   static Future<List<Map<String, dynamic>>> fetchModels({String? categoryId, String? search}) async {
@@ -256,10 +384,15 @@ class ApiService {
       final json = await _get(path);
       if (json != null && json['models'] is List) {
         final list = (json['models'] as List).cast<Map<String, dynamic>>();
-        if (list.isNotEmpty) return list;
+        if (list.isNotEmpty) {
+          _sanitizeModels(list);
+          return list;
+        }
       }
     } catch (_) {}
-    return _getFallbackModels(categoryId: categoryId, search: search);
+    final fallback = _getFallbackModels(categoryId: categoryId, search: search);
+    _sanitizeModels(fallback);
+    return fallback;
   }
 
   // ── 4. QUESTIONS ──
@@ -292,6 +425,7 @@ class ApiService {
       if (json != null && json['products'] is List) {
         final list = (json['products'] as List).cast<Map<String, dynamic>>();
         if (list.isNotEmpty) {
+          _sanitizeRefurbished(list);
           cachedRefurbished = list;
           return list;
         }

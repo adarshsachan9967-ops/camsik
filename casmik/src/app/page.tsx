@@ -16,39 +16,9 @@ import CompetitiveComparisonTable from '@/app/components/CompetitiveComparisonTa
 import CamsikFaqSection from '@/app/components/CamsikFaqSection';
 import AppDownloadCTA from '@/app/components/AppDownloadCTA';
 
-import Link from 'next/link';
-import { ShieldCheck, Building, Truck, User } from 'lucide-react';
-
 export default function CustomerHomePage() {
   return (
     <main className="min-h-screen bg-background flex flex-col overflow-x-hidden w-full max-w-full">
-      {/* Top Multi-Panel Navigation Banner */}
-      <div className="bg-slate-950 text-white text-xs py-2 px-4 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-semibold text-emerald-300">CASMIK RECOMMERCE ECOSYSTEM</span>
-            <span className="hidden sm:inline text-slate-500">|</span>
-            <span className="hidden sm:inline text-slate-400">4 Web Panels Available</span>
-          </div>
-          <div className="flex items-center gap-3 font-medium text-slate-400">
-            <span>Explore Panels:</span>
-            <Link href="/user" className="text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1">
-              <User size={12} /> User Web
-            </Link>
-            <Link href="/partner" className="text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1">
-              <Building size={12} /> Partner Web
-            </Link>
-            <Link href="/delivery" className="text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1">
-              <Truck size={12} /> Delivery Web
-            </Link>
-            <Link href="/admin" className="text-purple-400 hover:text-purple-300 hover:underline flex items-center gap-1">
-              <ShieldCheck size={12} /> Super Admin
-            </Link>
-          </div>
-        </div>
-      </div>
-
       <CustomerHeader />
       
       {/* 1. Hero Banner Promo Carousel with search & live navigation */}
