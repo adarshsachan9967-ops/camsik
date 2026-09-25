@@ -310,13 +310,21 @@ class UserOrder {
       date: json['pickupDate'] ?? json['createdAt'] ?? 'Today',
       address: json['customerAddress'] ?? json['address'] ?? 'Registered Address',
       paymentMethod: json['paymentMethod'] ?? 'Instant UPI',
-      timelineSteps: [
-        'Order Placed & Confirmed',
-        'Camsik Executive Assigned',
-        'Doorstep Verification',
-        'Inspection & Data Wipe',
-        'Payment Disbursed / Complete',
-      ],
+      timelineSteps: json['type'] == 'rent'
+          ? [
+              'Rental Booking Confirmed',
+              'Gear Sanitization & Calibration',
+              'Doorstep Kit Delivery & Handover',
+              'Shoot In Progress',
+              'Gear Return & Deposit Refund',
+            ]
+          : [
+              'Order Placed & Confirmed',
+              'Camsik Executive Assigned',
+              'Doorstep Verification',
+              'Inspection & Data Wipe',
+              'Payment Disbursed / Complete',
+            ],
       currentStep: 1,
     );
   }
@@ -1088,6 +1096,7 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
   List<Map<String, dynamic>> _banners = ApiService.cachedBanners;
   List<Map<String, dynamic>> _categories = ApiService.cachedCategories;
   List<Map<String, dynamic>> _refurbishedProducts = ApiService.cachedRefurbished;
+  List<Map<String, dynamic>> _rentalCameras = ApiService.cachedRentalCameras;
   final List<UserOrder> _orders = [];
 
   // Selected category for Sell workflow
@@ -1107,6 +1116,7 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
           _banners = ApiService.cachedBanners;
           _categories = ApiService.cachedCategories;
           _refurbishedProducts = ApiService.cachedRefurbished;
+          _rentalCameras = ApiService.cachedRentalCameras;
         });
       }
     });
@@ -1464,6 +1474,11 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
 
           const SizedBox(height: 24),
 
+          // 4b. RENT PRO CAMERAS & GEAR
+          _buildRentalCamerasShowcase(),
+
+          const SizedBox(height: 24),
+
           // 5. CAMSIK TRUST SCORECARD
           _buildTrustScorecard(),
 
@@ -1643,6 +1658,65 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
                       const Text(
                         '+$kRupee 5,000 Bonus',
                         style: TextStyle(color: Color(0xFF7C3AED), fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Container(width: 1, height: 48, color: const Color(0xFFE2E8F0)),
+            // Action 4: Rent Pro Cameras
+            Expanded(
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (ctx) => RentalCamerasWidget(
+                        rentalCameras: _rentalCameras,
+                        userProfile: widget.userProfile,
+                        onProfileUpdate: widget.onProfileUpdate,
+                        onOrderCreated: _handleOrderCreated,
+                      ),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFE11D48), Color(0xFFF43F5E)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFE11D48).withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.videocam_outlined, color: Colors.white, size: 22),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Rent',
+                        style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 13),
+                      ),
+                      const Text(
+                        'Pro Cameras',
+                        style: TextStyle(color: Color(0xFFE11D48), fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -1867,6 +1941,189 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
                       ],
                     ),
                   ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 4b. RENT PRO CAMERAS & CINEMA SHOWCASE
+  Widget _buildRentalCamerasShowcase() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Rent Pro Cameras & Gear',
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                      ),
+                      SizedBox(width: 8),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Color(0xFFFFE4E6),
+                          borderRadius: BorderRadius.all(Radius.circular(6)),
+                        ),
+                        child: Text(
+                          'DAILY / WEEKLY',
+                          style: TextStyle(color: Color(0xFFE11D48), fontSize: 9, fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    'Cinema bodies, mirrorless, lenses & gimbals · Doorstep delivery',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                  ),
+                ],
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (ctx) => RentalCamerasWidget(
+                        rentalCameras: _rentalCameras,
+                        userProfile: widget.userProfile,
+                        onProfileUpdate: widget.onProfileUpdate,
+                        onOrderCreated: _handleOrderCreated,
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('View Fleet', style: TextStyle(color: Color(0xFFE11D48), fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 226,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: _rentalCameras.length,
+            itemBuilder: (ctx, idx) {
+              final c = _rentalCameras[idx];
+              final name = c['model'] as String? ?? 'Camera';
+              final dailyPrice = (c['dailyPrice'] as num?)?.toInt() ?? 0;
+              final deposit = (c['securityDeposit'] as num?)?.toInt() ?? 0;
+              final image = c['image'] as String? ?? '';
+              final category = c['category'] as String? ?? 'Cinema';
+              final videoRes = c['videoRes'] as String? ?? '4K Video';
+
+              return InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (ctx) => RentalCamerasWidget(
+                        rentalCameras: _rentalCameras,
+                        userProfile: widget.userProfile,
+                        onProfileUpdate: widget.onProfileUpdate,
+                        onOrderCreated: _handleOrderCreated,
+                        initialCamera: c,
+                      ),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(18),
+                child: Container(
+                  width: 175,
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2)),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFE4E6),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              category,
+                              style: const TextStyle(color: Color(0xFFE11D48), fontSize: 9, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text('Available', style: TextStyle(color: Color(0xFF059669), fontSize: 8, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Expanded(
+                        child: Center(
+                          child: CamsikSmartImage(
+                            image: image,
+                            fit: BoxFit.contain,
+                            iconSize: 42,
+                            iconColor: const Color(0xFFE11D48),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A)),
+                      ),
+                      Text(
+                        videoRes,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Color(0xFF64748B), fontSize: 10),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            formatCurrency(dailyPrice),
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Color(0xFFE11D48)),
+                          ),
+                          const Text(
+                            '/day',
+                            style: TextStyle(color: Color(0xFF64748B), fontSize: 10, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        'Deposit: ${formatCurrency(deposit)}',
+                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 9),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
@@ -3780,6 +4037,1070 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
   }
 }
 
+// ── RENTAL CAMERAS WORKFLOW (STOREFRONT, DURATION MULTIPLIER, KIT CHECKLIST & CHECKOUT) ──
+
+class RentalCamerasWidget extends StatefulWidget {
+  final List<Map<String, dynamic>> rentalCameras;
+  final UserProfile userProfile;
+  final Function(UserProfile) onProfileUpdate;
+  final Function(UserOrder) onOrderCreated;
+  final Map<String, dynamic>? initialCamera;
+
+  const RentalCamerasWidget({
+    super.key,
+    required this.rentalCameras,
+    required this.userProfile,
+    required this.onProfileUpdate,
+    required this.onOrderCreated,
+    this.initialCamera,
+  });
+
+  @override
+  State<RentalCamerasWidget> createState() => _RentalCamerasWidgetState();
+}
+
+class _RentalCamerasWidgetState extends State<RentalCamerasWidget> {
+  String _selectedCategory = 'all';
+  String _selectedBrand = 'all';
+  String _searchQuery = '';
+  Map<String, dynamic>? _activeDetailCamera;
+  int _rentalDays = 3;
+  bool _isCheckoutMode = false;
+  bool _isSubmitting = false;
+
+  late TextEditingController _nameController;
+  late TextEditingController _phoneController;
+  late TextEditingController _addressController;
+  late TextEditingController _cityController;
+  late TextEditingController _pincodeController;
+  final String _shootDate = 'Tomorrow';
+  String _idProofType = 'Aadhaar Card';
+  String _shootPurpose = 'Wedding / Event';
+  final String _paymentMode = 'Online UPI / Card';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialCamera != null) {
+      _activeDetailCamera = widget.initialCamera;
+    }
+    _nameController = TextEditingController(text: widget.userProfile.name);
+    _phoneController = TextEditingController(text: widget.userProfile.phone);
+    _addressController = TextEditingController(text: widget.userProfile.address);
+    _cityController = TextEditingController(text: 'Mumbai');
+    _pincodeController = TextEditingController(text: '401107');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _cityController.dispose();
+    _pincodeController.dispose();
+    super.dispose();
+  }
+
+  Map<String, dynamic> _calculatePrice(int dailyRate, int days, int deposit) {
+    final validDays = days < 1 ? 1 : days;
+    final basePrice = dailyRate * validDays;
+    int discountPercent = 0;
+    if (validDays >= 30) {
+      discountPercent = 30;
+    } else if (validDays >= 14) {
+      discountPercent = 20;
+    } else if (validDays >= 7) {
+      discountPercent = 15;
+    } else if (validDays >= 3) {
+      discountPercent = 10;
+    }
+    final discountAmount = ((basePrice * discountPercent) / 100).round();
+    final subtotal = basePrice - discountAmount;
+    final grandTotal = subtotal + deposit;
+    return {
+      'basePrice': basePrice,
+      'discountPercent': discountPercent,
+      'discountAmount': discountAmount,
+      'subtotal': subtotal,
+      'deposit': deposit,
+      'grandTotal': grandTotal,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_activeDetailCamera != null) {
+      if (_isCheckoutMode) {
+        return _buildRentalCheckoutView();
+      }
+      return _buildRentalDetailView();
+    }
+    return _buildRentalCatalogView();
+  }
+
+  // 1. RENTAL CATALOG GRID VIEW (MATCHING "BUY DEVICES" UI)
+  Widget _buildRentalCatalogView() {
+    var filtered = widget.rentalCameras;
+    if (_selectedCategory != 'all') {
+      filtered = filtered.where((c) => (c['category'] as String? ?? '').toLowerCase() == _selectedCategory.toLowerCase()).toList();
+    }
+    if (_selectedBrand != 'all') {
+      filtered = filtered.where((c) => (c['brand'] as String? ?? '').toLowerCase() == _selectedBrand.toLowerCase()).toList();
+    }
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.toLowerCase().trim();
+      filtered = filtered.where((c) =>
+        (c['model'] as String? ?? '').toLowerCase().contains(q) ||
+        (c['brand'] as String? ?? '').toLowerCase().contains(q) ||
+        (c['specs'] as String? ?? '').toLowerCase().contains(q)
+      ).toList();
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0F172A),
+        elevation: 1,
+        title: Row(
+          children: [
+            const Text('Rent Pro Cameras & Gear', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(width: 8),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Color(0xFFFFE4E6),
+                borderRadius: BorderRadius.all(Radius.circular(6)),
+              ),
+              child: Text('FLEET', style: TextStyle(color: Color(0xFFE11D48), fontSize: 9, fontWeight: FontWeight.w900)),
+            ),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          // Search & Filter Header
+          Container(
+            padding: const EdgeInsets.all(12),
+            color: Colors.white,
+            child: Column(
+              children: [
+                TextField(
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  decoration: InputDecoration(
+                    hintText: 'Search FX3, Canon R5, RED, lenses...',
+                    prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF64748B)),
+                    filled: true,
+                    fillColor: const Color(0xFFF1F5F9),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildCategoryChip('all', 'All Gear'),
+                      _buildCategoryChip('Cinema Cameras', 'Cinema Cameras'),
+                      _buildCategoryChip('Mirrorless', 'Mirrorless'),
+                      _buildCategoryChip('Cinema Lenses', 'Cinema Lenses'),
+                      _buildCategoryChip('Gimbals & Rigs', 'Gimbals & Rigs'),
+                      _buildCategoryChip('Action & Drones', 'Action & Drones'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildBrandChip('all', 'All Brands'),
+                      _buildBrandChip('Sony', 'Sony'),
+                      _buildBrandChip('Canon', 'Canon'),
+                      _buildBrandChip('Nikon', 'Nikon'),
+                      _buildBrandChip('RED', 'RED Digital'),
+                      _buildBrandChip('Blackmagic', 'Blackmagic'),
+                      _buildBrandChip('DJI', 'DJI'),
+                      _buildBrandChip('Fujifilm', 'Fujifilm'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: filtered.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.videocam_off_outlined, size: 48, color: Color(0xFF94A3B8)),
+                        SizedBox(height: 12),
+                        Text('No cameras found matching your filter', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.all(12),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.68,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                    ),
+                    itemCount: filtered.length,
+                    itemBuilder: (ctx, idx) {
+                      final c = filtered[idx];
+                      final name = c['model'] as String? ?? 'Camera';
+                      final category = c['category'] as String? ?? 'Cinema';
+                      final dailyPrice = (c['dailyPrice'] as num?)?.toInt() ?? 0;
+                      final deposit = (c['securityDeposit'] as num?)?.toInt() ?? 0;
+                      final image = c['image'] as String? ?? '';
+                      final videoRes = c['videoRes'] as String? ?? '4K UHD';
+                      final stock = (c['stock'] as num?)?.toInt() ?? 2;
+
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _activeDetailCamera = c;
+                            _rentalDays = (c['minDays'] as num?)?.toInt() ?? 1;
+                            _isCheckoutMode = false;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 6, offset: const Offset(0, 2)),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFE4E6),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      category,
+                                      style: const TextStyle(color: Color(0xFFE11D48), fontSize: 9, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                  Text(
+                                    '$stock Ready',
+                                    style: const TextStyle(color: Color(0xFF059669), fontSize: 9, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Expanded(
+                                child: Center(
+                                  child: CamsikSmartImage(
+                                    image: image,
+                                    fit: BoxFit.contain,
+                                    iconSize: 44,
+                                    iconColor: const Color(0xFFE11D48),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A)),
+                              ),
+                              Text(
+                                videoRes,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(color: Color(0xFF64748B), fontSize: 10),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
+                                children: [
+                                  Text(
+                                    formatCurrency(dailyPrice),
+                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Color(0xFFE11D48)),
+                                  ),
+                                  const Text(
+                                    '/day',
+                                    style: TextStyle(color: Color(0xFF64748B), fontSize: 10, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                'Deposit: ${formatCurrency(deposit)}',
+                                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 9),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF1F2),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFFECDD3)),
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'Rent Gear',
+                                    style: TextStyle(color: Color(0xFFE11D48), fontSize: 11, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(String val, String label) {
+    final isSel = _selectedCategory == val;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: isSel,
+        onSelected: (s) => setState(() => _selectedCategory = val),
+        selectedColor: const Color(0xFFE11D48),
+        labelStyle: TextStyle(
+          color: isSel ? Colors.white : const Color(0xFF0F172A),
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrandChip(String val, String label) {
+    final isSel = _selectedBrand == val;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: isSel,
+        onSelected: (s) => setState(() => _selectedBrand = val),
+        selectedColor: const Color(0xFF4F46E5),
+        labelStyle: TextStyle(
+          color: isSel ? Colors.white : const Color(0xFF0F172A),
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  // 2. PRODUCT DETAILS VIEW WITH INTERACTIVE DURATION CALCULATOR & MULTIPLIER
+  Widget _buildRentalDetailView() {
+    final c = _activeDetailCamera!;
+    final name = c['model'] as String? ?? 'Camera';
+    final brand = c['brand'] as String? ?? 'Sony';
+    final category = c['category'] as String? ?? 'Cinema';
+    final dailyPrice = (c['dailyPrice'] as num?)?.toInt() ?? 0;
+    final deposit = (c['securityDeposit'] as num?)?.toInt() ?? 0;
+    final rating = (c['rating'] as num?)?.toDouble() ?? 4.9;
+    final reviews = (c['reviewsCount'] as num?)?.toInt() ?? 80;
+    final sensor = c['sensor'] as String? ?? '';
+    final mount = c['mount'] as String? ?? '';
+    final gallery = (c['gallery'] as List?)?.map((e) => e.toString()).toList() ?? [c['image']?.toString() ?? 'assets/images/categories/dslr.png'];
+    final includedKit = (c['includedKit'] as List?)?.map((e) => e.toString()).toList() ?? [
+      'Camera Body with Sensor Cap',
+      '2x High Capacity Batteries',
+      'Dual-Bay Rapid Charger',
+      'High Speed Memory Card',
+      'Weatherproof Padded Hard Case',
+    ];
+
+    final calc = _calculatePrice(dailyPrice, _rentalDays, deposit);
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0F172A),
+        elevation: 1,
+        title: Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => setState(() => _activeDetailCamera = null),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Gallery PageView
+            SizedBox(
+              height: 210,
+              child: PageView.builder(
+                itemCount: gallery.length,
+                itemBuilder: (ctx, idx) => Center(
+                  child: CamsikSmartImage(
+                    image: gallery[idx],
+                    fit: BoxFit.contain,
+                    iconSize: 64,
+                    iconColor: const Color(0xFFE11D48),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Category & Rating Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFE4E6),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    category.toUpperCase(),
+                    style: const TextStyle(color: Color(0xFFE11D48), fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Row(
+                  children: [
+                    const Icon(Icons.star, color: Color(0xFFF59E0B), size: 16),
+                    const SizedBox(width: 4),
+                    Text('$rating', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    Text(' ($reviews reviews)', style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Camera Title
+            Text(
+              name,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$brand · $mount · $sensor',
+              style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+
+            // Base Daily Rate Badge
+            Row(
+              children: [
+                Text(
+                  formatCurrency(dailyPrice),
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFFE11D48)),
+                ),
+                const Text(
+                  ' / day',
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Deposit: ${formatCurrency(deposit)}',
+                    style: const TextStyle(color: Color(0xFF475569), fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            // ── DURATION SELECTOR & PRICE MULTIPLIER (USER'S EXACT REQUIREMENT) ──
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF1F2).withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFFECDD3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Select Rental Duration',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE11D48),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '$_rentalDays ${_rentalDays == 1 ? "Day" : "Days"} Selected',
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Stepper row [-] Days [+]
+                  Row(
+                    children: [
+                      IconButton(
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                        icon: const Icon(Icons.remove, size: 18),
+                        onPressed: _rentalDays > 1 ? () => setState(() => _rentalDays--) : null,
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            '$_rentalDays ${_rentalDays == 1 ? "Day" : "Days"}',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                        icon: const Icon(Icons.add, size: 18),
+                        onPressed: () => setState(() => _rentalDays++),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Quick duration chips
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildDurationChip(1, '1 Day'),
+                        _buildDurationChip(3, '3 Days (10% Off)'),
+                        _buildDurationChip(7, '7 Days (15% Off)'),
+                        _buildDurationChip(14, '14 Days (20% Off)'),
+                        _buildDurationChip(30, '30 Days (30% Off)'),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+                  const Divider(color: Color(0xFFFECDD3), height: 1),
+                  const SizedBox(height: 14),
+
+                  // Live Multiplication Breakdown
+                  const Text('Price Calculation Breakdown:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF475569))),
+                  const SizedBox(height: 8),
+                  _buildCalcRow('Per Day Price', formatCurrency(dailyPrice)),
+                  _buildCalcRow('Rental Duration', '$_rentalDays ${_rentalDays == 1 ? "Day" : "Days"}'),
+                  _buildCalcRow('Multiplication (${formatCurrency(dailyPrice)} × $_rentalDays)', formatCurrency(calc['basePrice']), isHighlight: true),
+                  if (calc['discountPercent'] > 0)
+                    _buildCalcRow('Multi-Day Discount (${calc['discountPercent']}%)', '-${formatCurrency(calc['discountAmount'])}', isDiscount: true),
+                  _buildCalcRow('Equipment Rental Subtotal', formatCurrency(calc['subtotal'])),
+                  _buildCalcRow('Refundable Security Deposit', '+${formatCurrency(deposit)}', isDeposit: true),
+                  const SizedBox(height: 8),
+                  const Divider(color: Color(0xFFFECDD3), height: 1),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Total Price Payable', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Color(0xFF0F172A))),
+                          Text('(Deposit refunded on return)', style: TextStyle(fontSize: 10, color: Color(0xFF059669), fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      Text(
+                        formatCurrency(calc['grandTotal']),
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Color(0xFFE11D48)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Kit Included Checklist
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.inventory_2_outlined, color: Color(0xFF0F172A), size: 16),
+                      SizedBox(width: 8),
+                      Text('Complete Pro Production Kit Included:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ...includedKit.map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.check_circle, color: Color(0xFF059669), size: 15),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(item, style: const TextStyle(fontSize: 12, color: Color(0xFF334155))),
+                        ),
+                      ],
+                    ),
+                  )),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Rental Security & Guarantee
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFBBF7D0)),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.verified_user_outlined, color: Color(0xFF059669), size: 16),
+                      SizedBox(width: 8),
+                      Text('Camsik Rental Assurance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF065F46))),
+                    ],
+                  ),
+                  SizedBox(height: 6),
+                  Text('✓ Free doorstep delivery & return pickup\n✓ Sensor cleaned & optical bench calibrated before handover\n✓ 100% Refundable security deposit returned via UPI on return\n✓ 24/7 on-call technical shoot support',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF166534), height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Book Now CTA
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE11D48),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 4,
+                ),
+                onPressed: () => setState(() => _isCheckoutMode = true),
+                child: Text('Proceed to Checkout · ${formatCurrency(calc["grandTotal"])}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDurationChip(int days, String label) {
+    final isSel = _rentalDays == days;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: isSel,
+        onSelected: (s) => setState(() => _rentalDays = days),
+        selectedColor: const Color(0xFFE11D48),
+        labelStyle: TextStyle(
+          color: isSel ? Colors.white : const Color(0xFF0F172A),
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCalcRow(String label, String value, {bool isHighlight = false, bool isDiscount = false, bool isDeposit = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 11, color: isHighlight ? const Color(0xFF0F172A) : const Color(0xFF64748B), fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isHighlight ? FontWeight.w900 : FontWeight.bold,
+              color: isDiscount ? const Color(0xFF059669) : isDeposit ? const Color(0xFF4F46E5) : const Color(0xFF0F172A),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 3. RENTAL CHECKOUT VIEW (PLACING ORDER TO ADMIN)
+  Widget _buildRentalCheckoutView() {
+    final c = _activeDetailCamera!;
+    final name = c['model'] as String? ?? 'Camera';
+    final dailyPrice = (c['dailyPrice'] as num?)?.toInt() ?? 0;
+    final deposit = (c['securityDeposit'] as num?)?.toInt() ?? 0;
+    final calc = _calculatePrice(dailyPrice, _rentalDays, deposit);
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0F172A),
+        elevation: 1,
+        title: const Text('Rental Checkout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => setState(() => _isCheckoutMode = false),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Selected Equipment Card
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF1F2),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFFECDD3)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                    child: CamsikSmartImage(image: c['image'], fit: BoxFit.contain, iconSize: 26, iconColor: const Color(0xFFE11D48)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text('Duration: $_rentalDays Days · Multiplier: ${formatCurrency(dailyPrice)}/day', style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    formatCurrency(calc['grandTotal']),
+                    style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFFE11D48), fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            const Text('Customer & Delivery Information', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A))),
+            const SizedBox(height: 12),
+
+            // Form inputs
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: 'Full Name *',
+                prefixIcon: const Icon(Icons.person_outline, size: 20),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(
+                labelText: 'Contact Phone Number *',
+                prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _addressController,
+              maxLines: 2,
+              decoration: InputDecoration(
+                labelText: 'Delivery / Shoot Location Address *',
+                prefixIcon: const Icon(Icons.location_on_outlined, size: 20),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _cityController,
+                    decoration: InputDecoration(
+                      labelText: 'City',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _pincodeController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Pincode',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+            const Text('Verification ID Proof (Required for Rental)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: ['Aadhaar Card', 'Driving License', 'Passport', 'Voter ID'].map((idType) {
+                  final isSel = _idProofType == idType;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(
+                      label: Text(idType),
+                      selected: isSel,
+                      onSelected: (s) => setState(() => _idProofType = idType),
+                      selectedColor: const Color(0xFF0F172A),
+                      labelStyle: TextStyle(color: isSel ? Colors.white : const Color(0xFF0F172A), fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+            const Text('Shoot Purpose', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: ['Wedding / Event', 'Commercial / Ad', 'Short Film', 'Travel / Documentary', 'Personal'].map((purpose) {
+                  final isSel = _shootPurpose == purpose;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(
+                      label: Text(purpose),
+                      selected: isSel,
+                      onSelected: (s) => setState(() => _shootPurpose = purpose),
+                      selectedColor: const Color(0xFFE11D48),
+                      labelStyle: TextStyle(color: isSel ? Colors.white : const Color(0xFF0F172A), fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            // Price Summary Card
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  _buildCalcRow('Equipment Rental (${calc["basePrice"]} - ${calc["discountAmount"]})', formatCurrency(calc['subtotal'])),
+                  _buildCalcRow('Refundable Security Deposit', formatCurrency(deposit), isDeposit: true),
+                  const Divider(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Total Amount Payable', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+                      Text(formatCurrency(calc['grandTotal']), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFFE11D48))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE11D48),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 4,
+                ),
+                onPressed: _isSubmitting ? null : () => _handleRentalOrderSubmit(calc),
+                child: _isSubmitting
+                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                    : const Text('Confirm & Place Rental Order', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleRentalOrderSubmit(Map<String, dynamic> calc) async {
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+    final address = _addressController.text.trim();
+
+    if (name.isEmpty || phone.isEmpty || address.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill Name, Phone and Delivery Address.')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    final c = _activeDetailCamera!;
+    final cameraName = c['model'] as String? ?? 'Camera';
+    final dailyPrice = (c['dailyPrice'] as num?)?.toInt() ?? 0;
+    final deposit = (c['securityDeposit'] as num?)?.toInt() ?? 0;
+
+    final orderData = {
+      'type': 'rent',
+      'customerName': name,
+      'customerPhone': phone,
+      'customerAddress': address,
+      'city': _cityController.text.trim(),
+      'pincode': _pincodeController.text.trim(),
+      'amount': calc['grandTotal'],
+      'finalPrice': calc['grandTotal'],
+      'quotedPrice': calc['grandTotal'],
+      'deviceName': 'Rental: $cameraName ($_rentalDays Days)',
+      'deviceBrand': c['brand'] ?? '',
+      'deviceModel': c['model'] ?? '',
+      'status': 'Rental Confirmed',
+      'paymentMethod': _paymentMode,
+      'rentalDays': _rentalDays,
+      'dailyRate': dailyPrice,
+      'securityDeposit': deposit,
+      'idProofType': _idProofType,
+      'shootPurpose': _shootPurpose,
+      'pickupDate': _shootDate,
+      'pickupSlot': '10:00 AM – 1:00 PM',
+      'notes': 'Rental booking for $_rentalDays days. Deposit: ${formatCurrency(deposit)}. Shoot: $_shootPurpose.',
+    };
+
+    final created = await ApiService.createOrder(orderData);
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (created != null) {
+      final userOrder = UserOrder.fromJson(created);
+      widget.onOrderCreated(userOrder);
+
+      // Show confirmation dialog before closing
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogCtx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFE4E6),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check_circle, color: Color(0xFFE11D48), size: 40),
+              ),
+              const SizedBox(height: 16),
+              const Text('Rental Booking Placed!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(
+                'Your camera kit will be calibrated and delivered to $address.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Order: ${userOrder.orderNumber}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                    Text('OTP: ${userOrder.otp}', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFE11D48), fontSize: 12)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE11D48),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(dialogCtx);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('View in My Bookings', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+}
+
 // ── TAB 3: EXCHANGE WORKFLOW (OLD VALUATION + NEW PRODUCT + DIFFERENCE) ──
 
 class ExchangeWorkflowWidget extends StatefulWidget {
@@ -5148,13 +6469,17 @@ class UserProfileWidget extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: o.type == 'buy' ? const Color(0xFFEDE9FE) : const Color(0xFFDCFCE7),
+                  color: o.type == 'rent'
+                      ? const Color(0xFFFFE4E6)
+                      : (o.type == 'buy' ? const Color(0xFFEDE9FE) : const Color(0xFFDCFCE7)),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   o.orderNumber,
                   style: TextStyle(
-                    color: o.type == 'buy' ? const Color(0xFF7C3AED) : const Color(0xFF059669),
+                    color: o.type == 'rent'
+                        ? const Color(0xFFE11D48)
+                        : (o.type == 'buy' ? const Color(0xFF7C3AED) : const Color(0xFF059669)),
                     fontWeight: FontWeight.bold,
                     fontSize: 10,
                   ),
@@ -5162,7 +6487,11 @@ class UserProfileWidget extends StatelessWidget {
               ),
               Text(
                 o.status,
-                style: const TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold, fontSize: 11),
+                style: TextStyle(
+                  color: o.type == 'rent' ? const Color(0xFFE11D48) : const Color(0xFF059669),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
               ),
             ],
           ),

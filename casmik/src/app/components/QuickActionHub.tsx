@@ -16,13 +16,15 @@ import {
   Percent,
   Coins,
   Truck,
+  Video,
+  Film,
 } from 'lucide-react';
 
 export default function QuickActionHub() {
   return (
     <section className="relative z-20 -mt-6 sm:-mt-8 lg:-mt-10 mb-8 sm:mb-12 px-4 sm:px-6 lg:px-8 xl:px-10 max-w-screen-2xl mx-auto">
-      {/* 3 Main Action Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
+      {/* 4 Main Action Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
         {/* ── CARD 1: SELL TECH ── */}
         <div className="group relative rounded-3xl bg-white border border-slate-200/90 hover:border-emerald-500/70 p-6 sm:p-7 shadow-lg hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 flex flex-col justify-between overflow-hidden hover:-translate-y-1.5">
           {/* Subtle Ambient Glow */}
@@ -44,7 +46,7 @@ export default function QuickActionHub() {
             </div>
 
             {/* Title & Tagline */}
-            <h3 className="text-2xl sm:text-2xl font-black text-slate-900 tracking-tight mb-2 group-hover:text-emerald-700 transition-colors">
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mb-2 group-hover:text-emerald-700 transition-colors">
               Sell Old Tech &amp; Gear
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-5">
@@ -110,7 +112,7 @@ export default function QuickActionHub() {
             </div>
 
             {/* Title & Tagline */}
-            <h3 className="text-2xl sm:text-2xl font-black text-slate-900 tracking-tight mb-2 group-hover:text-indigo-700 transition-colors">
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mb-2 group-hover:text-indigo-700 transition-colors">
               Buy Certified Refurbished
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-5">
@@ -176,7 +178,7 @@ export default function QuickActionHub() {
             </div>
 
             {/* Title & Tagline */}
-            <h3 className="text-2xl sm:text-2xl font-black text-slate-900 tracking-tight mb-2 group-hover:text-purple-700 transition-colors">
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mb-2 group-hover:text-purple-700 transition-colors">
               Exchange &amp; Upgrade
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-5">
@@ -218,6 +220,72 @@ export default function QuickActionHub() {
             className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-purple-600/20 hover:shadow-lg hover:shadow-purple-600/30 flex items-center justify-center gap-2 transition-all duration-200 group-hover:scale-[1.02]"
           >
             <span>Start 1-Step Device Exchange</span>
+            <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
+
+        {/* ── CARD 4: RENTAL CAMERAS & GEAR ── */}
+        <div className="group relative rounded-3xl bg-white border border-slate-200/90 hover:border-rose-500/70 p-6 sm:p-7 shadow-lg hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-300 flex flex-col justify-between overflow-hidden hover:-translate-y-1.5">
+          {/* Subtle Ambient Glow */}
+          <div className="absolute -top-16 -right-16 w-44 h-44 bg-gradient-to-br from-rose-400/15 via-pink-400/10 to-transparent rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+
+          <div>
+            {/* Top Badge & Micro Category Icons */}
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200/80 text-[11px] font-black uppercase tracking-wider text-rose-700">
+                <Camera size={12} className="text-rose-600 fill-rose-500" />
+                Daily &amp; Weekly Rentals
+              </span>
+              <div className="flex items-center gap-1.5 text-slate-400">
+                <Video size={15} />
+                <Film size={15} />
+                <Camera size={15} />
+              </div>
+            </div>
+
+            {/* Title & Tagline */}
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mb-2 group-hover:text-rose-700 transition-colors">
+              Rent Pro Cameras &amp; Gear
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-5">
+              Rent cinema bodies, mirrorless cameras, GM prime lenses &amp; gimbals with flexible daily rates and doorstep delivery.
+            </p>
+
+            {/* Feature Bullets */}
+            <div className="space-y-2.5 mb-6 pt-3 border-t border-slate-100 text-xs font-semibold text-slate-700">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={15} className="text-rose-600 shrink-0" />
+                <span>Flexible daily rates starting from ₹499/day</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={15} className="text-rose-600 shrink-0" />
+                <span>Includes 2 OEM batteries, dual charger &amp; memory card</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={15} className="text-rose-600 shrink-0" />
+                <span>Insured doorstep delivery &amp; free return collection</span>
+              </div>
+            </div>
+
+            {/* Supported Pills */}
+            <div className="flex flex-wrap gap-1.5 mb-6">
+              {['Cinema 4K/8K', 'Sony FX3 & A7 IV', 'Canon R5 & C70', 'DJI Ronin & Gimbals'].map((item) => (
+                <span
+                  key={item}
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-700 group-hover:bg-rose-50 group-hover:text-rose-800 transition-colors"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA Button */}
+          <Link
+            href="/rental-cameras"
+            className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-rose-600 via-pink-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-rose-600/20 hover:shadow-lg hover:shadow-rose-600/30 flex items-center justify-center gap-2 transition-all duration-200 group-hover:scale-[1.02]"
+          >
+            <span>Explore Rental Cameras</span>
             <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>

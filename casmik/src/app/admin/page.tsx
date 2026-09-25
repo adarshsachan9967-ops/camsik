@@ -23,8 +23,9 @@ import AdminRepairIssues from './components/AdminRepairIssues';
 import AdminInventory from './components/AdminInventory';
 import AdminSupportTickets from './components/AdminSupportTickets';
 import AdminCoupons from './components/AdminCoupons';
+import AdminRentalCameras from './components/AdminRentalCameras';
 
-export type AdminSection = 'overview' | 'orders' | 'categories' | 'brands' | 'models' | 'pricing' | 'partners' | 'delivery' | 'customers' | 'payouts' | 'cms' | 'reports' | 'settings' | 'notifications' | 'push_notifications' | 'refurbished' | 'repair_issues' | 'inventory' | 'support_tickets' | 'coupons';
+export type AdminSection = 'overview' | 'orders' | 'categories' | 'brands' | 'models' | 'pricing' | 'partners' | 'delivery' | 'customers' | 'payouts' | 'cms' | 'reports' | 'settings' | 'notifications' | 'push_notifications' | 'refurbished' | 'repair_issues' | 'inventory' | 'support_tickets' | 'coupons' | 'rental_cameras' | 'rental_orders';
 
 export interface AdminNavigationOptions {
   filterStatus?: string;
@@ -117,6 +118,9 @@ export default function AdminPage() {
       case 'inventory': return <AdminInventory />;
       case 'support_tickets': return <AdminSupportTickets />;
       case 'coupons': return <AdminCoupons />;
+      case 'rental_cameras':
+      case 'rental_orders':
+        return <AdminRentalCameras />;
       default: return <AdminOverview onNavigate={handleNavigate} />;
     }
   };

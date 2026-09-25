@@ -5,6 +5,7 @@ import HeroBannerCarousel from '@/app/components/HeroBannerCarousel';
 import QuickActionHub from '@/app/components/QuickActionHub';
 import CameraCategoryBar from '@/app/components/CameraCategoryBar';
 import TopDealsShowcase from '@/app/components/TopDealsShowcase';
+import RentalShowcaseSection from '@/app/components/RentalShowcaseSection';
 import DeviceEcosystemShowcase from '@/app/components/DeviceEcosystemShowcase';
 import CamsikTrustScore from '@/app/components/CamsikTrustScore';
 import WhyCamsik from '@/app/components/WhyCamsik';
@@ -32,6 +33,9 @@ export default function CustomerHomePage() {
 
       {/* 4. Top Deals Showcase: Top Selling, Top Buying (Refurbished) & Top Exchange with Category Filters */}
       <TopDealsShowcase />
+
+      {/* 4.5. Pro Rental Camera & Cinema Gear Showcase */}
+      <RentalShowcaseSection />
 
       {/* 5. Complete Device Ecosystem (Smartphones, MacBooks, DSLRs, iPads with Sell/Buy/Exchange tags) */}
       <DeviceEcosystemShowcase />

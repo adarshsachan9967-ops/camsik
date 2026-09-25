@@ -1,7 +1,9 @@
 'use client';
-import React, { useState } from 'react';
-import { deliveryAgents } from '@/lib/casmikData';
-import { Search, MapPin, Phone, Star, Package, FileText, CheckCircle, XCircle, Shield, Clock, AlertTriangle, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { deliveryAgents, orders as defaultOrders } from '@/lib/casmikData';
+import type { Order, OrderStatus } from '@/lib/casmikData';
+import { Search, MapPin, Phone, Star, Package, FileText, CheckCircle, XCircle, Shield, Clock, AlertTriangle, X, Truck, Check } from 'lucide-react';
+import { triggerNotification } from '@/lib/notifications';
 
 const agentDocs = {
   'delivery-001': { aadhar: true, pan: true, drivingLicense: true, vehicleRC: true, insurance: true },
@@ -38,14 +40,44 @@ const getInitialAgents = () => {
   return extendedAgents.map(a => ({ ...a, approvalStatus: (a as any).approvalStatus || 'approved' }));
 };
 
+const getStoredOrders = (): Order[] => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('casmik_orders_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+  }
+  return defaultOrders;
+};
+
 export default function AdminDelivery() {
   const [agents, setAgents] = useState(getInitialAgents);
+  const [ordersList, setOrdersList] = useState<Order[]>(getStoredOrders);
   const [query, setQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [docModal, setDocModal] = useState<typeof agents[0] | null>(null);
   const [assignModal, setAssignModal] = useState<typeof agents[0] | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState('');
+  const [scheduledSlot, setScheduledSlot] = useState('10:00 AM - 1:00 PM');
+  const [scheduledDate, setScheduledDate] = useState('');
   const [callModal, setCallModal] = useState<typeof agents[0] | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all');
+  const [assignSuccess, setAssignSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleSync = () => {
+      setOrdersList(getStoredOrders());
+    };
+    window.addEventListener('casmik_orders_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('casmik_orders_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   const filtered = agents.filter(a =>
     (a?.name?.toLowerCase()?.includes(query?.toLowerCase()) || a?.city?.toLowerCase()?.includes(query?.toLowerCase())) &&
@@ -241,50 +273,164 @@ export default function AdminDelivery() {
         </div>
       )}
 
+      {/* Toast Notification */}
+      {assignSuccess && (
+        <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-xs font-bold border border-gray-700 animate-in fade-in">
+          <CheckCircle size={16} className="text-green-400 flex-shrink-0" />
+          <span>{assignSuccess}</span>
+        </div>
+      )}
+
       {/* Assign Task Modal */}
       {assignModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setAssignModal(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 z-10">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-black text-gray-900">Assign Task</h3>
-              <button onClick={() => setAssignModal(null)}><X size={18} className="text-gray-400" /></button>
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 sm:p-7 z-10 border border-gray-100 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+              <div>
+                <span className="text-[11px] font-black text-blue-600 uppercase tracking-wider flex items-center gap-1">
+                  <Truck size={13} /> Dispatch Executive Task
+                </span>
+                <h3 className="text-lg font-black text-gray-900">Assign Order Pickup</h3>
+              </div>
+              <button onClick={() => setAssignModal(null)}><X size={18} className="text-gray-400 hover:text-gray-600" /></button>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl mb-4">
-              <img src={assignModal.avatar} alt={assignModal.name} className="w-10 h-10 rounded-xl object-cover" />
+
+            <div className="flex items-center gap-3 p-3.5 bg-blue-50/70 border border-blue-100 rounded-2xl mb-4">
+              <img src={assignModal.avatar} alt={assignModal.name} className="w-11 h-11 rounded-2xl object-cover border border-blue-200" />
               <div>
                 <p className="font-bold text-gray-900 text-sm">{assignModal.name}</p>
-                <p className="text-xs text-gray-500">{assignModal.city} · {assignModal.vehicle}</p>
+                <p className="text-xs text-gray-600">{assignModal.city} · {assignModal.vehicle} ({assignModal.vehicleNumber}) · 📞 {assignModal.phone}</p>
               </div>
               <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${statusColors[assignModal.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-700'}`}>{assignModal.status.replace('_', ' ')}</span>
             </div>
-            <div className="space-y-3">
+
+            <div className="space-y-3.5">
               <div>
-                <label className="text-xs font-bold text-gray-600 mb-1.5 block">Select Order</label>
-                <select className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white">
-                  <option>CSM-2024-006 — MacBook Pro 14" (Bangalore)</option>
-                  <option>CSM-2024-012 — iPad Pro 12.9" (Chennai)</option>
-                  <option>CSM-2024-016 — Galaxy Z Fold 5 (Delhi)</option>
-                  <option>CSM-2024-020 — Nothing Phone 2 (Kolkata)</option>
+                <label className="text-xs font-bold text-gray-700 mb-1.5 block">Select Live Order to Assign:</label>
+                <select
+                  value={selectedOrderId}
+                  onChange={e => setSelectedOrderId(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+                >
+                  <option value="">-- Choose an order from store ({ordersList.length} total) --</option>
+                  {ordersList.map(o => (
+                    <option key={o.id} value={o.id}>
+                      {o.orderNumber} — {o.deviceName} ({o.customerName}, {o.city} · ₹{o.quotedPrice.toLocaleString('en-IN')}) [{o.status}]
+                    </option>
+                  ))}
                 </select>
               </div>
-              <div>
-                <label className="text-xs font-bold text-gray-600 mb-1.5 block">Task Type</label>
-                <select className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white">
-                  <option>Pickup from Customer</option>
-                  <option>Deliver to Customer</option>
-                  <option>Transfer to Partner</option>
-                  <option>Return to Warehouse</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-600 mb-1.5 block">Scheduled Time</label>
-                <input type="datetime-local" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-600 mb-1 block">Scheduled Date</label>
+                  <input
+                    type="date"
+                    value={scheduledDate}
+                    onChange={e => setScheduledDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-600 mb-1 block">Pickup Window</label>
+                  <select
+                    value={scheduledSlot}
+                    onChange={e => setScheduledSlot(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
+                  >
+                    <option value="10:00 AM - 1:00 PM">10:00 AM - 1:00 PM</option>
+                    <option value="1:00 PM - 4:00 PM">1:00 PM - 4:00 PM</option>
+                    <option value="4:00 PM - 7:00 PM">4:00 PM - 7:00 PM</option>
+                    <option value="7:00 PM - 9:00 PM">7:00 PM - 9:00 PM</option>
+                  </select>
+                </div>
               </div>
             </div>
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => setAssignModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600">Cancel</button>
-              <button onClick={() => setAssignModal(null)} className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90">Assign Task</button>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setAssignModal(null)}
+                className="flex-1 py-3 rounded-2xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!selectedOrderId || !assignModal) return;
+                  const targetOrder = ordersList.find(o => o.id === selectedOrderId || o.orderNumber === selectedOrderId);
+                  if (!targetOrder) return;
+
+                  const updatedOrder: Order = {
+                    ...targetOrder,
+                    deliveryAgentId: assignModal.id,
+                    deliveryAgentName: assignModal.name,
+                    deliveryAgentPhone: assignModal.phone,
+                    status: 'pickup_scheduled',
+                    pickupDate: scheduledDate || targetOrder.pickupDate || 'Today',
+                    pickupSlot: scheduledSlot || targetOrder.pickupSlot || '10:00 AM - 1:00 PM',
+                    updatedAt: new Date().toISOString(),
+                  };
+
+                  const updated = ordersList.map(o => o.id === targetOrder.id ? updatedOrder : o);
+                  setOrdersList(updated);
+
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('casmik_orders_v1', JSON.stringify(updated));
+                    try {
+                      const pOrders = localStorage.getItem('casmik_partner_orders_v1');
+                      if (pOrders) {
+                        const list = JSON.parse(pOrders);
+                        if (Array.isArray(list)) {
+                          const upP = list.map((o: Order) => o.id === targetOrder.id ? updatedOrder : o);
+                          localStorage.setItem('casmik_partner_orders_v1', JSON.stringify(upP));
+                        }
+                      }
+                    } catch {}
+                    window.dispatchEvent(new Event('casmik_orders_updated'));
+                    window.dispatchEvent(new Event('casmik_partner_orders_updated'));
+                  }
+
+                  try {
+                    await fetch('/api/orders', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        orderId: targetOrder.id,
+                        deliveryAgentId: assignModal.id,
+                        deliveryAgentName: assignModal.name,
+                        deliveryAgentPhone: assignModal.phone,
+                        status: 'pickup_scheduled',
+                        pickupDate: updatedOrder.pickupDate,
+                        pickupSlot: updatedOrder.pickupSlot,
+                      }),
+                    });
+                  } catch {}
+
+                  triggerNotification({
+                    type: 'status_update',
+                    targetRole: 'all',
+                    title: `Order #${targetOrder.orderNumber} Assigned to ${assignModal.name}`,
+                    shortDetails: `Admin assigned Order #${targetOrder.orderNumber} (${targetOrder.deviceName}) to delivery executive ${assignModal.name} (${assignModal.phone}).`,
+                    orderNumber: targetOrder.orderNumber,
+                    deviceName: targetOrder.deviceName,
+                    customerName: targetOrder.customerName,
+                    price: targetOrder.quotedPrice,
+                    status: 'pickup_scheduled',
+                  });
+
+                  setAssignSuccess(`Order #${targetOrder.orderNumber} assigned to ${assignModal.name}!`);
+                  setTimeout(() => setAssignSuccess(null), 4000);
+                  setAssignModal(null);
+                  setSelectedOrderId('');
+                }}
+                disabled={!selectedOrderId}
+                className="flex-1 py-3 rounded-2xl bg-primary text-white text-xs font-black hover:bg-primary/90 disabled:opacity-50 transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-1.5"
+              >
+                <Truck size={14} /> Assign Task
+              </button>
             </div>
           </div>
         </div>

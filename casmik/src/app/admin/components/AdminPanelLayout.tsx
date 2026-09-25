@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { AdminSection } from '../page';
-import { LayoutDashboard, ShoppingBag, Tag, Globe, Package, Calculator, Users, Handshake, Truck, FileText, BarChart3, Settings, ChevronLeft, ChevronRight, Bell, Menu, X, CreditCard, Send, LogOut, Wrench, Warehouse, MessageSquare, Percent, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Tag, Globe, Package, Calculator, Users, Handshake, Truck, FileText, BarChart3, Settings, ChevronLeft, ChevronRight, Bell, Menu, X, CreditCard, Send, LogOut, Wrench, Warehouse, MessageSquare, Percent, RefreshCw, Camera } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 
 interface NavItem { id: AdminSection; icon: React.ElementType; label: string; badge?: string | number; badgeColor?: string; }
@@ -13,12 +13,14 @@ const navGroups: NavGroup[] = [
   { group: 'Overview', items: [{ id: 'overview', icon: LayoutDashboard, label: 'Dashboard' }] },
   { group: 'Orders', items: [
     { id: 'orders', icon: ShoppingBag, label: 'All Orders', badge: 47, badgeColor: 'bg-red-500' },
+    { id: 'rental_orders', icon: Camera, label: 'Rental Bookings', badge: 'Live', badgeColor: 'bg-rose-500' },
   ]},
   { group: 'Catalog', items: [
     { id: 'categories', icon: Tag, label: 'Categories' },
     { id: 'brands', icon: Globe, label: 'Brands' },
     { id: 'models', icon: Package, label: 'Models' },
     { id: 'refurbished', icon: RefreshCw, label: 'Refurbished Devices' },
+    { id: 'rental_cameras', icon: Camera, label: 'Rental Cameras (Fleet)', badge: 'Pro', badgeColor: 'bg-rose-600' },
     { id: 'repair_issues', icon: Wrench, label: 'Repair Issues' },
     { id: 'pricing', icon: Calculator, label: 'Pricing Engine' },
   ]},
@@ -67,7 +69,8 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
     const map: Partial<Record<AdminSection, string>> = {
       overview: 'Dashboard', push_notifications: 'Push Notifications', repair_issues: 'Repair Issues',
       support_tickets: 'Support Tickets', refurbished: 'Refurbished Devices', inventory: 'Inventory',
-      coupons: 'Coupons & Offers', models: 'Device Models',
+      coupons: 'Coupons & Offers', models: 'Device Models', rental_cameras: 'Rental Cameras (Fleet)',
+      rental_orders: 'Rental Bookings',
     };
     return map[s] || s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   };

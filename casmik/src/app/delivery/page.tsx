@@ -4,13 +4,14 @@ import Link from 'next/link';
 import DeliveryLayout from './components/DeliveryLayout';
 import DeliveryDashboard from './components/DeliveryDashboard';
 import DeliveryTasks from './components/DeliveryTasks';
+import DeliveryInspection from './components/DeliveryInspection';
 import DeliveryEarnings from './components/DeliveryEarnings';
 import DeliveryProfile from './components/DeliveryProfile';
 import SupportTicketsPanel from '@/components/SupportTicketsPanel';
 import { Clock, ShieldAlert, RefreshCw, LogOut, ArrowRight, Truck } from 'lucide-react';
 import { deliveryAgents, DeliveryAgent } from '@/lib/casmikData';
 
-export type DeliverySection = 'dashboard' | 'tasks' | 'earnings' | 'profile' | 'support';
+export type DeliverySection = 'dashboard' | 'tasks' | 'inspection' | 'earnings' | 'profile' | 'support';
 
 interface ExtendedAgent extends DeliveryAgent {
   approvalStatus?: 'approved' | 'pending' | 'rejected';
@@ -154,7 +155,13 @@ export default function DeliveryPage() {
   const renderSection = () => {
     switch (activeSection) {
       case 'dashboard': return <DeliveryDashboard />;
-      case 'tasks': return <DeliveryTasks />;
+      case 'tasks': return <DeliveryTasks onOpenInspection={(orderId) => {
+        if (typeof window !== 'undefined' && orderId) {
+          localStorage.setItem('casmik_delivery_active_inspection_id', orderId);
+        }
+        setActiveSection('inspection');
+      }} />;
+      case 'inspection': return <DeliveryInspection onBackToTasks={() => setActiveSection('tasks')} />;
       case 'earnings': return <DeliveryEarnings />;
       case 'profile': return <DeliveryProfile />;
       case 'support': return <SupportTicketsPanel panelType="delivery" userName={session.name || "Agent"} />;

@@ -67,7 +67,7 @@ export interface QuestionOption {
 export interface Order {
   id: string;
   orderNumber: string;
-  type: 'sell' | 'buy' | 'exchange' | 'repair';
+  type: 'sell' | 'buy' | 'exchange' | 'repair' | 'rent';
   status: OrderStatus;
   customerId: string;
   customerName: string;
@@ -87,6 +87,11 @@ export interface Order {
   partnerName: string | null;
   deliveryAgentId: string | null;
   deliveryAgentName: string | null;
+  deliveryAgentPhone?: string | null;
+  deviceCollected?: boolean;
+  collectedAt?: string | null;
+  deviceImei?: string | null;
+  inspectionNotes?: string | null;
   pickupDate: string;
   pickupSlot: string;
   createdAt: string;
@@ -3109,14 +3114,14 @@ export const deliveryAgents: DeliveryAgent[] = [
     phone: '9876543210',
     email: 'raghu@camsik.com',
     city: 'Bengaluru',
-    pinCodes: ['560034', '560038', '560095'],
+    pinCodes: ['560034', '560038', '560095', '560001', '560002'],
     status: 'online',
     rating: 4.9,
     todayPickups: 3,
     todayDeliveries: 1,
     totalDeliveries: 840,
     earnings: 3200,
-    vehicle: 'Bike',
+    vehicle: 'Bike (Hero Splendor)',
     vehicleNumber: 'KA01AB5566',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80',
     joinedAt: '2023-01-15',
@@ -3127,17 +3132,71 @@ export const deliveryAgents: DeliveryAgent[] = [
     phone: '9654321098',
     email: 'vikas@camsik.com',
     city: 'Delhi',
-    pinCodes: ['110016', '110017', '110020'],
+    pinCodes: ['110016', '110017', '110020', '110001', '110070'],
     status: 'online',
     rating: 4.8,
     todayPickups: 4,
     todayDeliveries: 2,
     totalDeliveries: 610,
     earnings: 2800,
-    vehicle: 'Scooter',
+    vehicle: 'Scooter (Honda Activa)',
     vehicleNumber: 'DL04CD8899',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&q=80',
     joinedAt: '2023-05-12',
+  },
+  {
+    id: 'delivery-001',
+    name: 'Sameer Khan',
+    phone: '9820123456',
+    email: 'sameer@camsik.com',
+    city: 'Mumbai',
+    pinCodes: ['400001', '400050', '400072', '400002', '400053'],
+    status: 'online',
+    rating: 4.9,
+    todayPickups: 5,
+    todayDeliveries: 3,
+    totalDeliveries: 1120,
+    earnings: 4500,
+    vehicle: 'Bike (Yamaha FZ)',
+    vehicleNumber: 'MH02EK4412',
+    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&q=80',
+    joinedAt: '2022-11-20',
+  },
+  {
+    id: 'delivery-002',
+    name: 'Karthik Raman',
+    phone: '9789012345',
+    email: 'karthik@camsik.com',
+    city: 'Chennai',
+    pinCodes: ['600001', '600017', '600028', '600004'],
+    status: 'online',
+    rating: 4.7,
+    todayPickups: 2,
+    todayDeliveries: 2,
+    totalDeliveries: 540,
+    earnings: 2200,
+    vehicle: 'Bike (Bajaj Pulsar)',
+    vehicleNumber: 'TN07BM3321',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&q=80',
+    joinedAt: '2023-08-10',
+  },
+  {
+    id: 'delivery-003',
+    name: 'Priya Sharma',
+    phone: '9876501234',
+    email: 'priya.d@casmik.com',
+    city: 'Delhi',
+    pinCodes: ['110070', '110001', '201301'],
+    status: 'online',
+    rating: 4.8,
+    todayPickups: 3,
+    todayDeliveries: 1,
+    totalDeliveries: 420,
+    earnings: 2600,
+    vehicle: 'Electric Scooter (Ather 450X)',
+    vehicleNumber: 'DL01AA0001',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80',
+    joinedAt: '2024-01-10',
   },
 ];
 
@@ -3200,7 +3259,7 @@ export function getOrderStatusColor(status: OrderStatus): string {
   }
 }
 
-export function getTypeColor(type: 'sell' | 'buy' | 'exchange' | 'repair'): string {
+export function getTypeColor(type: 'sell' | 'buy' | 'exchange' | 'repair' | 'rent'): string {
   switch (type) {
     case 'sell':
       return 'text-purple-600 bg-purple-50 border-purple-200';
@@ -3210,6 +3269,10 @@ export function getTypeColor(type: 'sell' | 'buy' | 'exchange' | 'repair'): stri
       return 'text-emerald-600 bg-emerald-50 border-emerald-200';
     case 'repair':
       return 'text-amber-600 bg-amber-50 border-amber-200';
+    case 'rent':
+      return 'text-rose-600 bg-rose-50 border-rose-200';
+    default:
+      return 'text-slate-600 bg-slate-50 border-slate-200';
   }
 }
 

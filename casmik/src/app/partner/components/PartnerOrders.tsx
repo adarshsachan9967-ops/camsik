@@ -1,9 +1,9 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { orders as defaultOrders, getOrderStatusColor, getOrderStatusLabel, getTypeColor } from '@/lib/casmikData';
-import type { Order, OrderStatus } from '@/lib/casmikData';
-import { Search, CheckCircle, XCircle, Eye, Phone, MapPin, X, Truck, Wifi, WifiOff, ChevronDown, SlidersHorizontal, ClipboardCheck, Sparkles, Lock, CreditCard, ArrowRight, ShieldAlert } from 'lucide-react';
+import { orders as defaultOrders, deliveryAgents, getOrderStatusColor, getOrderStatusLabel, getTypeColor } from '@/lib/casmikData';
+import type { Order, OrderStatus, DeliveryAgent } from '@/lib/casmikData';
+import { Search, CheckCircle, XCircle, Eye, Phone, MapPin, X, Truck, Wifi, WifiOff, ChevronDown, SlidersHorizontal, ClipboardCheck, Sparkles, Lock, CreditCard, ArrowRight, ShieldAlert, CheckCircle2, ShieldCheck, Calendar, Clock } from 'lucide-react';
 import LiveOrderTracker from '@/components/LiveOrderTracker';
 import { triggerNotification } from '@/lib/notifications';
 
@@ -60,6 +60,19 @@ const getStoredPartnerOrders = (): Order[] => {
   return defaultOrders.filter(o => o.partnerId === PARTNER_ID || !o.partnerId || o.partnerId === 'partner-001');
 };
 
+const getAvailableDeliveryAgents = (): DeliveryAgent[] => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('casmik_delivery_agents_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+  }
+  return deliveryAgents;
+};
+
 interface DBOrder {
   id: string;
   order_number: string;
@@ -102,6 +115,11 @@ function dbToOrder(o: DBOrder): Order {
     quotedPrice: o.quoted_price || 0, finalPrice: o.final_price || 0,
     partnerId: o.partner_id, partnerName: o.partner_name,
     deliveryAgentId: o.delivery_agent_id, deliveryAgentName: o.delivery_agent_name,
+    deliveryAgentPhone: (o as any).delivery_agent_phone || null,
+    deviceCollected: (o as any).device_collected || false,
+    collectedAt: (o as any).collected_at || null,
+    deviceImei: (o as any).device_imei || null,
+    inspectionNotes: (o as any).inspection_notes || null,
     pickupDate: o.pickup_date || '', pickupSlot: o.pickup_slot || '',
     createdAt: o.created_at, updatedAt: o.updated_at,
     paymentStatus: o.payment_status as Order['paymentStatus'],
@@ -123,6 +141,12 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
   const [activeTab, setActiveTab] = useState<'list' | 'live'>('list');
   const [statusToast, setStatusToast] = useState<{ message: string; actionLabel?: string; onAction?: () => void } | null>(null);
 
+  // Delivery Person Assignment Modal State
+  const [assignDeliveryModal, setAssignDeliveryModal] = useState<Order | null>(null);
+  const [selectedDeliveryAgentId, setSelectedDeliveryAgentId] = useState('');
+  const [deliveryPickupDate, setDeliveryPickupDate] = useState('');
+  const [deliveryPickupSlot, setDeliveryPickupSlot] = useState('');
+
   // Payout Disbursal Modal State
   const [payoutOrder, setPayoutOrder] = useState<Order | null>(null);
   const [payoutMethod, setPayoutMethod] = useState<'upi' | 'imps' | 'cash'>('upi');
@@ -130,6 +154,123 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
 
   const supabase = createClient();
+
+  // Listen for storage and cross-role updates from Delivery Executive or Admin
+  useEffect(() => {
+    const handleSync = () => {
+      const fresh = getStoredPartnerOrders();
+      setOrderList(fresh);
+      setSelectedOrder(prev => prev ? (fresh.find(o => o.id === prev.id) || prev) : null);
+    };
+    window.addEventListener('casmik_partner_orders_updated', handleSync);
+    window.addEventListener('casmik_orders_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('casmik_partner_orders_updated', handleSync);
+      window.removeEventListener('casmik_orders_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
+
+  const handleAssignDeliveryAgent = async () => {
+    if (!assignDeliveryModal || !selectedDeliveryAgentId) return;
+    const allAgents = getAvailableDeliveryAgents();
+    const agent = allAgents.find(a => a.id === selectedDeliveryAgentId);
+    if (!agent) return;
+
+    const pickupDate = deliveryPickupDate || assignDeliveryModal.pickupDate || 'Today';
+    const pickupSlot = deliveryPickupSlot || assignDeliveryModal.pickupSlot || '10:00 AM - 1:00 PM';
+
+    const updatedOrder: Order = {
+      ...assignDeliveryModal,
+      partnerId: PARTNER_ID,
+      deliveryAgentId: agent.id,
+      deliveryAgentName: agent.name,
+      deliveryAgentPhone: agent.phone,
+      status: 'pickup_scheduled' as OrderStatus,
+      pickupDate,
+      pickupSlot,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setOrderList(prev => {
+      const updated = prev.map(o => o.id === assignDeliveryModal.id ? updatedOrder : o);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('casmik_partner_orders_v1', JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    if (selectedOrder?.id === assignDeliveryModal.id) {
+      setSelectedOrder(updatedOrder);
+    }
+
+    if (typeof window !== 'undefined') {
+      try {
+        const savedGlobal = localStorage.getItem('casmik_orders_v1');
+        if (savedGlobal) {
+          const list = JSON.parse(savedGlobal);
+          if (Array.isArray(list)) {
+            const updated = list.map((o: any) => o.id === assignDeliveryModal.id ? updatedOrder : o);
+            localStorage.setItem('casmik_orders_v1', JSON.stringify(updated));
+          }
+        }
+      } catch {}
+      window.dispatchEvent(new Event('casmik_orders_updated'));
+      window.dispatchEvent(new Event('casmik_partner_orders_updated'));
+    }
+
+    try {
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: assignDeliveryModal.id,
+          partnerId: PARTNER_ID,
+          deliveryAgentId: agent.id,
+          deliveryAgentName: agent.name,
+          deliveryAgentPhone: agent.phone,
+          status: 'pickup_scheduled',
+          pickupDate,
+          pickupSlot,
+        }),
+      });
+    } catch {}
+
+    try {
+      await supabase
+        .from('orders')
+        .update({
+          partner_id: PARTNER_ID,
+          delivery_agent_id: agent.id,
+          delivery_agent_name: agent.name,
+          status: 'pickup_scheduled',
+          pickup_date: pickupDate,
+          pickup_slot: pickupSlot,
+        })
+        .eq('id', assignDeliveryModal.id);
+    } catch {}
+
+    triggerNotification({
+      type: 'status_update',
+      targetRole: 'all',
+      title: `Order #${assignDeliveryModal.orderNumber} Assigned to Delivery Rider`,
+      shortDetails: `Partner assigned Order #${assignDeliveryModal.orderNumber} (${assignDeliveryModal.deviceName}) to executive "${agent.name}" (${agent.phone}) for doorstep pickup.`,
+      orderNumber: assignDeliveryModal.orderNumber,
+      deviceName: assignDeliveryModal.deviceName,
+      customerName: assignDeliveryModal.customerName,
+      price: assignDeliveryModal.quotedPrice,
+      status: 'pickup_scheduled',
+    });
+
+    setStatusToast({
+      message: `🚚 Order #${assignDeliveryModal.orderNumber} assigned to ${agent.name} for pickup!`,
+    });
+    setTimeout(() => setStatusToast(null), 4000);
+
+    setAssignDeliveryModal(null);
+    setSelectedDeliveryAgentId('');
+  };
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -442,7 +583,17 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                       <span className="text-xs font-black text-gray-500 group-hover:text-primary transition-colors">{order.orderNumber}</span>
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-lg capitalize ${getTypeColor(order.type)}`}>{order.type}</span>
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${getOrderStatusColor(order.status)}`}>{getOrderStatusLabel(order.status)}</span>
-                      {order.inspectionScore !== null && order.inspectionScore !== undefined && (
+                      {order.deliveryAgentName && (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                          <Truck size={10} className="text-blue-600" /> Rider: {order.deliveryAgentName}
+                        </span>
+                      )}
+                      {order.deviceCollected && (
+                        <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                          <CheckCircle2 size={11} className="text-emerald-700" /> Collected ({order.inspectionScore || 100}%)
+                        </span>
+                      )}
+                      {order.inspectionScore !== null && order.inspectionScore !== undefined && !order.deviceCollected && (
                         <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 border border-teal-200">
                           Score: {order.inspectionScore}%
                         </span>
@@ -500,7 +651,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                   <span>🕐 {order.pickupSlot || '10:00 AM - 1:00 PM'}</span>
                 </div>
 
-                {/* Card Actions Bar: Accept, Details, Call, Disburse Payout, and Forward-Only Status Dropdown */}
+                {/* Card Actions Bar: Accept, Details, Call, Assign Rider, Disburse Payout, and Forward-Only Status Dropdown */}
                 <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
                   <button
                     type="button"
@@ -516,6 +667,25 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                   >
                     <Phone size={13} /> Call
                   </a>
+
+                  {/* Assign to Delivery Executive */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssignDeliveryModal(order);
+                      setSelectedDeliveryAgentId(order.deliveryAgentId || '');
+                      setDeliveryPickupDate(order.pickupDate || '');
+                      setDeliveryPickupSlot(order.pickupSlot || '');
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer ${
+                      order.deliveryAgentId
+                        ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-600 hover:text-white'
+                        : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-600 hover:text-white'
+                    }`}
+                    title={order.deliveryAgentId ? `Reassign Rider (${order.deliveryAgentName})` : 'Dispatch delivery executive for pickup'}
+                  >
+                    <Truck size={13} /> {order.deliveryAgentId ? 'Change Rider' : 'Assign Rider'}
+                  </button>
 
                   {/* Action buttons depending on order status */}
                   {order.status !== 'accepted' && order.status !== 'completed' && order.status !== 'picked_up' && order.status !== 'inspection' ? (
@@ -837,6 +1007,77 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                     </div>
                   )}
 
+                  {/* Delivery Executive Section in Partner Modal */}
+                  <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                        <Truck size={14} className="text-blue-600" /> Assigned Delivery Executive
+                      </p>
+                      <button
+                        onClick={() => {
+                          setAssignDeliveryModal(selectedOrder);
+                          setSelectedDeliveryAgentId(selectedOrder.deliveryAgentId || '');
+                          setDeliveryPickupDate(selectedOrder.pickupDate || '');
+                          setDeliveryPickupSlot(selectedOrder.pickupSlot || '');
+                          setSelectedOrder(null);
+                        }}
+                        className="text-xs font-bold text-blue-700 hover:underline"
+                      >
+                        {selectedOrder.deliveryAgentId ? 'Change Rider →' : '+ Assign Rider'}
+                      </button>
+                    </div>
+                    {selectedOrder.deliveryAgentName ? (
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <div>
+                          <p className="font-bold text-slate-900">{selectedOrder.deliveryAgentName}</p>
+                          {selectedOrder.deliveryAgentPhone && (
+                            <p className="text-slate-600 flex items-center gap-1 mt-0.5">
+                              <Phone size={11} className="text-blue-500" />
+                              <a href={`tel:${selectedOrder.deliveryAgentPhone}`} className="hover:underline">{selectedOrder.deliveryAgentPhone}</a>
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-xs font-bold text-blue-700 bg-blue-100/70 px-2.5 py-0.5 rounded-full capitalize">
+                          {selectedOrder.status.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-500">No delivery executive assigned to this order yet. Assign an executive for doorstep device inspection and collection.</p>
+                    )}
+                  </div>
+
+                  {/* Doorstep Inspection Completed Banner if Collected */}
+                  {selectedOrder.deviceCollected && (
+                    <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl p-4 shadow-md">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck size={18} className="text-emerald-100" />
+                          <span className="text-xs font-black uppercase tracking-wider">Device Collected & Inspected</span>
+                        </div>
+                        <span className="text-xs font-black bg-white/20 px-2.5 py-0.5 rounded-full">
+                          Score: {selectedOrder.inspectionScore || 100}%
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-black/10 rounded-xl p-2.5 mt-2">
+                        <div>
+                          <p className="text-emerald-100 text-[11px]">Final Valuation:</p>
+                          <p className="text-base font-black text-white">₹{(selectedOrder.finalPrice || selectedOrder.quotedPrice).toLocaleString('en-IN')}</p>
+                        </div>
+                        <div>
+                          <p className="text-emerald-100 text-[11px]">Handover Timestamp:</p>
+                          <p className="font-semibold text-white truncate">
+                            {selectedOrder.collectedAt ? new Date(selectedOrder.collectedAt).toLocaleDateString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Verified at Doorstep'}
+                          </p>
+                        </div>
+                        {selectedOrder.deviceImei && (
+                          <div className="col-span-2 border-t border-white/10 pt-1 mt-1">
+                            <p className="text-emerald-100 text-[11px]">Device IMEI: <span className="font-mono font-bold text-white">{selectedOrder.deviceImei}</span></p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Order Actions inside Modal */}
                   <div className="pt-2 border-t border-gray-100 flex flex-wrap gap-2">
                     {selectedOrder.status === 'inspection' && selectedOrder.finalPrice > 0 && (
@@ -850,6 +1091,21 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                         <CreditCard size={14} /> Disburse Payout (₹{selectedOrder.finalPrice.toLocaleString('en-IN')})
                       </button>
                     )}
+
+                    {/* Button to Assign or Change Delivery Rider */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAssignDeliveryModal(selectedOrder);
+                        setSelectedDeliveryAgentId(selectedOrder.deliveryAgentId || '');
+                        setDeliveryPickupDate(selectedOrder.pickupDate || '');
+                        setDeliveryPickupSlot(selectedOrder.pickupSlot || '');
+                        setSelectedOrder(null);
+                      }}
+                      className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Truck size={14} /> {selectedOrder.deliveryAgentId ? 'Change Rider' : 'Assign to Rider'}
+                    </button>
 
                     {selectedOrder.status !== 'accepted' && selectedOrder.status !== 'completed' && selectedOrder.status !== 'inspection' && selectedOrder.status !== 'picked_up' && (
                       <button
@@ -1021,6 +1277,128 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                     className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {isProcessingPayout ? 'Processing...' : `Confirm & Complete Payout`}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ASSIGN TO DELIVERY RIDER MODAL */}
+          {assignDeliveryModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setAssignDeliveryModal(null)} />
+              <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 sm:p-7 z-10 max-h-[92vh] overflow-y-auto border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+                  <div>
+                    <span className="text-[11px] font-black text-blue-600 uppercase tracking-wider flex items-center gap-1">
+                      <Truck size={13} /> Partner Dispatch Console
+                    </span>
+                    <h3 className="text-lg font-black text-gray-900">Assign Delivery Executive</h3>
+                  </div>
+                  <button onClick={() => setAssignDeliveryModal(null)} className="p-2 rounded-xl hover:bg-gray-100 cursor-pointer">
+                    <X size={18} className="text-gray-400" />
+                  </button>
+                </div>
+
+                {/* Target Order Summary */}
+                <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200/80 mb-4 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-black text-slate-700">{assignDeliveryModal.orderNumber}</span>
+                    <span className="text-xs font-bold text-emerald-700">₹{(assignDeliveryModal.finalPrice || assignDeliveryModal.quotedPrice).toLocaleString('en-IN')}</span>
+                  </div>
+                  <p className="text-sm font-black text-slate-900">{assignDeliveryModal.deviceName}</p>
+                  <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                    <span className="flex items-center gap-1"><MapPin size={11} className="text-primary" /> {assignDeliveryModal.city} (PIN: {assignDeliveryModal.pinCode})</span>
+                    <span>Customer: <strong>{assignDeliveryModal.customerName}</strong></span>
+                  </div>
+                </div>
+
+                {/* Schedule Slot Inputs */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-600 mb-1 block">Scheduled Date</label>
+                    <input
+                      type="date"
+                      value={deliveryPickupDate}
+                      onChange={e => setDeliveryPickupDate(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-600 mb-1 block">Pickup Window</label>
+                    <select
+                      value={deliveryPickupSlot}
+                      onChange={e => setDeliveryPickupSlot(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                    >
+                      <option value="">Select Time Slot</option>
+                      <option value="10:00 AM - 1:00 PM">10:00 AM - 1:00 PM</option>
+                      <option value="1:00 PM - 4:00 PM">1:00 PM - 4:00 PM</option>
+                      <option value="4:00 PM - 7:00 PM">4:00 PM - 7:00 PM</option>
+                      <option value="7:00 PM - 9:00 PM">7:00 PM - 9:00 PM</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* List of Delivery Agents */}
+                <div className="space-y-2.5 mb-5 max-h-64 overflow-y-auto pr-1">
+                  <label className="text-xs font-black text-gray-800 block">Select Active Executive:</label>
+                  {getAvailableDeliveryAgents().map(agent => {
+                    const isPinMatch = agent.pinCodes?.includes(assignDeliveryModal.pinCode);
+                    const isSelected = selectedDeliveryAgentId === agent.id;
+                    return (
+                      <button
+                        key={agent.id}
+                        type="button"
+                        onClick={() => setSelectedDeliveryAgentId(agent.id)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-blue-600 bg-blue-50/70 shadow-sm'
+                            : 'border-gray-100 hover:border-gray-200 bg-white'
+                        }`}
+                      >
+                        <img src={agent.avatar} alt={agent.name} className="w-11 h-11 rounded-2xl object-cover border border-gray-200 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-black text-gray-900 truncate">{agent.name}</p>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                              agent.status === 'online' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {agent.status}
+                            </span>
+                            {isPinMatch && (
+                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.2 rounded-full">
+                                PIN Match ✓
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                            {agent.vehicle} ({agent.vehicleNumber}) · 📞 {agent.phone}
+                          </p>
+                          <p className="text-[10px] text-gray-400">
+                            {agent.city} · ⭐ {agent.rating} · {agent.todayPickups || 0} pickups today
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setAssignDeliveryModal(null)}
+                    className="flex-1 py-3 rounded-2xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAssignDeliveryAgent}
+                    disabled={!selectedDeliveryAgentId}
+                    className="flex-1 py-3 rounded-2xl bg-blue-600 text-white text-xs font-black hover:bg-blue-700 disabled:opacity-50 transition-all shadow-md shadow-blue-600/20 cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Truck size={14} /> Assign to Executive
                   </button>
                 </div>
               </div>

@@ -18,7 +18,8 @@ import {
   MapPin,
   HelpCircle,
   Menu,
-  X
+  X,
+  ClipboardCheck
 } from 'lucide-react';
 import { deliveryAgents, DeliveryAgent, orders } from '@/lib/casmikData';
 import NotificationBell from '@/components/NotificationBell';
@@ -84,6 +85,7 @@ export default function DeliveryLayout({ activeSection, onSectionChange, childre
   const navItems: NavItem[] = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', desc: 'Real-time metrics & route' },
     { id: 'tasks', icon: Package, label: 'My Tasks', badge: taskCount, desc: 'Active & scheduled pickups' },
+    { id: 'inspection', icon: ClipboardCheck, label: 'Inspection Hub', desc: '12-point doorstep diagnostics' },
     { id: 'earnings', icon: DollarSign, label: 'Earnings & Payouts', desc: 'Daily settlement & bonuses' },
     { id: 'support', icon: MessageSquare, label: 'Support Tickets', desc: 'Direct admin helpline' },
     { id: 'profile', icon: User, label: 'Profile & KYC', desc: 'Vehicle & documents' },
@@ -99,6 +101,7 @@ export default function DeliveryLayout({ activeSection, onSectionChange, childre
   const sectionTitles: Record<DeliverySection, { title: string; subtitle: string }> = {
     dashboard: { title: 'Executive Operations Dashboard', subtitle: 'Overview of your route, scheduled pickups, and daily targets' },
     tasks: { title: 'Pickup & Delivery Task Queue', subtitle: 'Live customer pickup orders, address routing, and OTP collection' },
+    inspection: { title: 'Doorstep 12-Point Inspection Hub', subtitle: 'Hardware diagnostics, photo capture angles, customer OTP, and device collection' },
     earnings: { title: 'Earnings & Spot Payout Ledger', subtitle: 'Track base payouts, peak-hour incentives, and daily bank deposits' },
     support: { title: 'Executive Support Desk', subtitle: 'Submit address issues, customer escalation tickets, and get real-time assistance' },
     profile: { title: 'Delivery Partner Profile & KYC', subtitle: 'Manage identity verification, vehicle details, and active service areas' },

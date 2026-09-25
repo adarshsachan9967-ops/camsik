@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Order, OrderStatus } from '@/lib/casmikData';
 import { 
@@ -26,13 +26,55 @@ import {
   SlidersHorizontal,
   ChevronRight,
   ExternalLink,
-  UploadCloud
+  UploadCloud,
+  ClipboardCheck,
+  Sparkles,
+  Zap,
+  CheckCircle2,
+  KeyRound,
+  XCircle,
+  RefreshCw,
+  Upload,
+  Trash2
 } from 'lucide-react';
 import LiveOrderTracker from '@/components/LiveOrderTracker';
 import { orders } from '@/lib/casmikData';
 import { triggerNotification } from '@/lib/notifications';
 
 const DELIVERY_AGENT_ID = 'delivery-001';
+
+interface InspectionCheckItem {
+  id: string;
+  label: string;
+  subtext: string;
+  deductionPct: number;
+}
+
+const inspectionItems: InspectionCheckItem[] = [
+  { id: 'display', label: 'Display & Touchscreen', subtext: 'Cracks, dead pixels, lines, touch responsiveness', deductionPct: 25 },
+  { id: 'body', label: 'Body & Frame Condition', subtext: 'Dents, heavy scratches, bent frame, discoloration', deductionPct: 12 },
+  { id: 'camera', label: 'Camera & Optics', subtext: 'Front & rear camera focus, lens glass, sensor dust', deductionPct: 15 },
+  { id: 'battery', label: 'Battery Health & Endurance', subtext: 'Battery health degradation, rapid discharge, swelling', deductionPct: 10 },
+  { id: 'faceid', label: 'Biometrics (Face ID / Fingerprint)', subtext: 'Face ID, Touch ID, or fingerprint sensor failure', deductionPct: 12 },
+  { id: 'charging', label: 'Charging & USB Port', subtext: 'Loose port, slow charging, or no PC data sync', deductionPct: 8 },
+  { id: 'speaker', label: 'Speakers & Microphones', subtext: 'Cracking sound, low earpiece volume, mic distortion', deductionPct: 6 },
+  { id: 'wifi', label: 'Wireless (Wi-Fi, Bluetooth, NFC)', subtext: 'Wi-Fi drop, Bluetooth pairing failure, GPS glitch', deductionPct: 6 },
+  { id: 'network', label: 'Cellular SIM & Antennas', subtext: 'No service, baseband issue, damaged SIM slot', deductionPct: 10 },
+  { id: 'buttons', label: 'Physical Buttons & Haptics', subtext: 'Stuck volume rocker, power key, faulty vibration', deductionPct: 5 },
+  { id: 'water', label: 'Liquid Damage Check (LDI)', subtext: 'Internal moisture indicator triggered or corrosion', deductionPct: 20 },
+  { id: 'accessories', label: 'Original Box & Accessories', subtext: 'Missing original box, authentic cable, or adapter', deductionPct: 5 },
+];
+
+const photoAngles = [
+  { id: 'front', label: 'Front Display (Screen On)' },
+  { id: 'back', label: 'Back Panel & Housing' },
+  { id: 'left', label: 'Left Side & Frame' },
+  { id: 'right', label: 'Right Side & Frame' },
+  { id: 'ports', label: 'Top / Bottom Ports' },
+  { id: 'camera_lens', label: 'Camera Lens & Optics' },
+  { id: 'imei_label', label: 'IMEI / Serial Screen' },
+  { id: 'defect', label: 'Scratch / Defect Close-up' },
+];
 
 interface DBOrder {
   id: string;
@@ -90,39 +132,70 @@ function dbToOrder(o: DBOrder): Order {
 function getStoredDeliveryTasks(): Order[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem('casmik_orders_v1');
+    let agentId = DELIVERY_AGENT_ID;
+    const session = localStorage.getItem('casmik_delivery_session');
+    if (session) {
+      const parsed = JSON.parse(session);
+      if (parsed.id) agentId = parsed.id;
+    }
+    const raw = localStorage.getItem('casmik_orders_v1') || localStorage.getItem('casmik_partner_orders_v1');
     const all: Order[] = raw ? JSON.parse(raw) : orders;
-    return all.filter(o => o.deliveryAgentId === DELIVERY_AGENT_ID || o.deliveryAgentId === 'agent-101' || !o.deliveryAgentId);
+    return all.filter(o => 
+      !o.deliveryAgentId || 
+      o.deliveryAgentId === agentId || 
+      o.deliveryAgentId === DELIVERY_AGENT_ID || 
+      o.deliveryAgentId === 'agent-101'
+    );
   } catch {
-    return orders.filter(o => o.deliveryAgentId === DELIVERY_AGENT_ID || o.deliveryAgentId === 'agent-101' || !o.deliveryAgentId);
+    return orders;
   }
 }
 
 function saveLocalTasks(tasks: Order[]) {
   if (typeof window === 'undefined') return;
   try {
-    const raw = localStorage.getItem('casmik_orders_v1');
-    const all: Order[] = raw ? JSON.parse(raw) : orders;
     const taskMap = new Map(tasks.map(t => [t.id, t]));
-    const updated = all.map(o => taskMap.has(o.id) ? { ...o, ...taskMap.get(o.id) } : o);
-    localStorage.setItem('casmik_orders_v1', JSON.stringify(updated));
+    ['casmik_orders_v1', 'casmik_partner_orders_v1'].forEach(key => {
+      const raw = localStorage.getItem(key);
+      const all: Order[] = raw ? JSON.parse(raw) : orders;
+      const updated = all.map(o => taskMap.has(o.id) ? { ...o, ...taskMap.get(o.id) } : o);
+      localStorage.setItem(key, JSON.stringify(updated));
+    });
+    window.dispatchEvent(new Event('casmik_orders_updated'));
+    window.dispatchEvent(new Event('casmik_partner_orders_updated'));
   } catch {}
 }
 
-export default function DeliveryTasks() {
+interface DeliveryTasksProps {
+  onOpenInspection?: (orderId: string) => void;
+}
+
+export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) {
   const [taskList, setTaskList] = useState<Order[]>(getStoredDeliveryTasks);
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [activeTask, setActiveTask] = useState<Order | null>(null);
   const [selectedTask, setSelectedTask] = useState<Order | null>(null);
-  const [otpInput, setOtpInput] = useState('');
-  const [otpVerified, setOtpVerified] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'list' | 'live'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'default' | 'price_desc' | 'slot'>('default');
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
+
+  // 12-point inspection modal state
+  const [inspectionStep, setInspectionStep] = useState<'diagnostics' | 'photos' | 'handover'>('diagnostics');
+  const [inspectionResults, setInspectionResults] = useState<Record<string, 'pass' | 'fail' | 'na'>>({});
+  const [photos, setPhotos] = useState<Record<string, string>>({});
+  const [activePhotoModal, setActivePhotoModal] = useState<{ label: string; url: string } | null>(null);
+  const [customPriceOverride, setCustomPriceOverride] = useState<string>('');
+  const [isCustomPrice, setIsCustomPrice] = useState(false);
+  const [imei, setImei] = useState('');
+  const [notes, setNotes] = useState('');
+  const [otpInput, setOtpInput] = useState('');
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const supabase = createClient();
 
   const fetchTasks = useCallback(async () => {
@@ -152,6 +225,12 @@ export default function DeliveryTasks() {
   useEffect(() => {
     fetchTasks();
 
+    const handleSync = () => {
+      setTaskList(getStoredDeliveryTasks());
+    };
+    window.addEventListener('casmik_orders_updated', handleSync);
+    window.addEventListener('casmik_partner_orders_updated', handleSync);
+
     const channel = supabase
       .channel('delivery-tasks-realtime')
       .on('postgres_changes', {
@@ -168,7 +247,11 @@ export default function DeliveryTasks() {
       })
       .subscribe(status => setIsConnected(status === 'SUBSCRIBED'));
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { 
+      supabase.removeChannel(channel); 
+      window.removeEventListener('casmik_orders_updated', handleSync);
+      window.removeEventListener('casmik_partner_orders_updated', handleSync);
+    };
   }, [fetchTasks]);
 
   const copyToClipboard = (text: string, id: string) => {
@@ -185,7 +268,11 @@ export default function DeliveryTasks() {
     saveLocalTasks(updated);
 
     try {
-      await supabase.from('orders').update({ status: 'pickup_scheduled' }).eq('id', task.id);
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: task.id, status: 'pickup_scheduled' })
+      });
     } catch {}
 
     triggerNotification({
@@ -201,38 +288,137 @@ export default function DeliveryTasks() {
     });
   };
 
-  const handleVerifyOTP = async () => {
-    if ((otpInput === '1234' || otpInput.length === 4) && activeTask) {
-      setOtpVerified(true);
-      const updated = taskList.map(t => t.id === activeTask.id ? { ...t, status: 'picked_up' as OrderStatus } : t);
-      setTaskList(updated);
-      saveLocalTasks(updated);
+  // 12-point inspection calculations
+  const totalChecks = inspectionItems.length;
+  const passedCount = Object.values(inspectionResults).filter(v => v === 'pass').length;
+  const failedCount = Object.values(inspectionResults).filter(v => v === 'fail').length;
+  const scorePercent = totalChecks > 0 ? Math.round((passedCount / totalChecks) * 100) : 100;
 
-      try {
-        await supabase.from('orders').update({ status: 'picked_up' }).eq('id', activeTask.id);
-      } catch {}
+  const currentQuotedPrice = activeTask?.quotedPrice || 0;
+  const failedItems = inspectionItems.filter(item => inspectionResults[item.id] === 'fail');
+  const totalDeductionPct = Math.min(
+    failedItems.reduce((acc, item) => acc + item.deductionPct, 0),
+    75
+  );
+  const totalDeductionAmount = Math.round(currentQuotedPrice * (totalDeductionPct / 100));
+  const calculatedExactPayout = Math.max(
+    Math.round(currentQuotedPrice - totalDeductionAmount),
+    Math.round(currentQuotedPrice * 0.25)
+  );
 
-      triggerNotification({
-        type: 'status_update',
-        targetRole: 'all',
-        title: '📦 Device Picked Up & Secured',
-        shortDetails: `${activeTask.orderNumber} (${activeTask.deviceName}) collected from ${activeTask.customerName}. Moving to verification hub.`,
-        orderId: activeTask.id,
-        orderNumber: activeTask.orderNumber,
-        deviceName: activeTask.deviceName,
-        customerName: activeTask.customerName,
-        status: 'picked_up'
-      });
-    }
+  const finalPayoutToUser = isCustomPrice && customPriceOverride
+    ? parseInt(customPriceOverride, 10) || calculatedExactPayout
+    : calculatedExactPayout;
+
+  const handlePhotoCapture = (angleId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setPhotos(prev => ({
+          ...prev,
+          [angleId]: event.target!.result as string,
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleComplete = async (task: Order) => {
+  const handleRemovePhoto = (angleId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPhotos(prev => {
+      const copy = { ...prev };
+      delete copy[angleId];
+      return copy;
+    });
+  };
+
+  const openInspectionModal = (task: Order) => {
+    setActiveTask(task);
+    setOtpInput('');
+    setOtpVerified(false);
+    setInspectionStep('diagnostics');
+    setInspectionResults({});
+    setPhotos({});
+    setIsCustomPrice(false);
+    setCustomPriceOverride('');
+    setImei(task.deviceImei || '');
+    setNotes(task.notes || '');
+  };
+
+  // Complete 12-point doorstep inspection & verify OTP & collect device
+  const handleFinalizeInspectionAndCollect = async () => {
+    if (!activeTask) return;
+    if (otpInput !== '1234' && otpInput.length < 4) {
+      alert('Please enter valid 4-digit pickup OTP (demo: 1234)');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const handoverTimestamp = new Date().toISOString();
+
+    const updatedTask: Order = {
+      ...activeTask,
+      status: 'picked_up',
+      deviceCollected: true,
+      collectedAt: handoverTimestamp,
+      finalPrice: finalPayoutToUser,
+      inspectionScore: scorePercent,
+      deviceImei: imei.trim() || activeTask.deviceImei || null,
+      notes: `${notes ? notes + ' | ' : ''}Doorstep Inspected & Collected by ${activeTask.deliveryAgentName || 'Rider'} (Score: ${scorePercent}%, Final Price: ₹${finalPayoutToUser.toLocaleString('en-IN')})`,
+      updatedAt: handoverTimestamp,
+    };
+
+    const updatedList = taskList.map(t => t.id === activeTask.id ? updatedTask : t);
+    setTaskList(updatedList);
+    saveLocalTasks(updatedList);
+
+    try {
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: activeTask.id,
+          orderNumber: activeTask.orderNumber,
+          status: 'picked_up',
+          deviceCollected: true,
+          collectedAt: handoverTimestamp,
+          finalPrice: finalPayoutToUser,
+          inspectionScore: scorePercent,
+          deviceImei: imei.trim() || null,
+          notes: updatedTask.notes
+        })
+      });
+    } catch {}
+
+    triggerNotification({
+      type: 'status_update',
+      targetRole: 'all',
+      title: '📦 Device Inspected & Collected at Doorstep',
+      shortDetails: `${activeTask.orderNumber} (${activeTask.deviceName}) inspected (Score: ${scorePercent}%) and collected by rider. Synced to Admin & Partner portals.`,
+      orderId: activeTask.id,
+      orderNumber: activeTask.orderNumber,
+      deviceName: activeTask.deviceName,
+      customerName: activeTask.customerName,
+      status: 'picked_up'
+    });
+
+    setOtpVerified(true);
+    setIsSubmitting(false);
+  };
+
+  const handleCompleteHubDeposit = async (task: Order) => {
     const updated = taskList.map(t => t.id === task.id ? { ...t, status: 'completed' as OrderStatus } : t);
     setTaskList(updated);
     saveLocalTasks(updated);
 
     try {
-      await supabase.from('orders').update({ status: 'completed' }).eq('id', task.id);
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: task.id, status: 'completed' })
+      });
     } catch {}
 
     triggerNotification({
@@ -246,7 +432,7 @@ export default function DeliveryTasks() {
       customerName: task.customerName,
       status: 'completed'
     });
-    setActiveTask(null);
+    setSelectedTask(null);
   };
 
   // Filter and search
@@ -315,11 +501,11 @@ export default function DeliveryTasks() {
                 isConnected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600'
               }`}>
                 {isConnected ? <Wifi size={12} className="text-emerald-600" /> : <WifiOff size={12} />}
-                {isConnected ? 'Real-Time Sync' : 'Offline Buffer'}
+                {isConnected ? 'Real-Time Sync' : 'Live Buffer'}
               </span>
             </div>
             <p className="text-slate-500 text-sm mt-1">
-              Manage door-to-door customer pickups, device handovers, and doorstep OTP verification.
+              Doorstep customer pickups, 12-point device diagnostics, OTP verification, and instant partner sync.
             </p>
           </div>
 
@@ -357,7 +543,7 @@ export default function DeliveryTasks() {
               <span className="w-2 h-2 rounded-full bg-blue-500" />
             </div>
             <p className="text-2xl font-black text-slate-900">{stats.assigned}</p>
-            <p className="text-[11px] text-slate-400 mt-0.5">Assigned to your bike</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Assigned to your vehicle</p>
           </div>
 
           <div className="bg-amber-50/60 rounded-2xl p-4 border border-amber-100/70">
@@ -375,7 +561,7 @@ export default function DeliveryTasks() {
               <Package size={14} className="text-indigo-600" />
             </div>
             <p className="text-2xl font-black text-indigo-900">{stats.pickedUp}</p>
-            <p className="text-[11px] text-indigo-700/70 mt-0.5">Devices on bike to hub</p>
+            <p className="text-[11px] text-indigo-700/70 mt-0.5">Collected devices on bike</p>
           </div>
 
           <div className="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-100/70">
@@ -384,7 +570,7 @@ export default function DeliveryTasks() {
               <CheckCircle size={14} className="text-emerald-600" />
             </div>
             <p className="text-2xl font-black text-emerald-900">{stats.completed}</p>
-            <p className="text-[11px] text-emerald-700/70 mt-0.5">Delivered to partner</p>
+            <p className="text-[11px] text-emerald-700/70 mt-0.5">Deposited to partner</p>
           </div>
         </div>
       </div>
@@ -495,7 +681,7 @@ export default function DeliveryTasks() {
 
                       <div className="text-right flex flex-col items-end">
                         <span className="text-base font-black text-emerald-700">
-                          ₹{task.quotedPrice?.toLocaleString('en-IN')}
+                          ₹{(task.finalPrice || task.quotedPrice)?.toLocaleString('en-IN')}
                         </span>
                         <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mt-1 ${
                           task.type === 'sell' ? 'bg-emerald-100 text-emerald-800' :
@@ -506,6 +692,19 @@ export default function DeliveryTasks() {
                         </span>
                       </div>
                     </div>
+
+                    {/* Doorstep Collection Banner if Already Collected */}
+                    {task.deviceCollected && (
+                      <div className="bg-emerald-50 border border-emerald-200/90 rounded-2xl p-2.5 flex items-center justify-between text-xs">
+                        <span className="text-emerald-800 font-black flex items-center gap-1.5">
+                          <CheckCircle size={14} className="text-emerald-600" />
+                          <span>Device Collected ({task.inspectionScore || 100}%)</span>
+                        </span>
+                        <span className="text-emerald-700 font-mono text-[11px] font-bold">
+                          {task.deviceImei ? `IMEI: ${task.deviceImei.slice(-6)}` : 'Verified'}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Status & Schedule Bar */}
                     <div className="flex items-center justify-between text-xs bg-slate-50 rounded-2xl p-2.5 border border-slate-100">
@@ -533,7 +732,7 @@ export default function DeliveryTasks() {
                       <div className="flex items-start gap-2 text-xs text-slate-600">
                         <MapPin size={14} className="text-primary flex-shrink-0 mt-0.5" />
                         <p className="line-clamp-2 leading-relaxed">
-                          {task.customerAddress ? `${task.customerAddress}, ${task.city}` : 'Customer residential address provided'}
+                          {task.customerAddress ? `${task.customerAddress}, ${task.city}` : 'Customer residential address'}
                         </p>
                       </div>
                     </div>
@@ -587,33 +786,38 @@ export default function DeliveryTasks() {
 
                     {/* Dynamic Primary CTA */}
                     {isAssigned && (
-                      <button
-                        type="button"
-                        onClick={() => handleStartPickup(task)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-gradient-to-r from-primary to-emerald-600 text-white text-xs font-black shadow-md shadow-primary/20 hover:opacity-95 transition-all cursor-pointer"
-                      >
-                        <Truck size={14} /> Start Navigation
-                      </button>
+                      <div className="flex-1 flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleStartPickup(task)}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2.5 rounded-xl bg-slate-900 text-white text-xs font-black hover:bg-slate-800 transition-all cursor-pointer"
+                        >
+                          <Truck size={13} /> En Route
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openInspectionModal(task)}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2.5 rounded-xl bg-gradient-to-r from-primary to-emerald-600 text-white text-xs font-black shadow-md shadow-primary/20 hover:opacity-95 transition-all cursor-pointer"
+                        >
+                          <ClipboardCheck size={13} /> Inspect
+                        </button>
+                      </div>
                     )}
 
                     {isEnRoute && (
                       <button
                         type="button"
-                        onClick={() => {
-                          setActiveTask(task);
-                          setOtpInput('');
-                          setOtpVerified(false);
-                        }}
+                        onClick={() => openInspectionModal(task)}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-black shadow-md shadow-blue-600/20 hover:opacity-95 transition-all cursor-pointer"
                       >
-                        <Package size={14} /> Verify Customer OTP
+                        <ClipboardCheck size={14} /> 12-Pt Inspect &amp; Collect
                       </button>
                     )}
 
                     {isPickedUp && (
                       <button
                         type="button"
-                        onClick={() => handleComplete(task)}
+                        onClick={() => handleCompleteHubDeposit(task)}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-black shadow-md shadow-emerald-600/20 hover:opacity-95 transition-all cursor-pointer"
                       >
                         <CheckCircle size={14} /> Deposit to Hub
@@ -649,15 +853,22 @@ export default function DeliveryTasks() {
         </>
       )}
 
-      {/* ─── MODAL 1: OTP VERIFICATION & INSPECTION PICKUP ──────────────────────── */}
+      {/* ─── MODAL 1: 12-POINT DOORSTEP INSPECTION & DEVICE COLLECTION STUDIO ──────────────────────── */}
       {activeTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setActiveTask(null)} />
-          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-7 z-10 border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto z-10 border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Header */}
+            <div className="sticky top-0 bg-white/95 backdrop-blur-md p-5 border-b border-slate-100 flex items-center justify-between z-20">
               <div>
-                <span className="text-[11px] font-black text-primary uppercase tracking-wider">Pickup Confirmation</span>
-                <h3 className="text-lg font-black text-slate-900">Doorstep OTP & Handover</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono font-bold text-primary">{activeTask.orderNumber}</span>
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                    Doorstep Inspection
+                  </span>
+                </div>
+                <h3 className="text-lg font-black text-slate-900 mt-0.5">{activeTask.deviceName}</h3>
               </div>
               <button
                 onClick={() => setActiveTask(null)}
@@ -668,103 +879,369 @@ export default function DeliveryTasks() {
             </div>
 
             {!otpVerified ? (
-              <div className="space-y-5 pt-4">
-                {/* Target Device Summary */}
-                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex items-center justify-between">
+              <div className="p-5 sm:p-6 space-y-5">
+                
+                {/* 3 Steps Navigation Tab */}
+                <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1.5 rounded-2xl text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setInspectionStep('diagnostics')}
+                    className={`py-2 px-3 rounded-xl transition-all cursor-pointer text-center ${
+                      inspectionStep === 'diagnostics' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    1. Diagnostics ({passedCount + failedCount}/{totalChecks})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInspectionStep('photos')}
+                    className={`py-2 px-3 rounded-xl transition-all cursor-pointer text-center ${
+                      inspectionStep === 'photos' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    2. Photos &amp; IMEI ({Object.keys(photos).length}/8)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInspectionStep('handover')}
+                    className={`py-2 px-3 rounded-xl transition-all cursor-pointer text-center ${
+                      inspectionStep === 'handover' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    3. OTP &amp; Collect
+                  </button>
+                </div>
+
+                {/* Score & Payout Preview Widget */}
+                <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-4 flex items-center justify-between shadow-md">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Device & Customer</span>
-                    <p className="font-black text-slate-900 text-sm mt-0.5">{activeTask.deviceName}</p>
-                    <p className="text-xs text-slate-500">{activeTask.customerName} · {activeTask.customerPhone}</p>
+                    <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider">
+                      Live Valuation Handover
+                    </span>
+                    <p className="text-2xl font-black text-white mt-0.5">₹{finalPayoutToUser.toLocaleString('en-IN')}</p>
+                    <p className="text-[11px] text-slate-400">
+                      Original: ₹{currentQuotedPrice.toLocaleString('en-IN')} &bull; Deductions: -{totalDeductionPct}%
+                    </p>
                   </div>
-                  <span className="text-base font-black text-emerald-700">₹{activeTask.quotedPrice?.toLocaleString('en-IN')}</span>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-700 block">
-                    Ask Customer for 4-Digit Pickup OTP:
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={4}
-                    value={otpInput}
-                    onChange={e => setOtpInput(e.target.value.replace(/\D/g, ''))}
-                    placeholder="• • • •"
-                    className="w-full py-3.5 px-4 text-center font-mono text-3xl font-black tracking-[1em] bg-slate-50 border-2 border-slate-200 rounded-2xl focus:outline-none focus:border-primary focus:bg-white transition-all text-slate-900"
-                    autoFocus
-                  />
-                  <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-                    <span>Customer received via SMS</span>
-                    <span className="font-semibold text-primary">Demo OTP: 1234</span>
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-400 uppercase font-black">Score</span>
+                    <p className={`text-2xl font-black ${
+                      scorePercent >= 80 ? 'text-emerald-400' : scorePercent >= 60 ? 'text-amber-400' : 'text-red-400'
+                    }`}>
+                      {scorePercent}%
+                    </p>
                   </div>
                 </div>
 
-                {/* Pre-Inspection Checklist */}
-                <div className="bg-blue-50/70 rounded-2xl p-3.5 border border-blue-100 text-xs text-blue-900 space-y-1.5">
-                  <p className="font-bold flex items-center gap-1.5">
-                    <ShieldCheck size={14} className="text-blue-600" /> Physical Handover Checklist:
-                  </p>
-                  <p className="text-blue-700">✓ Verify customer identity with registered name</p>
-                  <p className="text-blue-700">✓ Check device powers on and iCloud/Google accounts signed out</p>
-                  <p className="text-blue-700">✓ Place phone safely into Camsik Anti-Shock bubble pouch</p>
-                </div>
+                {/* STEP 1: 12-POINT DIAGNOSTICS */}
+                {inspectionStep === 'diagnostics' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">12-Point Hardware Checks</h4>
+                      <span className="text-xs font-bold text-slate-500">{passedCount} Passed &bull; {failedCount} Failed</span>
+                    </div>
 
-                <button
-                  type="button"
-                  onClick={handleVerifyOTP}
-                  disabled={otpInput.length < 4}
-                  className="w-full py-4 bg-gradient-to-r from-primary to-emerald-600 text-white rounded-2xl font-black text-sm hover:opacity-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none cursor-pointer"
-                >
-                  Confirm OTP & Collect Device
-                </button>
+                    <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
+                      {inspectionItems.map(item => {
+                        const result = inspectionResults[item.id];
+                        const isFailed = result === 'fail';
+                        const deductionAmt = Math.round(currentQuotedPrice * (item.deductionPct / 100));
+
+                        return (
+                          <div
+                            key={item.id}
+                            className={`p-3 rounded-2xl border transition-all flex items-center justify-between ${
+                              isFailed ? 'bg-red-50/60 border-red-200' : result === 'pass' ? 'bg-emerald-50/40 border-emerald-200' : 'bg-slate-50 border-slate-200/80'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1 pr-2">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-xs font-black text-slate-900">{item.label}</p>
+                                {isFailed && (
+                                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-red-100 text-red-700">
+                                    -{item.deductionPct}% (-₹{deductionAmt.toLocaleString('en-IN')})
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-slate-500 truncate">{item.subtext}</p>
+                            </div>
+
+                            <div className="flex gap-1 flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setInspectionResults(prev => ({ ...prev, [item.id]: 'pass' }))}
+                                className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                  result === 'pass' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50'
+                                }`}
+                              >
+                                Pass
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setInspectionResults(prev => ({ ...prev, [item.id]: 'fail' }))}
+                                className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                  result === 'fail' ? 'bg-red-600 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-red-50'
+                                }`}
+                              >
+                                Fail
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setInspectionResults(prev => ({ ...prev, [item.id]: 'na' }))}
+                                className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                  result === 'na' ? 'bg-slate-700 text-white' : 'bg-white border border-slate-200 text-slate-400'
+                                }`}
+                              >
+                                N/A
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setInspectionStep('photos')}
+                      className="w-full py-3 bg-slate-900 text-white rounded-2xl font-black text-xs hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <span>Proceed to Photos &amp; IMEI</span>
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* STEP 2: PHOTOS & IMEI */}
+                {inspectionStep === 'photos' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs font-black text-slate-800 uppercase tracking-wider block mb-1">
+                        Physical IMEI / Serial Number *
+                      </label>
+                      <input
+                        value={imei}
+                        onChange={e => setImei(e.target.value)}
+                        placeholder="Dial *#06# on customer phone or check SIM tray"
+                        className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-black text-slate-800 uppercase tracking-wider block">
+                          Doorstep Camera Proof ({Object.keys(photos).length}/{photoAngles.length})
+                        </label>
+                        <span className="text-[11px] text-slate-400">Tap box to capture</span>
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-2">
+                        {photoAngles.map(angle => {
+                          const hasPhoto = !!photos[angle.id];
+                          return (
+                            <div
+                              key={angle.id}
+                              onClick={() => {
+                                if (!hasPhoto) {
+                                  fileInputRefs.current[angle.id]?.click();
+                                } else {
+                                  setActivePhotoModal({ label: angle.label, url: photos[angle.id] });
+                                }
+                              }}
+                              className={`relative aspect-square rounded-2xl border-2 transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center p-1.5 text-center ${
+                                hasPhoto ? 'border-emerald-500 bg-black/5' : 'border-dashed border-slate-200 hover:border-primary hover:bg-primary/5'
+                              }`}
+                            >
+                              <input
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                className="hidden"
+                                ref={el => { fileInputRefs.current[angle.id] = el; }}
+                                onChange={e => handlePhotoCapture(angle.id, e)}
+                              />
+                              {hasPhoto ? (
+                                <>
+                                  <img src={photos[angle.id]} alt={angle.label} className="w-full h-full object-cover rounded-xl" />
+                                  <span className="absolute bottom-1 left-1 right-1 text-[8px] font-black text-white bg-black/70 px-1 py-0.5 rounded truncate">
+                                    {angle.label}
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <Camera size={16} className="text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] font-bold text-slate-600 line-clamp-1">{angle.label}</span>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-black text-slate-800 uppercase tracking-wider block mb-1">
+                        Executive Observations / Condition Notes
+                      </label>
+                      <input
+                        value={notes}
+                        onChange={e => setNotes(e.target.value)}
+                        placeholder="e.g. Minor scratches on bezel, battery healthy"
+                        className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setInspectionStep('diagnostics')}
+                        className="flex-1 py-3 bg-slate-100 text-slate-700 rounded-2xl font-bold text-xs hover:bg-slate-200 transition-colors"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInspectionStep('handover')}
+                        className="flex-1 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <span>Proceed to Customer OTP</span>
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: CUSTOMER OTP & FINAL COLLECTION */}
+                {inspectionStep === 'handover' && (
+                  <div className="space-y-4">
+                    {/* Valuation Override Toggle */}
+                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600 font-bold">Calculated Payout:</span>
+                        <span className="font-black text-slate-900 text-sm">₹{calculatedExactPayout.toLocaleString('en-IN')}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsCustomPrice(!isCustomPrice)}
+                        className="text-[11px] font-bold text-primary hover:underline mt-1 block"
+                      >
+                        {isCustomPrice ? 'Use standard formula price' : 'Negotiate / Override final amount'}
+                      </button>
+                      {isCustomPrice && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="text-slate-400">₹</span>
+                          <input
+                            type="number"
+                            value={customPriceOverride}
+                            onChange={e => setCustomPriceOverride(e.target.value)}
+                            placeholder={calculatedExactPayout.toString()}
+                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 font-bold text-xs"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Customer OTP Box */}
+                    <div className="bg-gradient-to-br from-blue-50/80 to-indigo-50/80 rounded-2xl p-4 border border-blue-200 space-y-2">
+                      <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
+                        <KeyRound size={15} /> Customer Pickup OTP Verification
+                      </div>
+                      <p className="text-xs text-slate-600">
+                        Ask <strong>{activeTask.customerName}</strong> ({activeTask.customerPhone}) for their 4-digit pickup code:
+                      </p>
+                      <input
+                        type="text"
+                        maxLength={4}
+                        value={otpInput}
+                        onChange={e => setOtpInput(e.target.value.replace(/\D/g, ''))}
+                        placeholder="• • • •"
+                        className="w-full py-3 px-4 text-center font-mono text-2xl font-black tracking-[0.8em] bg-white border-2 border-blue-200 rounded-2xl focus:outline-none focus:border-primary text-slate-900 shadow-inner"
+                      />
+                      <div className="flex items-center justify-between text-[11px] text-slate-500">
+                        <span>Demo OTP: <strong className="text-primary font-mono">1234</strong></span>
+                        <span>SMS / WhatsApp verified</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl p-3 border border-slate-200 text-xs text-slate-600 space-y-1">
+                      <p className="font-bold text-slate-800 flex items-center gap-1">
+                        <ShieldCheck size={14} className="text-emerald-600" /> Handover Confirmation:
+                      </p>
+                      <p>✓ Device physically placed in anti-shock security pouch</p>
+                      <p>✓ Instant live sync to Admin Order &amp; Partner Order consoles</p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setInspectionStep('photos')}
+                        className="py-3 px-4 bg-slate-100 text-slate-700 rounded-2xl font-bold text-xs hover:bg-slate-200 transition-colors"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleFinalizeInspectionAndCollect}
+                        disabled={isSubmitting || otpInput.length < 4}
+                        className="flex-1 py-3.5 bg-gradient-to-r from-primary to-emerald-600 text-white rounded-2xl font-black text-xs hover:opacity-95 shadow-lg shadow-primary/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <RefreshCw size={14} className="animate-spin" />
+                            <span>Updating consoles...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Zap size={15} />
+                            <span>Collect Device &amp; Finalize Pickup (₹{finalPayoutToUser.toLocaleString('en-IN')})</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="py-6 text-center space-y-4">
+              /* Success State */
+              <div className="p-8 text-center space-y-4">
                 <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
                   <CheckCircle size={36} />
                 </div>
                 <div>
-                  <h4 className="text-xl font-black text-slate-900">Device Verified & Secured!</h4>
-                  <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
-                    {activeTask.deviceName} is marked picked up and added to your active transit manifest.
+                  <h4 className="text-xl font-black text-slate-900">Device Inspected &amp; Secured!</h4>
+                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                    {activeTask.deviceName} ({activeTask.orderNumber}) is marked picked up with condition score of {scorePercent}% and payout ₹{finalPayoutToUser.toLocaleString('en-IN')}.
                   </p>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-left space-y-2">
-                  <p className="text-xs font-bold text-slate-700">Optional: Capture Device Condition</p>
-                  <div className="flex gap-2">
-                    <label className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors">
-                      <Camera size={14} className="text-primary" /> Snap Front/Back
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        onChange={e => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const url = URL.createObjectURL(file);
-                            setCapturedPhotos(prev => [...prev, url]);
-                          }
-                        }}
-                      />
-                    </label>
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-left text-xs space-y-2 max-w-sm mx-auto">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Handover Status:</span>
+                    <span className="font-bold text-emerald-700">Collected in Transit</span>
                   </div>
-                  {capturedPhotos.length > 0 && (
-                    <div className="flex gap-2 pt-1 overflow-x-auto">
-                      {capturedPhotos.map((p, idx) => (
-                        <img key={idx} src={p} alt="proof" className="w-12 h-12 rounded-lg object-cover border border-slate-200" />
-                      ))}
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Inspection Score:</span>
+                    <span className="font-bold text-slate-800">{scorePercent}%</span>
+                  </div>
+                  {imei && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Recorded IMEI:</span>
+                      <span className="font-mono font-bold text-primary">{imei}</span>
                     </div>
                   )}
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Consoles Updated:</span>
+                    <span className="font-bold text-slate-800">Admin + Partner + Customer</span>
+                  </div>
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => {
                     setActiveTask(null);
                     setOtpVerified(false);
                     setOtpInput('');
                   }}
-                  className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="w-full max-w-sm mx-auto py-3 bg-slate-900 text-white rounded-2xl font-bold text-xs hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Return to Task Queue
                 </button>
@@ -792,6 +1269,27 @@ export default function DeliveryTasks() {
               </button>
             </div>
 
+            {/* If Device Collected: Show Details Banner */}
+            {selectedTask.deviceCollected && (
+              <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-4 text-xs space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-emerald-900 flex items-center gap-1.5">
+                    <CheckCircle size={15} className="text-emerald-600" />
+                    Device Collected &amp; Inspected at Doorstep
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
+                    Score: {selectedTask.inspectionScore || 100}%
+                  </span>
+                </div>
+                <p className="text-emerald-700">
+                  Collected on: {new Date(selectedTask.collectedAt || selectedTask.updatedAt).toLocaleString()}
+                </p>
+                {selectedTask.deviceImei && (
+                  <p className="font-mono text-emerald-800">IMEI: {selectedTask.deviceImei}</p>
+                )}
+              </div>
+            )}
+
             {/* Device Block */}
             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex items-center justify-between">
               <div>
@@ -803,7 +1301,9 @@ export default function DeliveryTasks() {
               </div>
               <div className="text-right">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Payout</span>
-                <p className="text-xl font-black text-emerald-700">₹{selectedTask.quotedPrice?.toLocaleString('en-IN')}</p>
+                <p className="text-xl font-black text-emerald-700">
+                  ₹{(selectedTask.finalPrice || selectedTask.quotedPrice)?.toLocaleString('en-IN')}
+                </p>
               </div>
             </div>
 
@@ -830,23 +1330,6 @@ export default function DeliveryTasks() {
               </div>
             </div>
 
-            {/* Slot & Timeline */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-3.5">
-                <span className="text-[11px] font-bold text-blue-800 block mb-1">Appointment Slot</span>
-                <p className="text-sm font-black text-slate-900">{selectedTask.pickupDate || 'Today'}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{selectedTask.pickupSlot || '10:00 AM - 1:00 PM'}</p>
-              </div>
-
-              <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-3.5">
-                <span className="text-[11px] font-bold text-emerald-800 block mb-1">Current Lifecycle</span>
-                <p className="text-sm font-black capitalize text-slate-900">
-                  {selectedTask.status.replace(/_/g, ' ')}
-                </p>
-                <p className="text-xs text-slate-500 mt-0.5">Assigned Agent: {selectedTask.deliveryAgentName}</p>
-              </div>
-            </div>
-
             {/* Action Bar */}
             <div className="pt-3 border-t border-slate-100 flex gap-3">
               <a
@@ -857,18 +1340,59 @@ export default function DeliveryTasks() {
                 rel="noopener noreferrer"
                 className="flex-1 py-3.5 bg-blue-600 text-white rounded-2xl text-xs font-black text-center hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20"
               >
-                <Navigation size={14} /> Navigate in Google Maps
+                <Navigation size={14} /> Open Maps
               </a>
 
+              {!selectedTask.deviceCollected ? (
+                <button
+                  onClick={() => {
+                    const target = selectedTask;
+                    setSelectedTask(null);
+                    openInspectionModal(target);
+                  }}
+                  className="flex-1 py-3.5 bg-gradient-to-r from-primary to-emerald-600 text-white rounded-2xl text-xs font-black hover:opacity-95 transition-opacity flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 cursor-pointer"
+                >
+                  <ClipboardCheck size={14} /> Doorstep 12-Pt Inspect
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleCompleteHubDeposit(selectedTask)}
+                  className="flex-1 py-3.5 bg-emerald-600 text-white rounded-2xl text-xs font-black hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
+                >
+                  <CheckCircle size={14} /> Deposit to Hub
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox for Photos */}
+      {activePhotoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in-50">
+          <div className="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl flex flex-col border border-slate-100">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <h4 className="font-bold text-xs text-slate-900">{activePhotoModal.label}</h4>
               <button
-                onClick={() => {
-                  const target = selectedTask;
-                  setSelectedTask(null);
-                  setActiveTask(target);
-                }}
-                className="flex-1 py-3.5 bg-primary text-white rounded-2xl text-xs font-black hover:opacity-95 transition-opacity flex items-center justify-center gap-1.5 shadow-md shadow-primary/20"
+                onClick={() => setActivePhotoModal(null)}
+                className="w-7 h-7 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-600 transition-colors"
               >
-                <Package size={14} /> Open OTP Keypad
+                <X size={14} />
+              </button>
+            </div>
+            <div className="p-4 bg-black flex items-center justify-center max-h-[60vh] overflow-hidden">
+              <img
+                src={activePhotoModal.url}
+                alt={activePhotoModal.label}
+                className="max-h-full max-w-full object-contain rounded-xl"
+              />
+            </div>
+            <div className="p-3 bg-slate-50 flex justify-end">
+              <button
+                onClick={() => setActivePhotoModal(null)}
+                className="px-4 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-black"
+              >
+                Close
               </button>
             </div>
           </div>

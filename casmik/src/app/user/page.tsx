@@ -17,8 +17,9 @@ import SafeAndReliableSection from '@/app/components/SafeAndReliableSection';
 import CameraBrandsCarousel from '@/app/components/CameraBrandsCarousel';
 import CompetitiveComparisonTable from '@/app/components/CompetitiveComparisonTable';
 import CamsikFaqSection from '@/app/components/CamsikFaqSection';
+import RentalShowcaseSection from '@/app/components/RentalShowcaseSection';
 import AppDownloadCTA from '@/app/components/AppDownloadCTA';
-import { ArrowRight, ShieldCheck, Zap, RefreshCw, ShoppingBag, Truck, Building, Headphones } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Zap, RefreshCw, ShoppingBag, Truck, Building, Headphones, Camera } from 'lucide-react';
 
 export default function UserWebHomePage() {
   return (
@@ -34,6 +35,9 @@ export default function UserWebHomePage() {
           </Link>
           <Link href="/user/buy-refurbished" className="hover:text-blue-400 flex items-center gap-1 transition-colors">
             <ShoppingBag size={13} className="text-blue-400" /> Buy Refurbished Tech
+          </Link>
+          <Link href="/rental-cameras" className="hover:text-rose-400 flex items-center gap-1 transition-colors text-rose-400 font-bold">
+            <Camera size={13} className="text-rose-400" /> Rent Pro Cameras
           </Link>
           <Link href="/user/exchange" className="hover:text-amber-400 flex items-center gap-1 transition-colors">
             <RefreshCw size={13} className="text-amber-400" /> Doorstep Exchange
@@ -67,6 +71,9 @@ export default function UserWebHomePage() {
 
       {/* 4. Top Deals Showcase: Top Selling, Top Buying & Top Exchange */}
       <TopDealsShowcase />
+
+      {/* 4.5. Pro Rental Camera & Cinema Gear Showcase */}
+      <RentalShowcaseSection />
 
       {/* 5. Complete Device Ecosystem */}
       <DeviceEcosystemShowcase />

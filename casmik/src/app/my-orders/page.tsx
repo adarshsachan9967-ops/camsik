@@ -28,7 +28,7 @@ import { getCurrentUser, getCustomerOrders, CustomerUser, CustomerOrderRecord } 
 export default function MyOrdersPage() {
   const [user, setUser] = useState<CustomerUser | null>(null);
   const [orders, setOrders] = useState<CustomerOrderRecord[]>([]);
-  const [activeTab, setActiveTab] = useState<'all' | 'exchange' | 'buy' | 'sell'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'exchange' | 'buy' | 'sell' | 'rent'>('all');
   const [phoneSearch, setPhoneSearch] = useState('');
   const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<CustomerOrderRecord | null>(null);
 
@@ -151,6 +151,7 @@ export default function MyOrdersPage() {
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {[
                 { key: 'all', label: 'All Orders', count: orders.length },
+                { key: 'rent', label: 'Camera Rentals', count: orders.filter((o) => o.type === 'rent').length },
                 { key: 'exchange', label: 'Exchanges', count: orders.filter((o) => o.type === 'exchange').length },
                 { key: 'buy', label: 'Refurbished Buys', count: orders.filter((o) => o.type === 'buy').length },
                 { key: 'sell', label: 'Sell Buyback', count: orders.filter((o) => o.type === 'sell').length },

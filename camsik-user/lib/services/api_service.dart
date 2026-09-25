@@ -22,6 +22,7 @@ class ApiService {
   static List<Map<String, dynamic>> cachedBanners = _fallbackBanners;
   static List<Map<String, dynamic>> cachedCategories = _fallbackCategories;
   static List<Map<String, dynamic>> cachedRefurbished = _fallbackRefurbished;
+  static List<Map<String, dynamic>> cachedRentalCameras = _fallbackRentalCameras;
 
   /// Helper to send GET request with auto-discovery and timeout
   static Future<Map<String, dynamic>?> _get(String path) async {
@@ -254,6 +255,21 @@ class ApiService {
     }
   }
 
+  static void _sanitizeRentalCameras(List<Map<String, dynamic>> list) {
+    for (final c in list) {
+      c['image'] = cleanImagePath(c['image'], categoryId: 'cameras');
+      if (c['gallery'] is List) {
+        c['gallery'] = (c['gallery'] as List).map((g) => cleanImagePath(g, categoryId: 'cameras')).toList();
+      }
+      c['dailyPrice'] = (c['dailyPrice'] as num?)?.toInt() ?? 0;
+      c['weeklyPrice'] = (c['weeklyPrice'] as num?)?.toInt() ?? 0;
+      c['securityDeposit'] = (c['securityDeposit'] as num?)?.toInt() ?? 0;
+      c['rating'] = (c['rating'] as num?)?.toDouble() ?? 4.9;
+      c['reviewsCount'] = (c['reviewsCount'] as num?)?.toInt() ?? 50;
+      c['stock'] = (c['stock'] as num?)?.toInt() ?? 3;
+    }
+  }
+
   static void _sanitizeRefurbished(List<Map<String, dynamic>> list) {
     for (final p in list) {
       p['image'] = cleanImagePath(p['image'], categoryId: p['category']?.toString());
@@ -326,6 +342,13 @@ class ApiService {
         final rList = (refRes['products'] as List).cast<Map<String, dynamic>>();
         _sanitizeRefurbished(rList);
         cachedRefurbished = rList;
+      }
+
+      final rentRes = await _get('/api/rentals');
+      if (rentRes != null && rentRes['cameras'] is List) {
+        final rentList = (rentRes['cameras'] as List).cast<Map<String, dynamic>>();
+        _sanitizeRentalCameras(rentList);
+        cachedRentalCameras = rentList;
       }
     } catch (e) {
       debugPrint('Background sync note: $e');
@@ -434,6 +457,29 @@ class ApiService {
     return cachedRefurbished;
   }
 
+  // ── RENTAL CAMERAS GET ──
+  static Future<List<Map<String, dynamic>>> fetchRentalCameras({String? category, String? brand, String? search}) async {
+    try {
+      var path = '/api/rentals';
+      final params = <String>[];
+      if (category != null && category.isNotEmpty && category != 'all') params.add('category=${Uri.encodeComponent(category)}');
+      if (brand != null && brand.isNotEmpty && brand != 'all') params.add('brand=${Uri.encodeComponent(brand)}');
+      if (search != null && search.isNotEmpty) params.add('search=${Uri.encodeComponent(search)}');
+      if (params.isNotEmpty) path += '?${params.join('&')}';
+
+      final json = await _get(path);
+      if (json != null && json['cameras'] is List) {
+        final list = (json['cameras'] as List).cast<Map<String, dynamic>>();
+        if (list.isNotEmpty) {
+          _sanitizeRentalCameras(list);
+          cachedRentalCameras = list;
+          return list;
+        }
+      }
+    } catch (_) {}
+    return cachedRentalCameras;
+  }
+
   // ── 6. ORDERS GET & CREATE ──
   static Future<List<Map<String, dynamic>>> fetchOrders({String? phone}) async {
     try {
@@ -453,7 +499,7 @@ class ApiService {
         return json['order'] as Map<String, dynamic>;
       }
     } catch (_) {}
-    final fallbackOrderNumber = 'CSM-${orderData['type'] == 'buy' ? 'BUY' : orderData['type'] == 'exchange' ? 'EXC' : 'SELL'}-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    final fallbackOrderNumber = 'CSM-${orderData['type'] == 'buy' ? 'BUY' : orderData['type'] == 'exchange' ? 'EXC' : orderData['type'] == 'rent' ? 'RNT' : 'SELL'}-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
     return {
       'id': 'ord-${DateTime.now().millisecondsSinceEpoch}',
       'orderNumber': fallbackOrderNumber,
@@ -1435,6 +1481,609 @@ class ApiService {
           'note': 'Unit 1 · 97% Battery · Zero Scratches · 20W USB-C Adapter',
         },
       ],
+    },
+  ];
+
+  static final List<Map<String, dynamic>> _fallbackRentalCameras = [
+    {
+      'id': 'rent-sony-fx3',
+      'modelId': 'sony-fx3',
+      'brand': 'Sony',
+      'model': 'Sony FX3 Cinema Line Full-Frame',
+      'category': 'Cinema Cameras',
+      'sensor': '12.1MP Full-Frame Exmor R BSI CMOS',
+      'mount': 'Sony E-Mount',
+      'videoRes': 'UHD 4K 120p / FHD 240p 10-Bit 4:2:2',
+      'dailyPrice': 2899,
+      'weeklyPrice': 16999,
+      'securityDeposit': 8000,
+      'rating': 4.9,
+      'reviewsCount': 142,
+      'image': 'assets/images/refurbished/sony-a7.jpg',
+      'gallery': [
+        'assets/images/refurbished/sony-a7.jpg',
+        'assets/images/categories/dslr.png',
+        'assets/images/categories/video.png',
+      ],
+      'includedKit': [
+        'Sony FX3 Camera Body with Sensor Cap',
+        'XLR Top Handle Unit with 2x Audio Inputs',
+        '2x Genuine Sony NP-FZ100 Batteries',
+        'Dual-Bay Rapid Charger + AC Cable',
+        '160GB CFexpress Type A High-Speed Card',
+        'Pelican Air 1535 Rugged Hard Case',
+      ],
+      'specs': '15+ stops dynamic range, S-Cinetone, Dual ISO 800 / 12,800, Active cooling',
+      'features': [
+        'Compact cage-free handheld body design',
+        'Fast Hybrid AF with Real-Time Eye Tracking',
+        '5-Axis active optical stabilization',
+        'Full size HDMI Type-A 16-bit RAW output',
+      ],
+      'stock': 4,
+      'status': 'available',
+      'popular': true,
+      'minDays': 1,
+    },
+    {
+      'id': 'rent-sony-a7iv',
+      'modelId': 'sony-a7iv',
+      'brand': 'Sony',
+      'model': 'Sony Alpha A7 IV Mirrorless Camera',
+      'category': 'Mirrorless',
+      'sensor': '33MP Full-Frame Exmor R CMOS',
+      'mount': 'Sony E-Mount',
+      'videoRes': '4K 60p 10-Bit 4:2:2 / 7K Oversampling',
+      'dailyPrice': 1499,
+      'weeklyPrice': 8999,
+      'securityDeposit': 5000,
+      'rating': 4.8,
+      'reviewsCount': 230,
+      'image': 'assets/images/refurbished/sony-a7.jpg',
+      'gallery': [
+        'assets/images/refurbished/sony-a7.jpg',
+        'assets/images/categories/dslr.png',
+      ],
+      'includedKit': [
+        'Sony Alpha A7 IV Camera Body',
+        '2x Sony NP-FZ100 Batteries',
+        'Dual Charger with Power Adapter',
+        '128GB SanDisk Extreme Pro 200MB/s SD Card',
+        'Pro Padded Camera Bag + Strap',
+      ],
+      'specs': '33MP BSI sensor, BIONZ XR engine, 759-point AF, S-Cinetone',
+      'features': [
+        'Superb hybrid performance for pro weddings, events & fashion',
+        'Vari-angle 3.0" touchscreen LCD',
+        'Dual card slots (CFexpress Type A & SD)',
+        'S-Log3 color profile included',
+      ],
+      'stock': 6,
+      'status': 'available',
+      'popular': true,
+      'minDays': 1,
+    },
+    {
+      'id': 'rent-sony-a7siii',
+      'modelId': 'sony-a7siii',
+      'brand': 'Sony',
+      'model': 'Sony Alpha A7S III Low-Light Cinema',
+      'category': 'Mirrorless',
+      'sensor': '12.1MP Full-Frame Exmor R BSI CMOS',
+      'mount': 'Sony E-Mount',
+      'videoRes': '4K 120p 10-bit 4:2:2 All-Intra',
+      'dailyPrice': 2499,
+      'weeklyPrice': 14999,
+      'securityDeposit': 7000,
+      'rating': 4.9,
+      'reviewsCount': 188,
+      'image': 'assets/images/refurbished/sony-a7.jpg',
+      'gallery': [
+        'assets/images/refurbished/sony-a7.jpg',
+        'assets/images/categories/dslr.png',
+      ],
+      'includedKit': [
+        'Sony A7S III Camera Body',
+        '3x Sony NP-FZ100 High-Capacity Batteries',
+        'Dual Rapid Charger',
+        '160GB CFexpress Type A Card',
+        'Weatherproof Case',
+      ],
+      'specs': 'Ultra low light ISO up to 409,600, 15 stops DR, 16-bit RAW output',
+      'features': [
+        'King of low-light cinematography',
+        'Zero overheating even in 4K 60p extended shoots',
+        'Side-opening vari-angle LCD monitor',
+      ],
+      'stock': 3,
+      'status': 'available',
+      'popular': false,
+      'minDays': 1,
+    },
+    {
+      'id': 'rent-sony-fx6',
+      'modelId': 'sony-fx6',
+      'brand': 'Sony',
+      'model': 'Sony FX6 Full-Frame Cinema Camera',
+      'category': 'Cinema Cameras',
+      'sensor': '10.2MP Full-Frame Back-Illuminated Exmor R',
+      'mount': 'Sony E-Mount',
+      'videoRes': 'DCI 4K 120p / FHD 240p 10-Bit',
+      'dailyPrice': 5499,
+      'weeklyPrice': 32999,
+      'securityDeposit': 15000,
+      'rating': 5.0,
+      'reviewsCount': 67,
+      'image': 'assets/images/categories/video.png',
+      'gallery': [
+        'assets/images/categories/video.png',
+        'assets/images/refurbished/sony-a7.jpg',
+      ],
+      'includedKit': [
+        'Sony FX6 Body with Top Handle & Smart Grip',
+        '3.5" LCD Viewfinder with Hood',
+        '2x BP-U60 High-Capacity Batteries',
+        'BC-U1A Rapid Charger',
+        '2x 160GB CFexpress Type A Cards',
+        'Pelican 1510 Carry-On Hard Case',
+      ],
+      'specs': 'Electronic Variable ND (1/4 to 1/128), S-Cinetone, Dual Base ISO 800/12800',
+      'features': [
+        'Industry standard Netflix-approved documentary & narrative camera',
+        'Fast Hybrid AF with Face Detection & Real-time Eye AF',
+        '12G-SDI & HDMI outputs',
+      ],
+      'stock': 2,
+      'status': 'available',
+      'popular': true,
+      'minDays': 2,
+    },
+    {
+      'id': 'rent-canon-r5',
+      'modelId': 'canon-r5',
+      'brand': 'Canon',
+      'model': 'Canon EOS R5 8K Mirrorless Camera',
+      'category': 'Mirrorless',
+      'sensor': '45MP Full-Frame Dual Pixel CMOS',
+      'mount': 'Canon RF Mount',
+      'videoRes': '8K RAW 30p / 4K 120p 10-Bit 4:2:2',
+      'dailyPrice': 2999,
+      'weeklyPrice': 17999,
+      'securityDeposit': 9000,
+      'rating': 4.9,
+      'reviewsCount': 195,
+      'image': 'assets/images/refurbished/canon-eos-r.webp',
+      'gallery': [
+        'assets/images/refurbished/canon-eos-r.webp',
+        'assets/images/categories/dslr.png',
+      ],
+      'includedKit': [
+        'Canon EOS R5 Camera Body',
+        '3x Canon LP-E6NH High-Capacity Batteries',
+        'Canon Dual Charger',
+        '512GB CFexpress Type B Card (1700MB/s)',
+        'Card Reader + Padded Pro Bag',
+      ],
+      'specs': '45MP stills, 8K Internal RAW, 8-stop In-Body Image Stabilization',
+      'features': [
+        'Legendary Canon color science for fashion & high-end commercial',
+        'Deep Learning animal and eye autofocus',
+        'Magnesium alloy weather-sealed chassis',
+      ],
+      'stock': 4,
+      'status': 'available',
+      'popular': true,
+      'minDays': 1,
+    },
+    {
+      'id': 'rent-canon-r6ii',
+      'modelId': 'canon-r6ii',
+      'brand': 'Canon',
+      'model': 'Canon EOS R6 Mark II Mirrorless',
+      'category': 'Mirrorless',
+      'sensor': '24.2MP Full-Frame CMOS',
+      'mount': 'Canon RF Mount',
+      'videoRes': '6K Oversampled 4K 60p / FHD 180p',
+      'dailyPrice': 1799,
+      'weeklyPrice': 10499,
+      'securityDeposit': 6000,
+      'rating': 4.8,
+      'reviewsCount': 118,
+      'image': 'assets/images/refurbished/canon-eos-rp.jpg',
+      'gallery': [
+        'assets/images/refurbished/canon-eos-rp.jpg',
+        'assets/images/categories/dslr.png',
+      ],
+      'includedKit': [
+        'Canon EOS R6 Mark II Body',
+        '2x Canon LP-E6NH Batteries',
+        'Dual Battery Charger',
+        '128GB SanDisk V60 Pro SD Card',
+        'Protective Shoulder Bag',
+      ],
+      'specs': '40 fps electronic shutter, Dual Pixel CMOS AF II, Canon Log 3',
+      'features': [
+        'Super fast speed for sports, action & wedding receptions',
+        'Up to 6 hours continuous recording without cutoff',
+        'Dual SD UHS-II slots',
+      ],
+      'stock': 5,
+      'status': 'available',
+      'popular': false,
+      'minDays': 1,
+    },
+    {
+      'id': 'rent-canon-c70',
+      'modelId': 'canon-c70',
+      'brand': 'Canon',
+      'model': 'Canon EOS C70 Cinema EOS Camera',
+      'category': 'Cinema Cameras',
+      'sensor': 'Super35 Dual Gain Output (DGO) Sensor',
+      'mount': 'Canon RF Mount',
+      'videoRes': 'DCI 4K 120p / 2K 180p 10-Bit 4:2:2',
+      'dailyPrice': 3999,
+      'weeklyPrice': 23999,
+      'securityDeposit': 12000,
+      'rating': 4.9,
+      'reviewsCount': 89,
+      'image': 'assets/images/categories/video.png',
+      'gallery': [
+        'assets/images/categories/video.png',
+        'assets/images/refurbished/canon-eos-r.webp',
+      ],
+      'includedKit': [
+        'Canon C70 Camera Body with Handle Unit',
+        '2x Canon BP-A30 Batteries',
+        'CG-A20 Battery Charger + Compact Power Adapter',
+        '2x 128GB SanDisk Extreme Pro V90 SD Cards',
+        'Pelican Air Travel Case',
+      ],
+      'specs': '16+ stops dynamic range with DGO, Built-in motorized ND filters (up to 10 stops)',
+      'features': [
+        'Full cinema camera in an ultra-compact RF body',
+        'Two mini XLR audio inputs',
+        'Direct RF-mount optics or EF-RF adapter with 0.71x focal reducer',
+      ],
+      'stock': 3,
+      'status': 'available',
+      'popular': true,
+      'minDays': 2,
+    },
+    {
+      'id': 'rent-nikon-z8',
+      'modelId': 'nikon-z8',
+      'brand': 'Nikon',
+      'model': 'Nikon Z8 Flagship Hybrid Camera',
+      'category': 'Mirrorless',
+      'sensor': '45.7MP Full-Frame Stacked CMOS',
+      'mount': 'Nikon Z Mount',
+      'videoRes': '8.3K 60p N-RAW / 4.1K 120p ProRes RAW',
+      'dailyPrice': 3199,
+      'weeklyPrice': 18999,
+      'securityDeposit': 10000,
+      'rating': 5.0,
+      'reviewsCount': 104,
+      'image': 'assets/images/refurbished/nikon-z50ii.png',
+      'gallery': [
+        'assets/images/refurbished/nikon-z50ii.png',
+        'assets/images/categories/dslr.png',
+      ],
+      'includedKit': [
+        'Nikon Z8 Camera Body',
+        '3x Nikon EN-EL15c Rechargeable Batteries',
+        'Nikon MH-25a Rapid Charger',
+        '512GB Lexar CFexpress Type B Card',
+        'Pro Rugged Case',
+      ],
+      'specs': 'Fully electronic shutter with zero distortion, 12-bit Internal RAW, 120 fps stills',
+      'features': [
+        'Baby Z9 power in a 30% smaller, nimble form factor',
+        'Advanced subject detection with AI algorithms',
+        'Dual card slots: CFexpress Type B + SD UHS-II',
+      ],
+      'stock': 3,
+      'status': 'available',
+      'popular': true,
+      'minDays': 1,
+    },
+    {
+      'id': 'rent-red-komodo',
+      'modelId': 'red-komodo',
+      'brand': 'RED',
+      'model': 'RED Digital Cinema Komodo 6K',
+      'category': 'Cinema Cameras',
+      'sensor': '19.9MP Super35 Global Shutter CMOS',
+      'mount': 'Canon RF Mount',
+      'videoRes': '6K 40p / 4K 60p REDCODE RAW (R3D)',
+      'dailyPrice': 6999,
+      'weeklyPrice': 41999,
+      'securityDeposit': 20000,
+      'rating': 5.0,
+      'reviewsCount': 76,
+      'image': 'assets/images/categories/video.png',
+      'gallery': [
+        'assets/images/categories/video.png',
+      ],
+      'includedKit': [
+        'RED Komodo 6K Camera Brain',
+        'RED Outrigger Handle with Start/Stop',
+        'Canon RF to EF Adapter with Variable ND',
+        '2x Core SWX NANO-98 V-Mount Batteries + Dual Charger',
+        '512GB RED C-Fast 2.0 Card + Reader',
+        'Pelican 1510 Custom Laser-Cut Hard Case',
+      ],
+      'specs': 'Zero rolling shutter artifact, 16+ stops DR, Integrated top touchscreen LCD',
+      'features': [
+        'Hollywood production standard in a compact 4" cube',
+        'Wireless phone control with live monitoring',
+        '12G-SDI out with 4K support',
+      ],
+      'stock': 2,
+      'status': 'available',
+      'popular': true,
+      'minDays': 2,
+    },
+    {
+      'id': 'rent-bmpcc-6k-pro',
+      'modelId': 'bmpcc-6k-pro',
+      'brand': 'Blackmagic',
+      'model': 'Blackmagic Pocket Cinema Camera 6K Pro',
+      'category': 'Cinema Cameras',
+      'sensor': 'Super35 HDR Sensor (6144 x 3456)',
+      'mount': 'Canon EF Mount',
+      'videoRes': '6K 50p Blackmagic RAW / 4K 60p ProRes',
+      'dailyPrice': 1999,
+      'weeklyPrice': 11999,
+      'securityDeposit': 6000,
+      'rating': 4.8,
+      'reviewsCount': 210,
+      'image': 'assets/images/categories/video.png',
+      'gallery': [
+        'assets/images/categories/video.png',
+        'assets/images/categories/dslr.png',
+      ],
+      'includedKit': [
+        'BMPCC 6K Pro Camera Body',
+        'Built-in motorized 2, 4, 6-stop IR ND Filters',
+        '4x NP-F570 High-Output Batteries + Dual Charger',
+        'Samsung T7 Shield 1TB High-Speed SSD with Mount',
+        'SmallRig Cage with HDMI/USB-C clamp + Padded Case',
+      ],
+      'specs': 'Generation 5 Color Science, 13 stops DR, 1500-nit tilting HDR touchscreen',
+      'features': [
+        'The indie filmmaker gold standard',
+        'Dual native ISO 400 and 3200 up to 25,600',
+        '2x Mini XLR balanced audio with phantom power',
+      ],
+      'stock': 5,
+      'status': 'available',
+      'popular': true,
+      'minDays': 1,
+    },
+    {
+      'id': 'rent-dji-ronin-4d',
+      'modelId': 'dji-ronin-4d',
+      'brand': 'DJI',
+      'model': 'DJI Ronin 4D 6K Cinema Gimbal Combo',
+      'category': 'Cinema Cameras',
+      'sensor': 'Full-Frame Zenmuse X9-6K Gimbal Camera',
+      'mount': 'DJI DL Mount / Sony E Mount Adapter',
+      'videoRes': '6K 60p / 4K 120p ProRes RAW & 422HQ',
+      'dailyPrice': 6499,
+      'weeklyPrice': 38999,
+      'securityDeposit': 18000,
+      'rating': 4.9,
+      'reviewsCount': 42,
+      'image': 'assets/images/categories/video.png',
+      'gallery': [
+        'assets/images/categories/video.png',
+        'assets/images/categories/gimbal.png',
+      ],
+      'includedKit': [
+        'Ronin 4D Main Body + 4-Axis Z-Arm Mechanism',
+        'Zenmuse X9-6K Gimbal Camera with DL Mount',
+        'High-Bright Main Monitor + Hand Grips',
+        'LiDAR Range Finder for Automated Pro Focus',
+        '2x TB50 Intelligent Flight Batteries + Charging Hub',
+        '1TB DJI PROSSD + High-Speed Reader',
+        'Custom Wheeled Hard Flight Case',
+      ],
+      'specs': 'Active 4th axis Z-stabilization, Dual native ISO 800/5000, Built-in 9-stop physical ND filters',
+      'features': [
+        'All-in-one cinema solution eliminating standard camera rigs & jibs',
+        'LiDAR automated focus tracking even in total darkness',
+        'Zero handheld shake in running & vehicle tracking shots',
+      ],
+      'stock': 2,
+      'status': 'available',
+      'popular': true,
+      'minDays': 2,
+    },
+    {
+      'id': 'rent-fujifilm-xt5',
+      'modelId': 'fujifilm-xt5',
+      'brand': 'Fujifilm',
+      'model': 'Fujifilm X-T5 Mirrorless Camera',
+      'category': 'Mirrorless',
+      'sensor': '40.2MP APS-C X-Trans CMOS 5 HR',
+      'mount': 'Fujifilm X Mount',
+      'videoRes': '6.2K 30p / 4K 60p 10-Bit 4:2:2',
+      'dailyPrice': 1299,
+      'weeklyPrice': 7499,
+      'securityDeposit': 4000,
+      'rating': 4.8,
+      'reviewsCount': 95,
+      'image': 'assets/images/refurbished/fujifilm-xt5.jpg',
+      'gallery': [
+        'assets/images/refurbished/fujifilm-xt5.jpg',
+        'assets/images/categories/dslr.png',
+      ],
+      'includedKit': [
+        'Fujifilm X-T5 Camera Body',
+        '2x NP-W235 Rechargeable Li-ion Batteries',
+        'Dual Charger',
+        '128GB SanDisk Extreme Pro SD Card',
+        'Retro Leather Strap + Padded Carry Case',
+      ],
+      'specs': '19 Film Simulation modes, 7.0 stops 5-axis IBIS, 1/180,000s electronic shutter',
+      'features': [
+        'Analog dials for ISO, shutter and exposure compensation',
+        'Iconic film simulations including Classic Chrome & Nostalgic Neg',
+        'Ultra light and durable for street and editorial travel shoots',
+      ],
+      'stock': 4,
+      'status': 'available',
+      'popular': false,
+      'minDays': 1,
+    },
+    {
+      'id': 'rent-sony-2470-gm2',
+      'modelId': 'sony-2470-gm2',
+      'brand': 'Sony',
+      'model': 'Sony FE 24-70mm f/2.8 GM II Lens',
+      'category': 'Cinema Lenses',
+      'sensor': 'Full-Frame Coverage',
+      'mount': 'Sony E-Mount',
+      'videoRes': 'Optimized for 8K / 4K 120p',
+      'dailyPrice': 1199,
+      'weeklyPrice': 6999,
+      'securityDeposit': 4000,
+      'rating': 4.9,
+      'reviewsCount': 178,
+      'image': 'assets/images/refurbished/sony-1635gm.jpg',
+      'gallery': [
+        'assets/images/refurbished/sony-1635gm.jpg',
+        'assets/images/categories/lens.png',
+      ],
+      'includedKit': [
+        'Sony FE 24-70mm f/2.8 GM II Lens',
+        'Front & Rear Lens Caps',
+        'Lens Hood ALC-SH168',
+        '82mm B+W Nano Pro Clear Filter',
+        'Padded Lens Case',
+      ],
+      'specs': 'Constant f/2.8 aperture, 4 XD Linear Motors, De-clickable aperture ring',
+      'features': [
+        'Lightest and sharpest standard zoom lens in its class',
+        'Suppressed focus breathing for cinematic video pulls',
+        'Dust and moisture-resistant design',
+      ],
+      'stock': 6,
+      'status': 'available',
+      'popular': true,
+      'minDays': 1,
+    },
+    {
+      'id': 'rent-canon-rf-2870',
+      'modelId': 'canon-rf-2870',
+      'brand': 'Canon',
+      'model': 'Canon RF 28-70mm f/2L USM Lens',
+      'category': 'Cinema Lenses',
+      'sensor': 'Full-Frame Coverage',
+      'mount': 'Canon RF Mount',
+      'videoRes': 'Unmatched Sharpness at 8K',
+      'dailyPrice': 1599,
+      'weeklyPrice': 9499,
+      'securityDeposit': 5500,
+      'rating': 5.0,
+      'reviewsCount': 85,
+      'image': 'assets/images/categories/lens.png',
+      'gallery': [
+        'assets/images/categories/lens.png',
+        'assets/images/refurbished/canon-eos-r.webp',
+      ],
+      'includedKit': [
+        'Canon RF 28-70mm f/2L USM Lens',
+        'Front & Rear Caps',
+        'Original Lens Hood',
+        '95mm B+W Nano UV Filter',
+        'Heavy-Duty Padded Lens Pouch',
+      ],
+      'specs': 'World-first f/2 constant zoom lens, Air Sphere Coating (ASC), Ring-type USM',
+      'features': [
+        'Replaces multiple prime lenses in a single versatile zoom',
+        'Breathtaking bokeh and low-light optical rendering',
+        'Configurable Lens Control Ring',
+      ],
+      'stock': 3,
+      'status': 'available',
+      'popular': true,
+      'minDays': 1,
+    },
+    {
+      'id': 'rent-dji-rs3-pro',
+      'modelId': 'dji-rs3-pro',
+      'brand': 'DJI',
+      'model': 'DJI RS 3 Pro Gimbal Stabilizer Combo',
+      'category': 'Gimbals & Rigs',
+      'sensor': 'N/A (Rig / Stabilizer)',
+      'mount': 'Arca-Swiss / Manfrotto Compatible',
+      'videoRes': 'Rock-Steady Stabilization',
+      'dailyPrice': 999,
+      'weeklyPrice': 5999,
+      'securityDeposit': 3000,
+      'rating': 4.9,
+      'reviewsCount': 160,
+      'image': 'assets/images/categories/gimbal.png',
+      'gallery': [
+        'assets/images/categories/gimbal.png',
+      ],
+      'includedKit': [
+        'DJI RS 3 Pro Gimbal with Carbon Fiber Arms',
+        'BG30 Battery Grip (12-Hour Runtime)',
+        'Ronin Image Transmitter (RavenEye)',
+        'Focus Motor (2022) with Rod Mount & Gear Strip',
+        'Briefcase Handle + Extended Grip/Tripod',
+        'Carrying Case',
+      ],
+      'specs': '4.5 kg tested payload, Automated Axis Locks, 1.8" Full-Color OLED touchscreen',
+      'features': [
+        'Easily supports FX6, RED Komodo or C70 setups',
+        '3rd-Gen RS Stabilization Algorithm with SuperSmooth mode',
+        'Bluetooth shutter control with no cables required',
+      ],
+      'stock': 5,
+      'status': 'available',
+      'popular': true,
+      'minDays': 1,
+    },
+    {
+      'id': 'rent-gopro-hero12',
+      'modelId': 'gopro-hero12',
+      'brand': 'DJI',
+      'model': 'GoPro HERO 12 Black Creator Edition',
+      'category': 'Action & Drones',
+      'sensor': '1/1.9" CMOS 27MP',
+      'mount': 'Standard Action 2-Prong Foldable Mount',
+      'videoRes': '5.3K 60p / 4K 120p / 2.7K 240p 10-Bit',
+      'dailyPrice': 799,
+      'weeklyPrice': 4499,
+      'securityDeposit': 2500,
+      'rating': 4.7,
+      'reviewsCount': 225,
+      'image': 'assets/images/categories/action.png',
+      'gallery': [
+        'assets/images/categories/action.png',
+      ],
+      'includedKit': [
+        'GoPro HERO 12 Black Camera',
+        'Volta Battery Grip with Built-In Remote & Tripod Legs',
+        'Media Mod with Directional Mic & 3.5mm Mic Port',
+        'Light Mod LED Illuminator',
+        '2x Enduro Cold-Weather Batteries',
+        '256GB SanDisk Extreme microSD Card',
+        'Carrying Case',
+      ],
+      'specs': 'HyperSmooth 6.0 with 360-degree Horizon Lock, 10-Bit GP-Log, Waterproof to 33ft (10m)',
+      'features': [
+        'Complete creator setup in one hand for vlogging & extreme sports',
+        'Bluetooth audio connectivity for AirPods & wireless mics',
+        'Timecode sync for multi-camera shoots',
+      ],
+      'stock': 8,
+      'status': 'available',
+      'popular': false,
+      'minDays': 1,
     },
   ];
 }

@@ -10,7 +10,7 @@ export interface CustomerUser {
 export interface CustomerOrderRecord {
   id: string;
   orderNumber: string;
-  type: 'exchange' | 'buy' | 'sell' | 'repair';
+  type: 'exchange' | 'buy' | 'sell' | 'repair' | 'rent';
   status: string;
   createdAt: string;
   customerName: string;

@@ -142,7 +142,7 @@ export async function POST(request: Request) {
 
     const orderNumber =
       body.orderNumber ||
-      `CSM-${body.type === 'buy' ? 'BUY' : body.type === 'exchange' ? 'EXC' : 'SELL'}-${Math.floor(
+      `CSM-${body.type === 'buy' ? 'BUY' : body.type === 'exchange' ? 'EXC' : body.type === 'rent' ? 'RNT' : 'SELL'}-${Math.floor(
         100000 + Math.random() * 900000
       )}`;
 

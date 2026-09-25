@@ -579,6 +579,14 @@ export default function CustomerHeader() {
                 Buy Refurbished
               </Link>
               <Link
+                href="/rental-cameras"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50/70 transition-colors"
+              >
+                <Camera size={14} className="text-rose-600" />
+                <span>Rent Cameras</span>
+                <span className="px-1.5 py-0.5 rounded-md bg-rose-100 text-[10px] font-black text-rose-700 uppercase">NEW</span>
+              </Link>
+              <Link
                 href="/exchange-device"
                 className="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-purple-600 hover:bg-purple-50/60 transition-colors"
               >
@@ -798,6 +806,15 @@ export default function CustomerHeader() {
                   className="flex items-center gap-3 p-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-purple-50"
                 >
                   Buy Refurbished Gear
+                </Link>
+                <Link
+                  href="/rental-cameras"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 p-2.5 rounded-xl text-sm font-bold text-rose-600 hover:bg-rose-50"
+                >
+                  <Camera size={16} className="text-rose-600" />
+                  <span>Rent Cameras &amp; Gear</span>
+                  <span className="px-1.5 py-0.5 rounded-md bg-rose-100 text-[10px] font-black text-rose-700 ml-auto">NEW</span>
                 </Link>
                 <Link
                   href="/exchange-device"

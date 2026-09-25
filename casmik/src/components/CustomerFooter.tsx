@@ -39,6 +39,7 @@ const footerLinks = {
     { label: 'Sell Action Cameras & Gimbals', href: '/sell-device-get-quote?cat=cat-action-camera' },
   ],
   'Buy & Exchange': [
+    { label: 'Rent Cinema & DSLR Cameras', href: '/rental-cameras' },
     { label: 'Buy Refurbished iPhones', href: '/buy-refurbished?category=Smartphones' },
     { label: 'Buy Refurbished MacBooks', href: '/buy-refurbished?category=Laptops' },
     { label: 'Buy Pre-Owned Cameras', href: '/buy-refurbished?category=Cameras' },
