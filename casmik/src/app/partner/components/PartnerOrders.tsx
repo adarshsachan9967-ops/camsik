@@ -3,9 +3,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { orders as defaultOrders, deliveryAgents, getOrderStatusColor, getOrderStatusLabel, getTypeColor } from '@/lib/casmikData';
 import type { Order, OrderStatus, DeliveryAgent } from '@/lib/casmikData';
-import { Search, CheckCircle, XCircle, Eye, Phone, MapPin, X, Truck, Wifi, WifiOff, ChevronDown, SlidersHorizontal, ClipboardCheck, Sparkles, Lock, CreditCard, ArrowRight, ShieldAlert, CheckCircle2, ShieldCheck, Calendar, Clock } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Eye, Phone, MapPin, X, Truck, Wifi, WifiOff, ChevronDown, SlidersHorizontal, ClipboardCheck, Sparkles, Lock, CreditCard, ArrowRight, ShieldAlert, CheckCircle2, ShieldCheck, Calendar, Clock, MessageSquare, PhoneCall } from 'lucide-react';
 import LiveOrderTracker from '@/components/LiveOrderTracker';
-import { triggerNotification } from '@/lib/notifications';
+import { triggerNotification, playNotificationBeep } from '@/lib/notifications';
+import OrderChatModal from '@/components/OrderChatModal';
+import OrderCallModal from '@/components/OrderCallModal';
 
 const PARTNER_ID = 'partner-002';
 
@@ -147,6 +149,10 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
   const [deliveryPickupDate, setDeliveryPickupDate] = useState('');
   const [deliveryPickupSlot, setDeliveryPickupSlot] = useState('');
 
+  // Live Chat & Direct Calling Modals
+  const [chatModalOrder, setChatModalOrder] = useState<Order | null>(null);
+  const [callModalTarget, setCallModalTarget] = useState<{ name: string; phone: string; role: string; orderNumber?: string } | null>(null);
+
   // Payout Disbursal Modal State
   const [payoutOrder, setPayoutOrder] = useState<Order | null>(null);
   const [payoutMethod, setPayoutMethod] = useState<'upi' | 'imps' | 'cash'>('upi');
@@ -165,7 +171,23 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
     window.addEventListener('casmik_partner_orders_updated', handleSync);
     window.addEventListener('casmik_orders_updated', handleSync);
     window.addEventListener('storage', handleSync);
+
+    // Also poll every 4 seconds to guarantee multi-tab & multi-device sync
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders?partnerId=${PARTNER_ID}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.orders) && data.orders.length > 0) {
+            setOrderList(data.orders);
+            setSelectedOrder(prev => prev ? (data.orders.find((o: Order) => o.id === prev.id) || prev) : null);
+          }
+        }
+      } catch {}
+    }, 4000);
+
     return () => {
+      clearInterval(interval);
       window.removeEventListener('casmik_partner_orders_updated', handleSync);
       window.removeEventListener('casmik_orders_updated', handleSync);
       window.removeEventListener('storage', handleSync);
@@ -184,6 +206,8 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
     const updatedOrder: Order = {
       ...assignDeliveryModal,
       partnerId: PARTNER_ID,
+      partnerName: 'Pixel Pro Tech Hub',
+      partnerPhone: '9845067890',
       deliveryAgentId: agent.id,
       deliveryAgentName: agent.name,
       deliveryAgentPhone: agent.phone,
@@ -227,6 +251,8 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
         body: JSON.stringify({
           orderId: assignDeliveryModal.id,
           partnerId: PARTNER_ID,
+          partnerName: 'Pixel Pro Tech Hub',
+          partnerPhone: '9845067890',
           deliveryAgentId: agent.id,
           deliveryAgentName: agent.name,
           deliveryAgentPhone: agent.phone,
@@ -264,7 +290,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
     });
 
     setStatusToast({
-      message: `🚚 Order #${assignDeliveryModal.orderNumber} assigned to ${agent.name} for pickup!`,
+      message: `🚚 Order #${assignDeliveryModal.orderNumber} assigned to ${agent.name}. Diagnostics & status now managed by the rider!`,
     });
     setTimeout(() => setStatusToast(null), 4000);
 
@@ -326,6 +352,16 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
         message: `⚠️ This order is completed & locked. No further changes can be made.`,
       });
       setTimeout(() => setStatusToast(null), 4000);
+      return;
+    }
+
+    // Strict restriction: If order has been shared / assigned to a delivery person,
+    // partner CANNOT change status! Status progression & diagnostics are managed by the delivery executive.
+    if (currentOrder.deliveryAgentId) {
+      setStatusToast({
+        message: `⚠️ This order is assigned to delivery rider (${currentOrder.deliveryAgentName || 'Rider'}). Partner cannot change status — only the field executive can update order status.`,
+      });
+      setTimeout(() => setStatusToast(null), 4500);
       return;
     }
 
@@ -483,6 +519,18 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
   const handleAccept = (id: string) => handleStatusChange(id, 'accepted');
   const handleReject = (id: string) => handleStatusChange(id, 'rejected');
   const handlePickup = (id: string) => handleStatusChange(id, 'picked_up');
+  const handlePartnerStartInspection = (id: string) => {
+    const target = orderList.find(o => o.id === id);
+    if (target?.deliveryAgentId) {
+      setStatusToast({
+        message: `⚠️ Order #${target.orderNumber} is assigned to delivery rider (${target.deliveryAgentName}). Only field executive can conduct doorstep diagnostics.`,
+      });
+      setTimeout(() => setStatusToast(null), 4500);
+      return;
+    }
+    handleStatusChange(id, 'inspection');
+    onStartInspection?.(id);
+  };
 
   const filtered = orderList.filter(o =>
     (o.orderNumber.toLowerCase().includes(query.toLowerCase()) || o.customerName.toLowerCase().includes(query.toLowerCase())) &&
@@ -687,69 +735,103 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                     <Truck size={13} /> {order.deliveryAgentId ? 'Change Rider' : 'Assign Rider'}
                   </button>
 
-                  {/* Action buttons depending on order status */}
-                  {order.status !== 'accepted' && order.status !== 'completed' && order.status !== 'picked_up' && order.status !== 'inspection' ? (
-                    <button
-                      type="button"
-                      onClick={() => handleAccept(order.id)}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-green-600 text-white text-xs font-bold hover:bg-green-700 transition-colors shadow-sm shadow-green-600/20 cursor-pointer"
-                    >
-                      <CheckCircle size={13} /> Accept Order
-                    </button>
-                  ) : order.status === 'accepted' ? (
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                  {/* Action buttons: If assigned to delivery rider, partner CANNOT do diagnostics or change status */}
+                  {order.deliveryAgentId ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-800 text-xs font-bold rounded-xl border border-blue-200">
+                        <Truck size={13} className="text-blue-600" />
+                        <span>Rider: {order.deliveryAgentName || 'Assigned'}</span>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          handleStatusChange(order.id, 'inspection');
-                          onStartInspection?.(order.id);
-                        }}
+                        onClick={() => setChatModalOrder(order)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                        title="Chat with assigned delivery executive"
+                      >
+                        <MessageSquare size={13} /> Chat Rider
+                      </button>
+                      {order.deliveryAgentPhone && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCallModalTarget({
+                              name: order.deliveryAgentName || 'Delivery Rider',
+                              phone: order.deliveryAgentPhone!,
+                              role: 'Delivery Executive',
+                              orderNumber: order.orderNumber,
+                            })
+                          }
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                          title="Direct phone call to delivery rider"
+                        >
+                          <Phone size={13} /> Call Rider
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    /* Non-allocated orders: Partner can complete his own order directly! */
+                    order.status !== 'accepted' && order.status !== 'completed' && order.status !== 'picked_up' && order.status !== 'inspection' ? (
+                      <button
+                        type="button"
+                        onClick={() => handleAccept(order.id)}
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-green-600 text-white text-xs font-bold hover:bg-green-700 transition-colors shadow-sm shadow-green-600/20 cursor-pointer"
+                      >
+                        <CheckCircle size={13} /> Accept Order
+                      </button>
+                    ) : order.status === 'accepted' ? (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => handlePartnerStartInspection(order.id)}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-600/20 cursor-pointer"
+                        >
+                          <ClipboardCheck size={13} /> Start Inspection
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handlePickup(order.id)}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 text-gray-700 text-xs font-bold hover:bg-gray-200 transition-colors cursor-pointer"
+                        >
+                          <Truck size={13} /> Start Pickup
+                        </button>
+                      </div>
+                    ) : order.status === 'inspection' ? (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {order.finalPrice > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => setPayoutOrder(order)}
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black hover:bg-emerald-700 transition-colors shadow-md shadow-emerald-600/20 cursor-pointer"
+                          >
+                            <CreditCard size={13} /> Disburse Payout (₹{order.finalPrice.toLocaleString('en-IN')})
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => handlePartnerStartInspection(order.id)}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors shadow-sm shadow-amber-500/20 cursor-pointer"
+                        >
+                          <ClipboardCheck size={13} /> {order.finalPrice > 0 ? 'Review Inspection' : 'Continue Inspection'}
+                        </button>
+                      </div>
+                    ) : order.status === 'picked_up' ? (
+                      <button
+                        type="button"
+                        onClick={() => handlePartnerStartInspection(order.id)}
                         className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-600/20 cursor-pointer"
                       >
                         <ClipboardCheck size={13} /> Start Inspection
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handlePickup(order.id)}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 text-gray-700 text-xs font-bold hover:bg-gray-200 transition-colors cursor-pointer"
-                      >
-                        <Truck size={13} /> Start Pickup
-                      </button>
-                    </div>
-                  ) : order.status === 'inspection' ? (
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {order.finalPrice > 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => setPayoutOrder(order)}
-                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black hover:bg-emerald-700 transition-colors shadow-md shadow-emerald-600/20 cursor-pointer"
-                        >
-                          <CreditCard size={13} /> Disburse Payout (₹{order.finalPrice.toLocaleString('en-IN')})
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={() => onStartInspection?.(order.id)}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors shadow-sm shadow-amber-500/20 cursor-pointer"
-                      >
-                        <ClipboardCheck size={13} /> {order.finalPrice > 0 ? 'Review Inspection' : 'Continue Inspection'}
-                      </button>
-                    </div>
-                  ) : order.status === 'picked_up' ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleStatusChange(order.id, 'inspection');
-                        onStartInspection?.(order.id);
-                      }}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-600/20 cursor-pointer"
-                    >
-                      <ClipboardCheck size={13} /> Start Inspection
-                    </button>
-                  ) : null}
+                    ) : null
+                  )}
 
                   {/* Status Indicator or Forward-Only Dropdown */}
-                  {order.status === 'completed' ? (
+                  {order.deliveryAgentId ? (
+                    <div className="flex items-center gap-1.5 ml-auto px-3 py-1.5 bg-blue-50 text-blue-800 text-xs font-bold rounded-xl border border-blue-200" title="Diagnostics & status progression managed by the delivery executive.">
+                      <Lock size={12} className="text-blue-600" />
+                      <span>Managed by Rider</span>
+                    </div>
+                  ) : order.status === 'completed' ? (
                     <div className="flex items-center gap-1.5 ml-auto px-3 py-1.5 bg-emerald-50 text-emerald-800 text-xs font-black rounded-xl border border-emerald-200 shadow-sm">
                       <Lock size={12} className="text-emerald-600" />
                       <span>Completed &amp; Locked</span>
@@ -783,8 +865,10 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
               </div>
             )}
           </div>
+        </>
+      )}
 
-          {selectedOrder && (
+      {selectedOrder && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedOrder(null)} />
               <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 z-10 max-h-[90vh] overflow-y-auto border border-gray-100">
@@ -816,7 +900,62 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                   </div>
 
                   {/* CHANGE ORDER STATUS SECTION OR PERMANENT LOCKED BANNER */}
-                  {selectedOrder.status === 'completed' ? (
+                  {selectedOrder.deliveryAgentId ? (
+                    <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-4 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Truck size={16} className="text-blue-600" />
+                          <h4 className="text-sm font-black text-blue-950">Managed by Delivery Executive</h4>
+                        </div>
+                        <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getOrderStatusColor(selectedOrder.status)}`}>
+                          {getOrderStatusLabel(selectedOrder.status)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-blue-800 leading-relaxed">
+                        This order is allocated to <strong>{selectedOrder.deliveryAgentName || 'Delivery Rider'}</strong> ({selectedOrder.deliveryAgentPhone || 'Field Rider'}).
+                        Diagnostics, inspection scoring, spot payment, and status progression are handled exclusively by the rider at customer doorstep. Partner controls are locked.
+                      </p>
+                      <div className="flex items-center gap-2 flex-wrap pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setChatModalOrder(selectedOrder)}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                        >
+                          <MessageSquare size={14} /> Chat with Rider
+                        </button>
+                        {selectedOrder.deliveryAgentPhone && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCallModalTarget({
+                                name: selectedOrder.deliveryAgentName || 'Delivery Rider',
+                                phone: selectedOrder.deliveryAgentPhone!,
+                                role: 'Delivery Executive',
+                                orderNumber: selectedOrder.orderNumber,
+                              })
+                            }
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                          >
+                            <Phone size={14} /> Call Rider
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCallModalTarget({
+                              name: selectedOrder.customerName,
+                              phone: selectedOrder.customerPhone,
+                              role: 'Customer',
+                              orderNumber: selectedOrder.orderNumber,
+                            })
+                          }
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all cursor-pointer"
+                        >
+                          <Phone size={14} /> Call Customer
+                        </button>
+                      </div>
+                    </div>
+                  ) : selectedOrder.status === 'completed' ? (
                     <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-4 shadow-sm">
                       <div className="flex items-center gap-2 mb-1.5">
                         <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
@@ -1080,88 +1219,131 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
 
                   {/* Order Actions inside Modal */}
                   <div className="pt-2 border-t border-gray-100 flex flex-wrap gap-2">
-                    {selectedOrder.status === 'inspection' && selectedOrder.finalPrice > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPayoutOrder(selectedOrder);
-                        }}
-                        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-colors shadow-md shadow-emerald-600/20 cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <CreditCard size={14} /> Disburse Payout (₹{selectedOrder.finalPrice.toLocaleString('en-IN')})
-                      </button>
-                    )}
-
-                    {/* Button to Assign or Change Delivery Rider */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAssignDeliveryModal(selectedOrder);
-                        setSelectedDeliveryAgentId(selectedOrder.deliveryAgentId || '');
-                        setDeliveryPickupDate(selectedOrder.pickupDate || '');
-                        setDeliveryPickupSlot(selectedOrder.pickupSlot || '');
-                        setSelectedOrder(null);
-                      }}
-                      className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <Truck size={14} /> {selectedOrder.deliveryAgentId ? 'Change Rider' : 'Assign to Rider'}
-                    </button>
-
-                    {selectedOrder.status !== 'accepted' && selectedOrder.status !== 'completed' && selectedOrder.status !== 'inspection' && selectedOrder.status !== 'picked_up' && (
-                      <button
-                        type="button"
-                        onClick={() => handleAccept(selectedOrder.id)}
-                        className="flex-1 py-3 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <CheckCircle size={14} /> Accept Order
-                      </button>
-                    )}
-                    {selectedOrder.status === 'accepted' && (
-                      <>
+                    {selectedOrder.deliveryAgentId ? (
+                      <div className="flex-1 flex items-center gap-2 flex-wrap">
                         <button
                           type="button"
                           onClick={() => {
-                            handleStatusChange(selectedOrder.id, 'inspection');
-                            setSelectedOrder(null);
-                            onStartInspection?.(selectedOrder.id);
+                            setChatModalOrder(selectedOrder);
                           }}
-                          className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                          className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
                         >
-                          <ClipboardCheck size={14} /> Start Inspection
+                          <MessageSquare size={14} /> Chat with Rider
                         </button>
+                        {selectedOrder.deliveryAgentPhone && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCallModalTarget({
+                                name: selectedOrder.deliveryAgentName || 'Delivery Rider',
+                                phone: selectedOrder.deliveryAgentPhone!,
+                                role: 'Delivery Executive',
+                                orderNumber: selectedOrder.orderNumber,
+                              })
+                            }
+                            className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <Phone size={14} /> Call Rider
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => handlePickup(selectedOrder.id)}
-                          className="flex-1 py-3 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                          onClick={() => {
+                            setAssignDeliveryModal(selectedOrder);
+                            setSelectedDeliveryAgentId(selectedOrder.deliveryAgentId || '');
+                            setDeliveryPickupDate(selectedOrder.pickupDate || '');
+                            setDeliveryPickupSlot(selectedOrder.pickupSlot || '');
+                            setSelectedOrder(null);
+                          }}
+                          className="py-3 px-4 border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                         >
-                          <Truck size={14} /> Start Pickup
+                          <Truck size={14} /> Change Rider
                         </button>
+                      </div>
+                    ) : (
+                      <>
+                        {selectedOrder.status === 'inspection' && selectedOrder.finalPrice > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPayoutOrder(selectedOrder);
+                            }}
+                            className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-colors shadow-md shadow-emerald-600/20 cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <CreditCard size={14} /> Disburse Payout (₹{selectedOrder.finalPrice.toLocaleString('en-IN')})
+                          </button>
+                        )}
+
+                        {/* Button to Assign Delivery Rider */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAssignDeliveryModal(selectedOrder);
+                            setSelectedDeliveryAgentId(selectedOrder.deliveryAgentId || '');
+                            setDeliveryPickupDate(selectedOrder.pickupDate || '');
+                            setDeliveryPickupSlot(selectedOrder.pickupSlot || '');
+                            setSelectedOrder(null);
+                          }}
+                          className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <Truck size={14} /> Assign to Rider
+                        </button>
+
+                        {selectedOrder.status !== 'accepted' && selectedOrder.status !== 'completed' && selectedOrder.status !== 'inspection' && selectedOrder.status !== 'picked_up' && (
+                          <button
+                            type="button"
+                            onClick={() => handleAccept(selectedOrder.id)}
+                            className="flex-1 py-3 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <CheckCircle size={14} /> Accept Order
+                          </button>
+                        )}
+                        {selectedOrder.status === 'accepted' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handlePartnerStartInspection(selectedOrder.id);
+                                setSelectedOrder(null);
+                              }}
+                              className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                              <ClipboardCheck size={14} /> Start Inspection
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handlePickup(selectedOrder.id)}
+                              className="flex-1 py-3 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                              <Truck size={14} /> Start Pickup
+                            </button>
+                          </>
+                        )}
+                        {selectedOrder.status === 'picked_up' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handlePartnerStartInspection(selectedOrder.id);
+                              setSelectedOrder(null);
+                            }}
+                            className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <ClipboardCheck size={14} /> Start Inspection
+                          </button>
+                        )}
+                        {selectedOrder.status === 'inspection' && !selectedOrder.finalPrice && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedOrder(null);
+                              onStartInspection?.(selectedOrder.id);
+                            }}
+                            className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <ClipboardCheck size={14} /> Continue Inspection
+                          </button>
+                        )}
                       </>
-                    )}
-                    {selectedOrder.status === 'picked_up' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleStatusChange(selectedOrder.id, 'inspection');
-                          setSelectedOrder(null);
-                          onStartInspection?.(selectedOrder.id);
-                        }}
-                        className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <ClipboardCheck size={14} /> Start Inspection
-                      </button>
-                    )}
-                    {selectedOrder.status === 'inspection' && !selectedOrder.finalPrice && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedOrder(null);
-                          onStartInspection?.(selectedOrder.id);
-                        }}
-                        className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <ClipboardCheck size={14} /> Continue Inspection
-                      </button>
                     )}
                     <button
                       onClick={() => setSelectedOrder(null)}
@@ -1404,8 +1586,34 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
               </div>
             </div>
           )}
-        </>
-      )}
+
+      {/* LIVE ORDER CHAT MODAL */}
+      <OrderChatModal
+        isOpen={!!chatModalOrder}
+        onClose={() => setChatModalOrder(null)}
+        order={chatModalOrder}
+        currentRole="partner"
+        currentUserName="Pixel Pro Tech Hub (Partner)"
+        currentUserPhone="9845067890"
+        onOpenCall={(target) =>
+          setCallModalTarget({
+            name: target.name,
+            phone: target.phone,
+            role: target.role,
+            orderNumber: chatModalOrder?.orderNumber,
+          })
+        }
+      />
+
+      {/* DIRECT PHONE CALL MODAL */}
+      <OrderCallModal
+        isOpen={!!callModalTarget}
+        onClose={() => setCallModalTarget(null)}
+        contactName={callModalTarget?.name || ''}
+        contactPhone={callModalTarget?.phone || ''}
+        contactRole={callModalTarget?.role || ''}
+        orderNumber={callModalTarget?.orderNumber}
+      />
     </div>
   );
 }

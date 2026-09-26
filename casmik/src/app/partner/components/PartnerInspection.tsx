@@ -20,8 +20,10 @@ import {
   Zap,
   CheckCircle2,
   X,
-  Maximize2
+  Maximize2,
+  Lock
 } from 'lucide-react';
+import { triggerNotification } from '@/lib/notifications';
 
 interface InspectionCheckItem {
   id: string;
@@ -189,13 +191,19 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
     : calculatedExactPayout;
 
   const [payoutDisbursed, setPayoutDisbursed] = useState(false);
+  const isAllocatedToRider = Boolean(selectedOrder?.deliveryAgentId);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedOrder) return;
+    if (selectedOrder.deliveryAgentId) {
+      alert(`Diagnostics Locked: Order ${selectedOrder.orderNumber} is assigned to Delivery Executive ${selectedOrder.deliveryAgentName || 'Rider'}. Only the delivery executive can perform diagnostics.`);
+      return;
+    }
     const updatedOrder: Order = {
       ...selectedOrder,
       finalPrice: finalPayoutToUser,
       inspectionScore: scorePercent,
+      deviceImei: imei.trim() || selectedOrder.deviceImei || null,
       status: 'inspection', // Ready for payout: updated inspection price will appear on order page
       paymentStatus: 'pending',
       notes: notes || selectedOrder.notes,
@@ -220,22 +228,57 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
             localStorage.setItem('casmik_orders_v1', JSON.stringify(updated));
           }
         }
+        window.dispatchEvent(new Event('casmik_orders_updated'));
+        window.dispatchEvent(new Event('casmik_partner_orders_updated'));
       } catch {}
     }
+
+    try {
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: selectedOrder.id,
+          orderNumber: selectedOrder.orderNumber,
+          status: 'inspection',
+          finalPrice: finalPayoutToUser,
+          inspectionScore: scorePercent,
+          deviceImei: imei.trim() || undefined,
+          notes: updatedOrder.notes
+        })
+      });
+    } catch {}
+
+    triggerNotification({
+      type: 'status_update',
+      targetRole: 'all',
+      title: '🔍 Device Inspected by Partner',
+      shortDetails: `Partner finalized 12-point inspection score (${scorePercent}%) for ${selectedOrder.orderNumber}. Price: ₹${finalPayoutToUser.toLocaleString('en-IN')}`,
+      orderId: selectedOrder.id,
+      orderNumber: selectedOrder.orderNumber,
+      deviceName: selectedOrder.deviceName,
+      customerName: selectedOrder.customerName,
+      status: 'inspection'
+    });
 
     setSubmitted(true);
     setPayoutDisbursed(false);
   };
 
-  const handleInstantPayout = () => {
+  const handleInstantPayout = async () => {
     if (!selectedOrder) return;
+    if (selectedOrder.deliveryAgentId) {
+      alert(`Diagnostics & Payout Locked: Order ${selectedOrder.orderNumber} is assigned to Delivery Executive ${selectedOrder.deliveryAgentName || 'Rider'}.`);
+      return;
+    }
     const completedOrder: Order = {
       ...selectedOrder,
       finalPrice: finalPayoutToUser,
       inspectionScore: scorePercent,
+      deviceImei: imei.trim() || selectedOrder.deviceImei || null,
       status: 'completed', // Shifts to completed after payout
       paymentStatus: 'paid',
-      notes: `${notes || selectedOrder.notes || ''} [Spot Payout Disbursed: ₹${finalPayoutToUser.toLocaleString('en-IN')}]`.trim(),
+      notes: `${notes || selectedOrder.notes || ''} [Partner Spot Payout Disbursed: ₹${finalPayoutToUser.toLocaleString('en-IN')}]`.trim(),
       updatedAt: new Date().toISOString(),
     };
 
@@ -257,8 +300,39 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
             localStorage.setItem('casmik_orders_v1', JSON.stringify(updated));
           }
         }
+        window.dispatchEvent(new Event('casmik_orders_updated'));
+        window.dispatchEvent(new Event('casmik_partner_orders_updated'));
       } catch {}
     }
+
+    try {
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: selectedOrder.id,
+          orderNumber: selectedOrder.orderNumber,
+          status: 'completed',
+          paymentStatus: 'paid',
+          finalPrice: finalPayoutToUser,
+          inspectionScore: scorePercent,
+          notes: completedOrder.notes
+        })
+      });
+    } catch {}
+
+    triggerNotification({
+      type: 'status_update',
+      targetRole: 'all',
+      title: '✅ Partner Payout Disbursed & Order Completed',
+      shortDetails: `Partner completed order ${selectedOrder.orderNumber} (${selectedOrder.deviceName}) & disbursed spot payout ₹${finalPayoutToUser.toLocaleString('en-IN')}.`,
+      orderId: selectedOrder.id,
+      orderNumber: selectedOrder.orderNumber,
+      deviceName: selectedOrder.deviceName,
+      customerName: selectedOrder.customerName,
+      status: 'completed'
+    });
+
     setPayoutDisbursed(true);
   };
 
@@ -413,6 +487,45 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
               </button>
             );
           })}
+        </div>
+      )}
+
+      {selectedOrder && isAllocatedToRider && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-3xl p-5 shadow-sm">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center flex-shrink-0">
+              <Lock size={20} />
+            </div>
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-base font-black text-amber-950">
+                  Diagnostics &amp; Status Locked (Assigned to Delivery Rider)
+                </h3>
+                <span className="text-xs font-black px-3 py-1 rounded-full bg-amber-200/80 text-amber-900 uppercase tracking-wider">
+                  Managed by Rider
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 mt-1.5 leading-relaxed">
+                You have allocated this order to Delivery Executive <strong>{selectedOrder.deliveryAgentName || 'Rider'}</strong> ({selectedOrder.deliveryAgentPhone || 'Rider'}).
+                Per company policy, doorstep diagnostic, 12-point hardware checklist, and order status updates are restricted to the delivery rider. Any inspection score and status updates made by the rider will sync here in real time.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-amber-900">
+                <span className="px-2.5 py-1 bg-white/80 rounded-lg border border-amber-200">
+                  Current Status: <strong className="capitalize text-slate-900">{selectedOrder.status.replace(/_/g, ' ')}</strong>
+                </span>
+                {selectedOrder.inspectionScore != null && (
+                  <span className="px-2.5 py-1 bg-white/80 rounded-lg border border-amber-200">
+                    Rider Score: <strong className="text-emerald-700">{selectedOrder.inspectionScore}%</strong>
+                  </span>
+                )}
+                {selectedOrder.finalPrice ? (
+                  <span className="px-2.5 py-1 bg-white/80 rounded-lg border border-amber-200">
+                    Rider Payout: <strong className="text-emerald-700">₹{selectedOrder.finalPrice.toLocaleString('en-IN')}</strong>
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -763,14 +876,20 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
             {/* Final Submission Button */}
             <button
               onClick={handleSubmit}
-              disabled={Object.keys(inspectionResults).length < 4}
-              className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-primary/25 transition-all hover:scale-[1.01] flex items-center justify-center gap-2"
+              disabled={isAllocatedToRider || Object.keys(inspectionResults).length < 4}
+              className={`w-full py-4 rounded-2xl font-black text-sm shadow-xl transition-all flex items-center justify-center gap-2 ${
+                isAllocatedToRider
+                  ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300 shadow-none'
+                  : 'bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-primary/25 hover:scale-[1.01]'
+              }`}
             >
-              <Zap size={18} />
-              <span>Confirm &amp; Lock Payout (₹{finalPayoutToUser.toLocaleString('en-IN')})</span>
+              {isAllocatedToRider ? <Lock size={18} /> : <Zap size={18} />}
+              <span>{isAllocatedToRider ? 'Locked: Diagnostics Handled by Delivery Rider' : `Confirm & Lock Payout (₹${finalPayoutToUser.toLocaleString('en-IN')})`}</span>
             </button>
             <p className="text-[11px] text-slate-400 text-center">
-              Completing inspection locks the payout and updates order status for instant spot IMPS/UPI transfer.
+              {isAllocatedToRider 
+                ? 'This order is assigned to delivery personnel. Inspection scoring and completion must be carried out by the rider.'
+                : 'Completing inspection locks the payout and updates order status for instant spot IMPS/UPI transfer.'}
             </p>
           </div>
 

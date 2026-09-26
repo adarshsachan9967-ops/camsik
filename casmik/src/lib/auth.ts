@@ -58,6 +58,18 @@ export interface CustomerOrderRecord {
   netPayable: number;
   balanceOwedToUser?: number;
   payoutDetails?: string;
+
+  // Partner & Delivery Executive details
+  partnerId?: string | null;
+  partnerName?: string | null;
+  partnerPhone?: string | null;
+  deliveryAgentId?: string | null;
+  deliveryAgentName?: string | null;
+  deliveryAgentPhone?: string | null;
+  inspectionScore?: number | null;
+  finalPrice?: number | null;
+  deviceCollected?: boolean;
+  notes?: string | null;
 }
 
 const USER_STORAGE_KEY = 'camsik_customer_user';
@@ -111,12 +123,44 @@ export function getCustomerOrders(phone?: string): CustomerOrderRecord[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(ORDERS_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
+    let parsed: CustomerOrderRecord[] = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) parsed = [];
+
+    // Cross-reference live order updates from casmik_orders_v1 (updated by Delivery rider & Partner)
+    try {
+      const globalRaw = localStorage.getItem('casmik_orders_v1');
+      if (globalRaw) {
+        const globalOrders: any[] = JSON.parse(globalRaw);
+        if (Array.isArray(globalOrders)) {
+          const globalOrderMap = new Map(globalOrders.map(g => [g.orderNumber || g.id, g]));
+          parsed = parsed.map(order => {
+            const liveMatch = globalOrderMap.get(order.orderNumber) || globalOrderMap.get(order.id);
+            if (liveMatch) {
+              return {
+                ...order,
+                status: liveMatch.status || order.status,
+                paymentStatus: liveMatch.paymentStatus || order.paymentStatus,
+                partnerId: liveMatch.partnerId ?? order.partnerId,
+                partnerName: liveMatch.partnerName ?? order.partnerName,
+                partnerPhone: liveMatch.partnerPhone ?? order.partnerPhone,
+                deliveryAgentId: liveMatch.deliveryAgentId ?? order.deliveryAgentId,
+                deliveryAgentName: liveMatch.deliveryAgentName ?? order.deliveryAgentName,
+                deliveryAgentPhone: liveMatch.deliveryAgentPhone ?? order.deliveryAgentPhone,
+                inspectionScore: liveMatch.inspectionScore ?? order.inspectionScore,
+                finalPrice: liveMatch.finalPrice ?? order.finalPrice,
+                deviceCollected: liveMatch.deviceCollected ?? order.deviceCollected,
+                notes: liveMatch.notes ?? order.notes,
+              };
+            }
+            return order;
+          });
+        }
+      }
+    } catch {}
+
     if (phone && phone.trim() !== '') {
       const cleanPhone = phone.trim().replace(/\D/g, '').slice(-10);
-      return parsed.filter((o) => o.customerPhone.replace(/\D/g, '').slice(-10) === cleanPhone);
+      return parsed.filter((o) => o.customerPhone && o.customerPhone.replace(/\D/g, '').slice(-10) === cleanPhone);
     }
     return parsed;
   } catch (err) {

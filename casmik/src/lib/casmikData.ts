@@ -85,6 +85,7 @@ export interface Order {
   finalPrice: number;
   partnerId: string | null;
   partnerName: string | null;
+  partnerPhone?: string | null;
   deliveryAgentId: string | null;
   deliveryAgentName: string | null;
   deliveryAgentPhone?: string | null;

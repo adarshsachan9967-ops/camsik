@@ -26,7 +26,41 @@ const STORAGE_KEY = 'casmik_notifications_v1';
 const SOUND_SETTING_KEY = 'casmik_notification_sound_enabled';
 const BROADCAST_CHANNEL = 'casmik_notifications_channel';
 
-// ─── AUDIO ENGINE (Web Audio API Synthesizer) ──────────────────────────────────
+// ─── AUDIO ENGINE (Web Audio API Synthesizer with Beep Alert) ─────────────────
+let sharedAudioCtx: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    if (!sharedAudioCtx) {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) sharedAudioCtx = new AudioCtx();
+    }
+    if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
+      sharedAudioCtx.resume().catch(() => {});
+    }
+    return sharedAudioCtx;
+  } catch {
+    return null;
+  }
+}
+
+// Automatically unlock audio on first user interaction
+if (typeof window !== 'undefined') {
+  const unlockAudio = () => {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    window.removeEventListener('click', unlockAudio);
+    window.removeEventListener('touchstart', unlockAudio);
+    window.removeEventListener('keydown', unlockAudio);
+  };
+  window.addEventListener('click', unlockAudio, { passive: true, once: true });
+  window.addEventListener('touchstart', unlockAudio, { passive: true, once: true });
+  window.addEventListener('keydown', unlockAudio, { passive: true, once: true });
+}
+
 export function playNotificationSound(force = false) {
   if (typeof window === 'undefined') return;
 
@@ -36,50 +70,41 @@ export function playNotificationSound(force = false) {
   } catch {}
 
   try {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
-
-    const ctx = new AudioCtx();
-    if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
-    }
+    const ctx = getAudioContext();
+    if (!ctx) return;
 
     const now = ctx.currentTime;
 
-    // Harmonious modern two-tone notification chime (F5 -> A5 -> C6 melody)
-    const playChimeTone = (freq: number, start: number, duration: number, peakGain: number) => {
+    // Distinctive two-pulse Camsik BEEP notification sound
+    const playBeepPulse = (freq: number, start: number, duration: number, peakGain: number) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      osc.type = 'sine';
+      osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, start);
 
-      // Natural acoustic bell envelope
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(peakGain, start + 0.02);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(peakGain, start + 0.015);
       gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
       osc.start(start);
-      osc.stop(start + duration);
+      osc.stop(start + duration + 0.05);
     };
 
-    // Crisp dual-tone notification chime (E5 -> A5 -> E6)
-    playChimeTone(659.25, now, 0.4, 0.28);          // E5
-    playChimeTone(880.00, now + 0.09, 0.6, 0.32);   // A5
-    playChimeTone(1318.51, now + 0.18, 0.8, 0.22);  // E6
+    // First beep: 880Hz (A5)
+    playBeepPulse(880, now, 0.12, 0.35);
+    // Second higher beep: 1175Hz (D6)
+    playBeepPulse(1175, now + 0.14, 0.18, 0.4);
 
-    setTimeout(() => {
-      try {
-        ctx.close();
-      } catch {}
-    }, 1500);
   } catch (e) {
     console.log('Audio chime note:', e);
   }
 }
+
+export const playNotificationBeep = playNotificationSound;
 
 // ─── BROWSER DESKTOP NOTIFICATIONS ─────────────────────────────────────────────
 export async function requestBrowserNotificationPermission(): Promise<boolean> {

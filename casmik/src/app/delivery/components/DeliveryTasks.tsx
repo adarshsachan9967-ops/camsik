@@ -35,11 +35,17 @@ import {
   XCircle,
   RefreshCw,
   Upload,
-  Trash2
+  Trash2,
+  MessageSquare,
+  IndianRupee,
+  Store,
+  DollarSign
 } from 'lucide-react';
 import LiveOrderTracker from '@/components/LiveOrderTracker';
-import { orders } from '@/lib/casmikData';
+import { orders, getOrderStatusLabel, getOrderStatusColor } from '@/lib/casmikData';
 import { triggerNotification } from '@/lib/notifications';
+import OrderChatModal from '@/components/OrderChatModal';
+import OrderCallModal from '@/components/OrderCallModal';
 
 const DELIVERY_AGENT_ID = 'delivery-001';
 
@@ -195,6 +201,27 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
   const [otpVerified, setOtpVerified] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Chat, Call, and Step 3 Payout modal states
+  const [chatModalOrder, setChatModalOrder] = useState<Order | null>(null);
+  const [callModalTarget, setCallModalTarget] = useState<{ name: string; phone: string; role: string; orderNumber?: string } | null>(null);
+  const [payoutModalTask, setPayoutModalTask] = useState<Order | null>(null);
+  const [payoutMethod, setPayoutMethod] = useState<'upi' | 'cash' | 'imps'>('upi');
+  const [payoutRef, setPayoutRef] = useState('');
+  const [isProcessingPayout, setIsProcessingPayout] = useState(false);
+
+  let currentAgentName = 'Sameer Khan';
+  let currentAgentPhone = '9820123456';
+  if (typeof window !== 'undefined') {
+    try {
+      const sess = localStorage.getItem('casmik_delivery_session');
+      if (sess) {
+        const parsed = JSON.parse(sess);
+        if (parsed.name) currentAgentName = parsed.name;
+        if (parsed.phone) currentAgentPhone = parsed.phone;
+      }
+    } catch {}
+  }
+
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const supabase = createClient();
 
@@ -262,30 +289,119 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
     }
   };
 
-  const handleStartPickup = async (task: Order) => {
-    const updated = taskList.map(t => t.id === task.id ? { ...t, status: 'pickup_scheduled' as OrderStatus } : t);
-    setTaskList(updated);
-    saveLocalTasks(updated);
+  const handleUpdateOrderStatus = async (
+    task: Order, 
+    newStatus: OrderStatus, 
+    extraData?: Partial<Order>,
+    notificationMsg?: { title: string; details: string }
+  ) => {
+    const updatedTask: Order = {
+      ...task,
+      status: newStatus,
+      updatedAt: new Date().toISOString(),
+      ...(extraData || {})
+    };
+
+    const updatedList = taskList.map(t => t.id === task.id ? updatedTask : t);
+    setTaskList(updatedList);
+    saveLocalTasks(updatedList);
+
+    if (selectedTask?.id === task.id) {
+      setSelectedTask(updatedTask);
+    }
 
     try {
       await fetch('/api/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: task.id, status: 'pickup_scheduled' })
+        body: JSON.stringify({
+          id: task.id,
+          orderNumber: task.orderNumber,
+          status: newStatus,
+          ...extraData
+        })
       });
     } catch {}
 
     triggerNotification({
       type: 'status_update',
       targetRole: 'all',
-      title: '🚚 Executive En Route',
-      shortDetails: `Agent is navigating to pickup ${task.orderNumber} (${task.deviceName}) from ${task.customerName}.`,
+      title: notificationMsg?.title || `🚚 Status Changed: ${getOrderStatusLabel(newStatus)}`,
+      shortDetails: notificationMsg?.details || `Executive updated #${task.orderNumber} (${task.deviceName}) to "${getOrderStatusLabel(newStatus)}". Synced across Partner, User & Admin.`,
       orderId: task.id,
       orderNumber: task.orderNumber,
       deviceName: task.deviceName,
       customerName: task.customerName,
-      status: 'pickup_scheduled'
+      status: newStatus
     });
+  };
+
+  // Step 1: On the way to collect the device
+  const handleStepOnTheWay = async (task: Order) => {
+    await handleUpdateOrderStatus(
+      task,
+      'pickup_scheduled',
+      { pickupDate: task.pickupDate || 'Today' },
+      {
+        title: '🚚 Executive On The Way To Collect Device',
+        details: `Delivery Executive is en route to collect ${task.deviceName} from ${task.customerName}. Live tracking enabled.`
+      }
+    );
+  };
+
+  const handleStartPickup = handleStepOnTheWay;
+
+  // Step 2: Diagnostic (Doorstep 12-point inspection)
+  const handleStepDiagnostic = (task: Order) => {
+    openInspectionModal(task);
+  };
+
+  // Step 3: Amount Paid (Doorstep spot payout)
+  const handleOpenPayoutModal = (task: Order) => {
+    setPayoutModalTask(task);
+    setPayoutMethod('upi');
+    setPayoutRef('');
+  };
+
+  const handleConfirmAmountPaid = async () => {
+    if (!payoutModalTask) return;
+    setIsProcessingPayout(true);
+    const amount = payoutModalTask.finalPrice || payoutModalTask.quotedPrice;
+    const noteEntry = `[Doorstep Amount Paid: ₹${amount.toLocaleString('en-IN')} via ${payoutMethod.toUpperCase()}${payoutRef ? ` UTR:${payoutRef}` : ''}]`;
+    const updatedNotes = payoutModalTask.notes ? `${payoutModalTask.notes} | ${noteEntry}` : noteEntry;
+
+    await handleUpdateOrderStatus(
+      payoutModalTask,
+      payoutModalTask.status === 'completed' ? 'completed' : 'picked_up',
+      {
+        paymentStatus: 'paid',
+        notes: updatedNotes
+      },
+      {
+        title: '💰 Doorstep Amount Paid to Customer',
+        details: `Delivery executive disbursed ₹${amount.toLocaleString('en-IN')} via ${payoutMethod.toUpperCase()} to ${payoutModalTask.customerName}. Order #${payoutModalTask.orderNumber} updated.`
+      }
+    );
+
+    setIsProcessingPayout(false);
+    setPayoutModalTask(null);
+  };
+
+  // Step 4: Complete Order
+  const handleCompleteOrder = async (task: Order) => {
+    await handleUpdateOrderStatus(
+      task,
+      'completed',
+      {
+        paymentStatus: 'paid',
+        deviceCollected: true,
+        notes: `${task.notes ? task.notes + ' | ' : ''}Order finalized & deposited to partner hub.`
+      },
+      {
+        title: '✅ Order Completed by Delivery Executive',
+        details: `Order #${task.orderNumber} (${task.deviceName}) is fully completed and deposited to partner hub. All portals synchronized.`
+      }
+    );
   };
 
   // 12-point inspection calculations
@@ -737,98 +853,183 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
                       </div>
                     </div>
 
-                    {/* Lifecycle Visual Progress */}
-                    <div className="space-y-1.5 pt-1">
-                      <div className="flex justify-between text-[11px] font-bold text-slate-400">
-                        <span className={isAssigned || isEnRoute || isPickedUp || isDone ? 'text-primary' : ''}>Assigned</span>
-                        <span className={isEnRoute || isPickedUp || isDone ? 'text-amber-600' : ''}>En Route</span>
-                        <span className={isPickedUp || isDone ? 'text-indigo-600' : ''}>Picked Up</span>
-                        <span className={isDone ? 'text-emerald-600' : ''}>Done</span>
+                    {/* 4-Step Doorstep Execution Stepper */}
+                    <div className="bg-slate-50/90 rounded-2xl p-2.5 space-y-2 border border-slate-200/70">
+                      <div className="flex items-center justify-between text-[10px] font-black uppercase text-slate-500">
+                        <span>4-Step Doorstep Pipeline</span>
+                        <span className="text-primary font-mono lowercase">live sync</span>
                       </div>
-                      <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
-                        <div className={`h-full transition-all duration-500 ${
-                          isDone ? 'w-full bg-emerald-500' :
-                          isPickedUp ? 'w-3/4 bg-indigo-500' :
-                          isEnRoute ? 'w-1/2 bg-amber-500' : 'w-1/4 bg-primary'
-                        }`} />
+                      
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                        {/* Step 1: On The Way */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStepOnTheWay(task);
+                          }}
+                          className={`py-1.5 px-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                            task.status === 'pickup_scheduled' || task.status === 'picked_up' || task.status === 'completed'
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                              : 'bg-white text-slate-700 hover:bg-amber-50 border border-slate-200 shadow-sm'
+                          }`}
+                          title="Step 1: Mark On the way to collect device"
+                        >
+                          <Truck size={11} className={task.status === 'pickup_scheduled' ? 'animate-bounce text-amber-600' : ''} />
+                          <span>1. On The Way</span>
+                        </button>
+
+                        {/* Step 2: Diagnostic */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStepDiagnostic(task);
+                          }}
+                          className={`py-1.5 px-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                            task.deviceCollected || task.status === 'picked_up' || task.status === 'completed'
+                              ? 'bg-indigo-100 text-indigo-900 border border-indigo-300'
+                              : 'bg-white text-slate-700 hover:bg-indigo-50 border border-slate-200 shadow-sm'
+                          }`}
+                          title="Step 2: 12-Point Doorstep Diagnostic"
+                        >
+                          <ClipboardCheck size={11} className="text-indigo-600" />
+                          <span>2. Diagnostic</span>
+                        </button>
+
+                        {/* Step 3: Amount Paid */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenPayoutModal(task);
+                          }}
+                          className={`py-1.5 px-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                            task.paymentStatus === 'paid'
+                              ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                              : 'bg-white text-slate-700 hover:bg-emerald-50 border border-slate-200 shadow-sm'
+                          }`}
+                          title="Step 3: Disburse Doorstep Instant Payout"
+                        >
+                          <IndianRupee size={11} className={task.paymentStatus === 'paid' ? 'text-emerald-600' : ''} />
+                          <span>3. Amount Paid</span>
+                        </button>
+
+                        {/* Step 4: Order Completed */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCompleteOrder(task);
+                          }}
+                          className={`py-1.5 px-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                            task.status === 'completed'
+                              ? 'bg-teal-100 text-teal-900 border border-teal-300'
+                              : 'bg-white text-slate-700 hover:bg-teal-50 border border-slate-200 shadow-sm'
+                          }`}
+                          title="Step 4: Complete and deposit to partner hub"
+                        >
+                          <CheckCircle2 size={11} className="text-teal-600" />
+                          <span>4. Completed</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Status Changer & Transferred Partner Info */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+                      <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[11px]">
+                        <Store size={12} className="text-amber-600" />
+                        <span>Partner: <strong className="text-slate-700">{task.partnerName || 'Pixel Pro Tech Hub'}</strong></span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-bold text-slate-400">Status:</span>
+                        <select
+                          value={task.status}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleUpdateOrderStatus(task, e.target.value as OrderStatus);
+                          }}
+                          className="text-[11px] font-bold py-1 px-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                        >
+                          <option value="assigned">Assigned</option>
+                          <option value="pickup_scheduled">On the way (En Route)</option>
+                          <option value="inspection">Diagnostic (Inspection)</option>
+                          <option value="picked_up">Device Collected</option>
+                          <option value="completed">Completed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
                       </div>
                     </div>
                   </div>
 
                   {/* ─── ACTION BUTTONS BAR ───────────────────────────── */}
-                  <div className="p-4 bg-slate-50/60 border-t border-slate-100 flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTask(task)}
-                      className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                      title="Inspect Details"
-                    >
-                      <Eye size={15} />
-                    </button>
-
-                    <a
-                      href={`tel:${task.customerPhone}`}
-                      className="p-2.5 rounded-xl bg-white border border-slate-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 transition-colors"
-                      title={`Call ${task.customerPhone}`}
-                    >
-                      <Phone size={15} />
-                    </a>
-
-                    <a
-                      href={mapUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2.5 rounded-xl bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors"
-                      title="Open GPS Navigation"
-                    >
-                      <Navigation size={15} />
-                    </a>
-
-                    {/* Dynamic Primary CTA */}
-                    {isAssigned && (
-                      <div className="flex-1 flex gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleStartPickup(task)}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2.5 rounded-xl bg-slate-900 text-white text-xs font-black hover:bg-slate-800 transition-all cursor-pointer"
-                        >
-                          <Truck size={13} /> En Route
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openInspectionModal(task)}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2.5 rounded-xl bg-gradient-to-r from-primary to-emerald-600 text-white text-xs font-black shadow-md shadow-primary/20 hover:opacity-95 transition-all cursor-pointer"
-                        >
-                          <ClipboardCheck size={13} /> Inspect
-                        </button>
-                      </div>
-                    )}
-
-                    {isEnRoute && (
+                  <div className="p-3.5 bg-slate-50/80 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {/* Chat Button (Opens Chat Modal with Customer & Partner tabs) */}
                       <button
                         type="button"
-                        onClick={() => openInspectionModal(task)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-black shadow-md shadow-blue-600/20 hover:opacity-95 transition-all cursor-pointer"
+                        onClick={() => setChatModalOrder(task)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 text-xs font-bold transition-all shadow-sm cursor-pointer"
+                        title="Chat with Customer or Partner"
                       >
-                        <ClipboardCheck size={14} /> 12-Pt Inspect &amp; Collect
+                        <MessageSquare size={13} />
+                        <span>Chat</span>
                       </button>
-                    )}
 
-                    {isPickedUp && (
+                      {/* Call Customer */}
                       <button
                         type="button"
-                        onClick={() => handleCompleteHubDeposit(task)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-black shadow-md shadow-emerald-600/20 hover:opacity-95 transition-all cursor-pointer"
+                        onClick={() => setCallModalTarget({
+                          name: task.customerName,
+                          phone: task.customerPhone,
+                          role: 'Customer',
+                          orderNumber: task.orderNumber
+                        })}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 text-xs font-bold transition-all shadow-sm cursor-pointer"
+                        title={`Call Customer: ${task.customerPhone}`}
                       >
-                        <CheckCircle size={14} /> Deposit to Hub
+                        <Phone size={13} />
+                        <span>User</span>
                       </button>
-                    )}
 
-                    {isDone && (
-                      <div className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200/80">
-                        <CheckCircle size={14} className="text-emerald-600" /> Settled
-                      </div>
-                    )}
+                      {/* Call Partner */}
+                      <button
+                        type="button"
+                        onClick={() => setCallModalTarget({
+                          name: task.partnerName || 'Pixel Pro Tech Hub',
+                          phone: task.partnerPhone || '9845067890',
+                          role: 'Order Transfer Partner',
+                          orderNumber: task.orderNumber
+                        })}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-amber-700 hover:bg-amber-50 hover:border-amber-200 text-xs font-bold transition-all shadow-sm cursor-pointer"
+                        title={`Call Partner: ${task.partnerPhone || '9845067890'}`}
+                      >
+                        <Store size={13} />
+                        <span>Partner</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <a
+                        href={mapUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 rounded-xl bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 transition-colors shadow-sm"
+                        title="Open GPS Navigation"
+                      >
+                        <Navigation size={13} />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTask(task)}
+                        className="p-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors shadow-sm cursor-pointer"
+                        title="View Details"
+                      >
+                        <Eye size={13} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -1234,17 +1435,34 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTask(null);
-                    setOtpVerified(false);
-                    setOtpInput('');
-                  }}
-                  className="w-full max-w-sm mx-auto py-3 bg-slate-900 text-white rounded-2xl font-bold text-xs hover:bg-slate-800 transition-colors cursor-pointer"
-                >
-                  Return to Task Queue
-                </button>
+                <div className="flex flex-col gap-2 max-w-sm mx-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const current = activeTask;
+                      setActiveTask(null);
+                      setOtpVerified(false);
+                      setOtpInput('');
+                      if (current) handleOpenPayoutModal(current);
+                    }}
+                    className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl font-black text-xs hover:opacity-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 cursor-pointer"
+                  >
+                    <IndianRupee size={15} />
+                    <span>Proceed to Step 3: Disburse Payout (₹{finalPayoutToUser.toLocaleString('en-IN')})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTask(null);
+                      setOtpVerified(false);
+                      setOtpInput('');
+                    }}
+                    className="w-full py-3 bg-slate-900 text-white rounded-2xl font-bold text-xs hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    Return to Task Queue
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1307,6 +1525,40 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
               </div>
             </div>
 
+            {/* Transferred Partner Card */}
+            <div className="bg-amber-50/70 rounded-2xl p-4 border border-amber-200/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Order Transfer Partner</span>
+                  <p className="font-bold text-slate-900 text-sm mt-0.5">{selectedTask.partnerName || 'Pixel Pro Tech Hub'}</p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setChatModalOrder(selectedTask)}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-white border border-amber-300 text-amber-900 rounded-xl text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer"
+                  >
+                    <MessageSquare size={13} /> Chat Partner
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCallModalTarget({
+                      name: selectedTask.partnerName || 'Pixel Pro Tech Hub',
+                      phone: selectedTask.partnerPhone || '9845067890',
+                      role: 'Order Transfer Partner',
+                      orderNumber: selectedTask.orderNumber
+                    })}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-700 transition-colors cursor-pointer"
+                  >
+                    <Phone size={13} /> Call Partner
+                  </button>
+                </div>
+              </div>
+              <p className="text-[11px] text-amber-800">
+                Partner Phone: <strong>{selectedTask.partnerPhone || '9845067890'}</strong> &bull; Partner assigned this order for doorstep execution.
+              </p>
+            </div>
+
             {/* Customer & Location */}
             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-3">
               <div className="flex items-center justify-between">
@@ -1314,12 +1566,27 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Customer</span>
                   <p className="font-bold text-slate-900 text-sm mt-0.5">{selectedTask.customerName}</p>
                 </div>
-                <a
-                  href={`tel:${selectedTask.customerPhone}`}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold hover:bg-emerald-200 transition-colors"
-                >
-                  <Phone size={13} /> {selectedTask.customerPhone}
-                </a>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setChatModalOrder(selectedTask)}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-50 transition-colors cursor-pointer"
+                  >
+                    <MessageSquare size={13} /> Chat User
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCallModalTarget({
+                      name: selectedTask.customerName,
+                      phone: selectedTask.customerPhone,
+                      role: 'Customer',
+                      orderNumber: selectedTask.orderNumber
+                    })}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold hover:bg-emerald-200 transition-colors cursor-pointer"
+                  >
+                    <Phone size={13} /> Call User
+                  </button>
+                </div>
               </div>
 
               <div className="pt-2 border-t border-slate-200/60">
@@ -1327,6 +1594,93 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
                 <p className="text-xs font-medium text-slate-700 mt-1 leading-relaxed">
                   📍 {selectedTask.customerAddress || 'Address on file'}, {selectedTask.city} - {selectedTask.pinCode}
                 </p>
+              </div>
+            </div>
+
+            {/* 4-Step Pipeline Actions Inside Modal */}
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-2.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-black text-slate-700 uppercase tracking-wider text-[10px]">
+                  4-Step Workflow Actions
+                </span>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded capitalize ${getOrderStatusColor(selectedTask.status)}`}>
+                  {selectedTask.status.replace(/_/g, ' ')}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleStepOnTheWay(selectedTask)}
+                  className={`p-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    selectedTask.status === 'pickup_scheduled' || selectedTask.status === 'picked_up' || selectedTask.status === 'completed'
+                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-amber-50'
+                  }`}
+                >
+                  <Truck size={14} className="text-amber-600" />
+                  <span>1. On The Way</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = selectedTask;
+                    setSelectedTask(null);
+                    openInspectionModal(target);
+                  }}
+                  className={`p-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    selectedTask.deviceCollected || selectedTask.status === 'picked_up' || selectedTask.status === 'completed'
+                      ? 'bg-indigo-100 text-indigo-900 border border-indigo-300'
+                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50'
+                  }`}
+                >
+                  <ClipboardCheck size={14} className="text-indigo-600" />
+                  <span>2. 12-Pt Diagnostic</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenPayoutModal(selectedTask)}
+                  className={`p-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    selectedTask.paymentStatus === 'paid'
+                      ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50'
+                  }`}
+                >
+                  <IndianRupee size={14} className="text-emerald-600" />
+                  <span>3. Amount Paid</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleCompleteOrder(selectedTask)}
+                  className={`p-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    selectedTask.status === 'completed'
+                      ? 'bg-teal-100 text-teal-900 border border-teal-300'
+                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-teal-50'
+                  }`}
+                >
+                  <CheckCircle2 size={14} className="text-teal-600" />
+                  <span>4. Complete Order</span>
+                </button>
+              </div>
+
+              {/* Status Select inside modal */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-xs">
+                <span className="font-bold text-slate-500">Manual Status Change:</span>
+                <select
+                  value={selectedTask.status}
+                  onChange={(e) => handleUpdateOrderStatus(selectedTask, e.target.value as OrderStatus)}
+                  className="font-bold py-1.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                >
+                  <option value="assigned">Assigned</option>
+                  <option value="pickup_scheduled">On the way (En Route)</option>
+                  <option value="inspection">Diagnostic (Inspection)</option>
+                  <option value="picked_up">Device Collected</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
               </div>
             </div>
 
@@ -1343,28 +1697,144 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
                 <Navigation size={14} /> Open Maps
               </a>
 
-              {!selectedTask.deviceCollected ? (
-                <button
-                  onClick={() => {
-                    const target = selectedTask;
-                    setSelectedTask(null);
-                    openInspectionModal(target);
-                  }}
-                  className="flex-1 py-3.5 bg-gradient-to-r from-primary to-emerald-600 text-white rounded-2xl text-xs font-black hover:opacity-95 transition-opacity flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 cursor-pointer"
-                >
-                  <ClipboardCheck size={14} /> Doorstep 12-Pt Inspect
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleCompleteHubDeposit(selectedTask)}
-                  className="flex-1 py-3.5 bg-emerald-600 text-white rounded-2xl text-xs font-black hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
-                >
-                  <CheckCircle size={14} /> Deposit to Hub
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setSelectedTask(null)}
+                className="py-3.5 px-5 bg-slate-100 text-slate-700 rounded-2xl text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* ─── MODAL 3: DOORSTEP SPOT AMOUNT PAID (STEP 3) ────────────────── */}
+      {payoutModalTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setPayoutModalTask(null)} />
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 z-10 border border-slate-100 animate-in fade-in zoom-in-95 duration-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <IndianRupee size={18} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Doorstep Payout (Step 3)</h3>
+                  <p className="text-[11px] text-slate-400 font-mono">{payoutModalTask.orderNumber}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPayoutModalTask(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            {/* Payout Summary */}
+            <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-4 shadow-md">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-200">Amount To Disburse</span>
+              <p className="text-3xl font-black mt-0.5">
+                ₹{(payoutModalTask.finalPrice || payoutModalTask.quotedPrice).toLocaleString('en-IN')}
+              </p>
+              <div className="mt-2 pt-2 border-t border-white/20 text-xs flex justify-between text-emerald-100">
+                <span>Customer: <strong>{payoutModalTask.customerName}</strong></span>
+                <span>{payoutModalTask.customerPhone}</span>
+              </div>
+            </div>
+
+            {/* Payment Method Selector */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Select Payout Mode *</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'upi', label: 'UPI / QR', desc: 'GPay/PhonePe' },
+                  { id: 'imps', label: 'IMPS Bank', desc: 'Direct Transfer' },
+                  { id: 'cash', label: 'Cash Spot', desc: 'Physical Cash' },
+                ].map((mode) => (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    onClick={() => setPayoutMethod(mode.id as any)}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                      payoutMethod === mode.id
+                        ? 'border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-500/20 text-emerald-900'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <p className="text-xs font-black">{mode.label}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{mode.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Optional UTR / Reference */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Transaction Reference / UTR Number (Optional)
+              </label>
+              <input
+                type="text"
+                value={payoutRef}
+                onChange={(e) => setPayoutRef(e.target.value)}
+                placeholder="e.g. 402819284910 or Cash Receipt #"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setPayoutModalTask(null)}
+                className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmAmountPaid}
+                disabled={isProcessingPayout}
+                className="flex-1 py-3 rounded-xl bg-emerald-600 text-white text-xs font-black hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+              >
+                {isProcessingPayout ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                <span>Confirm Amount Paid</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL 4: ORDER CHAT (PARTNER & USER) ────────────────────────── */}
+      <OrderChatModal
+        isOpen={Boolean(chatModalOrder)}
+        onClose={() => setChatModalOrder(null)}
+        order={chatModalOrder}
+        currentRole="delivery"
+        currentUserName={currentAgentName}
+        currentUserPhone={currentAgentPhone}
+        onOpenCall={(target) => {
+          setCallModalTarget({
+            name: target.name,
+            phone: target.phone,
+            role: target.role,
+            orderNumber: chatModalOrder?.orderNumber
+          });
+        }}
+      />
+
+      {/* ─── MODAL 5: ORDER CALL (PARTNER & USER) ────────────────────────── */}
+      {callModalTarget && (
+        <OrderCallModal
+          isOpen={Boolean(callModalTarget)}
+          onClose={() => setCallModalTarget(null)}
+          contactName={callModalTarget.name}
+          contactPhone={callModalTarget.phone}
+          contactRole={callModalTarget.role}
+          orderNumber={callModalTarget.orderNumber}
+        />
       )}
 
       {/* Lightbox for Photos */}
