@@ -92,6 +92,15 @@ export interface Order {
   deviceCollected?: boolean;
   collectedAt?: string | null;
   deviceImei?: string | null;
+  deviceVerificationId?: string | null;
+  deviceVerificationStatus?: 'verified' | 'failed' | 'mismatch' | 'pending' | null;
+  imeiMasked?: string | null;
+  brandVerified?: boolean;
+  modelVerified?: boolean;
+  variantVerified?: boolean;
+  blacklistStatus?: 'clean' | 'blacklisted' | 'unknown' | null;
+  verificationProvider?: string | null;
+  verificationTimestamp?: string | null;
   inspectionNotes?: string | null;
   pickupDate: string;
   pickupSlot: string;

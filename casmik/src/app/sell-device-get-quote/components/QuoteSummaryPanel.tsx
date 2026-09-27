@@ -1,8 +1,9 @@
 'use client';
-import React from 'react';
-import { CheckCircle, Star, Phone, MessageCircle, TrendingDown, TrendingUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle, Star, Phone, MessageCircle, TrendingDown, TrendingUp, ShieldCheck, Lock, ExternalLink } from 'lucide-react';
 import type { SellState } from './SellDeviceWorkflow';
 import { deviceModels } from '@/lib/casmikData';
+import FullVerificationReportModal from './FullVerificationReportModal';
 
 interface Props {
   sellState: SellState;
@@ -10,8 +11,10 @@ interface Props {
 }
 
 export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
+  const [showReportModal, setShowReportModal] = useState(false);
   const hasDevice = sellState.model !== null;
   const hasPrice = sellState.currentPrice > 0;
+  const isVerified = sellState.deviceVerification?.status === 'verified';
 
   const matchedModel = deviceModels.find(m => m.id === sellState.model || m.slug === sellState.model);
 
@@ -110,6 +113,66 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
               )}
             </div>
 
+            {/* DEVICE VERIFICATION (Section 15) */}
+            <div className="border-t border-border pt-3.5 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <ShieldCheck size={14} className={isVerified ? 'text-emerald-600' : 'text-slate-400'} />
+                  Device Verification
+                </span>
+                {isVerified ? (
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                    ✓ Verified
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Lock size={10} /> Required
+                  </span>
+                )}
+              </div>
+
+              {isVerified && sellState.deviceVerification ? (
+                <div className="bg-slate-50 p-3 rounded-xl border border-border/70 space-y-1.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">IMEI</span>
+                    <span className="font-mono font-bold text-foreground">
+                      {sellState.deviceVerification.identifiers.maskedImei}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Brand</span>
+                    <span className="font-semibold text-foreground">{sellState.deviceVerification.device.brand}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Model</span>
+                    <span className="font-semibold text-foreground truncate max-w-[140px]">{sellState.deviceVerification.device.model}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Variant</span>
+                    <span className="font-semibold text-foreground">{sellState.deviceVerification.device.storage || sellState.storage || 'Standard'}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1 border-t border-border/50">
+                    <span className="text-[11px] text-muted-foreground">Verification ID</span>
+                    <span className="font-mono font-bold text-[11px] text-primary">{sellState.deviceVerification.verificationId}</span>
+                  </div>
+                  <div className="pt-1.5">
+                    <button
+                      onClick={() => setShowReportModal(true)}
+                      className="w-full py-1.5 px-2 bg-white hover:bg-slate-100 border border-border text-foreground font-bold text-[11px] rounded-lg transition-colors flex items-center justify-center gap-1"
+                    >
+                      <ExternalLink size={11} />
+                      <span>View Details</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-dashed border-border text-xs text-muted-foreground flex items-center gap-2">
+                  <Lock size={13} className="text-slate-400 flex-shrink-0" />
+                  <span>Verify device to unlock final quote</span>
+                </div>
+              )}
+            </div>
+
             {/* Divider */}
             <div className="border-t-2 border-dashed border-border pt-3 mb-4">
               <div className="flex items-center justify-between">
@@ -130,6 +193,13 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
           </>
         )}
       </div>
+
+      {showReportModal && sellState.deviceVerification && (
+        <FullVerificationReportModal
+          report={sellState.deviceVerification}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
 
       {/* Trust panel */}
       <div className="bg-white rounded-2xl border border-border shadow-sm p-5">

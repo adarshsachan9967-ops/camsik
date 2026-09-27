@@ -9,6 +9,7 @@ import StepConditionQuestions from './StepConditionQuestions';
 import StepQuoteResult from './StepQuoteResult';
 import QuoteSummaryPanel from './QuoteSummaryPanel';
 import { categories, brands, deviceModels } from '@/lib/casmikData';
+import type { DeviceVerificationReport } from '@/lib/deviceVerification/types';
 
 export type SellState = {
   category: string | null;
@@ -23,6 +24,7 @@ export type SellState = {
   currentPrice: number;
   basePrice: number;
   adjustments: { label: string; amount: number; reason: string }[];
+  deviceVerification: DeviceVerificationReport | null;
 };
 
 const INITIAL_STATE: SellState = {
@@ -38,6 +40,7 @@ const INITIAL_STATE: SellState = {
   currentPrice: 0,
   basePrice: 0,
   adjustments: [],
+  deviceVerification: null,
 };
 
 const steps = [
@@ -101,6 +104,7 @@ export default function SellDeviceWorkflow() {
           currentPrice: matchedModel.basePrice,
           basePrice: matchedModel.basePrice,
           adjustments: [],
+          deviceVerification: null,
         });
         setCurrentStep(3); // Land directly on condition inspection questions
         return;
@@ -225,14 +229,14 @@ export default function SellDeviceWorkflow() {
           {currentStep === 0 && (
             <StepCategorySelect
               selected={sellState.category}
-              onSelect={(id, name) => { updateState({ category: id, categoryName: name }); goNext(); }}
+              onSelect={(id, name) => { updateState({ category: id, categoryName: name, deviceVerification: null }); goNext(); }}
             />
           )}
           {currentStep === 1 && (
             <StepBrandSelect
               selected={sellState.brand}
               categoryId={sellState.category}
-              onSelect={(id, name) => { updateState({ brand: id, brandName: name }); goNext(); }}
+              onSelect={(id, name) => { updateState({ brand: id, brandName: name, deviceVerification: null }); goNext(); }}
               onBack={goBack}
             />
           )}
@@ -245,14 +249,20 @@ export default function SellDeviceWorkflow() {
               selectedStorage={sellState.storage}
               selectedColor={sellState.color}
               onSelect={(modelId, modelName, storage, color, basePrice) => {
-                updateState({ model: modelId, modelName, storage, color, basePrice, currentPrice: basePrice, adjustments: [] });
+                updateState({ model: modelId, modelName, storage, color, basePrice, currentPrice: basePrice, adjustments: [], deviceVerification: null });
                 goNext();
               }}
               onBack={goBack}
             />
           )}
           {currentStep === 3 && (
-            <StepConditionQuestions sellState={sellState} onUpdate={updateState} onNext={goNext} onBack={goBack} />
+            <StepConditionQuestions
+              sellState={sellState}
+              onUpdate={updateState}
+              onNext={goNext}
+              onBack={goBack}
+              onSelectModel={() => setCurrentStep(2)}
+            />
           )}
           {currentStep >= 4 && (
             <StepQuoteResult sellState={sellState} onSchedulePickup={() => {}} onBack={goBack} />

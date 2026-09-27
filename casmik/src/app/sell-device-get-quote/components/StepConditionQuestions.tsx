@@ -1,7 +1,9 @@
 'use client';
 import React, { useState, useRef } from 'react';
-import { ChevronLeft, TrendingUp, TrendingDown, X } from 'lucide-react';
+import { ChevronLeft, TrendingUp, TrendingDown, X, Lock } from 'lucide-react';
 import type { SellState } from './SellDeviceWorkflow';
+import DeviceVerificationSection from './DeviceVerificationSection';
+import DeviceVerificationModal from './DeviceVerificationModal';
 
 // Illustrated condition questions with proper answer cards like reference screenshot
 const questions = [
@@ -91,14 +93,16 @@ interface Props {
   onUpdate: (updates: Partial<SellState>) => void;
   onNext: () => void;
   onBack: () => void;
+  onSelectModel?: () => void;
 }
 
-export default function StepConditionQuestions({ sellState, onUpdate, onNext, onBack }: Props) {
+export default function StepConditionQuestions({ sellState, onUpdate, onNext, onBack, onSelectModel }: Props) {
   const [activeQ, setActiveQ] = useState(0);
   const [priceAnimation, setPriceAnimation] = useState<'up' | 'down' | null>(null);
   const [lastDelta, setLastDelta] = useState<number>(0);
   const [modalOption, setModalOption] = useState<typeof questions[0]['options'][0] | null>(null);
   const [modalQuestion, setModalQuestion] = useState<typeof questions[0] | null>(null);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
   const prevPrice = useRef(sellState.currentPrice);
 
   const handleAnswer = (qId: string, optId: string, adjustment: number) => {
@@ -134,6 +138,7 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
   };
 
   const allAnswered = questions.every(q => sellState.answers[q.id]);
+  const isVerified = sellState.deviceVerification?.status === 'verified';
   const progress = (Object.keys(sellState.answers).length / questions.length) * 100;
 
   return (
@@ -230,6 +235,23 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
                 })}
               </div>
 
+              {/* Prominent Device Verification Section immediately ABOVE Get My Quote (Requirement 3) */}
+              {qi === questions.length - 1 && (
+                <DeviceVerificationSection
+                  selectedBrand={sellState.brandName}
+                  selectedModel={sellState.modelName}
+                  selectedVariant={sellState.storage || undefined}
+                  verificationReport={sellState.deviceVerification}
+                  onVerified={(report) => {
+                    onUpdate({ deviceVerification: report });
+                  }}
+                  onRecheck={() => {
+                    onUpdate({ deviceVerification: null });
+                    if (onSelectModel) onSelectModel();
+                  }}
+                />
+              )}
+
               {/* Navigation */}
               <div className="flex items-center justify-between mt-6">
                 <button onClick={() => setActiveQ(q => Math.max(q - 1, 0))} disabled={activeQ === 0}
@@ -241,9 +263,17 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-muted text-sm font-medium text-foreground hover:bg-muted/80 transition-colors">
                     Skip →
                   </button>
-                ) : allAnswered ? (
+                ) : allAnswered && isVerified ? (
                   <button onClick={onNext} className="flex items-center gap-2 px-6 py-2.5 gradient-green text-white rounded-xl font-semibold text-sm shadow-green btn-press">
                     Get My Quote →
+                  </button>
+                ) : allAnswered ? (
+                  <button
+                    onClick={() => setShowVerifyModal(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-md transition-all btn-press"
+                  >
+                    <Lock size={14} className="text-emerald-400" />
+                    <span>Verify Device to Unlock Quote →</span>
                   </button>
                 ) : null}
               </div>
@@ -252,13 +282,37 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
         </div>
       </div>
 
-      {/* Continue button */}
+      {/* Continue button (Section 16 & 34) */}
       {allAnswered && (
         <div className="fade-in">
-          <button onClick={onNext} className="w-full py-4 gradient-green text-white rounded-2xl font-bold text-base shadow-green btn-press">
-            🎉 Get My Final Quote — ₹{sellState.currentPrice.toLocaleString('en-IN')}
-          </button>
+          {isVerified ? (
+            <button onClick={onNext} className="w-full py-4 gradient-green text-white rounded-2xl font-bold text-base shadow-green btn-press">
+              🎉 Get My Final Quote — ₹{sellState.currentPrice.toLocaleString('en-IN')}
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowVerifyModal(true)}
+              className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold text-base shadow-md btn-press flex items-center justify-center gap-2.5 transition-all"
+            >
+              <Lock size={18} className="text-emerald-400" />
+              <span>🔒 Verify Device to Get Quote — ₹{sellState.currentPrice.toLocaleString('en-IN')}</span>
+            </button>
+          )}
         </div>
+      )}
+
+      {/* Verification Modal triggered from bottom CTA or button */}
+      {showVerifyModal && (
+        <DeviceVerificationModal
+          selectedBrand={sellState.brandName}
+          selectedModel={sellState.modelName}
+          selectedVariant={sellState.storage || undefined}
+          onSuccess={(report) => {
+            onUpdate({ deviceVerification: report });
+            setShowVerifyModal(false);
+          }}
+          onClose={() => setShowVerifyModal(false)}
+        />
       )}
 
       {/* Answer Detail Modal — like reference screenshot */}
