@@ -154,7 +154,12 @@ export default function DeliveryPage() {
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'dashboard': return <DeliveryDashboard />;
+      case 'dashboard': return (
+        <DeliveryDashboard
+          onNavigateToTasks={() => setActiveSection('tasks')}
+          onNavigateToEarnings={() => setActiveSection('earnings')}
+        />
+      );
       case 'tasks': return <DeliveryTasks onOpenInspection={(orderId) => {
         if (typeof window !== 'undefined' && orderId) {
           localStorage.setItem('casmik_delivery_active_inspection_id', orderId);

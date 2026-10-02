@@ -15,9 +15,10 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [orderCount, setOrderCount] = useState<number>(50);
-  const [rentalOrderCount, setRentalOrderCount] = useState<number>(4);
+  const [rentalOrderCount, setRentalOrderCount] = useState<number>(0);
   const [partnerCount, setPartnerCount] = useState<number>(3);
-  const [supportCount, setSupportCount] = useState<number>(2);
+  const [supportCount, setSupportCount] = useState<number>(5);
+  const [unreadNotifCount, setUnreadNotifCount] = useState<number>(0);
 
   useEffect(() => {
     const updateCounts = () => {
@@ -30,7 +31,23 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
         const rawRental = localStorage.getItem('casmik_rental_orders_v1');
         if (rawRental) {
           const list = JSON.parse(rawRental);
-          if (Array.isArray(list)) setRentalOrderCount(list.length);
+          if (Array.isArray(list)) {
+            setRentalOrderCount(list.length);
+          } else {
+            setRentalOrderCount(0);
+          }
+        } else {
+          // Check if any rent orders exist in casmik_orders_v1
+          if (rawOrders) {
+            const list = JSON.parse(rawOrders);
+            if (Array.isArray(list)) {
+              setRentalOrderCount(list.filter((o: any) => o.type === 'rent').length);
+            } else {
+              setRentalOrderCount(0);
+            }
+          } else {
+            setRentalOrderCount(0);
+          }
         }
         const rawPartners = localStorage.getItem('casmik_partners_v1');
         if (rawPartners) {
@@ -41,22 +58,42 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
         if (rawTickets) {
           const list = JSON.parse(rawTickets);
           if (Array.isArray(list)) {
-            const activeTickets = list.filter((t: any) => t.status !== 'resolved' && t.status !== 'closed');
-            setSupportCount(activeTickets.length);
+            const openTickets = list.filter((t: any) => t.status === 'open');
+            setSupportCount(openTickets.length);
           }
+        } else {
+          setSupportCount(5); // default initial open tickets count
+        }
+        const rawNotifs = localStorage.getItem('casmik_notifications_v1');
+        if (rawNotifs) {
+          const list = JSON.parse(rawNotifs);
+          if (Array.isArray(list)) {
+            const unread = list.filter((n: any) => !n.read && (n.targetRole === 'admin' || n.targetRole === 'all')).length;
+            setUnreadNotifCount(unread);
+          }
+        } else {
+          setUnreadNotifCount(0);
         }
       } catch {}
     };
 
     updateCounts();
     window.addEventListener('casmik_orders_updated', updateCounts);
+    window.addEventListener('casmik_rental_orders_updated', updateCounts);
     window.addEventListener('casmik_partner_orders_updated', updateCounts);
     window.addEventListener('casmik_partners_updated', updateCounts);
+    window.addEventListener('casmik_tickets_updated', updateCounts);
+    window.addEventListener('casmik_notification_updated', updateCounts);
+    window.addEventListener('casmik_notification_received', updateCounts);
     window.addEventListener('storage', updateCounts);
     return () => {
       window.removeEventListener('casmik_orders_updated', updateCounts);
+      window.removeEventListener('casmik_rental_orders_updated', updateCounts);
       window.removeEventListener('casmik_partner_orders_updated', updateCounts);
       window.removeEventListener('casmik_partners_updated', updateCounts);
+      window.removeEventListener('casmik_tickets_updated', updateCounts);
+      window.removeEventListener('casmik_notification_updated', updateCounts);
+      window.removeEventListener('casmik_notification_received', updateCounts);
       window.removeEventListener('storage', updateCounts);
     };
   }, []);
@@ -65,7 +102,7 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
     { group: 'Overview', items: [{ id: 'overview', icon: LayoutDashboard, label: 'Dashboard' }] },
     { group: 'Orders', items: [
       { id: 'orders', icon: ShoppingBag, label: 'All Orders', badge: orderCount, badgeColor: 'bg-red-500' },
-      { id: 'rental_orders', icon: Camera, label: 'Rental Bookings', badge: rentalOrderCount > 0 ? rentalOrderCount : 'Live', badgeColor: 'bg-rose-500' },
+      { id: 'rental_orders', icon: Camera, label: 'Rental Bookings', badge: rentalOrderCount > 0 ? rentalOrderCount : undefined, badgeColor: 'bg-rose-500' },
     ]},
     { group: 'Catalog', items: [
       { id: 'categories', icon: Tag, label: 'Categories' },
@@ -89,12 +126,12 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
       { id: 'coupons', icon: Percent, label: 'Coupons & Offers' },
     ]},
     { group: 'Support', items: [
-      { id: 'support_tickets', icon: MessageSquare, label: 'Support Tickets', badge: supportCount, badgeColor: 'bg-red-500' },
+      { id: 'support_tickets', icon: MessageSquare, label: 'Support Tickets', badge: supportCount > 0 ? supportCount : undefined, badgeColor: 'bg-red-500' },
     ]},
     { group: 'Content & Tools', items: [
       { id: 'cms', icon: FileText, label: 'CMS' },
       { id: 'reports', icon: BarChart3, label: 'Reports' },
-      { id: 'notifications', icon: Bell, label: 'Notifications', badge: 5, badgeColor: 'bg-red-500' },
+      { id: 'notifications', icon: Bell, label: 'Notifications', badge: unreadNotifCount > 0 ? unreadNotifCount : undefined, badgeColor: 'bg-red-500' },
       { id: 'push_notifications', icon: Send, label: 'Push Notifications' },
       { id: 'settings', icon: Settings, label: 'Settings' },
     ]},

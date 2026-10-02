@@ -100,11 +100,11 @@ export default function DeliveryInspection({ initialOrderId, onBackToTasks }: De
     const list = getStoredOrders();
     const targetId = initialOrderId || (typeof window !== 'undefined' ? localStorage.getItem('casmik_delivery_active_inspection_id') : null);
     if (targetId) {
-      const match = list.find(o => o.id === targetId || o.orderNumber === targetId);
+      const match = list.find(o => (o.id === targetId || o.orderNumber === targetId) && o.status !== 'completed' && !o.deviceCollected);
       if (match) return match;
     }
-    const readyOrder = list.find(o => ['pickup_scheduled', 'assigned', 'accepted', 'picked_up'].includes(o.status));
-    return readyOrder || list[0] || null;
+    const readyOrder = list.find(o => ['pickup_scheduled', 'assigned', 'accepted', 'in_transit', 'inspection'].includes(o.status) && o.status !== 'completed' && !o.deviceCollected);
+    return readyOrder || null;
   });
 
   const [inspectionResults, setInspectionResults] = useState<Record<string, 'pass' | 'fail' | 'na'>>({});
@@ -126,14 +126,26 @@ export default function DeliveryInspection({ initialOrderId, onBackToTasks }: De
   const reloadOrders = () => {
     const list = getStoredOrders();
     setOrdersList(list);
+    const activeOrders = list.filter(o => o.status !== 'completed' && o.status !== 'cancelled' && !o.deviceCollected && ['pickup_scheduled', 'assigned', 'accepted', 'in_transit', 'inspection'].includes(o.status));
     const targetId = initialOrderId || (typeof window !== 'undefined' ? localStorage.getItem('casmik_delivery_active_inspection_id') : null);
-    if (targetId) {
-      const match = list.find(o => o.id === targetId || o.orderNumber === targetId);
-      if (match) {
-        setSelectedOrder(match);
-        if (match.deviceImei) setImei(match.deviceImei);
+    
+    setSelectedOrder(prev => {
+      if (prev) {
+        const fresh = list.find(o => o.id === prev.id);
+        if (fresh && fresh.status !== 'completed' && !fresh.deviceCollected && fresh.status !== 'cancelled') {
+          if (fresh.deviceImei) setImei(fresh.deviceImei);
+          return fresh;
+        }
       }
-    }
+      if (targetId) {
+        const match = activeOrders.find(o => o.id === targetId || o.orderNumber === targetId);
+        if (match) {
+          if (match.deviceImei) setImei(match.deviceImei);
+          return match;
+        }
+      }
+      return activeOrders[0] || null;
+    });
   };
 
   useEffect(() => {
@@ -221,14 +233,12 @@ export default function DeliveryInspection({ initialOrderId, onBackToTasks }: De
     ? parseInt(customPriceOverride, 10) || calculatedExactPayout
     : calculatedExactPayout;
 
-  // Filter orders assigned to rider or available for doorstep pickup
+  // Filter orders assigned to rider or available for doorstep pickup that still require inspection
   const eligibleOrders = ordersList.filter(o => 
-    o.status === 'pickup_scheduled' || 
-    o.status === 'assigned' || 
-    o.status === 'accepted' || 
-    o.status === 'picked_up' || 
-    o.status === 'inspection' ||
-    o.id === selectedOrder?.id
+    o.status !== 'completed' && 
+    o.status !== 'cancelled' &&
+    !o.deviceCollected &&
+    ['pickup_scheduled', 'assigned', 'accepted', 'in_transit', 'inspection'].includes(o.status)
   );
 
   const handleVerifyOtpAndCollect = async () => {
@@ -319,6 +329,10 @@ export default function DeliveryInspection({ initialOrderId, onBackToTasks }: De
       customerName: selectedOrder.customerName,
       status: 'picked_up'
     });
+
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('casmik_delivery_active_inspection_id');
+    }
 
     setFinalCollectedOrder(updatedOrder);
     setSubmitted(true);
@@ -917,10 +931,22 @@ export default function DeliveryInspection({ initialOrderId, onBackToTasks }: De
 
         </div>
       ) : (
-        <div className="text-center py-16 bg-white rounded-3xl border border-slate-200/80 shadow-sm">
-          <ClipboardCheck size={48} className="mx-auto text-slate-300 mb-3" />
-          <p className="text-slate-700 font-bold text-base">No pickup task selected for inspection</p>
-          <p className="text-xs text-slate-400 mt-1">Please select an assigned pickup order from above or return to tasks</p>
+        <div className="text-center py-16 bg-white rounded-3xl border border-slate-200/80 shadow-sm p-8">
+          <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-emerald-100">
+            <CheckCircle2 size={36} />
+          </div>
+          <h3 className="text-lg font-black text-slate-900">All Assigned Pickups Inspected!</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-6">
+            There are no pending doorstep inspections in your queue. All assigned devices have been evaluated and collected.
+          </p>
+          {onBackToTasks && (
+            <button
+              onClick={onBackToTasks}
+              className="px-6 py-3 bg-primary text-white rounded-2xl text-xs font-black hover:opacity-95 shadow-md shadow-primary/20 transition-all cursor-pointer inline-flex items-center gap-2"
+            >
+              <Package size={15} /> Return to Task Queue
+            </button>
+          )}
         </div>
       )}
 

@@ -49,13 +49,43 @@ const userTypeIcons: Record<TicketUserType, React.ElementType> = { user: User, p
 const userTypeColors: Record<TicketUserType, string> = { user: 'bg-blue-50 text-blue-700', partner: 'bg-purple-50 text-purple-700', delivery: 'bg-green-50 text-green-700' };
 
 export default function AdminSupportTickets() {
-  const [tickets, setTickets] = useState(initialTickets);
+  const [tickets, setTickets] = useState<SupportTicket[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('casmik_tickets_v1');
+        if (raw) {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list) && list.length > 0) return list;
+        }
+        localStorage.setItem('casmik_tickets_v1', JSON.stringify(initialTickets));
+      } catch {}
+    }
+    return initialTickets;
+  });
+
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [replyText, setReplyText] = useState('');
   const [showNewTicket, setShowNewTicket] = useState(false);
+
+  // Form states for creating ticket
+  const [newRaisedBy, setNewRaisedBy] = useState<TicketUserType>('user');
+  const [newPriority, setNewPriority] = useState<TicketPriority>('medium');
+  const [newSubject, setNewSubject] = useState('');
+  const [newCategory, setNewCategory] = useState('Payment');
+  const [newDescription, setNewDescription] = useState('');
+
+  const syncTickets = (updatedList: SupportTicket[]) => {
+    setTickets(updatedList);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('casmik_tickets_v1', JSON.stringify(updatedList));
+        window.dispatchEvent(new CustomEvent('casmik_tickets_updated'));
+      } catch {}
+    }
+  };
 
   const filtered = tickets.filter(t => {
     const matchSearch = t.subject.toLowerCase().includes(search.toLowerCase()) || t.ticketNumber.toLowerCase().includes(search.toLowerCase()) || t.userName.toLowerCase().includes(search.toLowerCase());
@@ -68,14 +98,42 @@ export default function AdminSupportTickets() {
     if (!replyText.trim() || !selectedTicket) return;
     const reply: TicketReply = { id: `r-${Date.now()}`, author: 'Admin Support', authorType: 'admin', message: replyText, createdAt: new Date().toISOString() };
     const updated = { ...selectedTicket, replies: [...selectedTicket.replies, reply], status: 'in_progress' as TicketStatus, updatedAt: new Date().toISOString() };
-    setTickets(prev => prev.map(t => t.id === selectedTicket.id ? updated : t));
+    const updatedList = tickets.map(t => t.id === selectedTicket.id ? updated : t);
+    syncTickets(updatedList);
     setSelectedTicket(updated);
     setReplyText('');
   };
 
   const updateStatus = (ticketId: string, status: TicketStatus) => {
-    setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status, updatedAt: new Date().toISOString() } : t));
+    const updatedList = tickets.map(t => t.id === ticketId ? { ...t, status, updatedAt: new Date().toISOString() } : t);
+    syncTickets(updatedList);
     if (selectedTicket?.id === ticketId) setSelectedTicket(prev => prev ? { ...prev, status } : null);
+  };
+
+  const handleCreateTicket = () => {
+    if (!newSubject.trim()) return;
+    const randNum = Math.floor(100 + Math.random() * 900);
+    const newTkt: SupportTicket = {
+      id: `tkt-${Date.now()}`,
+      ticketNumber: `TKT-2024-${randNum}`,
+      subject: newSubject.trim(),
+      description: newDescription.trim() || 'No additional details provided.',
+      category: newCategory,
+      status: 'open',
+      priority: newPriority,
+      userType: newRaisedBy,
+      userName: newRaisedBy === 'user' ? 'Customer Support' : newRaisedBy === 'partner' ? 'Partner Hub' : 'Delivery Rider',
+      userEmail: 'support@camsik.com',
+      userPhone: '+91 9967853364',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      replies: [],
+    };
+    const updated = [newTkt, ...tickets];
+    syncTickets(updated);
+    setNewSubject('');
+    setNewDescription('');
+    setShowNewTicket(false);
   };
 
   const openCount = tickets.filter(t => t.status === 'open').length;
@@ -91,29 +149,44 @@ export default function AdminSupportTickets() {
           <p className="text-sm text-gray-500">Manage tickets from users, partners and delivery agents</p>
         </div>
         <button onClick={() => setShowNewTicket(true)}
-          className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors">
+          className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors cursor-pointer">
           <Plus size={16} /> Create Ticket
         </button>
       </div>
 
-      {/* Stats */}
+      {/* Stats - Clickable interactive filters */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Tickets', value: tickets.length, icon: MessageSquare, color: 'bg-blue-50 text-blue-600' },
-          { label: 'Open', value: openCount, icon: AlertCircle, color: 'bg-red-50 text-red-600' },
-          { label: 'In Progress', value: inProgressCount, icon: Clock, color: 'bg-yellow-50 text-yellow-600' },
-          { label: 'Resolved', value: resolvedCount, icon: CheckCircle, color: 'bg-green-50 text-green-600' },
-        ].map(s => (
-          <div key={s.label} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.color}`}>
-              <s.icon size={18} />
-            </div>
-            <div>
-              <p className="text-2xl font-black text-gray-900">{s.value}</p>
-              <p className="text-xs text-gray-500">{s.label}</p>
-            </div>
-          </div>
-        ))}
+          { id: 'all', label: 'Total Tickets', value: tickets.length, icon: MessageSquare, color: 'bg-blue-50 text-blue-600', ring: 'ring-blue-500' },
+          { id: 'open', label: 'Open', value: openCount, icon: AlertCircle, color: 'bg-red-50 text-red-600', ring: 'ring-red-500' },
+          { id: 'in_progress', label: 'In Progress', value: inProgressCount, icon: Clock, color: 'bg-yellow-50 text-yellow-600', ring: 'ring-yellow-500' },
+          { id: 'resolved', label: 'Resolved', value: resolvedCount, icon: CheckCircle, color: 'bg-green-50 text-green-600', ring: 'ring-green-500' },
+        ].map(s => {
+          const isActive = filterStatus === s.id;
+          return (
+            <button
+              key={s.id}
+              onClick={() => setFilterStatus(s.id)}
+              className={`bg-white rounded-2xl p-4 border transition-all flex items-center gap-3 text-left cursor-pointer group ${
+                isActive 
+                  ? `ring-2 ${s.ring} border-transparent shadow-md scale-[1.02]` 
+                  : 'border-gray-100 hover:border-gray-300 shadow-sm hover:shadow'
+              }`}
+              title={`Filter by ${s.label}`}
+            >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.color} group-hover:scale-105 transition-transform`}>
+                <s.icon size={18} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-2xl font-black text-gray-900 leading-none">{s.value}</p>
+                <div className="flex items-center gap-1 mt-1">
+                  <p className="text-xs font-semibold text-gray-500 truncate">{s.label}</p>
+                  {isActive && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex gap-5">
@@ -290,37 +363,42 @@ export default function AdminSupportTickets() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-gray-600 mb-1 block">Raised By</label>
-                  <select className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                    <option>User</option><option>Partner</option><option>Delivery Agent</option>
+                  <select value={newRaisedBy} onChange={e => setNewRaisedBy(e.target.value as TicketUserType)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="user">User</option><option value="partner">Partner</option><option value="delivery">Delivery Agent</option>
                   </select>
                 </div>
                 <div>
                   <label className="text-xs font-bold text-gray-600 mb-1 block">Priority</label>
-                  <select className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                    <option>Low</option><option>Medium</option><option>High</option><option>Urgent</option>
+                  <select value={newPriority} onChange={e => setNewPriority(e.target.value as TicketPriority)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option>
                   </select>
                 </div>
               </div>
               <div>
                 <label className="text-xs font-bold text-gray-600 mb-1 block">Subject</label>
-                <input className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Brief subject..." />
+                <input value={newSubject} onChange={e => setNewSubject(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Brief subject..." />
               </div>
               <div>
                 <label className="text-xs font-bold text-gray-600 mb-1 block">Category</label>
-                <select className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                  <option>Payment</option><option>Order</option><option>Account</option><option>Technical</option><option>Product</option><option>Delivery</option><option>Pricing</option>
+                <select value={newCategory} onChange={e => setNewCategory(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  <option value="Payment">Payment</option><option value="Order">Order</option><option value="Account">Account</option><option value="Technical">Technical</option><option value="Product">Product</option><option value="Delivery">Delivery</option><option value="Pricing">Pricing</option>
                 </select>
               </div>
               <div>
                 <label className="text-xs font-bold text-gray-600 mb-1 block">Description</label>
-                <textarea rows={3} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" placeholder="Detailed description..." />
+                <textarea value={newDescription} onChange={e => setNewDescription(e.target.value)}
+                  rows={3} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" placeholder="Detailed description..." />
               </div>
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setShowNewTicket(false)}
-                className="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50">Cancel</button>
-              <button onClick={() => setShowNewTicket(false)}
-                className="flex-1 bg-primary text-white py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90">Create Ticket</button>
+                className="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 cursor-pointer">Cancel</button>
+              <button onClick={handleCreateTicket} disabled={!newSubject.trim()}
+                className="flex-1 bg-primary text-white py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90 disabled:opacity-50 cursor-pointer">Create Ticket</button>
             </div>
           </div>
         </div>

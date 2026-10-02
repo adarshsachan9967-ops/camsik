@@ -40,24 +40,46 @@ export default function DeliveryDashboard({ onNavigateToTasks, onNavigateToEarni
       }
     } catch {}
 
-    try {
-      const savedOrders = localStorage.getItem('casmik_orders_v1');
-      const agentId = agent?.id || 'agent-101';
-      if (savedOrders) {
-        const parsed = JSON.parse(savedOrders);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const myTasks = parsed.filter((o: Order) => Boolean(o.deliveryAgentId) && (o.deliveryAgentId === agentId || o.deliveryAgentId === 'agent-101'));
-          setTaskList(myTasks);
-          return;
+    const loadDashboardData = () => {
+      try {
+        const savedOrders = localStorage.getItem('casmik_orders_v1');
+        const agentId = agent?.id || 'agent-101';
+        if (savedOrders) {
+          const parsed = JSON.parse(savedOrders);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const myTasks = parsed.filter((o: Order) => Boolean(o.deliveryAgentId) && (o.deliveryAgentId === agentId || o.deliveryAgentId === 'agent-101' || o.deliveryAgentId === 'delivery-001'));
+            setTaskList(myTasks);
+            return;
+          }
         }
-      }
-    } catch {}
-    setTaskList(orders.filter(o => Boolean(o.deliveryAgentId) && (o.deliveryAgentId === 'agent-101')));
+      } catch {}
+      setTaskList(orders.filter(o => Boolean(o.deliveryAgentId) && (o.deliveryAgentId === 'agent-101' || o.deliveryAgentId === 'delivery-001')));
+    };
+
+    loadDashboardData();
+    window.addEventListener('casmik_orders_updated', loadDashboardData);
+    window.addEventListener('casmik_partner_orders_updated', loadDashboardData);
+    window.addEventListener('storage', loadDashboardData);
+    return () => {
+      window.removeEventListener('casmik_orders_updated', loadDashboardData);
+      window.removeEventListener('casmik_partner_orders_updated', loadDashboardData);
+      window.removeEventListener('storage', loadDashboardData);
+    };
   }, [agent?.id]);
 
   const pendingPickups = taskList.filter(o => ['assigned', 'accepted', 'pickup_scheduled'].includes(o.status));
   const inTransit = taskList.filter(o => ['picked_up', 'in_transit', 'inspection'].includes(o.status));
   const completedToday = taskList.filter(o => o.status === 'completed' || o.paymentStatus === 'paid');
+
+  const targetPickups = 6;
+  const completedCount = completedToday.length;
+  const isBonusUnlocked = completedCount >= targetPickups;
+  const bonusAmount = isBonusUnlocked ? 300 : 0;
+  const calculatedEarnings = (completedCount * 500) + bonusAmount;
+  const liveEarnings = calculatedEarnings > 0 ? calculatedEarnings : (agent?.earnings || 3200);
+
+  const remainingPickups = Math.max(0, targetPickups - completedCount);
+  const progressPercent = Math.min(100, Math.round((completedCount / targetPickups) * 100));
 
   const nextTask = pendingPickups[0] || inTransit[0] || taskList[0];
 
@@ -127,7 +149,7 @@ export default function DeliveryDashboard({ onNavigateToTasks, onNavigateToEarni
             </div>
             <div className="text-center px-2 sm:px-4">
               <p className="text-xs text-emerald-200 font-bold uppercase tracking-wider">Earned</p>
-              <p className="text-xl sm:text-2xl font-black mt-0.5 text-amber-300">₹{(agent?.earnings || 3200).toLocaleString('en-IN')}</p>
+              <p className="text-xl sm:text-2xl font-black mt-0.5 text-amber-300">₹{liveEarnings.toLocaleString('en-IN')}</p>
               <span className="text-[10px] text-white/70">Today</span>
             </div>
           </div>
@@ -199,7 +221,7 @@ export default function DeliveryDashboard({ onNavigateToTasks, onNavigateToEarni
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <p className="text-3xl font-black text-slate-900">₹{(agent?.earnings || 3200).toLocaleString('en-IN')}</p>
+            <p className="text-3xl font-black text-slate-900">₹{liveEarnings.toLocaleString('en-IN')}</p>
             <span className="text-xs text-emerald-600 font-bold">+23% vs yesterday</span>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
@@ -336,7 +358,10 @@ export default function DeliveryDashboard({ onNavigateToTasks, onNavigateToEarni
         {/* RIGHT COLUMN: PERFORMANCE, GOALS & LIVE HELPLINE (4 Cols) */}
         <div className="xl:col-span-4 space-y-6">
           {/* Daily Goal & Incentive Milestone */}
-          <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 rounded-3xl p-6 text-white shadow-md">
+          <div
+            onClick={onNavigateToEarnings}
+            className="bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 rounded-3xl p-6 text-white shadow-md cursor-pointer hover:shadow-lg transition-all"
+          >
             <div className="flex items-center justify-between mb-3">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/20 text-white">
                 Daily Peak Incentive
@@ -346,21 +371,28 @@ export default function DeliveryDashboard({ onNavigateToTasks, onNavigateToEarni
 
             <h3 className="text-xl font-black">₹300 Extra Bonus Target</h3>
             <p className="text-xs text-amber-100 mt-1 leading-relaxed">
-              Complete <strong>2 more pickups</strong> before 6:00 PM today to unlock the full daily speed milestone bonus.
+              {isBonusUnlocked ? (
+                <span>🎉 <strong>Target Complete!</strong> You completed all 6 pickups and unlocked the daily ₹300 speed bonus!</span>
+              ) : (
+                <span>Complete <strong>{remainingPickups} more pickup{remainingPickups > 1 ? 's' : ''}</strong> before 6:00 PM today to unlock the full daily speed milestone bonus.</span>
+              )}
             </p>
 
             <div className="mt-4 bg-black/20 rounded-2xl p-3">
               <div className="flex items-center justify-between text-xs font-bold mb-1">
-                <span>Progress: 4 of 6 pickups</span>
-                <span>66%</span>
+                <span>Progress: {completedCount} of {targetPickups} pickups</span>
+                <span>{progressPercent}%</span>
               </div>
               <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: '66%' }} />
+                <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${progressPercent}%` }} />
               </div>
             </div>
 
             <button
-              onClick={onNavigateToEarnings}
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigateToEarnings?.();
+              }}
               className="mt-4 w-full py-2.5 bg-white text-orange-600 rounded-xl text-xs font-black hover:bg-amber-50 transition-colors shadow-sm cursor-pointer"
             >
               View Full Earnings Breakdown →
