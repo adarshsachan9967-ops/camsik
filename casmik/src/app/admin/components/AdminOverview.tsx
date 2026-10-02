@@ -1,6 +1,6 @@
 'use client';
-import React from 'react';
-import { orders, partners, deliveryAgents, customers } from '@/lib/casmikData';
+import React, { useState, useEffect } from 'react';
+import { orders, partners, deliveryAgents, customers, Order, Partner, DeliveryAgent } from '@/lib/casmikData';
 import { TrendingUp, TrendingDown, ShoppingBag, Users, Handshake, Truck, DollarSign, CheckCircle, Clock, Zap, ArrowRight, Eye, ChevronRight, ExternalLink } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import type { AdminSection, AdminNavigationOptions } from '../page';
@@ -28,14 +28,99 @@ interface AdminOverviewProps {
 }
 
 export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
-  const totalRevenue = orders.filter(o => o.paymentStatus === 'paid').reduce((s, o) => s + o.finalPrice, 0);
-  const completedOrders = orders.filter(o => o.status === 'completed').length;
-  const pendingOrders = orders.filter(o => ['created', 'assigned', 'accepted', 'pickup_scheduled'].includes(o.status)).length;
-  const activePartners = partners.filter(p => p.status === 'active').length;
+  const [orderList, setOrderList] = useState<Order[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('casmik_orders_v1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return orders;
+  });
+
+  const [partnersList, setPartnersList] = useState<Partner[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('casmik_partners_v1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return partners;
+  });
+
+  const [agentList, setAgentList] = useState<DeliveryAgent[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('casmik_delivery_agents_v1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return deliveryAgents;
+  });
+
+  useEffect(() => {
+    const syncData = () => {
+      try {
+        const rawOrders = localStorage.getItem('casmik_orders_v1');
+        if (rawOrders) {
+          const parsed = JSON.parse(rawOrders);
+          if (Array.isArray(parsed)) setOrderList(parsed);
+        }
+        const rawPartners = localStorage.getItem('casmik_partners_v1');
+        if (rawPartners) {
+          const parsed = JSON.parse(rawPartners);
+          if (Array.isArray(parsed)) setPartnersList(parsed);
+        }
+        const rawAgents = localStorage.getItem('casmik_delivery_agents_v1');
+        if (rawAgents) {
+          const parsed = JSON.parse(rawAgents);
+          if (Array.isArray(parsed)) setAgentList(parsed);
+        }
+      } catch {}
+    };
+
+    syncData();
+    window.addEventListener('casmik_orders_updated', syncData);
+    window.addEventListener('casmik_partner_orders_updated', syncData);
+    window.addEventListener('casmik_partners_updated', syncData);
+    window.addEventListener('storage', syncData);
+    return () => {
+      window.removeEventListener('casmik_orders_updated', syncData);
+      window.removeEventListener('casmik_partner_orders_updated', syncData);
+      window.removeEventListener('casmik_partners_updated', syncData);
+      window.removeEventListener('storage', syncData);
+    };
+  }, []);
+
+  const totalRevenue = orderList
+    .filter(o => o.paymentStatus === 'paid' || o.status === 'completed')
+    .reduce((s, o) => s + (o.finalPrice || o.quotedPrice || 0), 0);
+  
+  const completedOrders = orderList.filter(o => o.status === 'completed').length;
+  const pendingOrders = orderList.filter(o => ['created', 'assigned', 'accepted', 'pickup_scheduled', 'picked_up', 'in_transit', 'inspection'].includes(o.status)).length;
+  const activePartners = partnersList.filter(p => p.status === 'active').length;
+  const pendingPartners = partnersList.filter(p => p.status === 'pending').length;
+  const onlineAgents = agentList.filter(d => d.status === 'online' || d.status !== 'offline').length;
+  const pendingPayouts = partnersList.reduce((s, p) => s + (p.pendingPayout || 0), 0);
+
+  const customerPhones = new Set(orderList.map(o => o.customerPhone).filter(Boolean));
+  const totalCustomers = Math.max(customerPhones.size, customers.length);
 
   const navigateTo = (section: AdminSection, options?: AdminNavigationOptions) => {
     if (onNavigate) {
       onNavigate(section, options);
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('casmik_admin_navigate', { detail: { section, options } }));
     }
   };
 
@@ -53,19 +138,19 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
     },
     {
       label: 'Total Orders',
-      value: orders.length.toString(),
+      value: orderList.length.toString(),
       sub: '+12.4% vs last week',
       icon: ShoppingBag,
       color: 'bg-blue-50 text-blue-600',
       trend: 'up',
-      actionHint: 'Manage all 47 orders →',
+      actionHint: `Manage all ${orderList.length} orders →`,
       onClick: () => navigateTo('orders', { filterStatus: 'all' }),
       borderHover: 'hover:border-blue-400',
     },
     {
       label: 'Completed',
       value: completedOrders.toString(),
-      sub: `${Math.round(completedOrders / orders.length * 100)}% completion rate`,
+      sub: `${orderList.length > 0 ? Math.round((completedOrders / orderList.length) * 100) : 0}% completion rate`,
       icon: CheckCircle,
       color: 'bg-emerald-50 text-emerald-600',
       trend: 'up',
@@ -87,7 +172,7 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
     {
       label: 'Active Partners',
       value: activePartners.toString(),
-      sub: `${partners.filter(p => p.status === 'pending').length} pending approval`,
+      sub: `${pendingPartners} pending approval`,
       icon: Handshake,
       color: 'bg-purple-50 text-purple-600',
       trend: 'up',
@@ -97,8 +182,8 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
     },
     {
       label: 'Delivery Agents',
-      value: deliveryAgents.length.toString(),
-      sub: `${deliveryAgents.filter(d => d.status === 'online').length} online now`,
+      value: agentList.length.toString(),
+      sub: `${onlineAgents} online now`,
       icon: Truck,
       color: 'bg-cyan-50 text-cyan-600',
       trend: 'up',
@@ -108,7 +193,7 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
     },
     {
       label: 'Customers',
-      value: `${customers.length}+`,
+      value: `${totalCustomers}+`,
       sub: 'Registered users',
       icon: Users,
       color: 'bg-indigo-50 text-indigo-600',
@@ -119,7 +204,7 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
     },
     {
       label: 'Pending Payouts',
-      value: `₹${(partners.reduce((s, p) => s + p.pendingPayout, 0) / 1000).toFixed(0)}K`,
+      value: `₹${pendingPayouts >= 100000 ? (pendingPayouts / 100000).toFixed(1) + 'L' : (pendingPayouts / 1000).toFixed(0) + 'K'}`,
       sub: 'Due to partners',
       icon: Zap,
       color: 'bg-orange-50 text-orange-600',
@@ -130,7 +215,7 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
     },
   ];
 
-  const recentOrders = orders.slice(0, 8);
+  const recentOrders = orderList.slice(0, 8);
 
   return (
     <div className="space-y-6">
@@ -252,9 +337,9 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
           </div>
           <button
             onClick={() => navigateTo('orders')}
-            className="text-xs text-primary font-bold hover:underline flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20 hover:bg-primary/20 transition-all"
+            className="text-xs text-primary font-bold hover:underline flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20 hover:bg-primary/20 transition-all cursor-pointer"
           >
-            View All 47 Orders <ArrowRight size={13} />
+            View All {orderList.length} Orders <ArrowRight size={13} />
           </button>
         </div>
         <div className="overflow-x-auto">

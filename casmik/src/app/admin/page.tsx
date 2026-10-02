@@ -53,6 +53,16 @@ export default function AdminPage() {
     }
   }, [router]);
 
+  useEffect(() => {
+    const handleNavEvent = (e: any) => {
+      if (e.detail?.section) {
+        handleNavigate(e.detail.section, e.detail.options);
+      }
+    };
+    window.addEventListener('casmik_admin_navigate', handleNavEvent);
+    return () => window.removeEventListener('casmik_admin_navigate', handleNavEvent);
+  }, []);
+
   if (isAuthorized !== true) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-white select-none">
