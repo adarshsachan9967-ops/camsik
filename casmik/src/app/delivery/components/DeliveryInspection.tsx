@@ -61,6 +61,7 @@ const photoAngles = [
   { id: 'imei_label', label: 'IMEI / Serial Screen', desc: 'Settings > About screen' },
   { id: 'defect', label: 'Scratch / Defect Close-up', desc: 'Any cosmetic blemish' },
 ];
+const DELIVERY_AGENT_ID = 'delivery-001';
 
 const getStoredOrders = (): Order[] => {
   if (typeof window !== 'undefined') {
@@ -69,12 +70,12 @@ const getStoredOrders = (): Order[] => {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return parsed.filter((o: Order) => Boolean(o.deliveryAgentId) && (o.deliveryAgentId === 'agent-101' || o.deliveryAgentId === DELIVERY_AGENT_ID));
         }
       }
     } catch {}
   }
-  return defaultOrders;
+  return defaultOrders.filter((o: Order) => Boolean(o.deliveryAgentId) && (o.deliveryAgentId === 'agent-101' || o.deliveryAgentId === DELIVERY_AGENT_ID));
 };
 
 interface DeliveryInspectionProps {

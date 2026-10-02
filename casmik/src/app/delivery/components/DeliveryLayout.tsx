@@ -75,7 +75,8 @@ export default function DeliveryLayout({ activeSection, onSectionChange, childre
       const raw = localStorage.getItem('casmik_orders_v1');
       const all = raw ? JSON.parse(raw) : orders;
       const activeTasks = all.filter((o: any) => 
-        (o.deliveryAgentId === agent?.id || o.deliveryAgentId === 'agent-101' || !o.deliveryAgentId) &&
+        Boolean(o.deliveryAgentId) &&
+        (o.deliveryAgentId === agent?.id || o.deliveryAgentId === 'agent-101') &&
         ['assigned', 'accepted', 'pickup_scheduled', 'picked_up'].includes(o.status)
       );
       setTaskCount(activeTasks.length);

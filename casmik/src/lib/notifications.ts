@@ -125,11 +125,22 @@ export function showBrowserNotification(title: string, body: string) {
   if (typeof window === 'undefined' || !('Notification' in window)) return;
   if (Notification.permission === 'granted') {
     try {
-      new Notification(title, {
+      const notif = new Notification(title, {
         body,
         icon: '/favicon.ico',
       });
+      notif.onclick = () => {
+        window.focus();
+      };
     } catch {}
+  } else if (Notification.permission === 'default') {
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') {
+        try {
+          new Notification(title, { body, icon: '/favicon.ico' });
+        } catch {}
+      }
+    }).catch(() => {});
   }
 }
 

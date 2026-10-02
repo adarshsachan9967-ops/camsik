@@ -50,16 +50,25 @@ const getAllowedForwardStatuses = (currentStatus: OrderStatus) => {
 const getStoredPartnerOrders = (): Order[] => {
   if (typeof window !== 'undefined') {
     try {
-      const saved = localStorage.getItem('casmik_partner_orders_v1') || localStorage.getItem('casmik_orders_v1');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.filter((o: Order) => o.partnerId === PARTNER_ID || !o.partnerId || o.partnerId === 'partner-001');
+      const savedPartner = localStorage.getItem('casmik_partner_orders_v1');
+      const savedGlobal = localStorage.getItem('casmik_orders_v1');
+
+      const partnerList: Order[] = savedPartner ? JSON.parse(savedPartner) : [];
+      const globalList: Order[] = savedGlobal ? JSON.parse(savedGlobal) : [];
+
+      const orderMap = new Map<string, Order>();
+      [...globalList, ...partnerList].forEach((o: Order) => {
+        if (o && o.id && Boolean(o.partnerId) && (o.partnerId === PARTNER_ID || o.partnerId === 'partner-001')) {
+          orderMap.set(o.id, o);
         }
+      });
+
+      if (orderMap.size > 0) {
+        return Array.from(orderMap.values());
       }
     } catch (e) {}
   }
-  return defaultOrders.filter(o => o.partnerId === PARTNER_ID || !o.partnerId || o.partnerId === 'partner-001');
+  return defaultOrders.filter(o => Boolean(o.partnerId) && (o.partnerId === PARTNER_ID || o.partnerId === 'partner-001'));
 };
 
 const getAvailableDeliveryAgents = (): DeliveryAgent[] => {
@@ -178,9 +187,20 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
         const res = await fetch(`/api/orders?partnerId=${PARTNER_ID}`);
         if (res.ok) {
           const data = await res.json();
-          if (data.success && Array.isArray(data.orders) && data.orders.length > 0) {
-            setOrderList(data.orders);
-            setSelectedOrder(prev => prev ? (data.orders.find((o: Order) => o.id === prev.id) || prev) : null);
+          if (data.success && Array.isArray(data.orders)) {
+            const localOrders = getStoredPartnerOrders();
+            const orderMap = new Map<string, Order>();
+
+            // API orders that are assigned to this partner
+            data.orders.filter((o: Order) => Boolean(o.partnerId) && (o.partnerId === PARTNER_ID || o.partnerId === 'partner-001')).forEach((o: Order) => orderMap.set(o.id, o));
+            // Local orders take precedence so newly placed/assigned orders are NEVER wiped out by stale serverless cold starts
+            localOrders.forEach(o => orderMap.set(o.id, o));
+
+            const merged = Array.from(orderMap.values());
+            if (merged.length > 0) {
+              setOrderList(merged);
+              setSelectedOrder(prev => prev ? (merged.find((o: Order) => o.id === prev.id) || prev) : null);
+            }
           }
         }
       } catch {}
@@ -193,6 +213,67 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
       window.removeEventListener('storage', handleSync);
     };
   }, []);
+
+  // Partner self-handling (in-store inspection / walk-in / self-pickup)
+  const handlePartnerSelfFulfill = async (orderId: string) => {
+    const target = orderList.find(o => o.id === orderId);
+    if (!target) return;
+    const updatedOrder: Order = {
+      ...target,
+      deliveryAgentId: null,
+      deliveryAgentName: null,
+      deliveryAgentPhone: null,
+      status: (target.status === 'created' || target.status === 'assigned' ? 'accepted' : target.status) as OrderStatus,
+      notes: `${target.notes ? target.notes + ' · ' : ''}Store Direct Handling: Partner inspecting & fulfilling directly.`,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updated = orderList.map(o => o.id === orderId ? updatedOrder : o);
+    setOrderList(updated);
+    if (selectedOrder?.id === orderId) {
+      setSelectedOrder(updatedOrder);
+    }
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('casmik_partner_orders_v1', JSON.stringify(updated));
+      try {
+        const rawGlobal = localStorage.getItem('casmik_orders_v1');
+        if (rawGlobal) {
+          const gList: Order[] = JSON.parse(rawGlobal);
+          localStorage.setItem('casmik_orders_v1', JSON.stringify(gList.map(o => o.id === orderId ? updatedOrder : o)));
+        }
+      } catch {}
+      window.dispatchEvent(new Event('casmik_orders_updated'));
+      window.dispatchEvent(new Event('casmik_partner_orders_updated'));
+    }
+
+    try {
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          deliveryAgentId: null,
+          deliveryAgentName: null,
+          deliveryAgentPhone: null,
+          status: updatedOrder.status,
+          notes: updatedOrder.notes,
+        }),
+      });
+    } catch {}
+
+    triggerNotification({
+      type: 'status_update',
+      targetRole: 'all',
+      title: `Order #${target.orderNumber} Handled Directly by Store`,
+      shortDetails: `Partner store "${target.partnerName || 'Pixel Pro Tech Hub'}" is handling inspection and payout directly in-store.`,
+      orderNumber: target.orderNumber,
+      deviceName: target.deviceName,
+      customerName: target.customerName,
+      price: target.quotedPrice,
+      status: updatedOrder.status,
+    });
+  };
 
   const handleAssignDeliveryAgent = async () => {
     if (!assignDeliveryModal || !selectedDeliveryAgentId) return;
@@ -953,6 +1034,14 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                         >
                           <Phone size={14} /> Call Customer
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => handlePartnerSelfFulfill(selectedOrder.id)}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold transition-all cursor-pointer shadow-xs ml-auto"
+                          title="Cancel rider dispatch and handle device inspection & payout directly in-store"
+                        >
+                          <span>🏬 Handle in Store Myself (Recall Rider)</span>
+                        </button>
                       </div>
                     </div>
                   ) : selectedOrder.status === 'completed' ? (
@@ -982,6 +1071,30 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                         <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getOrderStatusColor(selectedOrder.status)}`}>
                           Current: {getOrderStatusLabel(selectedOrder.status)}
                         </span>
+                      </div>
+
+                      {/* Fulfillment Mode Choice */}
+                      <div className="grid grid-cols-2 gap-2 mb-3 p-2 bg-white rounded-xl border border-gray-200/80">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAssignDeliveryModal(selectedOrder);
+                            setSelectedDeliveryAgentId(selectedOrder.deliveryAgentId || '');
+                            setDeliveryPickupDate(selectedOrder.pickupDate || '');
+                            setDeliveryPickupSlot(selectedOrder.pickupSlot || '');
+                          }}
+                          className="py-2 px-2.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Truck size={13} className="text-blue-600" />
+                          <span>Assign Delivery Rider</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handlePartnerSelfFulfill(selectedOrder.id)}
+                          className="py-2 px-2.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <span>🏬 Handle in Store Myself</span>
+                        </button>
                       </div>
 
                       <p className="text-xs text-gray-500 mb-2.5">Progress is forward-only (completed stages are locked):</p>

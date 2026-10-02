@@ -42,16 +42,18 @@ export default function DeliveryDashboard({ onNavigateToTasks, onNavigateToEarni
 
     try {
       const savedOrders = localStorage.getItem('casmik_orders_v1');
+      const agentId = agent?.id || 'agent-101';
       if (savedOrders) {
         const parsed = JSON.parse(savedOrders);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setTaskList(parsed);
+          const myTasks = parsed.filter((o: Order) => Boolean(o.deliveryAgentId) && (o.deliveryAgentId === agentId || o.deliveryAgentId === 'agent-101'));
+          setTaskList(myTasks);
           return;
         }
       }
     } catch {}
-    setTaskList(orders);
-  }, []);
+    setTaskList(orders.filter(o => Boolean(o.deliveryAgentId) && (o.deliveryAgentId === 'agent-101')));
+  }, [agent?.id]);
 
   const pendingPickups = taskList.filter(o => ['assigned', 'accepted', 'pickup_scheduled'].includes(o.status));
   const inTransit = taskList.filter(o => ['picked_up', 'in_transit', 'inspection'].includes(o.status));

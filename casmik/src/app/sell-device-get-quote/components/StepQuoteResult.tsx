@@ -67,8 +67,8 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
       deviceColor: 'Standard',
       quotedPrice: price,
       finalPrice: price,
-      partnerId: 'partner-001',
-      partnerName: 'Camsik Certified Camera & Tech Hub',
+      partnerId: null,
+      partnerName: null,
       deliveryAgentId: null,
       deliveryAgentName: null,
       pickupDate: selectedDate,
@@ -90,14 +90,12 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
       updatedAt: new Date().toISOString(),
     };
 
-    // 1. Save to local storage for instant sync across tabs & dashboards
+    // 1. Save to local storage for Admin management (not assigned to partner/delivery yet)
     if (typeof window !== 'undefined') {
       try {
         const existingGlobal = JSON.parse(localStorage.getItem('casmik_orders_v1') || '[]');
         localStorage.setItem('casmik_orders_v1', JSON.stringify([newOrder, ...existingGlobal]));
-
-        const existingPartner = JSON.parse(localStorage.getItem('casmik_partner_orders_v1') || '[]');
-        localStorage.setItem('casmik_partner_orders_v1', JSON.stringify([newOrder, ...existingPartner]));
+        window.dispatchEvent(new Event('casmik_orders_updated'));
       } catch (err) {
         console.error('Failed storing local order:', err);
       }
@@ -121,7 +119,7 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
         id: newOrderId,
         order_number: generatedNumber,
         order_type: 'sell',
-        status: 'assigned',
+        status: 'created',
         customer_name: name,
         customer_phone: phone,
         customer_address: address,
@@ -132,8 +130,8 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
         device_model: sellState.modelName,
         quoted_price: price,
         final_price: price,
-        partner_id: 'partner-001',
-        partner_name: 'Camsik Certified Camera & Tech Hub',
+        partner_id: null,
+        partner_name: null,
         pickup_date: selectedDate,
         pickup_slot: selectedSlot,
         payment_status: 'pending',
@@ -143,11 +141,11 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
       console.log('Remote order sync info:', err);
     }
 
-    // 3. Trigger Real-Time Notification across all dashboards with Sound Chime
+    // 3. Trigger Real-Time Notification across Admin with Sound Chime
     triggerNotification({
       type: 'new_booking',
-      targetRole: 'all',
-      title: `🎉 New Booking Booked: #${generatedNumber}`,
+      targetRole: 'admin',
+      title: `🎉 New Order Received: #${generatedNumber}`,
       shortDetails: `${name} booked pickup for ${deviceFullName} (₹${price.toLocaleString('en-IN')}) · Slot: ${selectedDate} (${selectedSlot})`,
       orderNumber: generatedNumber,
       deviceName: deviceFullName,

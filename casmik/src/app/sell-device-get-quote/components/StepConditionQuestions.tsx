@@ -100,8 +100,6 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
   const [activeQ, setActiveQ] = useState(0);
   const [priceAnimation, setPriceAnimation] = useState<'up' | 'down' | null>(null);
   const [lastDelta, setLastDelta] = useState<number>(0);
-  const [modalOption, setModalOption] = useState<typeof questions[0]['options'][0] | null>(null);
-  const [modalQuestion, setModalQuestion] = useState<typeof questions[0] | null>(null);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const prevPrice = useRef(sellState.currentPrice);
 
@@ -203,39 +201,59 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
               <h3 className="text-base font-bold text-foreground mb-1">{q.question}</h3>
               <p className="text-xs text-muted-foreground mb-5">{q.subtext}</p>
 
-              {/* Answer cards — illustrated like reference screenshot */}
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              {/* Answer cards — with direct selection and full inline details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
                 {q.options.map((opt) => {
                   const selected = sellState.answers[q.id] === opt.id;
                   return (
                     <button
                       key={`opt-${opt.id}`}
-                      onClick={() => {
-                        setModalOption(opt);
-                        setModalQuestion(q);
-                      }}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 text-center transition-all duration-150 btn-press group ${
-                        selected ? 'border-primary bg-primary-50 shadow-green' : 'border-border bg-white hover:border-primary/40 hover:bg-primary-50/20'
+                      type="button"
+                      onClick={() => handleAnswer(q.id, opt.id, opt.adjustment)}
+                      className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 text-center transition-all duration-150 btn-press group cursor-pointer ${
+                        selected
+                          ? 'border-primary bg-primary-50/80 shadow-green ring-2 ring-primary/20'
+                          : 'border-border bg-white hover:border-primary/50 hover:bg-primary-50/20'
                       }`}
                     >
+                      {/* Check badge */}
+                      {selected && (
+                        <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-sm">
+                          <span className="text-white text-xs font-bold leading-none">✓</span>
+                        </div>
+                      )}
+
                       {/* Illustration */}
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-4xl transition-all ${selected ? 'bg-primary/10' : 'bg-gray-50 group-hover:bg-primary/5'}`}>
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-all ${selected ? 'bg-primary/10' : 'bg-gray-50 group-hover:bg-primary/5'}`}>
                         {opt.illustration}
                       </div>
+                      
                       <p className={`text-sm font-bold leading-tight ${selected ? 'text-primary' : 'text-foreground'}`}>{opt.label}</p>
-                      <p className="text-xs text-muted-foreground leading-tight line-clamp-2">{opt.desc}</p>
+                      <p className="text-xs text-muted-foreground leading-tight">{opt.desc}</p>
+                      
+                      {/* Detailed bullets shown directly inline */}
+                      {opt.bulletPoints && opt.bulletPoints.length > 0 && (
+                        <div className="w-full text-left space-y-1 mt-1 pt-2 border-t border-border/60">
+                          {opt.bulletPoints.map((bp, bpi) => (
+                            <p key={bpi} className="text-[11px] text-muted-foreground flex items-start gap-1 leading-tight">
+                              <span className="text-primary font-bold text-[9px] mt-0.5">•</span>
+                              <span>{bp}</span>
+                            </p>
+                          ))}
+                        </div>
+                      )}
+
                       {opt.adjustment !== 0 && (
-                        <span className={`text-xs font-black px-2 py-0.5 rounded-full ${opt.adjustment > 0 ? 'bg-primary-100 text-primary' : 'bg-red-50 text-danger'}`}>
-                          {opt.adjustment > 0 ? '+' : ''}₹{Math.abs(opt.adjustment / 1000)}K
+                        <span className={`text-xs font-black px-2.5 py-0.5 rounded-full mt-auto ${opt.adjustment > 0 ? 'bg-primary-100 text-primary' : 'bg-red-50 text-danger'}`}>
+                          {opt.adjustment > 0 ? '+' : ''}₹{Math.abs(opt.adjustment).toLocaleString('en-IN')}
                         </span>
                       )}
-                      {selected && <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Prominent Device Verification Section immediately ABOVE Get My Quote (Requirement 3) */}
+              {/* Prominent Device Verification Section immediately ABOVE Get My Quote */}
               {qi === questions.length - 1 && (
                 <DeviceVerificationSection
                   selectedBrand={sellState.brandName}
@@ -253,41 +271,47 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
               )}
 
               {/* Navigation */}
-              <div className="flex items-center justify-between mt-6">
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/60">
                 <button onClick={() => setActiveQ(q => Math.max(q - 1, 0))} disabled={activeQ === 0}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                   <ChevronLeft size={14} /> Previous
                 </button>
-                {activeQ < questions.length - 1 ? (
-                  <button onClick={() => setActiveQ(q => q + 1)}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-muted text-sm font-medium text-foreground hover:bg-muted/80 transition-colors">
-                    Skip →
-                  </button>
-                ) : allAnswered && isVerified ? (
-                  <button onClick={onNext} className="flex items-center gap-2 px-6 py-2.5 gradient-green text-white rounded-xl font-semibold text-sm shadow-green btn-press">
-                    Get My Quote →
-                  </button>
-                ) : allAnswered ? (
-                  <button
-                    onClick={() => setShowVerifyModal(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-md transition-all btn-press"
-                  >
-                    <Lock size={14} className="text-emerald-400" />
-                    <span>Verify Device to Unlock Quote →</span>
-                  </button>
-                ) : null}
+
+                <div className="flex items-center gap-2">
+                  {activeQ < questions.length - 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => setActiveQ(q => q + 1)}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-colors"
+                    >
+                      Skip Question →
+                    </button>
+                  ) : isVerified ? (
+                    <button onClick={onNext} className="flex items-center gap-2 px-6 py-2.5 gradient-green text-white rounded-xl font-semibold text-sm shadow-green btn-press">
+                      Get My Quote →
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setShowVerifyModal(true)}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-md transition-all btn-press"
+                    >
+                      <Lock size={14} className="text-emerald-400" />
+                      <span>Verify Device to Unlock Quote →</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Continue button (Section 16 & 34) */}
-      {allAnswered && (
+      {/* Continue button — allow proceeding whether answered or skipped */}
+      {(allAnswered || activeQ === questions.length - 1 || Object.keys(sellState.answers).length >= 1) && (
         <div className="fade-in">
           {isVerified ? (
-            <button onClick={onNext} className="w-full py-4 gradient-green text-white rounded-2xl font-bold text-base shadow-green btn-press">
-              🎉 Get My Final Quote — ₹{sellState.currentPrice.toLocaleString('en-IN')}
+            <button onClick={onNext} className="w-full py-4 gradient-green text-white rounded-2xl font-bold text-base shadow-green btn-press flex items-center justify-center gap-2">
+              <span>🎉 Get My Final Quote — ₹{sellState.currentPrice.toLocaleString('en-IN')}</span>
             </button>
           ) : (
             <button
@@ -301,7 +325,7 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
         </div>
       )}
 
-      {/* Verification Modal triggered from bottom CTA or button */}
+      {/* Verification Modal */}
       {showVerifyModal && (
         <DeviceVerificationModal
           selectedBrand={sellState.brandName}
@@ -313,44 +337,6 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
           }}
           onClose={() => setShowVerifyModal(false)}
         />
-      )}
-
-      {/* Answer Detail Modal — like reference screenshot */}
-      {modalOption && modalQuestion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalOption(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 z-10 fade-in">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-black text-foreground">{modalQuestion.question.replace('?', '')}</h3>
-              <button onClick={() => setModalOption(null)} className="p-2 rounded-xl hover:bg-muted transition-colors"><X size={18} /></button>
-            </div>
-            <p className="text-sm text-muted-foreground mb-5">{modalQuestion.subtext}</p>
-
-            {/* All options in modal */}
-            <div className="grid grid-cols-2 gap-3 mb-5">
-              {modalQuestion.options.map((opt) => {
-                const selected = sellState.answers[modalQuestion.id] === opt.id;
-                return (
-                  <button key={opt.id} onClick={() => { handleAnswer(modalQuestion.id, opt.id, opt.adjustment); setModalOption(null); }}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 text-center transition-all btn-press ${selected ? 'border-primary bg-primary-50' : 'border-border hover:border-primary/40 hover:bg-primary-50/20'}`}>
-                    <div className="w-14 h-14 rounded-xl bg-gray-50 flex items-center justify-center text-3xl">{opt.illustration}</div>
-                    <p className={`text-sm font-bold ${selected ? 'text-primary' : 'text-foreground'}`}>{opt.label}</p>
-                    <div className="text-left w-full">
-                      {opt.bulletPoints.map((bp, i) => (
-                        <p key={i} className="text-xs text-muted-foreground">• {bp}</p>
-                      ))}
-                    </div>
-                    {opt.adjustment !== 0 && (
-                      <span className={`text-xs font-black px-2 py-0.5 rounded-full ${opt.adjustment > 0 ? 'bg-primary-100 text-primary' : 'bg-red-50 text-danger'}`}>
-                        {opt.adjustment > 0 ? '+' : ''}₹{Math.abs(opt.adjustment).toLocaleString('en-IN')}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

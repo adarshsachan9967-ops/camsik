@@ -147,13 +147,14 @@ function getStoredDeliveryTasks(): Order[] {
     const raw = localStorage.getItem('casmik_orders_v1') || localStorage.getItem('casmik_partner_orders_v1');
     const all: Order[] = raw ? JSON.parse(raw) : orders;
     return all.filter(o => 
-      !o.deliveryAgentId || 
-      o.deliveryAgentId === agentId || 
-      o.deliveryAgentId === DELIVERY_AGENT_ID || 
-      o.deliveryAgentId === 'agent-101'
+      Boolean(o.deliveryAgentId) && (
+        o.deliveryAgentId === agentId || 
+        o.deliveryAgentId === DELIVERY_AGENT_ID || 
+        o.deliveryAgentId === 'agent-101'
+      )
     );
   } catch {
-    return orders;
+    return orders.filter(o => Boolean(o.deliveryAgentId) && (o.deliveryAgentId === DELIVERY_AGENT_ID || o.deliveryAgentId === 'agent-101'));
   }
 }
 

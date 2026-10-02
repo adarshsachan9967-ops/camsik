@@ -57,6 +57,7 @@ const photoAngles = [
   { id: 'imei_label', label: 'IMEI / Serial Screen', desc: 'Settings > About screen' },
   { id: 'defect', label: 'Scratch / Defect Close-up', desc: 'Any cosmetic blemish' },
 ];
+const PARTNER_ID = 'partner-002';
 
 const getInspectionOrders = (): Order[] => {
   if (typeof window !== 'undefined') {
@@ -65,12 +66,12 @@ const getInspectionOrders = (): Order[] => {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return parsed.filter((o: Order) => Boolean(o.partnerId) && (o.partnerId === PARTNER_ID || o.partnerId === 'partner-001'));
         }
       }
     } catch {}
   }
-  return defaultOrders;
+  return defaultOrders.filter((o: Order) => Boolean(o.partnerId) && (o.partnerId === PARTNER_ID || o.partnerId === 'partner-001'));
 };
 
 interface PartnerInspectionProps {

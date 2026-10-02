@@ -58,6 +58,7 @@ export default function NotificationBell({ role, onNavigateToOrder, onNavigateSe
 
   useEffect(() => {
     refreshNotifications();
+    requestBrowserNotificationPermission().catch(() => {});
 
     // BroadcastChannel listener across tabs
     let channel: BroadcastChannel | null = null;
@@ -233,7 +234,7 @@ export default function NotificationBell({ role, onNavigateToOrder, onNavigateSe
             handleItemClick(toastAlert);
             setToastAlert(null);
           }}
-          className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-gray-900 text-white p-4 rounded-2xl shadow-2xl border border-gray-700 animate-in fade-in slide-in-from-bottom-5 cursor-pointer hover:bg-gray-800 transition-all font-sans"
+          className="fixed top-5 right-5 z-[99999] max-w-sm w-full bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border-2 border-emerald-500 animate-in fade-in slide-in-from-top-4 cursor-pointer hover:bg-slate-800 transition-all font-sans"
         >
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-xl bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
