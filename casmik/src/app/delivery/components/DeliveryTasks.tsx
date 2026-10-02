@@ -44,10 +44,20 @@ import {
 import LiveOrderTracker from '@/components/LiveOrderTracker';
 import { orders, getOrderStatusLabel, getOrderStatusColor } from '@/lib/casmikData';
 import { triggerNotification } from '@/lib/notifications';
+import { checkPartnerBalance, deductPartnerBalance } from '@/lib/partnerWallet';
 import OrderChatModal from '@/components/OrderChatModal';
 import OrderCallModal from '@/components/OrderCallModal';
 
 const DELIVERY_AGENT_ID = 'delivery-001';
+
+const DELIVERY_PROGRESSION: Record<string, number> = {
+  assigned: 1,
+  pickup_scheduled: 2,
+  inspection: 3,
+  picked_up: 4,
+  completed: 5,
+  cancelled: 99,
+};
 
 interface InspectionCheckItem {
   id: string;
@@ -209,6 +219,12 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
   const [payoutMethod, setPayoutMethod] = useState<'upi' | 'cash' | 'imps'>('upi');
   const [payoutRef, setPayoutRef] = useState('');
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
+  const [insufficientPartnerBalanceWarning, setInsufficientPartnerBalanceWarning] = useState<{
+    required: number;
+    available: number;
+    shortfall: number;
+    partnerName: string;
+  } | null>(null);
 
   let currentAgentName = 'Sameer Khan';
   let currentAgentPhone = '9820123456';
@@ -296,6 +312,18 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
     extraData?: Partial<Order>,
     notificationMsg?: { title: string; details: string }
   ) => {
+    if (task.status === 'completed') {
+      alert('⚠️ This task is completed and locked. No further modifications can be made.');
+      return;
+    }
+
+    const curRank = DELIVERY_PROGRESSION[task.status] || 1;
+    const nextRank = DELIVERY_PROGRESSION[newStatus] || 1;
+    if (newStatus !== 'cancelled' && nextRank < curRank) {
+      alert('⚠️ Task progression is forward-only. You cannot move back to a previous stage.');
+      return;
+    }
+
     const updatedTask: Order = {
       ...task,
       status: newStatus,
@@ -357,8 +385,26 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
     openInspectionModal(task);
   };
 
-  // Step 3: Amount Paid (Doorstep spot payout)
+  // Step 3: Amount Paid (Doorstep spot payout with partner wallet balance gate)
   const handleOpenPayoutModal = (task: Order) => {
+    if (task.status === 'completed') {
+      alert('⚠️ This task is already completed and locked.');
+      return;
+    }
+    const amount = task.finalPrice || task.quotedPrice;
+    const partnerId = task.partnerId || 'partner-001';
+    const check = checkPartnerBalance(partnerId, amount);
+
+    if (!check.hasSufficientBalance) {
+      setInsufficientPartnerBalanceWarning({
+        required: amount,
+        available: check.availableBalance,
+        shortfall: check.shortfall,
+        partnerName: check.partner.storeName || check.partner.name || 'Assigned Partner Store',
+      });
+      return;
+    }
+
     setPayoutModalTask(task);
     setPayoutMethod('upi');
     setPayoutRef('');
@@ -366,8 +412,38 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
 
   const handleConfirmAmountPaid = async () => {
     if (!payoutModalTask) return;
-    setIsProcessingPayout(true);
     const amount = payoutModalTask.finalPrice || payoutModalTask.quotedPrice;
+    const partnerId = payoutModalTask.partnerId || 'partner-001';
+
+    // Strict Partner Wallet Check
+    const check = checkPartnerBalance(partnerId, amount);
+    if (!check.hasSufficientBalance) {
+      setPayoutModalTask(null);
+      setInsufficientPartnerBalanceWarning({
+        required: amount,
+        available: check.availableBalance,
+        shortfall: check.shortfall,
+        partnerName: check.partner.storeName || check.partner.name || 'Assigned Partner Store',
+      });
+      return;
+    }
+
+    setIsProcessingPayout(true);
+
+    // Deduct from assigned partner wallet balance!
+    const deductRes = deductPartnerBalance(partnerId, amount, payoutModalTask.orderNumber, payoutModalTask.customerName);
+    if (!deductRes.success) {
+      setIsProcessingPayout(false);
+      setPayoutModalTask(null);
+      setInsufficientPartnerBalanceWarning({
+        required: amount,
+        available: deductRes.newBalance,
+        shortfall: amount - deductRes.newBalance,
+        partnerName: check.partner.storeName || check.partner.name || 'Assigned Partner Store',
+      });
+      return;
+    }
+
     const noteEntry = `[Doorstep Amount Paid: ₹${amount.toLocaleString('en-IN')} via ${payoutMethod.toUpperCase()}${payoutRef ? ` UTR:${payoutRef}` : ''}]`;
     const updatedNotes = payoutModalTask.notes ? `${payoutModalTask.notes} | ${noteEntry}` : noteEntry;
 
@@ -380,7 +456,7 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
       },
       {
         title: '💰 Doorstep Amount Paid to Customer',
-        details: `Delivery executive disbursed ₹${amount.toLocaleString('en-IN')} via ${payoutMethod.toUpperCase()} to ${payoutModalTask.customerName}. Order #${payoutModalTask.orderNumber} updated.`
+        details: `Delivery executive disbursed ₹${amount.toLocaleString('en-IN')} via ${payoutMethod.toUpperCase()} to ${payoutModalTask.customerName}. Partner wallet debited.`
       }
     );
 
@@ -865,16 +941,17 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
                         {/* Step 1: On The Way */}
                         <button
                           type="button"
+                          disabled={task.status === 'pickup_scheduled' || Boolean(task.deviceCollected) || task.status === 'picked_up' || task.status === 'completed'}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleStepOnTheWay(task);
                           }}
-                          className={`py-1.5 px-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer ${
-                            task.status === 'pickup_scheduled' || task.status === 'picked_up' || task.status === 'completed'
-                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                              : 'bg-white text-slate-700 hover:bg-amber-50 border border-slate-200 shadow-sm'
+                          className={`py-1.5 px-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all ${
+                            task.status === 'pickup_scheduled' || Boolean(task.deviceCollected) || task.status === 'picked_up' || task.status === 'completed'
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300 opacity-90 cursor-not-allowed'
+                              : 'bg-white text-slate-700 hover:bg-amber-50 border border-slate-200 shadow-sm cursor-pointer'
                           }`}
-                          title="Step 1: Mark On the way to collect device"
+                          title={task.status === 'pickup_scheduled' ? 'Already En Route' : 'Step 1: Mark On the way to collect device'}
                         >
                           <Truck size={11} className={task.status === 'pickup_scheduled' ? 'animate-bounce text-amber-600' : ''} />
                           <span>1. On The Way</span>
@@ -883,14 +960,15 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
                         {/* Step 2: Diagnostic */}
                         <button
                           type="button"
+                          disabled={Boolean(task.deviceCollected) || task.paymentStatus === 'paid' || task.status === 'completed'}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleStepDiagnostic(task);
                           }}
-                          className={`py-1.5 px-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer ${
-                            task.deviceCollected || task.status === 'picked_up' || task.status === 'completed'
-                              ? 'bg-indigo-100 text-indigo-900 border border-indigo-300'
-                              : 'bg-white text-slate-700 hover:bg-indigo-50 border border-slate-200 shadow-sm'
+                          className={`py-1.5 px-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all ${
+                            Boolean(task.deviceCollected) || task.paymentStatus === 'paid' || task.status === 'completed'
+                              ? 'bg-indigo-100 text-indigo-900 border border-indigo-300 opacity-90 cursor-not-allowed'
+                              : 'bg-white text-slate-700 hover:bg-indigo-50 border border-slate-200 shadow-sm cursor-pointer'
                           }`}
                           title="Step 2: 12-Point Doorstep Diagnostic"
                         >
@@ -901,14 +979,15 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
                         {/* Step 3: Amount Paid */}
                         <button
                           type="button"
+                          disabled={task.paymentStatus === 'paid' || task.status === 'completed'}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOpenPayoutModal(task);
                           }}
-                          className={`py-1.5 px-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer ${
-                            task.paymentStatus === 'paid'
-                              ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                              : 'bg-white text-slate-700 hover:bg-emerald-50 border border-slate-200 shadow-sm'
+                          className={`py-1.5 px-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all ${
+                            task.paymentStatus === 'paid' || task.status === 'completed'
+                              ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 opacity-90 cursor-not-allowed'
+                              : 'bg-white text-slate-700 hover:bg-emerald-50 border border-slate-200 shadow-sm cursor-pointer'
                           }`}
                           title="Step 3: Disburse Doorstep Instant Payout"
                         >
@@ -919,19 +998,20 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
                         {/* Step 4: Order Completed */}
                         <button
                           type="button"
+                          disabled={task.status === 'completed'}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleCompleteOrder(task);
                           }}
-                          className={`py-1.5 px-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                          className={`py-1.5 px-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all ${
                             task.status === 'completed'
-                              ? 'bg-teal-100 text-teal-900 border border-teal-300'
-                              : 'bg-white text-slate-700 hover:bg-teal-50 border border-slate-200 shadow-sm'
+                              ? 'bg-teal-100 text-teal-900 border border-teal-300 opacity-90 cursor-not-allowed'
+                              : 'bg-white text-slate-700 hover:bg-teal-50 border border-slate-200 shadow-sm cursor-pointer'
                           }`}
                           title="Step 4: Complete and deposit to partner hub"
                         >
                           <CheckCircle2 size={11} className="text-teal-600" />
-                          <span>4. Completed</span>
+                          <span>{task.status === 'completed' ? '4. Completed 🔒' : '4. Completed'}</span>
                         </button>
                       </div>
                     </div>
@@ -947,19 +1027,31 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
                         <span className="text-[11px] font-bold text-slate-400">Status:</span>
                         <select
                           value={task.status}
+                          disabled={task.status === 'completed'}
                           onClick={(e) => e.stopPropagation()}
                           onChange={(e) => {
                             e.stopPropagation();
                             handleUpdateOrderStatus(task, e.target.value as OrderStatus);
                           }}
-                          className="text-[11px] font-bold py-1 px-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                          className={`text-[11px] font-bold py-1 px-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${task.status === 'completed' ? 'opacity-80 cursor-not-allowed bg-emerald-50 text-emerald-800' : 'cursor-pointer'}`}
                         >
-                          <option value="assigned">Assigned</option>
-                          <option value="pickup_scheduled">On the way (En Route)</option>
-                          <option value="inspection">Diagnostic (Inspection)</option>
-                          <option value="picked_up">Device Collected</option>
-                          <option value="completed">Completed</option>
-                          <option value="cancelled">Cancelled</option>
+                          {[
+                            { value: 'assigned', label: 'Assigned' },
+                            { value: 'pickup_scheduled', label: 'On the way (En Route)' },
+                            { value: 'inspection', label: 'Diagnostic (Inspection)' },
+                            { value: 'picked_up', label: 'Device Collected' },
+                            { value: 'completed', label: 'Completed' },
+                            { value: 'cancelled', label: 'Cancelled' },
+                          ].map(opt => {
+                            const curRank = DELIVERY_PROGRESSION[task.status] || 1;
+                            const optRank = DELIVERY_PROGRESSION[opt.value] || 1;
+                            const isPast = optRank < curRank && opt.value !== 'cancelled';
+                            return (
+                              <option key={opt.value} value={opt.value} disabled={isPast} className={isPast ? "text-gray-400 bg-gray-100 italic" : ""}>
+                                {opt.label} {isPast ? '(Completed)' : ''}
+                              </option>
+                            );
+                          })}
                         </select>
                       </div>
                     </div>
@@ -1612,11 +1704,12 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
+                  disabled={selectedTask.status === 'pickup_scheduled' || Boolean(selectedTask.deviceCollected) || selectedTask.status === 'picked_up' || selectedTask.status === 'completed'}
                   onClick={() => handleStepOnTheWay(selectedTask)}
-                  className={`p-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    selectedTask.status === 'pickup_scheduled' || selectedTask.status === 'picked_up' || selectedTask.status === 'completed'
-                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-amber-50'
+                  className={`p-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all ${
+                    selectedTask.status === 'pickup_scheduled' || Boolean(selectedTask.deviceCollected) || selectedTask.status === 'picked_up' || selectedTask.status === 'completed'
+                      ? 'bg-amber-100 text-amber-900 border border-amber-300 opacity-90 cursor-not-allowed'
+                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-amber-50 cursor-pointer'
                   }`}
                 >
                   <Truck size={14} className="text-amber-600" />
@@ -1625,15 +1718,16 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
 
                 <button
                   type="button"
+                  disabled={Boolean(selectedTask.deviceCollected) || selectedTask.paymentStatus === 'paid' || selectedTask.status === 'completed'}
                   onClick={() => {
                     const target = selectedTask;
                     setSelectedTask(null);
                     openInspectionModal(target);
                   }}
-                  className={`p-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    selectedTask.deviceCollected || selectedTask.status === 'picked_up' || selectedTask.status === 'completed'
-                      ? 'bg-indigo-100 text-indigo-900 border border-indigo-300'
-                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50'
+                  className={`p-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all ${
+                    Boolean(selectedTask.deviceCollected) || selectedTask.paymentStatus === 'paid' || selectedTask.status === 'completed'
+                      ? 'bg-indigo-100 text-indigo-900 border border-indigo-300 opacity-90 cursor-not-allowed'
+                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50 cursor-pointer'
                   }`}
                 >
                   <ClipboardCheck size={14} className="text-indigo-600" />
@@ -1642,11 +1736,12 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
 
                 <button
                   type="button"
+                  disabled={selectedTask.paymentStatus === 'paid' || selectedTask.status === 'completed'}
                   onClick={() => handleOpenPayoutModal(selectedTask)}
-                  className={`p-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    selectedTask.paymentStatus === 'paid'
-                      ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50'
+                  className={`p-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all ${
+                    selectedTask.paymentStatus === 'paid' || selectedTask.status === 'completed'
+                      ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 opacity-90 cursor-not-allowed'
+                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 cursor-pointer'
                   }`}
                 >
                   <IndianRupee size={14} className="text-emerald-600" />
@@ -1655,15 +1750,16 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
 
                 <button
                   type="button"
+                  disabled={selectedTask.status === 'completed'}
                   onClick={() => handleCompleteOrder(selectedTask)}
-                  className={`p-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`p-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all ${
                     selectedTask.status === 'completed'
-                      ? 'bg-teal-100 text-teal-900 border border-teal-300'
-                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-teal-50'
+                      ? 'bg-teal-100 text-teal-900 border border-teal-300 opacity-90 cursor-not-allowed'
+                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-teal-50 cursor-pointer'
                   }`}
                 >
                   <CheckCircle2 size={14} className="text-teal-600" />
-                  <span>4. Complete Order</span>
+                  <span>{selectedTask.status === 'completed' ? '4. Completed 🔒' : '4. Complete Order'}</span>
                 </button>
               </div>
 
@@ -1672,15 +1768,27 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
                 <span className="font-bold text-slate-500">Manual Status Change:</span>
                 <select
                   value={selectedTask.status}
+                  disabled={selectedTask.status === 'completed'}
                   onChange={(e) => handleUpdateOrderStatus(selectedTask, e.target.value as OrderStatus)}
-                  className="font-bold py-1.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                  className={`font-bold py-1.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${selectedTask.status === 'completed' ? 'opacity-80 cursor-not-allowed bg-emerald-50 text-emerald-800' : 'cursor-pointer'}`}
                 >
-                  <option value="assigned">Assigned</option>
-                  <option value="pickup_scheduled">On the way (En Route)</option>
-                  <option value="inspection">Diagnostic (Inspection)</option>
-                  <option value="picked_up">Device Collected</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
+                  {[
+                    { value: 'assigned', label: 'Assigned' },
+                    { value: 'pickup_scheduled', label: 'On the way (En Route)' },
+                    { value: 'inspection', label: 'Diagnostic (Inspection)' },
+                    { value: 'picked_up', label: 'Device Collected' },
+                    { value: 'completed', label: 'Completed' },
+                    { value: 'cancelled', label: 'Cancelled' },
+                  ].map(opt => {
+                    const curRank = DELIVERY_PROGRESSION[selectedTask.status] || 1;
+                    const optRank = DELIVERY_PROGRESSION[opt.value] || 1;
+                    const isPast = optRank < curRank && opt.value !== 'cancelled';
+                    return (
+                      <option key={opt.value} value={opt.value} disabled={isPast} className={isPast ? "text-gray-400 bg-gray-100 italic" : ""}>
+                        {opt.label} {isPast ? '(Completed)' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             </div>
@@ -1866,6 +1974,41 @@ export default function DeliveryTasks({ onOpenInspection }: DeliveryTasksProps) 
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── INSUFFICIENT PARTNER WALLET BALANCE WARNING MODAL ───────────── */}
+      {insufficientPartnerBalanceWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-red-100 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3 font-black text-2xl shadow-sm">
+              ⚠️
+            </div>
+            <h3 className="text-lg font-black text-slate-900 mb-1">Payment Blocked: Partner Wallet Balance Low</h3>
+            <p className="text-xs text-slate-600 mb-4 font-medium leading-relaxed">
+              Please mention your partner (<strong className="text-slate-900">{insufficientPartnerBalanceWarning.partnerName}</strong>) to add balance in his wallet to make a payment.
+            </p>
+            <div className="bg-red-50/70 rounded-2xl p-4 space-y-2 text-xs mb-5 border border-red-100 text-left">
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-semibold">Required Payout Amount:</span>
+                <span className="font-bold text-slate-900">₹{insufficientPartnerBalanceWarning.required.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-semibold">Partner Available Balance:</span>
+                <span className="font-bold text-red-600">₹{insufficientPartnerBalanceWarning.available.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between border-t border-red-200/60 pt-2 font-black">
+                <span className="text-red-700">Shortfall:</span>
+                <span className="text-red-600">₹{insufficientPartnerBalanceWarning.shortfall.toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setInsufficientPartnerBalanceWarning(null)}
+              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black shadow-md cursor-pointer transition-all hover:scale-[1.01]"
+            >
+              I Will Mention Partner To Add Balance
+            </button>
           </div>
         </div>
       )}

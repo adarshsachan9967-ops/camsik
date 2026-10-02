@@ -41,6 +41,19 @@ const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: 'rejected', label: 'Rejected' },
 ];
 
+const STATUS_PROGRESSION: Record<string, number> = {
+  created: 1,
+  assigned: 2,
+  accepted: 3,
+  pickup_scheduled: 4,
+  picked_up: 5,
+  in_transit: 6,
+  inspection: 7,
+  completed: 8,
+  cancelled: 99,
+  rejected: 99,
+};
+
 interface DBOrder {
   id: string;
   order_number: string;
@@ -504,6 +517,21 @@ export default function AdminOrders({
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     const targetOrder = orderList.find(o => o.id === orderId);
+    if (!targetOrder) return;
+
+    if (targetOrder.status === 'completed') {
+      alert('⚠️ This order is completed & locked. No further changes can be made.');
+      return;
+    }
+
+    const currentRank = STATUS_PROGRESSION[targetOrder.status] || 1;
+    const nextRank = STATUS_PROGRESSION[newStatus] || 1;
+
+    if (newStatus !== 'cancelled' && newStatus !== 'rejected' && nextRank <= currentRank) {
+      alert('⚠️ Order progression is forward-only. You cannot move back to a previous stage.');
+      return;
+    }
+
     const updated = orderList.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
     setOrderList(updated);
     if (typeof window !== 'undefined') {
@@ -711,14 +739,25 @@ export default function AdminOrders({
                         <div className="relative inline-block">
                           <select
                             value={order.status}
+                            disabled={order.status === 'completed'}
                             onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
-                            className={`text-xs font-bold px-2.5 py-1 rounded-lg border border-transparent hover:border-gray-300 cursor-pointer appearance-none pr-6 transition-all ${getOrderStatusColor(order.status)}`}
+                            className={`text-xs font-bold px-2.5 py-1 rounded-lg border border-transparent ${order.status === 'completed' ? 'cursor-not-allowed opacity-90' : 'hover:border-gray-300 cursor-pointer'} appearance-none pr-6 transition-all ${getOrderStatusColor(order.status)}`}
                           >
-                            {STATUS_OPTIONS.map(opt => (
-                              <option key={opt.value} value={opt.value} className="bg-white text-gray-800 font-semibold">
-                                {opt.label}
-                              </option>
-                            ))}
+                            {STATUS_OPTIONS.map(opt => {
+                              const curRank = STATUS_PROGRESSION[order.status] || 1;
+                              const optRank = STATUS_PROGRESSION[opt.value] || 1;
+                              const isPast = optRank < curRank && opt.value !== 'cancelled' && opt.value !== 'rejected';
+                              return (
+                                <option
+                                  key={opt.value}
+                                  value={opt.value}
+                                  disabled={isPast}
+                                  className={isPast ? "bg-gray-100 text-gray-400 italic" : "bg-white text-gray-800 font-semibold"}
+                                >
+                                  {opt.label} {isPast ? '(Passed)' : ''}
+                                </option>
+                              );
+                            })}
                           </select>
                           <ChevronDown size={11} className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
                         </div>
@@ -842,69 +881,78 @@ export default function AdminOrders({
                     <SlidersHorizontal size={14} className="text-primary" /> Change Order Status
                   </p>
                   <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${getOrderStatusColor(selectedOrder.status)}`}>
-                    {getOrderStatusLabel(selectedOrder.status)}
+                    {selectedOrder.status === 'completed' ? '🔒 Order Completed & Locked' : getOrderStatusLabel(selectedOrder.status)}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                  <button
-                    type="button"
-                    onClick={() => handleStatusChange(selectedOrder.id, 'accepted')}
-                    className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                      selectedOrder.status === 'accepted' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'
-                    }`}
-                  >
-                    ✓ Accept
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleStatusChange(selectedOrder.id, 'picked_up')}
-                    className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                      selectedOrder.status === 'picked_up' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-purple-700 border-purple-200 hover:bg-purple-50'
-                    }`}
-                  >
-                    🚚 Picked Up
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleStatusChange(selectedOrder.id, 'inspection')}
-                    className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                      selectedOrder.status === 'inspection' ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50'
-                    }`}
-                  >
-                    🔍 Inspection
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleStatusChange(selectedOrder.id, 'completed')}
-                    className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                      selectedOrder.status === 'completed' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-green-700 border-green-200 hover:bg-green-50'
-                    }`}
-                  >
-                    🎉 Complete
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2 pt-2 border-t border-gray-200/60">
-                  <label htmlFor="admin-modal-status-select" className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-                    All Statuses:
-                  </label>
-                  <div className="relative flex-1">
-                    <select
-                      id="admin-modal-status-select"
-                      value={selectedOrder.status}
-                      onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value as OrderStatus)}
-                      className="w-full text-xs font-bold bg-white border border-gray-300 rounded-xl pl-3 pr-8 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
-                    >
-                      {STATUS_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                {selectedOrder.status === 'completed' ? (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-center text-xs font-bold text-emerald-800 mb-2">
+                    🔒 This order is completed & locked. No further modifications or reversals can be made.
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                      {[
+                        { key: 'accepted', label: '✓ Accept', rank: 3, activeClass: 'bg-blue-600 text-white border-blue-600', inactiveClass: 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50' },
+                        { key: 'picked_up', label: '🚚 Picked Up', rank: 5, activeClass: 'bg-purple-600 text-white border-purple-600', inactiveClass: 'bg-white text-purple-700 border-purple-200 hover:bg-purple-50' },
+                        { key: 'inspection', label: '🔍 Inspection', rank: 7, activeClass: 'bg-amber-600 text-white border-amber-600', inactiveClass: 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50' },
+                        { key: 'completed', label: '🎉 Complete', rank: 8, activeClass: 'bg-green-600 text-white border-green-600', inactiveClass: 'bg-white text-green-700 border-green-200 hover:bg-green-50' },
+                      ].map(btn => {
+                        const curRank = STATUS_PROGRESSION[selectedOrder.status] || 1;
+                        const isPast = btn.rank <= curRank;
+                        return (
+                          <button
+                            key={btn.key}
+                            type="button"
+                            disabled={isPast}
+                            onClick={() => handleStatusChange(selectedOrder.id, btn.key as OrderStatus)}
+                            className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all ${
+                              isPast
+                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
+                                : selectedOrder.status === btn.key
+                                ? btn.activeClass
+                                : `${btn.inactiveClass} cursor-pointer`
+                            }`}
+                          >
+                            {btn.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-200/60">
+                      <label htmlFor="admin-modal-status-select" className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                        All Statuses:
+                      </label>
+                      <div className="relative flex-1">
+                        <select
+                          id="admin-modal-status-select"
+                          value={selectedOrder.status}
+                          disabled={selectedOrder.status === 'completed'}
+                          onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value as OrderStatus)}
+                          className="w-full text-xs font-bold bg-white border border-gray-300 rounded-xl pl-3 pr-8 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
+                        >
+                          {STATUS_OPTIONS.map(opt => {
+                            const curRank = STATUS_PROGRESSION[selectedOrder.status] || 1;
+                            const optRank = STATUS_PROGRESSION[opt.value] || 1;
+                            const isPast = optRank < curRank && opt.value !== 'cancelled' && opt.value !== 'rejected';
+                            return (
+                              <option
+                                key={opt.value}
+                                value={opt.value}
+                                disabled={isPast}
+                                className={isPast ? "text-gray-400 bg-gray-100 italic" : "text-gray-900 bg-white"}
+                              >
+                                {opt.label} {isPast ? '(Completed)' : ''}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* DOORSTEP INSPECTION STATUS BANNER IF COLLECTED */}

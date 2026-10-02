@@ -6,6 +6,7 @@ import type { Order, OrderStatus, DeliveryAgent } from '@/lib/casmikData';
 import { Search, CheckCircle, XCircle, Eye, Phone, MapPin, X, Truck, Wifi, WifiOff, ChevronDown, SlidersHorizontal, ClipboardCheck, Sparkles, Lock, CreditCard, ArrowRight, ShieldAlert, CheckCircle2, ShieldCheck, Calendar, Clock, MessageSquare, PhoneCall } from 'lucide-react';
 import LiveOrderTracker from '@/components/LiveOrderTracker';
 import { triggerNotification, playNotificationBeep } from '@/lib/notifications';
+import { checkPartnerBalance, deductPartnerBalance } from '@/lib/partnerWallet';
 import OrderChatModal from '@/components/OrderChatModal';
 import OrderCallModal from '@/components/OrderCallModal';
 
@@ -193,6 +194,11 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
   const [payoutMethod, setPayoutMethod] = useState<'upi' | 'imps' | 'cash'>('upi');
   const [payoutRef, setPayoutRef] = useState('');
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
+  const [insufficientBalanceWarning, setInsufficientBalanceWarning] = useState<{
+    required: number;
+    available: number;
+    shortfall: number;
+  } | null>(null);
 
   const supabase = createClient();
 
@@ -577,11 +583,37 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
     }
   };
 
-  // Complete Payout & Lock Order permanently
+  // Complete Payout & Lock Order permanently with Partner Wallet Deduction
   const handleDisbursePayout = async () => {
     if (!payoutOrder) return;
-    setIsProcessingPayout(true);
     const amount = payoutOrder.finalPrice > 0 ? payoutOrder.finalPrice : payoutOrder.quotedPrice;
+
+    // Strict Partner Wallet Balance Check
+    const partnerCheck = checkPartnerBalance(payoutOrder.partnerId, amount);
+    if (!partnerCheck.hasSufficientBalance) {
+      setPayoutOrder(null);
+      setInsufficientBalanceWarning({
+        required: amount,
+        available: partnerCheck.availableBalance,
+        shortfall: partnerCheck.shortfall,
+      });
+      return;
+    }
+
+    setIsProcessingPayout(true);
+
+    // Deduct from assigned partner wallet
+    const deductRes = deductPartnerBalance(payoutOrder.partnerId, amount, payoutOrder.orderNumber, payoutOrder.customerName);
+    if (!deductRes.success) {
+      setIsProcessingPayout(false);
+      setPayoutOrder(null);
+      setInsufficientBalanceWarning({
+        required: amount,
+        available: deductRes.newBalance,
+        shortfall: amount - deductRes.newBalance,
+      });
+      return;
+    }
 
     const updatedOrder: Order = {
       ...payoutOrder,
@@ -1178,101 +1210,125 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                         </button>
                       </div>
 
-                      <p className="text-xs text-gray-500 mb-2.5">Progress is forward-only (completed stages are locked):</p>
-
-                      {/* Quick Action Pills - Forward Only */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                        {/* 1. Accept */}
-                        <button
-                          type="button"
-                          disabled={STATUS_PROGRESSION[selectedOrder.status] >= 2}
-                          onClick={() => handleStatusChange(selectedOrder.id, 'accepted')}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border ${
-                            STATUS_PROGRESSION[selectedOrder.status] > 2
-                              ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                              : selectedOrder.status === 'accepted'
-                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm cursor-default'
-                              : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50 cursor-pointer'
-                          }`}
-                        >
-                          {STATUS_PROGRESSION[selectedOrder.status] >= 2 ? '✓ Accepted' : '✓ Accept'}
-                        </button>
-
-                        {/* 2. Picked Up */}
-                        <button
-                          type="button"
-                          disabled={STATUS_PROGRESSION[selectedOrder.status] >= 4}
-                          onClick={() => handleStatusChange(selectedOrder.id, 'picked_up')}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border ${
-                            STATUS_PROGRESSION[selectedOrder.status] > 4
-                              ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                              : selectedOrder.status === 'picked_up'
-                              ? 'bg-purple-600 text-white border-purple-600 shadow-sm cursor-default'
-                              : STATUS_PROGRESSION[selectedOrder.status] < 2
-                              ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
-                              : 'bg-white text-purple-700 border-purple-200 hover:bg-purple-50 cursor-pointer'
-                          }`}
-                        >
-                          {STATUS_PROGRESSION[selectedOrder.status] >= 4 ? '✓ Picked Up' : '🚚 Picked Up'}
-                        </button>
-
-                        {/* 3. Start Inspection */}
-                        <button
-                          type="button"
-                          disabled={STATUS_PROGRESSION[selectedOrder.status] > 6}
-                          onClick={() => {
-                            handleStatusChange(selectedOrder.id, 'inspection');
-                            setSelectedOrder(null);
-                            onStartInspection?.(selectedOrder.id);
-                          }}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border ${
-                            selectedOrder.status === 'inspection'
-                              ? 'bg-amber-600 text-white border-amber-600 shadow-sm cursor-pointer'
-                              : STATUS_PROGRESSION[selectedOrder.status] < 2
-                              ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
-                              : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50 cursor-pointer'
-                          }`}
-                        >
-                          🔍 Inspection
-                        </button>
-
-                        {/* 4. Complete / Payout */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPayoutOrder(selectedOrder);
-                          }}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                            selectedOrder.status === 'inspection' && selectedOrder.finalPrice > 0
-                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm hover:bg-emerald-700'
-                              : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
-                          }`}
-                        >
-                          💳 Payout
-                        </button>
-                      </div>
-
-                      {/* Forward-Only Dropdown Selector */}
-                      <div className="flex items-center gap-2 pt-2 border-t border-gray-200/60">
-                        <label htmlFor="modal-status-select" className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-                          Advance Status:
-                        </label>
-                        <div className="relative flex-1">
-                          <select
-                            id="modal-status-select"
-                            value={selectedOrder.status}
-                            onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value as OrderStatus)}
-                            className="w-full text-xs font-bold bg-white border border-gray-300 rounded-xl pl-3 pr-8 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
-                          >
-                            {getAllowedForwardStatuses(selectedOrder.status).map(opt => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      {selectedOrder.deliveryAgentId ? (
+                        <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl flex items-center gap-3 text-xs text-blue-900 font-semibold mb-3">
+                          <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 font-bold">
+                            🚚
+                          </div>
+                          <div>
+                            <p className="font-bold">Managed by Delivery Executive ({selectedOrder.deliveryAgentName || 'Rider'})</p>
+                            <p className="text-[11px] text-blue-700">This order is assigned to field rider. Diagnostics, inspection, and status transitions are controlled exclusively by the delivery executive.</p>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <p className="text-xs text-gray-500 mb-2.5">Progress is forward-only (completed stages are locked):</p>
+
+                          {/* Quick Action Pills - Forward Only */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                            {/* 1. Accept */}
+                            <button
+                              type="button"
+                              disabled={STATUS_PROGRESSION[selectedOrder.status] >= 2}
+                              onClick={() => handleStatusChange(selectedOrder.id, 'accepted')}
+                              className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border ${
+                                STATUS_PROGRESSION[selectedOrder.status] > 2
+                                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                  : selectedOrder.status === 'accepted'
+                                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm cursor-default'
+                                  : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50 cursor-pointer'
+                              }`}
+                            >
+                              {STATUS_PROGRESSION[selectedOrder.status] >= 2 ? '✓ Accepted' : '✓ Accept'}
+                            </button>
+
+                            {/* 2. Picked Up */}
+                            <button
+                              type="button"
+                              disabled={STATUS_PROGRESSION[selectedOrder.status] >= 4}
+                              onClick={() => handleStatusChange(selectedOrder.id, 'picked_up')}
+                              className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border ${
+                                STATUS_PROGRESSION[selectedOrder.status] > 4
+                                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                  : selectedOrder.status === 'picked_up'
+                                  ? 'bg-purple-600 text-white border-purple-600 shadow-sm cursor-default'
+                                  : STATUS_PROGRESSION[selectedOrder.status] < 2
+                                  ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
+                                  : 'bg-white text-purple-700 border-purple-200 hover:bg-purple-50 cursor-pointer'
+                              }`}
+                            >
+                              {STATUS_PROGRESSION[selectedOrder.status] >= 4 ? '✓ Picked Up' : '🚚 Picked Up'}
+                            </button>
+
+                            {/* 3. Start Inspection */}
+                            <button
+                              type="button"
+                              disabled={STATUS_PROGRESSION[selectedOrder.status] > 6}
+                              onClick={() => {
+                                handleStatusChange(selectedOrder.id, 'inspection');
+                                setSelectedOrder(null);
+                                onStartInspection?.(selectedOrder.id);
+                              }}
+                              className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border ${
+                                selectedOrder.status === 'inspection'
+                                  ? 'bg-amber-600 text-white border-amber-600 shadow-sm cursor-pointer'
+                                  : STATUS_PROGRESSION[selectedOrder.status] < 2
+                                  ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
+                                  : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50 cursor-pointer'
+                              }`}
+                            >
+                              🔍 Inspection
+                            </button>
+
+                            {/* 4. Complete / Payout */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const amount = selectedOrder.finalPrice > 0 ? selectedOrder.finalPrice : selectedOrder.quotedPrice;
+                                const balanceCheck = checkPartnerBalance(selectedOrder.partnerId, amount);
+                                if (!balanceCheck.hasSufficientBalance) {
+                                  setInsufficientBalanceWarning({
+                                    required: amount,
+                                    available: balanceCheck.availableBalance,
+                                    shortfall: balanceCheck.shortfall,
+                                  });
+                                  return;
+                                }
+                                setPayoutOrder(selectedOrder);
+                              }}
+                              className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                                selectedOrder.status === 'inspection' && selectedOrder.finalPrice > 0
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm hover:bg-emerald-700'
+                                  : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                              }`}
+                            >
+                              💳 Payout
+                            </button>
+                          </div>
+
+                          {/* Forward-Only Dropdown Selector */}
+                          <div className="flex items-center gap-2 pt-2 border-t border-gray-200/60">
+                            <label htmlFor="modal-status-select" className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                              Advance Status:
+                            </label>
+                            <div className="relative flex-1">
+                              <select
+                                id="modal-status-select"
+                                value={selectedOrder.status}
+                                onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value as OrderStatus)}
+                                className="w-full text-xs font-bold bg-white border border-gray-300 rounded-xl pl-3 pr-8 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
+                              >
+                                {getAllowedForwardStatuses(selectedOrder.status).map(opt => (
+                                  <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -1653,6 +1709,53 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                     className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {isProcessingPayout ? 'Processing...' : `Confirm & Complete Payout`}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* INSUFFICIENT WALLET BALANCE MODAL */}
+          {insufficientBalanceWarning && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setInsufficientBalanceWarning(null)} />
+              <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 z-10 border border-red-100 text-center animate-in fade-in zoom-in-95 duration-200">
+                <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3 font-black text-2xl">
+                  ⚠️
+                </div>
+                <h3 className="text-lg font-black text-gray-900 mb-1">Insufficient Wallet Balance</h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  You do not have enough balance in your store wallet to disburse this customer payout. Please add funds to your wallet to proceed.
+                </p>
+                <div className="bg-red-50/60 rounded-2xl p-4 space-y-2 text-xs mb-5 border border-red-100">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Required Payout:</span>
+                    <span className="font-bold text-gray-900">₹{insufficientBalanceWarning.required.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Available Wallet Balance:</span>
+                    <span className="font-bold text-red-600">₹{insufficientBalanceWarning.available.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-red-200/60 pt-2 font-black text-sm">
+                    <span className="text-red-700">Shortfall:</span>
+                    <span className="text-red-600">₹{insufficientBalanceWarning.shortfall.toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setInsufficientBalanceWarning(null)}
+                    className="flex-1 py-3 border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 cursor-pointer"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => {
+                      setInsufficientBalanceWarning(null);
+                      window.location.href = '/partner';
+                    }}
+                    className="flex-1 py-3 bg-primary text-white rounded-xl text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 cursor-pointer"
+                  >
+                    Add Funds in Wallet
                   </button>
                 </div>
               </div>

@@ -1,5 +1,4 @@
-'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { AdminSection } from '../page';
@@ -9,51 +8,97 @@ import NotificationBell from '@/components/NotificationBell';
 interface NavItem { id: AdminSection; icon: React.ElementType; label: string; badge?: string | number; badgeColor?: string; }
 interface NavGroup { group: string; items: NavItem[]; }
 
-const navGroups: NavGroup[] = [
-  { group: 'Overview', items: [{ id: 'overview', icon: LayoutDashboard, label: 'Dashboard' }] },
-  { group: 'Orders', items: [
-    { id: 'orders', icon: ShoppingBag, label: 'All Orders', badge: 47, badgeColor: 'bg-red-500' },
-    { id: 'rental_orders', icon: Camera, label: 'Rental Bookings', badge: 'Live', badgeColor: 'bg-rose-500' },
-  ]},
-  { group: 'Catalog', items: [
-    { id: 'categories', icon: Tag, label: 'Categories' },
-    { id: 'brands', icon: Globe, label: 'Brands' },
-    { id: 'models', icon: Package, label: 'Models' },
-    { id: 'refurbished', icon: RefreshCw, label: 'Refurbished Devices' },
-    { id: 'rental_cameras', icon: Camera, label: 'Rental Cameras (Fleet)', badge: 'Pro', badgeColor: 'bg-rose-600' },
-    { id: 'repair_issues', icon: Wrench, label: 'Repair Issues' },
-    { id: 'pricing', icon: Calculator, label: 'Pricing Engine' },
-  ]},
-  { group: 'Inventory', items: [
-    { id: 'inventory', icon: Warehouse, label: 'Inventory' },
-  ]},
-  { group: 'People', items: [
-    { id: 'customers', icon: Users, label: 'Customers' },
-    { id: 'partners', icon: Handshake, label: 'Partners', badge: 3, badgeColor: 'bg-yellow-500' },
-    { id: 'delivery', icon: Truck, label: 'Delivery Agents' },
-  ]},
-  { group: 'Finance', items: [
-    { id: 'payouts', icon: CreditCard, label: 'Wallet & Payouts', badge: '₹2.4L', badgeColor: 'bg-orange-500' },
-    { id: 'coupons', icon: Percent, label: 'Coupons & Offers' },
-  ]},
-  { group: 'Support', items: [
-    { id: 'support_tickets', icon: MessageSquare, label: 'Support Tickets', badge: 5, badgeColor: 'bg-red-500' },
-  ]},
-  { group: 'Content & Tools', items: [
-    { id: 'cms', icon: FileText, label: 'CMS' },
-    { id: 'reports', icon: BarChart3, label: 'Reports' },
-    { id: 'notifications', icon: Bell, label: 'Notifications', badge: 5, badgeColor: 'bg-red-500' },
-    { id: 'push_notifications', icon: Send, label: 'Push Notifications' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
-  ]},
-];
-
 interface Props { activeSection: AdminSection; onSectionChange: (s: AdminSection) => void; children: React.ReactNode; }
 
 export default function AdminPanelLayout({ activeSection, onSectionChange, children }: Props) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [orderCount, setOrderCount] = useState<number>(50);
+  const [rentalOrderCount, setRentalOrderCount] = useState<number>(4);
+  const [partnerCount, setPartnerCount] = useState<number>(3);
+  const [supportCount, setSupportCount] = useState<number>(2);
+
+  useEffect(() => {
+    const updateCounts = () => {
+      try {
+        const rawOrders = localStorage.getItem('casmik_orders_v1');
+        if (rawOrders) {
+          const list = JSON.parse(rawOrders);
+          if (Array.isArray(list)) setOrderCount(list.length);
+        }
+        const rawRental = localStorage.getItem('casmik_rental_orders_v1');
+        if (rawRental) {
+          const list = JSON.parse(rawRental);
+          if (Array.isArray(list)) setRentalOrderCount(list.length);
+        }
+        const rawPartners = localStorage.getItem('casmik_partners_v1');
+        if (rawPartners) {
+          const list = JSON.parse(rawPartners);
+          if (Array.isArray(list)) setPartnerCount(list.length);
+        }
+        const rawTickets = localStorage.getItem('casmik_tickets_v1');
+        if (rawTickets) {
+          const list = JSON.parse(rawTickets);
+          if (Array.isArray(list)) {
+            const activeTickets = list.filter((t: any) => t.status !== 'resolved' && t.status !== 'closed');
+            setSupportCount(activeTickets.length);
+          }
+        }
+      } catch {}
+    };
+
+    updateCounts();
+    window.addEventListener('casmik_orders_updated', updateCounts);
+    window.addEventListener('casmik_partner_orders_updated', updateCounts);
+    window.addEventListener('casmik_partners_updated', updateCounts);
+    window.addEventListener('storage', updateCounts);
+    return () => {
+      window.removeEventListener('casmik_orders_updated', updateCounts);
+      window.removeEventListener('casmik_partner_orders_updated', updateCounts);
+      window.removeEventListener('casmik_partners_updated', updateCounts);
+      window.removeEventListener('storage', updateCounts);
+    };
+  }, []);
+
+  const navGroups: NavGroup[] = [
+    { group: 'Overview', items: [{ id: 'overview', icon: LayoutDashboard, label: 'Dashboard' }] },
+    { group: 'Orders', items: [
+      { id: 'orders', icon: ShoppingBag, label: 'All Orders', badge: orderCount, badgeColor: 'bg-red-500' },
+      { id: 'rental_orders', icon: Camera, label: 'Rental Bookings', badge: rentalOrderCount > 0 ? rentalOrderCount : 'Live', badgeColor: 'bg-rose-500' },
+    ]},
+    { group: 'Catalog', items: [
+      { id: 'categories', icon: Tag, label: 'Categories' },
+      { id: 'brands', icon: Globe, label: 'Brands' },
+      { id: 'models', icon: Package, label: 'Models' },
+      { id: 'refurbished', icon: RefreshCw, label: 'Refurbished Devices' },
+      { id: 'rental_cameras', icon: Camera, label: 'Rental Cameras (Fleet)', badge: 'Pro', badgeColor: 'bg-rose-600' },
+      { id: 'repair_issues', icon: Wrench, label: 'Repair Issues' },
+      { id: 'pricing', icon: Calculator, label: 'Pricing Engine' },
+    ]},
+    { group: 'Inventory', items: [
+      { id: 'inventory', icon: Warehouse, label: 'Inventory' },
+    ]},
+    { group: 'People', items: [
+      { id: 'customers', icon: Users, label: 'Customers' },
+      { id: 'partners', icon: Handshake, label: 'Partners', badge: partnerCount, badgeColor: 'bg-yellow-500' },
+      { id: 'delivery', icon: Truck, label: 'Delivery Agents' },
+    ]},
+    { group: 'Finance', items: [
+      { id: 'payouts', icon: CreditCard, label: 'Wallet & Payouts', badge: '₹2.4L', badgeColor: 'bg-orange-500' },
+      { id: 'coupons', icon: Percent, label: 'Coupons & Offers' },
+    ]},
+    { group: 'Support', items: [
+      { id: 'support_tickets', icon: MessageSquare, label: 'Support Tickets', badge: supportCount, badgeColor: 'bg-red-500' },
+    ]},
+    { group: 'Content & Tools', items: [
+      { id: 'cms', icon: FileText, label: 'CMS' },
+      { id: 'reports', icon: BarChart3, label: 'Reports' },
+      { id: 'notifications', icon: Bell, label: 'Notifications', badge: 5, badgeColor: 'bg-red-500' },
+      { id: 'push_notifications', icon: Send, label: 'Push Notifications' },
+      { id: 'settings', icon: Settings, label: 'Settings' },
+    ]},
+  ];
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {

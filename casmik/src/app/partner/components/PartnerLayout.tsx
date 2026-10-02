@@ -3,22 +3,11 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { PartnerSection } from '../page';
 import { LayoutDashboard, ShoppingBag, ClipboardCheck, DollarSign, Users, BarChart3, Settings, Bell, Menu, ChevronLeft, ChevronRight, Store, MessageSquare, UserCircle, LogOut } from 'lucide-react';
-import { Partner, partners } from '@/lib/casmikData';
+import { Partner, partners, orders as defaultOrders } from '@/lib/casmikData';
 import NotificationBell from '@/components/NotificationBell';
+import PartnerReferModal from './PartnerReferModal';
 
 interface NavItem { id: PartnerSection; icon: React.ElementType; label: string; badge?: number; }
-
-const navItems: NavItem[] = [
-  { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { id: 'orders', icon: ShoppingBag, label: 'Orders', badge: 8 },
-  { id: 'inspection', icon: ClipboardCheck, label: 'Inspection', badge: 3 },
-  { id: 'payouts', icon: DollarSign, label: 'Payouts' },
-  { id: 'customers', icon: Users, label: 'Customers' },
-  { id: 'reports', icon: BarChart3, label: 'Reports' },
-  { id: 'support', icon: MessageSquare, label: 'Support Tickets', badge: 2 },
-  { id: 'profile', icon: UserCircle, label: 'My Profile' },
-  { id: 'settings', icon: Settings, label: 'Settings' },
-];
 
 interface Props {
   activeSection: PartnerSection;
@@ -31,18 +20,10 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const session = localStorage.getItem('casmik_partner_session');
-      if (!session) {
-        setIsAuthenticated(false);
-        window.location.href = '/partner/login';
-      } else {
-        setIsAuthenticated(true);
-      }
-    }
-  }, []);
+  const [showReferModal, setShowReferModal] = useState(false);
+  const [partnerOrderCount, setPartnerOrderCount] = useState<number>(21);
+  const [partnerInspectionCount, setPartnerInspectionCount] = useState<number>(3);
+  const [partnerSupportCount, setPartnerSupportCount] = useState<number>(2);
 
   const getPartner = (): Partner | null => {
     if (currentPartner) return currentPartner;
@@ -59,6 +40,79 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
   };
 
   const partner: Partner = getPartner() || partners[0];
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const session = localStorage.getItem('casmik_partner_session');
+      if (!session) {
+        setIsAuthenticated(false);
+        window.location.href = '/partner/login';
+      } else {
+        setIsAuthenticated(true);
+      }
+    }
+  }, []);
+
+  // Compute live real-time badge counts for partner portal
+  useEffect(() => {
+    const updatePartnerMetrics = () => {
+      if (typeof window === 'undefined') return;
+      try {
+        const currentId = partner?.id || 'partner-001';
+        const rawPartner = localStorage.getItem('casmik_partner_orders_v1');
+        const rawGlobal = localStorage.getItem('casmik_orders_v1');
+
+        const pList = rawPartner ? JSON.parse(rawPartner) : [];
+        const gList = rawGlobal ? JSON.parse(rawGlobal) : [];
+
+        const orderMap = new Map();
+        [...gList, ...pList].forEach((o: any) => {
+          if (o && (o.partnerId === currentId || !o.partnerId || o.partnerId === 'partner-001' || o.partnerId === 'partner-002')) {
+            orderMap.set(o.orderNumber || o.id, o);
+          }
+        });
+
+        const activeList = Array.from(orderMap.values());
+        setPartnerOrderCount(activeList.length);
+
+        const inspectionList = activeList.filter((o: any) =>
+          ['inspection', 'pickup_scheduled', 'picked_up', 'diagnostics_started'].includes(o.status)
+        );
+        setPartnerInspectionCount(inspectionList.length);
+
+        const rawTickets = localStorage.getItem('casmik_tickets_v1');
+        if (rawTickets) {
+          const tList = JSON.parse(rawTickets);
+          if (Array.isArray(tList)) {
+            const activeTickets = tList.filter((t: any) => t.status !== 'resolved' && t.status !== 'closed');
+            setPartnerSupportCount(activeTickets.length);
+          }
+        }
+      } catch {}
+    };
+
+    updatePartnerMetrics();
+    window.addEventListener('casmik_orders_updated', updatePartnerMetrics);
+    window.addEventListener('casmik_partner_orders_updated', updatePartnerMetrics);
+    window.addEventListener('storage', updatePartnerMetrics);
+    return () => {
+      window.removeEventListener('casmik_orders_updated', updatePartnerMetrics);
+      window.removeEventListener('casmik_partner_orders_updated', updatePartnerMetrics);
+      window.removeEventListener('storage', updatePartnerMetrics);
+    };
+  }, [partner?.id]);
+
+  const navItems: NavItem[] = [
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'orders', icon: ShoppingBag, label: 'Orders', badge: partnerOrderCount },
+    { id: 'inspection', icon: ClipboardCheck, label: 'Inspection', badge: partnerInspectionCount },
+    { id: 'payouts', icon: DollarSign, label: 'Payouts' },
+    { id: 'customers', icon: Users, label: 'Customers' },
+    { id: 'reports', icon: BarChart3, label: 'Reports' },
+    { id: 'support', icon: MessageSquare, label: 'Support Tickets', badge: partnerSupportCount },
+    { id: 'profile', icon: UserCircle, label: 'My Profile' },
+    { id: 'settings', icon: Settings, label: 'Settings' },
+  ];
 
   if (isAuthenticated === false) {
     return (
@@ -120,7 +174,12 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
           <p className="text-lg mb-1">🎁</p>
           <p className="text-xs font-bold text-gray-900">Refer & Earn More</p>
           <p className="text-xs text-gray-500 mb-2">Refer new partners and earn extra commission.</p>
-          <button className="w-full py-1.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90">Refer Now</button>
+          <button
+            onClick={() => setShowReferModal(true)}
+            className="w-full py-1.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90 transition-transform active:scale-95 shadow-md shadow-primary/20"
+          >
+            Refer Now
+          </button>
         </div>
       )}
       <div className={`border-t border-gray-100 p-3 flex items-center flex-shrink-0 ${collapsed ? 'justify-center' : 'gap-3'}`}>
@@ -203,6 +262,12 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
         </header>
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
       </div>
+
+      <PartnerReferModal
+        partner={partner}
+        isOpen={showReferModal}
+        onClose={() => setShowReferModal(false)}
+      />
     </div>
   );
 }

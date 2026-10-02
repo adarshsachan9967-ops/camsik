@@ -119,8 +119,9 @@ export default function AdminPage() {
       case 'support_tickets': return <AdminSupportTickets />;
       case 'coupons': return <AdminCoupons />;
       case 'rental_cameras':
+        return <AdminRentalCameras initialTab="fleet" />;
       case 'rental_orders':
-        return <AdminRentalCameras />;
+        return <AdminRentalCameras initialTab="orders" />;
       default: return <AdminOverview onNavigate={handleNavigate} />;
     }
   };

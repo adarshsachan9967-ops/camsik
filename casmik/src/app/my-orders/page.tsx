@@ -35,29 +35,58 @@ export default function MyOrdersPage() {
   useEffect(() => {
     const currentUser = getCurrentUser();
     setUser(currentUser);
-    const initialOrders = getCustomerOrders(currentUser?.phone);
+    const initialOrders = getCustomerOrders(currentUser?.phone, currentUser?.email);
     setOrders(initialOrders);
+
+    // Also fetch from /api/orders in background to ensure any server-side orders are pulled
+    const syncRemoteOrders = async (u: CustomerUser | null) => {
+      if (!u) return;
+      try {
+        const query = u.phone || u.email;
+        if (!query) return;
+        const res = await fetch(`/api/orders?search=${encodeURIComponent(query)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.orders)) {
+            // merge into local casmik_orders_v1 so getCustomerOrders picks it up
+            const raw = localStorage.getItem('casmik_orders_v1');
+            const localOrders: any[] = raw ? JSON.parse(raw) : [];
+            const mergedMap = new Map();
+            localOrders.forEach(o => mergedMap.set(o.orderNumber || o.id, o));
+            data.orders.forEach((o: any) => mergedMap.set(o.orderNumber || o.id, o));
+            localStorage.setItem('casmik_orders_v1', JSON.stringify(Array.from(mergedMap.values())));
+            setOrders(getCustomerOrders(u.phone, u.email));
+          }
+        }
+      } catch (e) {
+        console.warn('Silent orders sync note:', e);
+      }
+    };
+
+    syncRemoteOrders(currentUser);
 
     const handleAuthChange = (e: Event) => {
       const customEvent = e as CustomEvent<CustomerUser | null>;
-      setUser(customEvent.detail);
-      setOrders(getCustomerOrders(customEvent.detail?.phone));
+      const newUser = customEvent.detail;
+      setUser(newUser);
+      setOrders(getCustomerOrders(newUser?.phone, newUser?.email));
+      syncRemoteOrders(newUser);
     };
 
-    const handleOrdersChange = (e: Event) => {
-      const customEvent = e as CustomEvent<CustomerOrderRecord[]>;
-      if (customEvent.detail) {
-        setOrders(customEvent.detail);
-      } else {
-        setOrders(getCustomerOrders(currentUser?.phone));
-      }
+    const handleOrdersChange = () => {
+      const u = getCurrentUser();
+      setOrders(getCustomerOrders(u?.phone, u?.email));
     };
 
     window.addEventListener('casmik_auth_change', handleAuthChange);
     window.addEventListener('casmik_orders_updated', handleOrdersChange);
+    window.addEventListener('casmik_partner_orders_updated', handleOrdersChange);
+    window.addEventListener('storage', handleOrdersChange);
     return () => {
       window.removeEventListener('casmik_auth_change', handleAuthChange);
       window.removeEventListener('casmik_orders_updated', handleOrdersChange);
+      window.removeEventListener('casmik_partner_orders_updated', handleOrdersChange);
+      window.removeEventListener('storage', handleOrdersChange);
     };
   }, []);
 

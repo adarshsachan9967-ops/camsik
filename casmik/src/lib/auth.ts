@@ -119,55 +119,138 @@ export function saveCustomerOrder(order: CustomerOrderRecord): void {
   }
 }
 
-export function getCustomerOrders(phone?: string): CustomerOrderRecord[] {
+function orderToCustomerRecord(o: any): CustomerOrderRecord {
+  const amount = Number(o.finalPrice ?? o.final_price ?? o.quotedPrice ?? o.quoted_price ?? o.price ?? 0);
+  return {
+    id: o.id || `ord-${Date.now()}`,
+    orderNumber: o.orderNumber || o.order_number || o.id,
+    type: (o.type || o.order_type || 'sell') as any,
+    status: o.status || 'created',
+    createdAt: o.createdAt || o.created_at || new Date().toISOString(),
+    customerName: o.customerName || o.customer_name || 'Customer',
+    customerPhone: o.customerPhone || o.customer_phone || '',
+    customerAddress: o.customerAddress || o.customer_address || o.address || '',
+    city: o.city || '',
+    pincode: o.pinCode || o.pin_code || o.pincode || '',
+    pickupDate: o.pickupDate || o.pickup_date,
+    pickupSlot: o.pickupSlot || o.pickup_slot,
+    paymentMethod: o.paymentMethod || 'UPI / Instant Bank Transfer',
+    paymentStatus: o.paymentStatus || o.payment_status || 'pending',
+    oldDevice: (o.deviceName || o.device_name) ? {
+      brand: o.deviceBrand || o.device_brand || '',
+      model: o.deviceModel || o.device_model || o.deviceName || o.device_name || '',
+      image: o.deviceImage || o.device_image || '',
+      conditionSummary: o.condition || o.notes || 'Inspected Device',
+      valuation: Number(o.quotedPrice || o.quoted_price || amount),
+      exchangeBonus: 0,
+    } : undefined,
+    upgradePrice: 0,
+    tradeInCredit: Number(o.quotedPrice || o.quoted_price || amount),
+    exchangeBonus: 0,
+    couponDiscount: 0,
+    netPayable: amount,
+    balanceOwedToUser: amount,
+    partnerId: o.partnerId ?? o.partner_id ?? null,
+    partnerName: o.partnerName ?? o.partner_name ?? null,
+    partnerPhone: o.partnerPhone ?? o.partner_phone ?? null,
+    deliveryAgentId: o.deliveryAgentId ?? o.delivery_agent_id ?? null,
+    deliveryAgentName: o.deliveryAgentName ?? o.delivery_agent_name ?? null,
+    deliveryAgentPhone: o.deliveryAgentPhone ?? o.delivery_agent_phone ?? null,
+    inspectionScore: o.inspectionScore ?? o.inspection_score ?? null,
+    finalPrice: o.finalPrice ?? o.final_price ?? null,
+    deviceCollected: Boolean(o.deviceCollected ?? o.device_collected),
+    notes: o.notes || null,
+  };
+}
+
+export function getCustomerOrders(phone?: string, email?: string): CustomerOrderRecord[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(ORDERS_STORAGE_KEY);
     let parsed: CustomerOrderRecord[] = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(parsed)) parsed = [];
 
-    // Cross-reference live order updates from casmik_orders_v1 (updated by Delivery rider & Partner)
-    try {
-      const globalRaw = localStorage.getItem('casmik_orders_v1');
-      if (globalRaw) {
-        const globalOrders: any[] = JSON.parse(globalRaw);
-        if (Array.isArray(globalOrders)) {
-          const globalOrderMap = new Map(globalOrders.map(g => [g.orderNumber || g.id, g]));
-          parsed = parsed.map(order => {
-            const liveMatch = globalOrderMap.get(order.orderNumber) || globalOrderMap.get(order.id);
-            if (liveMatch) {
-              return {
-                ...order,
-                status: liveMatch.status || order.status,
-                paymentStatus: liveMatch.paymentStatus || order.paymentStatus,
-                partnerId: liveMatch.partnerId ?? order.partnerId,
-                partnerName: liveMatch.partnerName ?? order.partnerName,
-                partnerPhone: liveMatch.partnerPhone ?? order.partnerPhone,
-                deliveryAgentId: liveMatch.deliveryAgentId ?? order.deliveryAgentId,
-                deliveryAgentName: liveMatch.deliveryAgentName ?? order.deliveryAgentName,
-                deliveryAgentPhone: liveMatch.deliveryAgentPhone ?? order.deliveryAgentPhone,
-                inspectionScore: liveMatch.inspectionScore ?? order.inspectionScore,
-                finalPrice: liveMatch.finalPrice ?? order.finalPrice,
-                deviceCollected: liveMatch.deviceCollected ?? order.deviceCollected,
-                notes: liveMatch.notes ?? order.notes,
-              };
-            }
-            return order;
-          });
-        }
+    const orderMap = new Map<string, CustomerOrderRecord>();
+    // Seed with existing customer records
+    parsed.forEach(o => {
+      if (o && (o.id || o.orderNumber)) {
+        orderMap.set(o.orderNumber || o.id, o);
       }
+    });
+
+    const cleanPhone = phone ? phone.trim().replace(/\D/g, '').slice(-10) : '';
+    const cleanEmail = email ? email.trim().toLowerCase() : '';
+
+    // Pull and cross-reference from unified casmik_orders_v1 and casmik_partner_orders_v1
+    const storageKeys = ['casmik_orders_v1', 'casmik_partner_orders_v1'];
+    storageKeys.forEach(key => {
+      try {
+        const rawOrders = localStorage.getItem(key);
+        if (rawOrders) {
+          const list: any[] = JSON.parse(rawOrders);
+          if (Array.isArray(list)) {
+            list.forEach(item => {
+              const itemNum = item.orderNumber || item.order_number || item.id;
+              if (!itemNum) return;
+
+              const itemPhone = (item.customerPhone || item.customer_phone || '').replace(/\D/g, '').slice(-10);
+              const itemEmail = (item.customerEmail || item.customer_email || '').trim().toLowerCase();
+
+              const phoneMatches = Boolean(cleanPhone && itemPhone && itemPhone === cleanPhone);
+              const emailMatches = Boolean(cleanEmail && itemEmail && itemEmail === cleanEmail);
+
+              const existingRecord = orderMap.get(itemNum);
+
+              if (existingRecord) {
+                // Update with live status & fulfillment info
+                orderMap.set(itemNum, {
+                  ...existingRecord,
+                  status: item.status || existingRecord.status,
+                  paymentStatus: item.paymentStatus || existingRecord.paymentStatus,
+                  partnerId: item.partnerId ?? existingRecord.partnerId,
+                  partnerName: item.partnerName ?? existingRecord.partnerName,
+                  partnerPhone: item.partnerPhone ?? existingRecord.partnerPhone,
+                  deliveryAgentId: item.deliveryAgentId ?? existingRecord.deliveryAgentId,
+                  deliveryAgentName: item.deliveryAgentName ?? existingRecord.deliveryAgentName,
+                  deliveryAgentPhone: item.deliveryAgentPhone ?? existingRecord.deliveryAgentPhone,
+                  inspectionScore: item.inspectionScore ?? existingRecord.inspectionScore,
+                  finalPrice: item.finalPrice ?? existingRecord.finalPrice,
+                  deviceCollected: item.deviceCollected ?? existingRecord.deviceCollected,
+                  notes: item.notes ?? existingRecord.notes,
+                });
+              } else if (phoneMatches || emailMatches) {
+                // Newly placed/completed order matching this user
+                orderMap.set(itemNum, orderToCustomerRecord(item));
+              }
+            });
+          }
+        }
+      } catch {}
+    });
+
+    const allRecords = Array.from(orderMap.values());
+    // Save synchronized records back to camsik_customer_orders
+    try {
+      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(allRecords));
     } catch {}
 
-    const sorted = parsed.sort((a, b) => {
+    const sorted = allRecords.sort((a, b) => {
       const timeA = Math.max(new Date(a.createdAt || 0).getTime(), new Date((a as any).updatedAt || 0).getTime());
       const timeB = Math.max(new Date(b.createdAt || 0).getTime(), new Date((b as any).updatedAt || 0).getTime());
       return timeB - timeA;
     });
 
-    if (phone && phone.trim() !== '') {
-      const cleanPhone = phone.trim().replace(/\D/g, '').slice(-10);
-      return sorted.filter((o) => o.customerPhone && o.customerPhone.replace(/\D/g, '').slice(-10) === cleanPhone);
+    if (cleanPhone || cleanEmail) {
+      return sorted.filter((o) => {
+        const oPhone = (o.customerPhone || '').replace(/\D/g, '').slice(-10);
+        const oEmail = ((o as any).customerEmail || '').trim().toLowerCase();
+        if (cleanPhone && oPhone === cleanPhone) return true;
+        if (cleanEmail && oEmail && oEmail === cleanEmail) return true;
+        // In case order didn't have email saved on record, phone match takes precedence
+        return false;
+      });
     }
+
     return sorted;
   } catch (err) {
     console.error('Failed to read customer orders:', err);

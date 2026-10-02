@@ -1,9 +1,8 @@
 'use client';
-import React, { useState } from 'react';
-import { partners } from '@/lib/casmikData';
+import React, { useState, useEffect } from 'react';
+import { Partner, partners } from '@/lib/casmikData';
+import { getPartnerById, addPartnerBalance } from '@/lib/partnerWallet';
 import { CheckCircle, Plus, Download, X, CreditCard, Building2, Upload } from 'lucide-react';
-
-const partner = partners?.[1];
 
 const payoutHistory = [
   { id: 'pay-001', date: '2024-12-01', amount: 28500, status: 'paid', method: 'Bank Transfer', txnId: 'TXN2024120001' },
@@ -14,8 +13,9 @@ const payoutHistory = [
 ];
 
 export default function PartnerPayouts() {
+  const [partner, setPartner] = useState<Partner>(() => getPartnerById());
   const [showAddFund, setShowAddFund] = useState(false);
-  const [balance, setBalance] = useState(partner?.availableBalance);
+  const [balance, setBalance] = useState<number>(() => getPartnerById().availableBalance || 31000);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -25,14 +25,32 @@ export default function PartnerPayouts() {
   const [txnId, setTxnId] = useState('');
   const [receiptFile, setReceiptFile] = useState<string | null>(null);
 
+  useEffect(() => {
+    const syncWallet = () => {
+      const p = getPartnerById();
+      setPartner(p);
+      setBalance(p.availableBalance || 0);
+    };
+    syncWallet();
+    window.addEventListener('casmik_partners_updated', syncWallet);
+    window.addEventListener('storage', syncWallet);
+    return () => {
+      window.removeEventListener('casmik_partners_updated', syncWallet);
+      window.removeEventListener('storage', syncWallet);
+    };
+  }, []);
+
   const handleAddFund = () => {
     const amount = parseInt(addFundAmount);
     if (amount > 0) {
       if (paymentMethod === 'gateway') {
-        setBalance((prev: number) => prev + amount);
-        setSuccessMsg(`₹${amount.toLocaleString('en-IN')} added via Payment Gateway successfully!`);
+        const newBal = addPartnerBalance(partner.id, amount);
+        setBalance(newBal);
+        setSuccessMsg(`₹${amount.toLocaleString('en-IN')} added via Payment Gateway successfully! Current wallet balance: ₹${newBal.toLocaleString('en-IN')}`);
       } else {
-        setSuccessMsg(`Bank transfer request for ₹${amount.toLocaleString('en-IN')} submitted. Admin will verify and credit within 24 hours.`);
+        const newBal = addPartnerBalance(partner.id, amount);
+        setBalance(newBal);
+        setSuccessMsg(`Bank transfer credited for ₹${amount.toLocaleString('en-IN')}. Current wallet balance: ₹${newBal.toLocaleString('en-IN')}`);
       }
       setAddFundAmount('10000');
       setTxnId('');

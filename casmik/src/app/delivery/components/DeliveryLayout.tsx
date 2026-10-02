@@ -71,16 +71,28 @@ export default function DeliveryLayout({ activeSection, onSectionChange, childre
   const [taskCount, setTaskCount] = useState(5);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('casmik_orders_v1');
-      const all = raw ? JSON.parse(raw) : orders;
-      const activeTasks = all.filter((o: any) => 
-        Boolean(o.deliveryAgentId) &&
-        (o.deliveryAgentId === agent?.id || o.deliveryAgentId === 'agent-101') &&
-        ['assigned', 'accepted', 'pickup_scheduled', 'picked_up'].includes(o.status)
-      );
-      setTaskCount(activeTasks.length);
-    } catch {}
+    const updateTaskCount = () => {
+      try {
+        const raw = localStorage.getItem('casmik_orders_v1');
+        const all = raw ? JSON.parse(raw) : orders;
+        const activeTasks = all.filter((o: any) => 
+          Boolean(o.deliveryAgentId) &&
+          (o.deliveryAgentId === agent?.id || o.deliveryAgentId === 'agent-101') &&
+          ['assigned', 'accepted', 'pickup_scheduled', 'picked_up'].includes(o.status)
+        );
+        setTaskCount(activeTasks.length);
+      } catch {}
+    };
+
+    updateTaskCount();
+    window.addEventListener('casmik_orders_updated', updateTaskCount);
+    window.addEventListener('casmik_partner_orders_updated', updateTaskCount);
+    window.addEventListener('storage', updateTaskCount);
+    return () => {
+      window.removeEventListener('casmik_orders_updated', updateTaskCount);
+      window.removeEventListener('casmik_partner_orders_updated', updateTaskCount);
+      window.removeEventListener('storage', updateTaskCount);
+    };
   }, [agent?.id]);
 
   const navItems: NavItem[] = [

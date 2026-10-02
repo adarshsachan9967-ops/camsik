@@ -93,10 +93,10 @@ function OrderTrackerContent() {
 
   const supabase = createClient();
 
-  const fetchOrders = useCallback(async (queryRaw: string) => {
+  const fetchOrders = useCallback(async (queryRaw: string, isSilent = false) => {
     const q = queryRaw.trim();
     if (!q) return;
-    setLoading(true);
+    if (!isSilent) setLoading(true);
     setHasSearched(true);
     setActiveQuery(q);
 
@@ -203,7 +203,7 @@ function OrderTrackerContent() {
     });
 
     setOrders(results);
-    setLoading(false);
+    if (!isSilent) setLoading(false);
   }, [supabase]);
 
   // Read URL query params on mount (e.g. ?orderId=CSM-2024-156 or ?phone=9876543210)
@@ -214,7 +214,7 @@ function OrderTrackerContent() {
 
     if (initialQuery) {
       setSearchInput(initialQuery);
-      fetchOrders(initialQuery);
+      fetchOrders(initialQuery, false);
     }
   }, [searchParams, fetchOrders]);
 
@@ -223,7 +223,7 @@ function OrderTrackerContent() {
     if (!activeQuery) return;
 
     const handleLocalSync = () => {
-      fetchOrders(activeQuery);
+      fetchOrders(activeQuery, true);
     };
 
     window.addEventListener('casmik_orders_updated', handleLocalSync);
@@ -251,10 +251,10 @@ function OrderTrackerContent() {
       })
       .subscribe(status => setIsConnected(status === 'SUBSCRIBED'));
 
-    // 4-second polling to ensure updates from riders or partners appear live
+    // 5-second polling to ensure updates from riders or partners appear live without UI flash
     const interval = setInterval(() => {
-      fetchOrders(activeQuery);
-    }, 4000);
+      fetchOrders(activeQuery, true);
+    }, 5000);
 
     return () => {
       clearInterval(interval);

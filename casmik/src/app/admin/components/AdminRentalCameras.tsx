@@ -37,8 +37,14 @@ import {
 import { getRentalOrders, updateRentalOrderStatus } from '@/lib/rentalOrders';
 import { Order, OrderStatus } from '@/lib/casmikData';
 
-export default function AdminRentalCameras() {
-  const [activeTab, setActiveTab] = useState<'fleet' | 'orders'>('fleet');
+export default function AdminRentalCameras({ initialTab = 'fleet' }: { initialTab?: 'fleet' | 'orders' }) {
+  const [activeTab, setActiveTab] = useState<'fleet' | 'orders'>(initialTab);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [cameras, setCameras] = useState<RentalCamera[]>([]);
   const [rentalOrders, setRentalOrders] = useState<Order[]>([]);
   const [search, setSearch] = useState('');
