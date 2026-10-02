@@ -68,10 +68,16 @@ export default function MyOrdersPage() {
     }
   };
 
-  const filteredOrders = orders.filter((o) => {
-    if (activeTab === 'all') return true;
-    return o.type === activeTab;
-  });
+  const filteredOrders = orders
+    .filter((o) => {
+      if (activeTab === 'all') return true;
+      return o.type === activeTab;
+    })
+    .sort((a, b) => {
+      const timeA = Math.max(new Date(a.createdAt || 0).getTime(), new Date((a as any).updatedAt || 0).getTime());
+      const timeB = Math.max(new Date(b.createdAt || 0).getTime(), new Date((b as any).updatedAt || 0).getTime());
+      return timeB - timeA;
+    });
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {

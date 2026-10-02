@@ -17,6 +17,8 @@ import {
   CreditCard
 } from 'lucide-react';
 import { categories, Category } from '@/lib/casmikData';
+import { getCurrentUser } from '@/lib/auth';
+import CustomerAuthModal from '@/components/CustomerAuthModal';
 
 interface UserSellQuoteViewProps {
   onOrderBooked: (orderData: any) => void;
@@ -39,6 +41,15 @@ export default function UserSellQuoteView({ onOrderBooked }: UserSellQuoteViewPr
   const [pickupSlot, setPickupSlot] = useState('10:00 AM - 01:00 PM');
   const [upiId, setUpiId] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  React.useEffect(() => {
+    const user = getCurrentUser();
+    if (user) {
+      if (user.name) setCustomerName(user.name);
+      if (user.phone) setCustomerPhone(user.phone);
+    }
+  }, []);
 
   // Dynamic calculated valuation
   const basePrices: Record<string, number> = {
@@ -65,6 +76,10 @@ export default function UserSellQuoteView({ onOrderBooked }: UserSellQuoteViewPr
 
   const handleBookPickup = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!getCurrentUser()) {
+      setShowAuthModal(true);
+      return;
+    }
     const newOrderId = `CSK-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const newOrder = {
@@ -514,6 +529,18 @@ export default function UserSellQuoteView({ onOrderBooked }: UserSellQuoteViewPr
           </div>
         </form>
       )}
+
+      <CustomerAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={(user) => {
+          setCustomerName(user.name);
+          setCustomerPhone(user.phone);
+          setShowAuthModal(false);
+        }}
+        title="Login Required to Book Pickup"
+        subtitle="Please verify your mobile number to confirm your device pickup."
+      />
     </div>
   );
 }

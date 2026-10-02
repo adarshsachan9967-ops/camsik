@@ -36,12 +36,15 @@ import {
   DEFAULT_REFURBISHED_PRODUCTS,
   getModelKey,
 } from '@/lib/refurbishedCatalog';
+import { getCurrentUser } from '@/lib/auth';
+import CustomerAuthModal from '@/components/CustomerAuthModal';
 
 export default function BuyRefurbishedPage() {
   const [products, setProducts] = useState<RefurbishedProduct[]>(DEFAULT_REFURBISHED_PRODUCTS);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeCondition, setActiveCondition] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Navigation / views: 'list' | 'details' | 'checkout' | 'confirmed'
   const [currentView, setCurrentView] = useState<'list' | 'details' | 'checkout' | 'confirmed'>('list');
@@ -125,12 +128,20 @@ export default function BuyRefurbishedPage() {
   };
 
   const handleStartCheckout = () => {
+    if (!getCurrentUser()) {
+      setShowAuthModal(true);
+      return;
+    }
     setCurrentView('checkout');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!getCurrentUser()) {
+      setShowAuthModal(true);
+      return;
+    }
     const randomId = 'CAM-ORD-' + Math.floor(100000 + Math.random() * 900000);
     setConfirmedOrderId(randomId);
     setCurrentView('confirmed');
@@ -1151,6 +1162,20 @@ export default function BuyRefurbishedPage() {
           </section>
         </>
       )}
+
+      <CustomerAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={(user) => {
+          setFullName(user.name);
+          setPhone(user.phone);
+          setShowAuthModal(false);
+          setCurrentView('checkout');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        title="Login Required to Buy Device"
+        subtitle="Please verify your mobile number to complete your refurbished camera order."
+      />
 
       <CustomerFooter />
     </main>

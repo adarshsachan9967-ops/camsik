@@ -257,17 +257,23 @@ export default function AdminOrders({
     return () => { supabase.removeChannel(channel); };
   }, [fetchOrders, supabase]);
 
-  const filtered = orderList.filter(o =>
-    (o.orderNumber.toLowerCase().includes(query.toLowerCase()) ||
-     o.customerName.toLowerCase().includes(query.toLowerCase()) ||
-     o.deviceName.toLowerCase().includes(query.toLowerCase()) ||
-     (o.city && o.city.toLowerCase().includes(query.toLowerCase()))) &&
-    (filterType === 'all' || o.type === filterType) &&
-    (filterStatus === 'all' || 
-     (filterStatus === 'pending'
-       ? ['created', 'assigned', 'accepted', 'pickup_scheduled'].includes(o.status)
-       : o.status === filterStatus))
-  );
+  const filtered = orderList
+    .filter(o =>
+      (o.orderNumber.toLowerCase().includes(query.toLowerCase()) ||
+       o.customerName.toLowerCase().includes(query.toLowerCase()) ||
+       o.deviceName.toLowerCase().includes(query.toLowerCase()) ||
+       (o.city && o.city.toLowerCase().includes(query.toLowerCase()))) &&
+      (filterType === 'all' || o.type === filterType) &&
+      (filterStatus === 'all' || 
+       (filterStatus === 'pending'
+         ? ['created', 'assigned', 'accepted', 'pickup_scheduled'].includes(o.status)
+         : o.status === filterStatus))
+    )
+    .sort((a, b) => {
+      const timeA = Math.max(new Date(a.createdAt || 0).getTime(), new Date(a.updatedAt || 0).getTime());
+      const timeB = Math.max(new Date(b.createdAt || 0).getTime(), new Date(b.updatedAt || 0).getTime());
+      return timeB - timeA;
+    });
 
   const handleAssign = async () => {
     if (!assignModal || !selectedPartner) return;

@@ -43,6 +43,7 @@ import {
 } from '@/lib/rentalCatalog';
 import { saveRentalOrder } from '@/lib/rentalOrders';
 import { getCurrentUser } from '@/lib/auth';
+import CustomerAuthModal from '@/components/CustomerAuthModal';
 
 function RentalCamerasContent() {
   const searchParams = useSearchParams();
@@ -83,6 +84,7 @@ function RentalCamerasContent() {
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'Card' | 'COD'>('UPI');
   const [confirmedOrderId, setConfirmedOrderId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Load catalog & pre-fill logged in user
   useEffect(() => {
@@ -175,12 +177,20 @@ function RentalCamerasContent() {
   };
 
   const handleProceedToCheckout = () => {
+    if (!getCurrentUser()) {
+      setShowAuthModal(true);
+      return;
+    }
     setCurrentView('checkout');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handlePlaceRentalOrder = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!getCurrentUser()) {
+      setShowAuthModal(true);
+      return;
+    }
     if (!selectedCamera) return;
 
     if (!fullName.trim() || !phone.trim() || !address.trim() || !pincode.trim()) {
@@ -1213,6 +1223,20 @@ function RentalCamerasContent() {
           )}
         </div>
       )}
+
+      <CustomerAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={(user) => {
+          setFullName(user.name);
+          setPhone(user.phone);
+          setShowAuthModal(false);
+          setCurrentView('checkout');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        title="Login Required to Rent Camera"
+        subtitle="Please verify your mobile number to reserve professional photography equipment."
+      />
 
       <CustomerFooter />
     </main>

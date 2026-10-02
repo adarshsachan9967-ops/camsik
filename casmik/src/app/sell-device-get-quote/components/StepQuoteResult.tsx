@@ -1,11 +1,13 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { CheckCircle, Shield, Truck, Zap, Ban, TrendingUp, Clock, MapPin, Calendar, User, Phone, ArrowRight, BellRing, ShieldCheck, ExternalLink } from 'lucide-react';
 import type { SellState } from './SellDeviceWorkflow';
 import { triggerNotification } from '@/lib/notifications';
 import { createClient } from '@/lib/supabase/client';
 import FullVerificationReportModal from './FullVerificationReportModal';
+import { getCurrentUser } from '@/lib/auth';
+import CustomerAuthModal from '@/components/CustomerAuthModal';
 
 interface Props {
   sellState: SellState;
@@ -28,6 +30,7 @@ type QuoteView = 'quote' | 'schedule' | 'confirmed';
 export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }: Props) {
   const [view, setView] = useState<QuoteView>('quote');
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -38,9 +41,32 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
   const [bookedOrderNumber, setBookedOrderNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (user) {
+      if (user.name) setName(user.name);
+      if (user.phone) setPhone(user.phone);
+    }
+  }, []);
+
   const price = sellState.currentPrice;
 
+  const handleProceedToSchedule = () => {
+    const user = getCurrentUser();
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+    setView('schedule');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleConfirmBooking = async () => {
+    const user = getCurrentUser();
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     if (!name || !phone || !address || !pinCode || !selectedDate || !selectedSlot || isSubmitting) return;
     setIsSubmitting(true);
 
@@ -503,7 +529,7 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
 
       {/* Action cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <button onClick={() => setView('schedule')}
+        <button onClick={handleProceedToSchedule}
           className="gradient-green text-white rounded-2xl p-5 flex items-center gap-4 hover:opacity-95 btn-press shadow-green text-left">
           <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
             <Truck size={22} className="text-white" />
@@ -535,6 +561,20 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
           onClose={() => setShowReportModal(false)}
         />
       )}
+
+      <CustomerAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={(loggedUser) => {
+          setName(loggedUser.name);
+          setPhone(loggedUser.phone);
+          setShowAuthModal(false);
+          setView('schedule');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        title="Login Required to Schedule Pickup"
+        subtitle="Please verify your mobile number to lock this price quote and schedule your doorstep device pickup."
+      />
     </div>
   );
 }

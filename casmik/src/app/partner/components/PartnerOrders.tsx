@@ -47,7 +47,21 @@ const getAllowedForwardStatuses = (currentStatus: OrderStatus) => {
   });
 };
 
-const getStoredPartnerOrders = (): Order[] => {
+const getActivePartnerId = (): string => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('casmik_partner_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.id) return parsed.id;
+      }
+    } catch {}
+  }
+  return 'partner-002';
+};
+
+const getStoredPartnerOrders = (activeId?: string): Order[] => {
+  const currentId = activeId || getActivePartnerId();
   if (typeof window !== 'undefined') {
     try {
       const savedPartner = localStorage.getItem('casmik_partner_orders_v1');
@@ -58,17 +72,29 @@ const getStoredPartnerOrders = (): Order[] => {
 
       const orderMap = new Map<string, Order>();
       [...globalList, ...partnerList].forEach((o: Order) => {
-        if (o && o.id && Boolean(o.partnerId) && (o.partnerId === PARTNER_ID || o.partnerId === 'partner-001')) {
-          orderMap.set(o.id, o);
+        if (o && o.id && (Boolean(o.partnerId) || o.status === 'assigned')) {
+          if (!o.partnerId || o.partnerId === currentId || o.partnerId === 'partner-001' || o.partnerId === 'partner-002') {
+            orderMap.set(o.id, o);
+          }
         }
       });
 
       if (orderMap.size > 0) {
-        return Array.from(orderMap.values());
+        return Array.from(orderMap.values()).sort((a, b) => {
+          const timeA = Math.max(new Date(a.createdAt || 0).getTime(), new Date(a.updatedAt || 0).getTime());
+          const timeB = Math.max(new Date(b.createdAt || 0).getTime(), new Date(b.updatedAt || 0).getTime());
+          return timeB - timeA;
+        });
       }
     } catch (e) {}
   }
-  return defaultOrders.filter(o => Boolean(o.partnerId) && (o.partnerId === PARTNER_ID || o.partnerId === 'partner-001'));
+  return defaultOrders
+    .filter(o => Boolean(o.partnerId) && (o.partnerId === currentId || o.partnerId === 'partner-001' || o.partnerId === 'partner-002'))
+    .sort((a, b) => {
+      const timeA = Math.max(new Date(a.createdAt || 0).getTime(), new Date(a.updatedAt || 0).getTime());
+      const timeB = Math.max(new Date(b.createdAt || 0).getTime(), new Date(b.updatedAt || 0).getTime());
+      return timeB - timeA;
+    });
 };
 
 const getAvailableDeliveryAgents = (): DeliveryAgent[] => {
@@ -184,19 +210,26 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
     // Also poll every 4 seconds to guarantee multi-tab & multi-device sync
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/orders?partnerId=${PARTNER_ID}`);
+        const currentId = getActivePartnerId();
+        const res = await fetch('/api/orders');
         if (res.ok) {
           const data = await res.json();
           if (data.success && Array.isArray(data.orders)) {
-            const localOrders = getStoredPartnerOrders();
+            const localOrders = getStoredPartnerOrders(currentId);
             const orderMap = new Map<string, Order>();
 
-            // API orders that are assigned to this partner
-            data.orders.filter((o: Order) => Boolean(o.partnerId) && (o.partnerId === PARTNER_ID || o.partnerId === 'partner-001')).forEach((o: Order) => orderMap.set(o.id, o));
-            // Local orders take precedence so newly placed/assigned orders are NEVER wiped out by stale serverless cold starts
+            // API orders that are assigned to this partner or pending assignment
+            data.orders
+              .filter((o: Order) => Boolean(o.partnerId) && (o.partnerId === currentId || o.partnerId === 'partner-001' || o.partnerId === 'partner-002'))
+              .forEach((o: Order) => orderMap.set(o.id, o));
+            // Local orders take precedence so newly assigned orders are NEVER wiped out
             localOrders.forEach(o => orderMap.set(o.id, o));
 
-            const merged = Array.from(orderMap.values());
+            const merged = Array.from(orderMap.values()).sort((a, b) => {
+              const timeA = Math.max(new Date(a.createdAt || 0).getTime(), new Date(a.updatedAt || 0).getTime());
+              const timeB = Math.max(new Date(b.createdAt || 0).getTime(), new Date(b.updatedAt || 0).getTime());
+              return timeB - timeA;
+            });
             if (merged.length > 0) {
               setOrderList(merged);
               setSelectedOrder(prev => prev ? (merged.find((o: Order) => o.id === prev.id) || prev) : null);
@@ -380,23 +413,35 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
   };
 
   const fetchOrders = useCallback(async () => {
+    const currentId = getActivePartnerId();
+    const orderMap = new Map<string, Order>();
+
+    // 1. Populate stored partner orders so newly placed / assigned orders are NEVER lost
+    const localOrders = getStoredPartnerOrders(currentId);
+    localOrders.forEach(o => orderMap.set(o.id, o));
+
     try {
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .eq('partner_id', PARTNER_ID)
+        .or(`partner_id.eq.${currentId},partner_id.eq.partner-001,partner_id.eq.partner-002`)
         .order('created_at', { ascending: false });
       if (!error && data && data.length > 0) {
-        setOrderList(data.map(dbToOrder));
+        data.map(dbToOrder).forEach(o => orderMap.set(o.id, o));
         setIsConnected(true);
-        return;
       }
     } catch (err: any) {
       console.log('Partner orders remote notice:', err.message);
     } finally {
       setLoading(false);
     }
-    setOrderList(getStoredPartnerOrders());
+
+    const merged = Array.from(orderMap.values()).sort((a, b) => {
+      const timeA = Math.max(new Date(a.createdAt || 0).getTime(), new Date(a.updatedAt || 0).getTime());
+      const timeB = Math.max(new Date(b.createdAt || 0).getTime(), new Date(b.updatedAt || 0).getTime());
+      return timeB - timeA;
+    });
+    setOrderList(merged);
   }, [supabase]);
 
   useEffect(() => {
@@ -458,9 +503,16 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
       return;
     }
 
-    // 1. Immediately update orderList in state
+    const nowIso = new Date().toISOString();
+    const updatedOrder: Order = { ...currentOrder, status: newStatus, updatedAt: nowIso };
+
+    // 1. Immediately update orderList in state, keeping latest orders at the top
     setOrderList(prev => {
-      const updated = prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
+      const updated = prev.map(o => o.id === orderId ? updatedOrder : o).sort((a, b) => {
+        const timeA = Math.max(new Date(a.createdAt || 0).getTime(), new Date(a.updatedAt || 0).getTime());
+        const timeB = Math.max(new Date(b.createdAt || 0).getTime(), new Date(b.updatedAt || 0).getTime());
+        return timeB - timeA;
+      });
       if (typeof window !== 'undefined') {
         localStorage.setItem('casmik_partner_orders_v1', JSON.stringify(updated));
       }
@@ -468,7 +520,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
     });
 
     // 2. Update selectedOrder if it's currently open in modal
-    setSelectedOrder(prev => prev && prev.id === orderId ? { ...prev, status: newStatus } : prev);
+    setSelectedOrder(prev => prev && prev.id === orderId ? updatedOrder : prev);
 
     // 3. Update global orders in localStorage
     if (typeof window !== 'undefined') {
@@ -477,11 +529,13 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
         if (savedGlobal) {
           const list = JSON.parse(savedGlobal);
           if (Array.isArray(list)) {
-            const updated = list.map((o: any) => o.id === orderId ? { ...o, status: newStatus } : o);
+            const updated = list.map((o: any) => o.id === orderId ? updatedOrder : o);
             localStorage.setItem('casmik_orders_v1', JSON.stringify(updated));
           }
         }
       } catch {}
+      window.dispatchEvent(new Event('casmik_orders_updated'));
+      window.dispatchEvent(new Event('casmik_partner_orders_updated'));
     }
 
     // 4. Show success toast notification with optional immediate action
@@ -613,18 +667,45 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
     onStartInspection?.(id);
   };
 
-  const filtered = orderList.filter(o =>
-    (o.orderNumber.toLowerCase().includes(query.toLowerCase()) || o.customerName.toLowerCase().includes(query.toLowerCase())) &&
-    (filterStatus === 'all' || o.status === filterStatus)
-  );
+  const filtered = orderList
+    .filter(o => {
+      const q = query.trim().toLowerCase();
+      const matchesQuery =
+        !q ||
+        o.orderNumber.toLowerCase().includes(q) ||
+        o.customerName.toLowerCase().includes(q) ||
+        o.deviceName.toLowerCase().includes(q);
+
+      if (!matchesQuery) return false;
+
+      if (filterStatus === 'all') return true;
+      if (filterStatus === 'assigned') {
+        return ['assigned', 'new', 'created', 'pending'].includes(o.status);
+      }
+      if (filterStatus === 'picked_up') {
+        return ['picked_up', 'in_transit'].includes(o.status);
+      }
+      if (filterStatus === 'inspection') {
+        return ['inspection', 'inspection_completed'].includes(o.status);
+      }
+      if (filterStatus === 'completed') {
+        return ['completed', 'paid'].includes(o.status);
+      }
+      return o.status === filterStatus;
+    })
+    .sort((a, b) => {
+      const timeA = Math.max(new Date(a.createdAt || 0).getTime(), new Date(a.updatedAt || 0).getTime());
+      const timeB = Math.max(new Date(b.createdAt || 0).getTime(), new Date(b.updatedAt || 0).getTime());
+      return timeB - timeA;
+    });
 
   const tabs = [
     { id: 'all', label: 'All', count: orderList.length },
-    { id: 'assigned', label: 'New', count: orderList.filter(o => o.status === 'assigned').length },
+    { id: 'assigned', label: 'New', count: orderList.filter(o => ['assigned', 'new', 'created', 'pending'].includes(o.status)).length },
     { id: 'accepted', label: 'Accepted', count: orderList.filter(o => o.status === 'accepted').length },
-    { id: 'picked_up', label: 'Picked Up', count: orderList.filter(o => o.status === 'picked_up').length },
-    { id: 'inspection', label: 'Inspection', count: orderList.filter(o => o.status === 'inspection').length },
-    { id: 'completed', label: 'Completed', count: orderList.filter(o => o.status === 'completed').length },
+    { id: 'picked_up', label: 'Picked Up', count: orderList.filter(o => ['picked_up', 'in_transit'].includes(o.status)).length },
+    { id: 'inspection', label: 'Inspection', count: orderList.filter(o => ['inspection', 'inspection_completed'].includes(o.status)).length },
+    { id: 'completed', label: 'Completed', count: orderList.filter(o => ['completed', 'paid'].includes(o.status)).length },
   ];
 
   if (loading) {

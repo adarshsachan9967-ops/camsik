@@ -158,11 +158,17 @@ export function getCustomerOrders(phone?: string): CustomerOrderRecord[] {
       }
     } catch {}
 
+    const sorted = parsed.sort((a, b) => {
+      const timeA = Math.max(new Date(a.createdAt || 0).getTime(), new Date((a as any).updatedAt || 0).getTime());
+      const timeB = Math.max(new Date(b.createdAt || 0).getTime(), new Date((b as any).updatedAt || 0).getTime());
+      return timeB - timeA;
+    });
+
     if (phone && phone.trim() !== '') {
       const cleanPhone = phone.trim().replace(/\D/g, '').slice(-10);
-      return parsed.filter((o) => o.customerPhone && o.customerPhone.replace(/\D/g, '').slice(-10) === cleanPhone);
+      return sorted.filter((o) => o.customerPhone && o.customerPhone.replace(/\D/g, '').slice(-10) === cleanPhone);
     }
-    return parsed;
+    return sorted;
   } catch (err) {
     console.error('Failed to read customer orders:', err);
     return [];
