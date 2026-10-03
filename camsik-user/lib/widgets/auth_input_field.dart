@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AuthInputField extends StatelessWidget {
   final String label;
@@ -11,6 +12,8 @@ class AuthInputField extends StatelessWidget {
   final bool isPassword;
   final bool obscureText;
   final VoidCallback? onToggleVisibility;
+  final List<TextInputFormatter>? inputFormatters;
+  final int? maxLength;
 
   const AuthInputField({
     super.key,
@@ -24,6 +27,8 @@ class AuthInputField extends StatelessWidget {
     this.isPassword = false,
     this.obscureText = false,
     this.onToggleVisibility,
+    this.inputFormatters,
+    this.maxLength,
   });
 
   @override
@@ -39,8 +44,11 @@ class AuthInputField extends StatelessWidget {
           keyboardType: keyboardType,
           textCapitalization: textCapitalization,
           obscureText: isPassword ? obscureText : false,
+          inputFormatters: inputFormatters,
+          maxLength: maxLength,
           style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
+            counterText: '',
             hintText: hint,
             hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
             prefixIcon: Icon(icon, color: const Color(0xFF34D399), size: 20),

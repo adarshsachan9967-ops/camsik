@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'app.dart';
-import 'services/session_service.dart';
+import 'core/services/session_service.dart';
 
 void main() {
   runZonedGuarded(() async {

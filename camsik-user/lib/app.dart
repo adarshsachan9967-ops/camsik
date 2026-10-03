@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'modules/auth/bloc/auth_cubit.dart';
+import 'modules/home/bloc/home_cubit.dart';
+import 'modules/orders/bloc/orders_cubit.dart';
+import 'modules/sell/bloc/sell_cubit.dart';
+import 'core/services/session_service.dart';
 import 'models/user_profile.dart';
-import 'screens/auth/auth_screen.dart';
-import 'screens/main_navigation_screen.dart';
-import 'screens/onboarding/onboarding_screen.dart';
-import 'services/session_service.dart';
+import 'core/routes/app_routes.dart';
+import 'modules/auth/auth_screen.dart';
+import 'modules/main_navigation_screen.dart';
+import 'modules/onboarding/onboarding_screen.dart';
+
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 class CamsikUserApp extends StatefulWidget {
   const CamsikUserApp({super.key});
@@ -106,45 +114,55 @@ class _CamsikUserAppState extends State<CamsikUserApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Camsik User',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF059669), // Camsik Emerald
-          primary: const Color(0xFF059669),
-          secondary: const Color(0xFF4F46E5), // Electric Indigo
-          surface: const Color(0xFFF8FAFC),
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-        cardTheme: const CardThemeData(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(20)),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthCubit>(create: (_) => AuthCubit()..checkSession()),
+        BlocProvider<HomeCubit>(create: (_) => HomeCubit()..loadHomeData()),
+        BlocProvider<OrdersCubit>(create: (_) => OrdersCubit()),
+        BlocProvider<SellCubit>(create: (_) => SellCubit()),
+      ],
+      child: MaterialApp(
+        scaffoldMessengerKey: scaffoldMessengerKey,
+        title: 'Camsik User',
+        debugShowCheckedModeBanner: false,
+        onGenerateRoute: AppRoutes.onGenerateRoute,
+        theme: ThemeData(
+          useMaterial3: true,
+          fontFamily: 'Roboto',
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF059669), // Camsik Emerald
+            primary: const Color(0xFF059669),
+            secondary: const Color(0xFF4F46E5), // Electric Indigo
+            surface: const Color(0xFFF8FAFC),
+            brightness: Brightness.light,
           ),
-          color: Colors.white,
+          scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+          cardTheme: const CardThemeData(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+            ),
+            color: Colors.white,
+          ),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF0F172A),
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
         ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF0F172A),
-          foregroundColor: Colors.white,
-          elevation: 0,
-        ),
+        home: _isLoggedIn
+            ? UserMainNavigationScreen(
+                userProfile: _userProfile,
+                onProfileUpdate: _updateProfile,
+                onLogout: _logoutUser,
+              )
+            : _isFirstLaunch
+                ? CamsikOnboardingScreen(onFinish: _completeOnboarding)
+                : CamsikAuthScreen(
+                    onAuthSuccess: _loginUser,
+                    initialProfile: _userProfile,
+                  ),
       ),
-      home: _isLoggedIn
-          ? UserMainNavigationScreen(
-              userProfile: _userProfile,
-              onProfileUpdate: _updateProfile,
-              onLogout: _logoutUser,
-            )
-          : _isFirstLaunch
-              ? CamsikOnboardingScreen(onFinish: _completeOnboarding)
-              : CamsikAuthScreen(
-                  onAuthSuccess: _loginUser,
-                  initialProfile: _userProfile,
-                ),
     );
   }
 }

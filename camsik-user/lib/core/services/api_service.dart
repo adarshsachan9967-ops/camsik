@@ -1,6 +1,4 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../data/fallback/fallback_banners.dart';
 import '../../data/fallback/fallback_categories.dart';
@@ -8,98 +6,170 @@ import '../../data/fallback/fallback_models.dart';
 import '../../data/fallback/fallback_questions.dart';
 import '../../data/fallback/fallback_refurbished.dart';
 import '../../data/fallback/fallback_rental_cameras.dart';
+import '../constants/api_constants.dart';
+import '../constants/app_keys.dart';
 import '../utils/api_sanitizer.dart';
+import '../utils/logger.dart';
+import '../utils/session_manager.dart';
 import 'session_service.dart';
+import 'storage_service.dart';
 
 class ApiService {
-  static const List<String> _baseUrls = [
-    'https://casmik-one.vercel.app', // Production live web backend
-    'https://casmik.vercel.app', // Production secondary domain
-    'http://10.0.2.2:4028', // Android Emulator to host
-    'http://localhost:4028', // Host local
-  ];
+  // ── DIO INSTANCE WITH EMBEDDED INTERCEPTORS ──
+  static final Dio dio = Dio(
+    BaseOptions(
+      baseUrl: ApiConstants.baseUrl,
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    ),
+  )..interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final startTime = DateTime.now();
+          options.extra['startTime'] = startTime;
 
-  static String? _resolvedBaseUrl;
+          final prefs = await SharedPreferencesService.getInstance();
+          final token = prefs.getString(AppKeys.accessToken);
 
-  // Eager in-memory caches populated at startup for 0ms synchronous UI rendering
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+            appLog("🔐 Bearer Token attached");
+          }
+
+          dynamic dataToLog = options.data;
+          if (options.data is FormData) {
+            final formData = options.data as FormData;
+            final fieldsMap = Map.fromEntries(formData.fields);
+            final filesMap = Map.fromEntries(
+              formData.files.map((f) => MapEntry(f.key, f.value.filename ?? 'File')),
+            );
+            dataToLog = {
+              if (fieldsMap.isNotEmpty) 'fields': fieldsMap,
+              if (filesMap.isNotEmpty) 'files': filesMap,
+            };
+          }
+
+          appLog("📤 REQUEST → ${options.method} ${options.uri}");
+          appLog("🔸 Headers: ${options.headers}");
+          appLog("🔸 Data: $dataToLog");
+          appLog("⏱️ Started at: $startTime");
+
+          return handler.next(options);
+        },
+        onResponse: (response, handler) {
+          final startTime = response.requestOptions.extra['startTime'] as DateTime?;
+          final duration = startTime != null ? DateTime.now().difference(startTime) : null;
+          appLog("✅ RESPONSE ← ${response.statusCode} ${response.requestOptions.uri}");
+          appLog("📦 Response Data: ${response.data}");
+          if (duration != null) {
+            appLog("⏳ API Duration: ${duration.inMilliseconds} ms (${duration.inSeconds}s)");
+          }
+          return handler.next(response);
+        },
+        onError: (DioException e, handler) async {
+          final startTime = e.requestOptions.extra['startTime'] as DateTime?;
+          final duration = startTime != null ? DateTime.now().difference(startTime) : null;
+
+          appLog("❌ ERROR ← ${e.response?.statusCode} ${e.requestOptions.uri}");
+          if (duration != null) {
+            appLog("⏱️ API failed after: ${duration.inMilliseconds} ms (${duration.inSeconds}s)");
+          }
+
+          if (e.response?.statusCode == 401) {
+            if (e.requestOptions.path.contains('/auth/refresh-token')) {
+              appLog("🚨 Refresh token endpoint returned 401 - forcing logout");
+              await SessionManager.forceLogout();
+              return handler.next(e);
+            }
+
+            final prefs = await SharedPreferencesService.getInstance();
+            final storedRefreshToken = prefs.getString(AppKeys.refreshToken);
+
+            if (storedRefreshToken != null && storedRefreshToken.isNotEmpty) {
+              appLog("🔄 401 Unauthorized received. Attempting token refresh...");
+              try {
+                final refreshDio = Dio(
+                  BaseOptions(
+                    connectTimeout: const Duration(seconds: 15),
+                    receiveTimeout: const Duration(seconds: 15),
+                    headers: {"Accept": "application/json", "Content-Type": "application/json"},
+                  ),
+                );
+
+                final refreshResponse = await refreshDio.post(
+                  ApiConstants.refreshToken,
+                  data: {"token": storedRefreshToken},
+                );
+
+                if (refreshResponse.statusCode == 200 &&
+                    refreshResponse.data != null &&
+                    refreshResponse.data['success'] == true) {
+                  final newAccessToken = refreshResponse.data['data']?['accessToken'];
+                  if (newAccessToken != null && newAccessToken is String && newAccessToken.isNotEmpty) {
+                    appLog("✅ Access token refreshed successfully! Retrying request...");
+                    await prefs.setString(AppKeys.accessToken, newAccessToken);
+
+                    final retryOptions = e.requestOptions;
+                    retryOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+                    final response = await dio.fetch(retryOptions);
+                    return handler.resolve(response);
+                  }
+                }
+              } catch (refreshErr) {
+                appLog("❌ Refresh token call failed: $refreshErr");
+              }
+            }
+
+            appLog("🚨 401 Unauthorized & refresh token unavailable/expired - forcing logout");
+            await SessionManager.forceLogout();
+            return handler.next(e);
+          }
+
+          if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+            appLog("⚠️ Timeout: The API took too long to respond.");
+            try {
+              appLog("🔁 Retrying request once due to timeout...");
+              final retryOptions = e.requestOptions;
+              retryOptions.connectTimeout = const Duration(seconds: 30);
+              retryOptions.receiveTimeout = const Duration(seconds: 30);
+
+              final response = await dio.fetch(retryOptions);
+              appLog("✅ Retry succeeded with status ${response.statusCode}");
+              return handler.resolve(response);
+            } catch (retryError) {
+              appLog("❌ Retry failed too: $retryError");
+            }
+          }
+
+          return handler.next(e);
+        },
+      ),
+    );
+
+  // ── IN-MEMORY CACHES FOR 0ms UI RENDERING ──
   static List<Map<String, dynamic>> cachedBanners = List<Map<String, dynamic>>.from(FallbackBanners.data);
   static List<Map<String, dynamic>> cachedCategories = List<Map<String, dynamic>>.from(FallbackCategories.data);
   static List<Map<String, dynamic>> cachedRefurbished = List<Map<String, dynamic>>.from(FallbackRefurbished.data);
   static List<Map<String, dynamic>> cachedRentalCameras = List<Map<String, dynamic>>.from(FallbackRentalCameras.data);
 
-  /// Helper to send GET request with auto-discovery and timeout
-  static Future<Map<String, dynamic>?> _get(String path) async {
-    final client = HttpClient()..connectionTimeout = const Duration(milliseconds: 2500);
-    final urlsToTry = _resolvedBaseUrl != null
-        ? [_resolvedBaseUrl!, ..._baseUrls.where((u) => u != _resolvedBaseUrl)]
-        : _baseUrls;
-
-    for (final base in urlsToTry) {
-      try {
-        final uri = Uri.parse('$base$path');
-        final request = await client.getUrl(uri).timeout(const Duration(milliseconds: 2500));
-        request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
-        final response = await request.close().timeout(const Duration(milliseconds: 2500));
-
-        if (response.statusCode == 200) {
-          final responseBody = await response.transform(utf8.decoder).join();
-          _resolvedBaseUrl = base;
-          final decoded = jsonDecode(responseBody);
-          if (decoded is Map) {
-            return Map<String, dynamic>.from(decoded);
-          }
-        }
-      } catch (_) {}
-    }
-    client.close();
-    return null;
-  }
-
-  /// Helper to send POST request
-  static Future<Map<String, dynamic>?> _post(String path, Map<String, dynamic> data) async {
-    final client = HttpClient()..connectionTimeout = const Duration(milliseconds: 2500);
-    final urlsToTry = _resolvedBaseUrl != null
-        ? [_resolvedBaseUrl!, ..._baseUrls.where((u) => u != _resolvedBaseUrl)]
-        : _baseUrls;
-
-    for (final base in urlsToTry) {
-      try {
-        final uri = Uri.parse('$base$path');
-        final request = await client.postUrl(uri).timeout(const Duration(milliseconds: 2500));
-        request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
-        request.write(jsonEncode(data));
-        final response = await request.close().timeout(const Duration(milliseconds: 2500));
-
-        final responseBody = await response.transform(utf8.decoder).join();
-        _resolvedBaseUrl = base;
-        try {
-          final decoded = jsonDecode(responseBody);
-          if (decoded is Map) {
-            return Map<String, dynamic>.from(decoded);
-          }
-        } catch (_) {
-          return {'statusCode': response.statusCode, 'body': responseBody};
-        }
-      } catch (_) {}
-    }
-    client.close();
-    return null;
-  }
+  // ── IMAGE & DATA SANITIZATION ──
+  static String cleanImagePath(dynamic path, {String? categoryId}) =>
+      ApiSanitizer.cleanImagePath(path, categoryId: categoryId);
 
   // ── AUTHENTICATION API ──
-
   static Future<Map<String, dynamic>> login({
     required String identifier,
     required String password,
   }) async {
     final cleanId = identifier.trim();
     try {
-      final res = await _post('/api/auth/login', {
-        'identifier': cleanId,
-        'password': password.trim(),
-      });
-      if (res != null) {
-        final mapRes = Map<String, dynamic>.from(res);
+      final res = await dio.post(ApiConstants.login, data: {'identifier': cleanId, 'password': password.trim()});
+      if (res.data != null && res.data is Map) {
+        final mapRes = Map<String, dynamic>.from(res.data as Map);
         if (mapRes['success'] == true) {
           if (mapRes['user'] != null && mapRes['user'] is Map) {
             final u = Map<String, dynamic>.from(mapRes['user'] as Map);
@@ -110,46 +180,45 @@ class ApiService {
               email: u['email']?.toString() ?? '',
             );
           }
+          if (mapRes['token'] != null) {
+            final prefs = await SharedPreferencesService.getInstance();
+            await prefs.setString(AppKeys.accessToken, mapRes['token'].toString());
+          }
           return mapRes;
         }
       }
-    } catch (_) {}
-
-    // Graceful offline fallback: authenticate against locally stored credentials
-    final localAccount = SessionService.verifyLocalAccount(identifier: cleanId, password: password.trim());
-    if (localAccount != null) {
-      return {
-        'success': true,
-        'token': 'camsik-local-jwt-${DateTime.now().millisecondsSinceEpoch}',
-        'user': {
-          'id': 'usr-local',
-          'phone': localAccount['phone'],
-          'name': localAccount['name'],
-          'email': localAccount['email'],
-          'role': 'user',
-        },
-      };
+    } catch (e) {
+      appLog("Login network attempt failed: $e");
+      String msg = 'Login failed. Please check your credentials.';
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data is Map && data['message'] != null) {
+          msg = data['message'].toString();
+        } else if (e.response?.statusCode == 401) {
+          msg = 'Incorrect password or account not found.';
+        }
+      }
+      /*
+      // --- Offline / Demo Fallback (Commented Out) ---
+      final localAccount = SessionService.verifyLocalAccount(identifier: cleanId, password: password.trim());
+      if (localAccount != null) {
+        return {
+          'success': true,
+          'token': 'camsik-local-jwt-${DateTime.now().millisecondsSinceEpoch}',
+          'user': {'id': 'usr-local', 'phone': localAccount['phone'], 'name': localAccount['name'], 'email': localAccount['email'], 'role': 'user'},
+        };
+      }
+      if (cleanId == '9876543210' || cleanId.toLowerCase() == 'test@camsik.in') {
+        return {
+          'success': true,
+          'token': 'camsik-default-jwt-${DateTime.now().millisecondsSinceEpoch}',
+          'user': {'id': 'usr-default', 'phone': '9876543210', 'name': 'Rahul Sharma', 'email': 'rahul.s@camsik.in', 'role': 'user'},
+        };
+      }
+      */
+      return {'success': false, 'message': msg};
     }
-
-    // Default seamless test account fallback
-    if (cleanId == '9876543210' || cleanId.toLowerCase() == 'test@camsik.in') {
-      return {
-        'success': true,
-        'token': 'camsik-default-jwt-${DateTime.now().millisecondsSinceEpoch}',
-        'user': {
-          'id': 'usr-default',
-          'phone': '9876543210',
-          'name': 'Rahul Sharma',
-          'email': 'rahul.s@camsik.in',
-          'role': 'user',
-        },
-      };
-    }
-
-    return {
-      'success': false,
-      'message': 'Invalid credentials. If new, please switch to Create Account.',
-    };
+    return {'success': false, 'message': 'Invalid credentials. If new, please switch to Create Account.'};
   }
 
   static Future<Map<String, dynamic>> signUp({
@@ -163,15 +232,15 @@ class ApiService {
     final cleanName = name.trim();
 
     try {
-      final res = await _post('/api/auth/register', {
+      final res = await dio.post(ApiConstants.register, data: {
         'name': cleanName,
         'phone': cleanPhone,
         'email': cleanEmail,
         'password': password.trim(),
         'role': 'user',
       });
-      if (res != null) {
-        final mapRes = Map<String, dynamic>.from(res);
+      if (res.data != null && res.data is Map) {
+        final mapRes = Map<String, dynamic>.from(res.data as Map);
         if (mapRes['success'] == true) {
           await SessionService.saveLocalAccount(
             phone: cleanPhone,
@@ -179,64 +248,69 @@ class ApiService {
             name: cleanName,
             email: cleanEmail,
           );
+          if (mapRes['token'] != null) {
+            final prefs = await SharedPreferencesService.getInstance();
+            await prefs.setString(AppKeys.accessToken, mapRes['token'].toString());
+          }
           return mapRes;
         }
       }
-    } catch (_) {}
-
-    // Graceful offline account creation
-    await SessionService.saveLocalAccount(
-      phone: cleanPhone,
-      password: password.trim(),
-      name: cleanName,
-      email: cleanEmail,
-    );
-    return {
-      'success': true,
-      'token': 'camsik-local-jwt-${DateTime.now().millisecondsSinceEpoch}',
-      'user': {
-        'id': 'usr-${DateTime.now().millisecondsSinceEpoch}',
-        'phone': cleanPhone,
-        'name': cleanName,
-        'email': cleanEmail,
-        'role': 'user',
-      },
-    };
+    } catch (e) {
+      appLog("Registration network attempt failed: $e");
+      String msg = 'Registration failed. Please try again.';
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data is Map && data['message'] != null) {
+          msg = data['message'].toString();
+        } else if (e.response?.statusCode == 409) {
+          msg = 'Mobile number is already registered. Please sign in.';
+        }
+      }
+      /*
+      // --- Offline Local Account Fallback (Commented Out) ---
+      await SessionService.saveLocalAccount(
+        phone: cleanPhone, password: password.trim(), name: cleanName, email: cleanEmail,
+      );
+      return {
+        'success': true,
+        'token': 'camsik-local-jwt-${DateTime.now().millisecondsSinceEpoch}',
+        'user': {'id': 'usr-${DateTime.now().millisecondsSinceEpoch}', 'phone': cleanPhone, 'name': cleanName, 'email': cleanEmail, 'role': 'user'},
+      };
+      */
+      return {'success': false, 'message': msg};
+    }
+    return {'success': false, 'message': 'Registration failed. Please try again.'};
   }
 
-  // ── IMAGE & DATA SANITIZATION WRAPPERS ──
-  static String cleanImagePath(dynamic path, {String? categoryId}) =>
-      ApiSanitizer.cleanImagePath(path, categoryId: categoryId);
-
-  // ── BACKGROUND DATA SYNC ──
+  // ── BACKGROUND SYNC ──
   static Future<void> syncDataInBackground() async {
     try {
-      final bannersRes = await _get('/api/banners');
-      if (bannersRes != null && bannersRes['banners'] is List) {
-        final list = (bannersRes['banners'] as List).cast<Map<String, dynamic>>();
+      final bannersRes = await dio.get(ApiConstants.banners);
+      if (bannersRes.data != null && bannersRes.data['banners'] is List) {
+        final list = (bannersRes.data['banners'] as List).cast<Map<String, dynamic>>();
         for (final b in list) {
           b['image'] = cleanImagePath(b['image'], categoryId: b['categoryFilter']?.toString());
         }
         cachedBanners = list;
       }
 
-      final categoriesRes = await _get('/api/categories');
-      if (categoriesRes != null && categoriesRes['categories'] is List) {
-        final list = (categoriesRes['categories'] as List).cast<Map<String, dynamic>>();
+      final categoriesRes = await dio.get(ApiConstants.categories);
+      if (categoriesRes.data != null && categoriesRes.data['categories'] is List) {
+        final list = (categoriesRes.data['categories'] as List).cast<Map<String, dynamic>>();
         ApiSanitizer.sanitizeCategories(list);
         cachedCategories = list;
       }
 
-      final refRes = await _get('/api/refurbished');
-      if (refRes != null && refRes['products'] is List) {
-        final refList = (refRes['products'] as List).cast<Map<String, dynamic>>();
+      final refRes = await dio.get(ApiConstants.refurbished);
+      if (refRes.data != null && refRes.data['products'] is List) {
+        final refList = (refRes.data['products'] as List).cast<Map<String, dynamic>>();
         ApiSanitizer.sanitizeRefurbished(refList);
         cachedRefurbished = refList;
       }
 
-      final rentRes = await _get('/api/rentals');
-      if (rentRes != null && rentRes['cameras'] is List) {
-        final rentList = (rentRes['cameras'] as List).cast<Map<String, dynamic>>();
+      final rentRes = await dio.get(ApiConstants.rentals);
+      if (rentRes.data != null && rentRes.data['cameras'] is List) {
+        final rentList = (rentRes.data['cameras'] as List).cast<Map<String, dynamic>>();
         ApiSanitizer.sanitizeRentalCameras(rentList);
         cachedRentalCameras = rentList;
       }
@@ -245,12 +319,12 @@ class ApiService {
     }
   }
 
-  // ── HERO BANNERS ──
+  // ── BANNERS & CATEGORIES ──
   static Future<List<Map<String, dynamic>>> fetchBanners() async {
     try {
-      final json = await _get('/api/banners');
-      if (json != null && json['banners'] is List) {
-        final list = (json['banners'] as List).cast<Map<String, dynamic>>();
+      final res = await dio.get(ApiConstants.banners);
+      if (res.data != null && res.data['banners'] is List) {
+        final list = (res.data['banners'] as List).cast<Map<String, dynamic>>();
         if (list.isNotEmpty) {
           for (final b in list) {
             b['image'] = cleanImagePath(b['image'], categoryId: b['categoryFilter']?.toString());
@@ -263,12 +337,11 @@ class ApiService {
     return cachedBanners;
   }
 
-  // ── CATEGORIES ──
   static Future<List<Map<String, dynamic>>> fetchCategories() async {
     try {
-      final json = await _get('/api/categories');
-      if (json != null && json['categories'] is List) {
-        final list = (json['categories'] as List).cast<Map<String, dynamic>>();
+      final res = await dio.get(ApiConstants.categories);
+      if (res.data != null && res.data['categories'] is List) {
+        final list = (res.data['categories'] as List).cast<Map<String, dynamic>>();
         if (list.isNotEmpty) {
           ApiSanitizer.sanitizeCategories(list);
           cachedCategories = list;
@@ -279,7 +352,7 @@ class ApiService {
     return cachedCategories;
   }
 
-  // ── MODELS & BRANDS ──
+  // ── MODELS & QUESTIONS ──
   static List<Map<String, dynamic>> getFallbackModelsSync({String? categoryId, String? search}) {
     final list = FallbackModels.getModels(categoryId: categoryId, search: search);
     ApiSanitizer.sanitizeModels(list);
@@ -288,15 +361,13 @@ class ApiService {
 
   static Future<List<Map<String, dynamic>>> fetchModels({String? categoryId, String? search}) async {
     try {
-      var path = '/api/models';
-      final params = <String>[];
-      if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') params.add('categoryId=$categoryId');
-      if (search != null && search.isNotEmpty) params.add('search=${Uri.encodeComponent(search)}');
-      if (params.isNotEmpty) path += '?${params.join('&')}';
+      final queryParams = <String, dynamic>{};
+      if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') queryParams['categoryId'] = categoryId;
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
 
-      final json = await _get(path);
-      if (json != null && json['models'] is List) {
-        final list = (json['models'] as List).cast<Map<String, dynamic>>();
+      final res = await dio.get(ApiConstants.models, queryParameters: queryParams);
+      if (res.data != null && res.data['models'] is List) {
+        final list = (res.data['models'] as List).cast<Map<String, dynamic>>();
         if (list.isNotEmpty) {
           ApiSanitizer.sanitizeModels(list);
           return list;
@@ -308,35 +379,32 @@ class ApiService {
     return fallback;
   }
 
-  // ── QUESTIONS ──
   static List<Map<String, dynamic>> getQuestionsSync({required String categoryId}) {
     return FallbackQuestions.getQuestions(categoryId);
   }
 
   static Future<List<Map<String, dynamic>>> fetchQuestions({required String categoryId}) async {
     try {
-      final json = await _get('/api/questions?categoryId=$categoryId');
-      if (json != null && json['questions'] is List) {
-        final list = (json['questions'] as List).cast<Map<String, dynamic>>();
+      final res = await dio.get(ApiConstants.questions, queryParameters: {'categoryId': categoryId});
+      if (res.data != null && res.data['questions'] is List) {
+        final list = (res.data['questions'] as List).cast<Map<String, dynamic>>();
         if (list.isNotEmpty) return list;
       }
     } catch (_) {}
     return FallbackQuestions.getQuestions(categoryId);
   }
 
-  // ── REFURBISHED CATALOG & UNITS ──
+  // ── REFURBISHED & RENTALS ──
   static Future<List<Map<String, dynamic>>> fetchRefurbished({String? category, String? condition, String? search}) async {
     try {
-      var path = '/api/refurbished';
-      final params = <String>[];
-      if (category != null && category.isNotEmpty && category != 'all') params.add('category=${Uri.encodeComponent(category)}');
-      if (condition != null && condition.isNotEmpty && condition != 'all') params.add('condition=${Uri.encodeComponent(condition)}');
-      if (search != null && search.isNotEmpty) params.add('search=${Uri.encodeComponent(search)}');
-      if (params.isNotEmpty) path += '?${params.join('&')}';
+      final queryParams = <String, dynamic>{};
+      if (category != null && category.isNotEmpty && category != 'all') queryParams['category'] = category;
+      if (condition != null && condition.isNotEmpty && condition != 'all') queryParams['condition'] = condition;
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
 
-      final json = await _get(path);
-      if (json != null && json['products'] is List) {
-        final list = (json['products'] as List).cast<Map<String, dynamic>>();
+      final res = await dio.get(ApiConstants.refurbished, queryParameters: queryParams);
+      if (res.data != null && res.data['products'] is List) {
+        final list = (res.data['products'] as List).cast<Map<String, dynamic>>();
         if (list.isNotEmpty) {
           ApiSanitizer.sanitizeRefurbished(list);
           cachedRefurbished = list;
@@ -347,19 +415,16 @@ class ApiService {
     return cachedRefurbished;
   }
 
-  // ── RENTAL CAMERAS GET ──
   static Future<List<Map<String, dynamic>>> fetchRentalCameras({String? category, String? brand, String? search}) async {
     try {
-      var path = '/api/rentals';
-      final params = <String>[];
-      if (category != null && category.isNotEmpty && category != 'all') params.add('category=${Uri.encodeComponent(category)}');
-      if (brand != null && brand.isNotEmpty && brand != 'all') params.add('brand=${Uri.encodeComponent(brand)}');
-      if (search != null && search.isNotEmpty) params.add('search=${Uri.encodeComponent(search)}');
-      if (params.isNotEmpty) path += '?${params.join('&')}';
+      final queryParams = <String, dynamic>{};
+      if (category != null && category.isNotEmpty && category != 'all') queryParams['category'] = category;
+      if (brand != null && brand.isNotEmpty && brand != 'all') queryParams['brand'] = brand;
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
 
-      final json = await _get(path);
-      if (json != null && json['cameras'] is List) {
-        final list = (json['cameras'] as List).cast<Map<String, dynamic>>();
+      final res = await dio.get(ApiConstants.rentals, queryParameters: queryParams);
+      if (res.data != null && res.data['cameras'] is List) {
+        final list = (res.data['cameras'] as List).cast<Map<String, dynamic>>();
         if (list.isNotEmpty) {
           ApiSanitizer.sanitizeRentalCameras(list);
           cachedRentalCameras = list;
@@ -370,13 +435,15 @@ class ApiService {
     return cachedRentalCameras;
   }
 
-  // ── ORDERS GET & CREATE ──
+  // ── ORDERS ──
   static Future<List<Map<String, dynamic>>> fetchOrders({String? phone}) async {
     try {
-      final path = phone != null && phone.isNotEmpty ? '/api/orders?phone=${Uri.encodeComponent(phone)}' : '/api/orders';
-      final json = await _get(path);
-      if (json != null && json['orders'] is List) {
-        return (json['orders'] as List).cast<Map<String, dynamic>>();
+      final queryParams = <String, dynamic>{};
+      if (phone != null && phone.isNotEmpty) queryParams['phone'] = phone;
+
+      final res = await dio.get(ApiConstants.orders, queryParameters: queryParams);
+      if (res.data != null && res.data['orders'] is List) {
+        return (res.data['orders'] as List).cast<Map<String, dynamic>>();
       }
     } catch (_) {}
     return [];
@@ -384,12 +451,13 @@ class ApiService {
 
   static Future<Map<String, dynamic>?> createOrder(Map<String, dynamic> orderData) async {
     try {
-      final json = await _post('/api/orders', orderData);
-      if (json != null && json['success'] == true && json['order'] != null) {
-        return json['order'] as Map<String, dynamic>;
+      final res = await dio.post(ApiConstants.createOrder, data: orderData);
+      if (res.data != null && res.data['success'] == true && res.data['order'] != null) {
+        return res.data['order'] as Map<String, dynamic>;
       }
     } catch (_) {}
-    final fallbackOrderNumber = 'CSM-${orderData['type'] == 'buy' ? 'BUY' : orderData['type'] == 'exchange' ? 'EXC' : orderData['type'] == 'rent' ? 'RNT' : 'SELL'}-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    final fallbackOrderNumber =
+        'CSM-${orderData['type'] == 'buy' ? 'BUY' : orderData['type'] == 'exchange' ? 'EXC' : orderData['type'] == 'rent' ? 'RNT' : 'SELL'}-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
     return {
       'id': 'ord-${DateTime.now().millisecondsSinceEpoch}',
       'orderNumber': fallbackOrderNumber,
