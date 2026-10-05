@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../models/user_order.dart';
+import '../../orders/widgets/order_chat_bottom_sheet.dart';
 
 class OrderCardWidget extends StatelessWidget {
   final UserOrder order;
@@ -157,6 +158,23 @@ class OrderCardWidget extends StatelessWidget {
                   style: const TextStyle(
                       color: Color(0xFF64748B), fontSize: 11)),
               const Spacer(),
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  minimumSize: const Size(50, 20),
+                ),
+                icon: const Icon(Icons.chat_bubble_outline, size: 12, color: Color(0xFF4F46E5)),
+                onPressed: () => OrderChatBottomSheet.show(context, order: order),
+                label: const Text(
+                  'Chat Agent',
+                  style: TextStyle(
+                    color: Color(0xFF4F46E5),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
               TextButton(
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,

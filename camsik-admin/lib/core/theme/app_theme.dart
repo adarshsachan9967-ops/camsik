@@ -1,28 +1,40 @@
 import 'package:flutter/material.dart';
+import '../constants/app_colors.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF7C3AED), // Premium Purple
-        primary: const Color(0xFF7C3AED),
-        secondary: const Color(0xFF2563EB),
-        surface: const Color(0xFFF8FAFC),
+        seedColor: AppColors.primary,
+        primary: AppColors.primary,
+        secondary: AppColors.accent,
+        surface: AppColors.surface,
         brightness: Brightness.light,
       ),
-      scaffoldBackgroundColor: const Color(0xFFF1F5F9),
+      scaffoldBackgroundColor: AppColors.background,
       cardTheme: const CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
-        color: Colors.white,
+        color: AppColors.surface,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF0F172A), // Dark Luxury Slate
+        backgroundColor: AppColors.secondary,
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }

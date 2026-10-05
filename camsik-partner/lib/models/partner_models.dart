@@ -163,6 +163,8 @@ class PartnerOrder {
     );
   }
 
+  double get offeredPrice => finalPrice > 0 ? finalPrice : quotedPrice;
+
   String get statusDisplay {
     switch (status) {
       case 'created':

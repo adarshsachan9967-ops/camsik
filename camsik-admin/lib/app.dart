@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'core/routes/app_routes.dart';
 import 'core/theme/app_theme.dart';
-import 'screens/auth/admin_auth_check_screen.dart';
+
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 class CamsikAdminApp extends StatelessWidget {
   const CamsikAdminApp({super.key});
@@ -9,9 +12,11 @@ class CamsikAdminApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'CAMSIK Admin',
+      scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const AdminAuthCheckScreen(),
+      initialRoute: AppRoutes.initial,
+      onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }
 }

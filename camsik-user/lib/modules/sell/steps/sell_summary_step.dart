@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../data/models/responses/device_verification_report_model.dart';
+import '../widgets/device_imei_verification_sheet.dart';
 
-class SellSummaryStep extends StatelessWidget {
+class SellSummaryStep extends StatefulWidget {
   final Map<String, dynamic>? selectedModel;
   final String selectedStorage;
   final String selectedColor;
@@ -23,6 +25,13 @@ class SellSummaryStep extends StatelessWidget {
     required this.selectedAnswers,
     required this.onProceed,
   });
+
+  @override
+  State<SellSummaryStep> createState() => _SellSummaryStepState();
+}
+
+class _SellSummaryStepState extends State<SellSummaryStep> {
+  DeviceVerificationReportModel? _verificationReport;
 
   @override
   Widget build(BuildContext context) {
@@ -46,13 +55,90 @@ class SellSummaryStep extends StatelessWidget {
                 const Text('Guaranteed Instant Payout Quote', style: TextStyle(color: Colors.white70, fontSize: 12)),
                 const SizedBox(height: 6),
                 Text(
-                  formatCurrency(calculatedPrice),
+                  formatCurrency(widget.calculatedPrice),
                   style: const TextStyle(color: Color(0xFF34D399), fontWeight: FontWeight.w900, fontSize: 32),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${selectedModel?['name']} ($selectedStorage, $selectedColor)',
+                  '${widget.selectedModel?['name']} (${widget.selectedStorage}, ${widget.selectedColor})',
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Instant IMEI Verification Card
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _verificationReport != null ? const Color(0xFFF0FDF4) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _verificationReport != null ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (_verificationReport != null ? const Color(0xFF16A34A) : const Color(0xFF4F46E5))
+                        .withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _verificationReport != null ? Icons.verified : Icons.phonelink_setup,
+                    color: _verificationReport != null ? const Color(0xFF16A34A) : const Color(0xFF4F46E5),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _verificationReport != null
+                            ? 'IMEI Verified: ${_verificationReport!.imei}'
+                            : 'Verify Device Authenticity',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A)),
+                      ),
+                      Text(
+                        _verificationReport != null
+                            ? 'Diagnostics Passed · Status: ${_verificationReport!.status}'
+                            : 'Validate IMEI with live backend diagnostics',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: _verificationReport != null ? const Color(0xFF15803D) : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    minimumSize: const Size(60, 28),
+                  ),
+                  onPressed: () async {
+                    final report = await DeviceImeiVerificationSheet.show(
+                      context,
+                      selectedModel: widget.selectedModel,
+                      selectedVariant: widget.selectedStorage,
+                    );
+                    if (report != null && mounted) {
+                      setState(() => _verificationReport = report);
+                    }
+                  },
+                  child: Text(
+                    _verificationReport != null ? 'Re-verify' : 'Verify',
+                    style: TextStyle(
+                      color: _verificationReport != null ? const Color(0xFF15803D) : const Color(0xFF4F46E5),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -69,11 +155,11 @@ class SellSummaryStep extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _buildBreakdownRow('Base Market Value', formatCurrency(basePrice), isNeutral: true),
+                _buildBreakdownRow('Base Market Value', formatCurrency(widget.basePrice), isNeutral: true),
                 const Divider(height: 16),
-                ...List.generate(questions.length, (qIdx) {
-                  final optIdx = selectedAnswers[qIdx] ?? 0;
-                  final options = questions[qIdx]['options'] as List?;
+                ...List.generate(widget.questions.length, (qIdx) {
+                  final optIdx = widget.selectedAnswers[qIdx] ?? 0;
+                  final options = widget.questions[qIdx]['options'] as List?;
                   if (options == null || optIdx >= options.length) return const SizedBox.shrink();
                   final opt = options[optIdx];
                   final label = opt['label'] as String;
@@ -113,7 +199,7 @@ class SellSummaryStep extends StatelessWidget {
                   );
                 }),
                 const Divider(height: 16),
-                _buildBreakdownRow('Final Handover Cash', formatCurrency(calculatedPrice), isHighlight: true),
+                _buildBreakdownRow('Final Handover Cash', formatCurrency(widget.calculatedPrice), isHighlight: true),
               ],
             ),
           ),
@@ -127,7 +213,7 @@ class SellSummaryStep extends StatelessWidget {
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              onPressed: onProceed,
+              onPressed: widget.onProceed,
               child: const Text('Schedule Doorstep Handover', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),

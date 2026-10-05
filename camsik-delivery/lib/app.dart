@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'core/routes/app_routes.dart';
 import 'core/theme/app_theme.dart';
-import 'screens/auth/delivery_login_screen.dart';
-import 'screens/navigation/delivery_main_navigation_screen.dart';
-import 'services/session_service.dart';
+
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 class CamsikDeliveryApp extends StatelessWidget {
   const CamsikDeliveryApp({super.key});
@@ -11,11 +12,11 @@ class CamsikDeliveryApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Camsik Delivery',
+      scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: SessionService.isLoggedIn
-          ? const DeliveryMainNavigationScreen()
-          : const DeliveryLoginScreen(),
+      initialRoute: AppRoutes.initial,
+      onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }
 }

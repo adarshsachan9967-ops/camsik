@@ -32,6 +32,15 @@ class ApiConstants {
   // ── Orders & Transactions Endpoints ──
   static const String orders = "$baseUrl/orders";
   static const String createOrder = "$baseUrl/orders";
+  static const String orderMessages = "$baseUrl/orders/messages";
+
+  // ── Device Verification & AI Diagnostics ──
+  static const String validateImei = "$baseUrl/device-verification/validate-imei";
+  static const String verificationSession = "$baseUrl/device-verification/session";
+
+  // ── Media & ImageKit Upload ──
+  static const String imageKitAuth = "$baseUrl/imagekit/auth";
+  static const String imageKitUpload = "$baseUrl/imagekit/upload";
 
   // ── Location & Miscellaneous ──
   static const String cities = "$baseUrl/cities";

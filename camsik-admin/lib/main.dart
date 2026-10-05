@@ -1,16 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'app.dart';
+import 'core/services/api_service.dart';
+import 'core/services/session_service.dart';
 
-void main() {
-  runZonedGuarded(() {
+void main() async {
+  runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
-    FlutterError.onError = (FlutterErrorDetails details) {
+    ApiService.init();
+    await SessionService.init();
+    FlutterError.onError = (details) {
       FlutterError.presentError(details);
-      debugPrint('CamsikAdmin Error: ${details.exception}');
     };
     runApp(const CamsikAdminApp());
   }, (error, stack) {
-    debugPrint('CamsikAdmin Uncaught: $error\n$stack');
+    debugPrint('Global Camsik Admin Error: $error');
   });
 }
