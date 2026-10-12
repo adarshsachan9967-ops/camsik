@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'core/services/api_service.dart';
 import 'modules/auth/bloc/auth_cubit.dart';
 import 'modules/home/bloc/home_cubit.dart';
 import 'modules/orders/bloc/orders_cubit.dart';
@@ -64,6 +65,22 @@ class _CamsikUserAppState extends State<CamsikUserApp> {
         );
       }
     });
+
+    if (savedProfile != null && savedProfile['phone'] != null) {
+      final phone = savedProfile['phone'].toString();
+      ApiService.fetchUserProfile(phone).then((remote) {
+        if (remote != null && mounted) {
+          final updated = _userProfile.copyWith(
+            name: remote['name']?.toString().isNotEmpty == true ? remote['name'] : _userProfile.name,
+            email: remote['email']?.toString().isNotEmpty == true ? remote['email'] : _userProfile.email,
+            address: remote['address']?.toString().isNotEmpty == true ? remote['address'] : _userProfile.address,
+            upiId: remote['upiId']?.toString().isNotEmpty == true ? remote['upiId'] : _userProfile.upiId,
+            bankAccount: remote['bankAccount']?.toString().isNotEmpty == true ? remote['bankAccount'] : _userProfile.bankAccount,
+          );
+          _updateProfile(updated);
+        }
+      });
+    }
   }
 
   void _completeOnboarding() {
@@ -82,6 +99,14 @@ class _CamsikUserAppState extends State<CamsikUserApp> {
       bankAccount: profile.bankAccount,
       address: profile.address,
       avatarIndex: profile.avatarIndex,
+    );
+    ApiService.updateUserProfile(
+      phone: profile.phone,
+      name: profile.name,
+      email: profile.email,
+      address: profile.address,
+      upiId: profile.upiId,
+      bankAccount: profile.bankAccount,
     );
     setState(() {
       _userProfile = profile;
@@ -106,6 +131,14 @@ class _CamsikUserAppState extends State<CamsikUserApp> {
       bankAccount: updated.bankAccount,
       address: updated.address,
       avatarIndex: updated.avatarIndex,
+    );
+    ApiService.updateUserProfile(
+      phone: updated.phone,
+      name: updated.name,
+      email: updated.email,
+      address: updated.address,
+      upiId: updated.upiId,
+      bankAccount: updated.bankAccount,
     );
     setState(() {
       _userProfile = updated;

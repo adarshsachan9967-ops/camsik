@@ -156,4 +156,40 @@ class SessionService {
 
     return Map<String, dynamic>.from(match);
   }
+
+  // ── MULTI-ADDRESS STORE ──
+  static const String _keyAddressesList = 'camsik_user_saved_addresses_v1';
+
+  static List<Map<String, dynamic>> getSavedAddresses({String fallbackAddress = ''}) {
+    final raw = _prefs?.getString(_keyAddressesList);
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final list = jsonDecode(raw);
+        if (list is List && list.isNotEmpty) {
+          return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        }
+      } catch (_) {}
+    }
+
+    if (fallbackAddress.isNotEmpty) {
+      final parts = fallbackAddress.split(',').map((s) => s.trim()).toList();
+      return [
+        {
+          'id': 'addr-default',
+          'tag': 'Home',
+          'flat': parts.isNotEmpty ? parts[0] : '',
+          'street': parts.length > 1 ? parts[1] : '',
+          'city': parts.length > 2 ? parts[2] : 'Mumbai',
+          'pincode': parts.length > 3 ? parts[3] : '',
+          'isDefault': true,
+        }
+      ];
+    }
+    return [];
+  }
+
+  static Future<void> saveAddressesList(List<Map<String, dynamic>> addresses) async {
+    await init();
+    await _prefs?.setString(_keyAddressesList, jsonEncode(addresses));
+  }
 }

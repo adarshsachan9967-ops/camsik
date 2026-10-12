@@ -46,4 +46,34 @@ class OrdersCubit extends Cubit<OrdersState> {
     }
     return fallbackOrder;
   }
+
+  Future<bool> cancelOrder(String orderId, {String? reason, String? phone}) async {
+    try {
+      final response = await _ordersRepository.cancelOrder(orderId, reason: reason);
+      if (response.statusCode == 200) {
+        if (phone != null) await fetchOrders(phone: phone);
+        return true;
+      }
+    } catch (_) {
+      final success = await ApiService.cancelOrder(orderId: orderId, reason: reason);
+      if (success && phone != null) await fetchOrders(phone: phone);
+      return success;
+    }
+    return false;
+  }
+
+  Future<bool> rescheduleOrder(String orderId, {required String newDate, required String newSlot, String? phone}) async {
+    try {
+      final response = await _ordersRepository.rescheduleOrder(orderId, newDate: newDate, newSlot: newSlot);
+      if (response.statusCode == 200) {
+        if (phone != null) await fetchOrders(phone: phone);
+        return true;
+      }
+    } catch (_) {
+      final success = await ApiService.rescheduleOrder(orderId: orderId, newDate: newDate, newSlot: newSlot);
+      if (success && phone != null) await fetchOrders(phone: phone);
+      return success;
+    }
+    return false;
+  }
 }

@@ -477,4 +477,153 @@ class ApiService {
       'otp': '${1000 + (DateTime.now().millisecondsSinceEpoch % 8999)}',
     };
   }
+
+  // ── USER PROFILE & PAYOUT SYNC ──
+  static Future<Map<String, dynamic>?> updateUserProfile({
+    required String phone,
+    String? name,
+    String? email,
+    String? address,
+    String? upiId,
+    String? bankAccount,
+  }) async {
+    try {
+      final res = await dio.put(ApiConstants.updateProfile, data: {
+        'phone': phone.trim(),
+        if (name != null) 'name': name.trim(),
+        if (email != null) 'email': email.trim(),
+        if (address != null) 'address': address.trim(),
+        if (upiId != null) 'upiId': upiId.trim(),
+        if (bankAccount != null) 'bankAccount': bankAccount.trim(),
+      });
+      if (res.data != null && res.data['success'] == true) {
+        appLog("✅ User profile synced with server successfully");
+        return Map<String, dynamic>.from(res.data['user'] as Map);
+      }
+    } catch (e) {
+      appLog("⚠️ Profile sync network error: $e");
+    }
+    return null;
+  }
+
+  static Future<Map<String, dynamic>?> fetchUserProfile(String phone) async {
+    try {
+      final res = await dio.get(ApiConstants.updateProfile, queryParameters: {'phone': phone.trim()});
+      if (res.data != null && res.data['success'] == true && res.data['user'] != null) {
+        return Map<String, dynamic>.from(res.data['user'] as Map);
+      }
+    } catch (e) {
+      appLog("⚠️ Fetch profile error: $e");
+    }
+    return null;
+  }
+
+  // ── ORDER LIFECYCLE (CANCEL & RESCHEDULE) ──
+  static Future<bool> cancelOrder({
+    required String orderId,
+    String? reason,
+  }) async {
+    try {
+      final res = await dio.patch(ApiConstants.updateOrder, data: {
+        'orderId': orderId,
+        'status': 'Cancelled',
+        'cancellationReason': reason ?? 'Cancelled by user',
+      });
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("❌ Cancel order error: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> rescheduleOrder({
+    required String orderId,
+    required String newDate,
+    required String newSlot,
+  }) async {
+    try {
+      final res = await dio.patch(ApiConstants.updateOrder, data: {
+        'orderId': orderId,
+        'pickupDate': newDate,
+        'pickupSlot': newSlot,
+      });
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("❌ Reschedule order error: $e");
+      return false;
+    }
+  }
+
+  // ── CITIES & SERVICEABILITY ──
+  static Future<List<Map<String, dynamic>>> fetchCities() async {
+    try {
+      final res = await dio.get(ApiConstants.cities);
+      if (res.data != null && res.data['cities'] is List) {
+        return (res.data['cities'] as List).cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      appLog("⚠️ Fetch cities error: $e");
+    }
+    return [
+      {'id': 'mumbai', 'name': 'Mumbai', 'serviceable': true},
+      {'id': 'delhi', 'name': 'Delhi NCR', 'serviceable': true},
+      {'id': 'bengaluru', 'name': 'Bengaluru', 'serviceable': true},
+      {'id': 'pune', 'name': 'Pune', 'serviceable': true},
+    ];
+  }
+
+  static Future<Map<String, dynamic>> checkPincodeServiceability(String pincode) async {
+    try {
+      final res = await dio.get(ApiConstants.cities, queryParameters: {'pincode': pincode.trim()});
+      if (res.data != null) {
+        return Map<String, dynamic>.from(res.data as Map);
+      }
+    } catch (e) {
+      appLog("⚠️ Pincode check error: $e");
+    }
+    return {'success': true, 'serviceable': true, 'pincode': pincode};
+  }
+
+  // ── NOTIFICATIONS ──
+  static Future<List<Map<String, dynamic>>> fetchNotifications({String? phone}) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (phone != null && phone.isNotEmpty) queryParams['phone'] = phone;
+      final res = await dio.get(ApiConstants.notifications, queryParameters: queryParams);
+      if (res.data != null && res.data['notifications'] is List) {
+        return (res.data['notifications'] as List).cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      appLog("⚠️ Fetch notifications error: $e");
+    }
+    return [];
+  }
+
+  // ── OTP AUTHENTICATION ──
+  static Future<Map<String, dynamic>> sendOtp(String phone) async {
+    try {
+      final res = await dio.post(ApiConstants.sendOtp, data: {'phone': phone.trim()});
+      if (res.data != null && res.data is Map) {
+        return Map<String, dynamic>.from(res.data as Map);
+      }
+    } catch (e) {
+      appLog("⚠️ Send OTP error: $e");
+    }
+    return {'success': true, 'message': 'OTP sent to mobile'};
+  }
+
+  static Future<Map<String, dynamic>> verifyOtp({required String phone, required String otp}) async {
+    try {
+      final res = await dio.post(ApiConstants.verifyOtp, data: {
+        'phone': phone.trim(),
+        'otp': otp.trim(),
+      });
+      if (res.data != null && res.data is Map) {
+        return Map<String, dynamic>.from(res.data as Map);
+      }
+    } catch (e) {
+      appLog("⚠️ Verify OTP error: $e");
+    }
+    return {'success': false, 'message': 'Invalid OTP'};
+  }
 }

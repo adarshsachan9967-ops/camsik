@@ -13,6 +13,7 @@ abstract class AuthRepository {
   Future<Response> verifyOtp(VerifyOtpRequest request);
   Future<Response> refreshToken(RefreshTokenRequest request);
   Future<Response> getProfile();
+  Future<Response> updateProfile(Map<String, dynamic> data);
 }
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -63,5 +64,13 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Response> getProfile() {
     return _dio.get(ApiConstants.getProfile);
+  }
+
+  @override
+  Future<Response> updateProfile(Map<String, dynamic> data) {
+    return _dio.put(
+      ApiConstants.updateProfile,
+      data: data,
+    );
   }
 }

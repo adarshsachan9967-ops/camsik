@@ -11,6 +11,8 @@ abstract class OrdersRepository {
   Future<Response> createOrder(CreateOrderRequest request);
   Future<Response> fetchOrderMessages(FetchOrderMessagesRequest request);
   Future<Response> sendOrderMessage(SendOrderMessageRequest request);
+  Future<Response> cancelOrder(String orderId, {String? reason});
+  Future<Response> rescheduleOrder(String orderId, {required String newDate, required String newSlot});
 }
 
 class OrdersRepositoryImpl implements OrdersRepository {
@@ -47,6 +49,30 @@ class OrdersRepositoryImpl implements OrdersRepository {
     return _dio.post(
       ApiConstants.orderMessages,
       data: request.toJson(),
+    );
+  }
+
+  @override
+  Future<Response> cancelOrder(String orderId, {String? reason}) {
+    return _dio.patch(
+      ApiConstants.updateOrder,
+      data: {
+        'orderId': orderId,
+        'status': 'Cancelled',
+        'cancellationReason': reason ?? 'Cancelled by user',
+      },
+    );
+  }
+
+  @override
+  Future<Response> rescheduleOrder(String orderId, {required String newDate, required String newSlot}) {
+    return _dio.patch(
+      ApiConstants.updateOrder,
+      data: {
+        'orderId': orderId,
+        'pickupDate': newDate,
+        'pickupSlot': newSlot,
+      },
     );
   }
 }
