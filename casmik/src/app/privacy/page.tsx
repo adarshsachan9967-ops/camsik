@@ -132,6 +132,27 @@ export default function PrivacyPolicyPage() {
                   </ul>
                 </div>
 
+                {/* Ecosystem Policies */}
+                <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 text-xs space-y-2.5">
+                  <h4 className="font-bold uppercase tracking-wider text-purple-400 text-[11px]">
+                    Ecosystem Privacy Policies
+                  </h4>
+                  <div className="space-y-1.5 pt-1 font-medium">
+                    <Link href="/partner/privacy" className="flex items-center justify-between text-slate-300 hover:text-purple-400 py-1 border-b border-slate-800/60">
+                      <span>Store &amp; Partner Policy</span>
+                      <ChevronRight size={12} />
+                    </Link>
+                    <Link href="/delivery/privacy" className="flex items-center justify-between text-slate-300 hover:text-purple-400 py-1 border-b border-slate-800/60">
+                      <span>Delivery &amp; Fleet Policy</span>
+                      <ChevronRight size={12} />
+                    </Link>
+                    <Link href="/admin/privacy" className="flex items-center justify-between text-slate-300 hover:text-purple-400 py-1">
+                      <span>Admin &amp; Enterprise Governance</span>
+                      <ChevronRight size={12} />
+                    </Link>
+                  </div>
+                </div>
+
                 {/* Trust Badge Card */}
                 <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-900/20 to-indigo-900/20 border border-purple-500/20 text-xs">
                   <div className="flex items-center gap-2 text-purple-300 font-bold mb-2">

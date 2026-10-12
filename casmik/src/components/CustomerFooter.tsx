@@ -61,8 +61,9 @@ const footerLinks = {
     { label: 'DoD Certified Data Wipe', href: '/privacy#data-wipe' },
     { label: 'Terms & Conditions', href: '/terms' },
     { label: 'Valuation Disclaimer', href: '/disclaimer' },
-    { label: 'Platform Sitemap', href: '/sitemap' },
-    { label: 'Partner Program', href: '/partner/login' },
+    { label: 'Partner Program & Privacy', href: '/partner/privacy' },
+    { label: 'Delivery Fleet Privacy', href: '/delivery/privacy' },
+    { label: 'Partner Login', href: '/partner/login' },
     { label: 'Delivery Executive Portal', href: '/delivery/login' },
   ],
 };
