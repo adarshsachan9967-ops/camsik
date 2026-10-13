@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { PartnerSection } from '../page';
-import { LayoutDashboard, ShoppingBag, ClipboardCheck, DollarSign, Users, BarChart3, Settings, Bell, Menu, ChevronLeft, ChevronRight, Store, MessageSquare, UserCircle, LogOut } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ClipboardCheck, DollarSign, Users, BarChart3, Settings, Bell, Menu, ChevronLeft, ChevronRight, Store, MessageSquare, UserCircle, LogOut, Bike } from 'lucide-react';
 import { Partner, partners, orders as defaultOrders } from '@/lib/casmikData';
 import NotificationBell from '@/components/NotificationBell';
 import PartnerReferModal from './PartnerReferModal';
@@ -106,6 +106,7 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'orders', icon: ShoppingBag, label: 'Orders', badge: partnerOrderCount },
     { id: 'inspection', icon: ClipboardCheck, label: 'Inspection', badge: partnerInspectionCount },
+    { id: 'riders', icon: Bike, label: 'My Riders' },
     { id: 'payouts', icon: DollarSign, label: 'Payouts' },
     { id: 'customers', icon: Users, label: 'Customers' },
     { id: 'reports', icon: BarChart3, label: 'Reports' },

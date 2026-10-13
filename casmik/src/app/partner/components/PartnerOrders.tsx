@@ -98,17 +98,22 @@ const getStoredPartnerOrders = (activeId?: string): Order[] => {
     });
 };
 
-const getAvailableDeliveryAgents = (): DeliveryAgent[] => {
+const getAvailableDeliveryAgents = (activeId?: string): DeliveryAgent[] => {
+  const currentId = activeId || getActivePartnerId();
   if (typeof window !== 'undefined') {
     try {
       const saved = localStorage.getItem('casmik_delivery_agents_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Strictly filter only riders that belong to THIS partner.
+          // Admin fleet riders and other partners' riders are NEVER visible to this partner!
+          return parsed.filter((a: DeliveryAgent) => a.partnerId === currentId);
+        }
       }
     } catch {}
   }
-  return deliveryAgents;
+  return deliveryAgents.filter(a => a.partnerId === currentId);
 };
 
 interface DBOrder {
@@ -1821,46 +1826,58 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
 
                 {/* List of Delivery Agents */}
                 <div className="space-y-2.5 mb-5 max-h-64 overflow-y-auto pr-1">
-                  <label className="text-xs font-black text-gray-800 block">Select Active Executive:</label>
-                  {getAvailableDeliveryAgents().map(agent => {
-                    const isPinMatch = agent.pinCodes?.includes(assignDeliveryModal.pinCode);
-                    const isSelected = selectedDeliveryAgentId === agent.id;
-                    return (
-                      <button
-                        key={agent.id}
-                        type="button"
-                        onClick={() => setSelectedDeliveryAgentId(agent.id)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-all cursor-pointer ${
-                          isSelected
-                            ? 'border-blue-600 bg-blue-50/70 shadow-sm'
-                            : 'border-gray-100 hover:border-gray-200 bg-white'
-                        }`}
-                      >
-                        <img src={agent.avatar} alt={agent.name} className="w-11 h-11 rounded-2xl object-cover border border-gray-200 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-xs font-black text-gray-900 truncate">{agent.name}</p>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
-                              agent.status === 'online' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                            }`}>
-                              {agent.status}
-                            </span>
-                            {isPinMatch && (
-                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.2 rounded-full">
-                                PIN Match ✓
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-gray-800 block">Select Store Rider:</label>
+                    <span className="text-[11px] text-gray-500 font-semibold">Dedicated Store Fleet</span>
+                  </div>
+                  {getAvailableDeliveryAgents().length === 0 ? (
+                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2">
+                      <p className="text-xs font-bold text-amber-900">No riders created yet for your store</p>
+                      <p className="text-[11px] text-amber-700">
+                        Admin riders do not appear in your portal. Please add your own delivery partners from the &quot;My Riders&quot; tab to assign pickups.
+                      </p>
+                    </div>
+                  ) : (
+                    getAvailableDeliveryAgents().map(agent => {
+                      const isPinMatch = agent.pinCodes?.includes(assignDeliveryModal.pinCode);
+                      const isSelected = selectedDeliveryAgentId === agent.id;
+                      return (
+                        <button
+                          key={agent.id}
+                          type="button"
+                          onClick={() => setSelectedDeliveryAgentId(agent.id)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                            isSelected
+                              ? 'border-blue-600 bg-blue-50/70 shadow-sm'
+                              : 'border-gray-100 hover:border-gray-200 bg-white'
+                          }`}
+                        >
+                          <img src={agent.avatar} alt={agent.name} className="w-11 h-11 rounded-2xl object-cover border border-gray-200 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-black text-gray-900 truncate">{agent.name}</p>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                                agent.status === 'online' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                              }`}>
+                                {agent.status}
                               </span>
-                            )}
+                              {isPinMatch && (
+                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.2 rounded-full">
+                                  PIN Match ✓
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                              {agent.vehicle} ({agent.vehicleNumber}) · 📞 {agent.phone}
+                            </p>
+                            <p className="text-[10px] text-gray-400">
+                              {agent.city} · ⭐ {agent.rating} · {agent.todayPickups || 0} pickups today
+                            </p>
                           </div>
-                          <p className="text-[11px] text-gray-500 mt-0.5 truncate">
-                            {agent.vehicle} ({agent.vehicleNumber}) · 📞 {agent.phone}
-                          </p>
-                          <p className="text-[10px] text-gray-400">
-                            {agent.city} · ⭐ {agent.rating} · {agent.todayPickups || 0} pickups today
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })}
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
 
                 <div className="flex gap-3">

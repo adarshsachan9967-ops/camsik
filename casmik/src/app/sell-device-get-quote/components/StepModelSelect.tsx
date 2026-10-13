@@ -10,11 +10,21 @@ interface Props {
   selectedModel: string | null;
   selectedStorage: string | null;
   selectedColor: string | null;
-  onSelect: (modelId: string, modelName: string, storage: string, color: string, basePrice: number) => void;
+  selectedLenses?: { id: string; name: string; price: number }[];
+  onSelect: (modelId: string, modelName: string, storage: string, color: string, basePrice: number, lenses?: { id: string; name: string; price: number }[]) => void;
   onBack: () => void;
 }
 
-export default function StepModelSelect({ brand, brandId, categoryId, selectedModel, selectedStorage, selectedColor, onSelect, onBack }: Props) {
+const COMMON_LENSES = [
+  { id: 'lens-kit', name: '18-55mm / 16-50mm Standard Kit Lens', type: 'Kit Lens', price: 4500, icon: '📷' },
+  { id: 'lens-prime', name: '50mm f/1.8 Prime Portrait Lens', type: 'Prime Lens', price: 7500, icon: '🔍' },
+  { id: 'lens-telephoto', name: '55-250mm / 70-300mm Telephoto Zoom', type: 'Telephoto Zoom', price: 9500, icon: '🔭' },
+  { id: 'lens-pro-zoom', name: '24-70mm f/2.8 Pro Standard Zoom', type: 'Professional Zoom', price: 26000, icon: '💎' },
+  { id: 'lens-wide', name: '10-18mm / 16-35mm Ultra-Wide Angle', type: 'Wide Angle', price: 14000, icon: '🌄' },
+  { id: 'lens-flagship-tele', name: '70-200mm f/2.8 Flagship Telephoto', type: 'Pro Telephoto', price: 36000, icon: '⚡' },
+];
+
+export default function StepModelSelect({ brand, brandId, categoryId, selectedModel, selectedStorage, selectedColor, selectedLenses = [], onSelect, onBack }: Props) {
   const modelsForCat = deviceModels.filter(m => {
     const matchesBrand = brandId ? m.brandId === brandId : true;
     const matchesCat = categoryId ? m.categoryId === categoryId : true;
@@ -31,6 +41,9 @@ export default function StepModelSelect({ brand, brandId, categoryId, selectedMo
   const [chosenModel, setChosenModel] = useState<typeof models[0] | null>(initialModel);
   const [chosenStorage, setChosenStorage] = useState<string | null>(selectedStorage || initialModel?.storages[0] || null);
   const [chosenColor, setChosenColor] = useState<string | null>(selectedColor || initialModel?.colors[0] || null);
+  const [addedLenses, setAddedLenses] = useState<{ id: string; name: string; price: number }[]>(selectedLenses);
+  const [customLensName, setCustomLensName] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
 
   React.useEffect(() => {
     if (selectedModel) {
@@ -43,8 +56,37 @@ export default function StepModelSelect({ brand, brandId, categoryId, selectedMo
     }
   }, [selectedModel, selectedStorage, selectedColor, models]);
 
+  const isCamera = categoryId === 'cat-dslr' || categoryId === 'cat-video-camera' || categoryId === 'cat-action-camera' ||
+    (chosenModel?.name && /camera|dslr|mirrorless|eos|alpha|lumix|nikon|fuji/i.test(chosenModel.name));
+
   const filtered = models.filter(m => m.name.toLowerCase().includes(query.toLowerCase()));
   const canContinue = chosenModel && chosenStorage && chosenColor;
+
+  const totalLensBonus = addedLenses.reduce((acc, l) => acc + l.price, 0);
+  const totalEstimated = (chosenModel?.basePrice || 0) + totalLensBonus;
+
+  const toggleLens = (lens: { id: string; name: string; price: number }) => {
+    setAddedLenses(prev => {
+      const exists = prev.find(l => l.id === lens.id);
+      if (exists) {
+        return prev.filter(l => l.id !== lens.id);
+      } else {
+        return [...prev, lens];
+      }
+    });
+  };
+
+  const handleAddCustomLens = () => {
+    if (!customLensName.trim()) return;
+    const newLens = {
+      id: `custom-lens-${Date.now()}`,
+      name: customLensName.trim(),
+      price: 8000,
+    };
+    setAddedLenses(prev => [...prev, newLens]);
+    setCustomLensName('');
+    setShowCustomInput(false);
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-border shadow-sm p-6 fade-in">
@@ -88,9 +130,9 @@ export default function StepModelSelect({ brand, brandId, categoryId, selectedMo
       </div>
 
       {chosenModel && (
-        <div className="space-y-4 fade-in border-t border-border pt-5">
+        <div className="space-y-5 fade-in border-t border-border pt-5">
           <div>
-            <p className="text-sm font-semibold text-foreground mb-2">Select Storage</p>
+            <p className="text-sm font-semibold text-foreground mb-2">Select Variant / Storage</p>
             <div className="flex flex-wrap gap-2">
               {chosenModel.storages.map(s => (
                 <button key={`storage-${s}`} onClick={() => setChosenStorage(s)}
@@ -113,14 +155,111 @@ export default function StepModelSelect({ brand, brandId, categoryId, selectedMo
               </div>
             </div>
           )}
+
+          {/* Camera Lens Selling Section */}
+          {isCamera && (
+            <div className="fade-in bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-3.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🔍</span>
+                    <h3 className="text-sm font-black text-slate-900">Selling with Camera Lenses? (Optional)</h3>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Bundle your lenses with this camera to dramatically increase your final payout.
+                  </p>
+                </div>
+                {addedLenses.length > 0 && (
+                  <div className="px-3 py-1 bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-black rounded-lg self-start sm:self-auto">
+                    +{addedLenses.length} Lens Added (+₹{totalLensBonus.toLocaleString('en-IN')})
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {COMMON_LENSES.map(lens => {
+                  const isSelected = !!addedLenses.find(l => l.id === lens.id);
+                  return (
+                    <button
+                      key={lens.id}
+                      type="button"
+                      onClick={() => toggleLens(lens)}
+                      className={`flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all ${
+                        isSelected
+                          ? 'border-emerald-600 bg-emerald-50/70 shadow-sm ring-1 ring-emerald-500/20'
+                          : 'border-slate-200 bg-white hover:border-emerald-300'
+                      }`}
+                    >
+                      <span className="text-base mt-0.5">{lens.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-slate-900 truncate">{lens.name}</p>
+                          <span className={`text-xs font-black ml-2 ${isSelected ? 'text-emerald-700' : 'text-slate-600'}`}>
+                            +₹{lens.price.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{lens.type}</p>
+                      </div>
+                      <div className={`w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        isSelected ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-300 bg-white'
+                      }`}>
+                        {isSelected && <span className="text-[10px] font-bold">✓</span>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom lens option */}
+              {!showCustomInput ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCustomInput(true)}
+                  className="text-xs font-bold text-primary hover:underline flex items-center gap-1 pt-1"
+                >
+                  + Have another lens? Add custom lens
+                </button>
+              ) : (
+                <div className="flex gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={customLensName}
+                    onChange={e => setCustomLensName(e.target.value)}
+                    placeholder="e.g. Sigma 30mm f/1.4 DC DN Contemporary"
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomLens}
+                    className="px-3.5 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-dark transition-colors"
+                  >
+                    Add (+₹8,000)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomInput(false)}
+                    className="px-2.5 py-2 text-slate-400 hover:text-slate-600 text-xs"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
       {canContinue && (
-        <div className="mt-6 fade-in">
-          <button onClick={() => onSelect(chosenModel!.id, chosenModel!.name, chosenStorage!, chosenColor!, chosenModel!.basePrice)}
-            className="w-full py-3.5 gradient-green text-white rounded-xl font-semibold text-sm shadow-green btn-press">
-            Continue — Check Condition Questions
+        <div className="mt-6 fade-in space-y-2">
+          {totalLensBonus > 0 && (
+            <div className="flex justify-between items-center text-xs px-2 py-1 bg-emerald-50 text-emerald-800 rounded-lg font-semibold">
+              <span>Base Camera + {addedLenses.length} Lens Included:</span>
+              <span className="font-black text-sm">₹{totalEstimated.toLocaleString('en-IN')}</span>
+            </div>
+          )}
+          <button onClick={() => onSelect(chosenModel!.id, chosenModel!.name, chosenStorage!, chosenColor!, totalEstimated, addedLenses)}
+            className="w-full py-3.5 gradient-green text-white rounded-xl font-bold text-sm shadow-green btn-press flex items-center justify-center gap-2">
+            <span>Continue to Condition Assessment →</span>
           </button>
         </div>
       )}

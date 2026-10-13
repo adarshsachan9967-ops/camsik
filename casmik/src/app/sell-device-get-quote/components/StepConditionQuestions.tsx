@@ -1,9 +1,7 @@
 'use client';
 import React, { useState, useRef } from 'react';
-import { ChevronLeft, TrendingUp, TrendingDown, X, Lock } from 'lucide-react';
+import { ChevronLeft, TrendingUp, TrendingDown, Sparkles, Flame, CheckCircle2 } from 'lucide-react';
 import type { SellState } from './SellDeviceWorkflow';
-import DeviceVerificationSection from './DeviceVerificationSection';
-import DeviceVerificationModal from './DeviceVerificationModal';
 
 // Illustrated condition questions with proper answer cards like reference screenshot
 const questions = [
@@ -100,7 +98,6 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
   const [activeQ, setActiveQ] = useState(0);
   const [priceAnimation, setPriceAnimation] = useState<'up' | 'down' | null>(null);
   const [lastDelta, setLastDelta] = useState<number>(0);
-  const [showVerifyModal, setShowVerifyModal] = useState(false);
   const prevPrice = useRef(sellState.currentPrice);
 
   const handleAnswer = (qId: string, optId: string, adjustment: number) => {
@@ -135,12 +132,54 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
     }, 350);
   };
 
+  const answeredCount = Object.keys(sellState.answers).length;
   const allAnswered = questions.every(q => sellState.answers[q.id]);
-  const isVerified = sellState.deviceVerification?.status === 'verified';
-  const progress = (Object.keys(sellState.answers).length / questions.length) * 100;
+  const progress = Math.round((answeredCount / questions.length) * 100);
 
   return (
     <div className="space-y-4 fade-in">
+      {/* Motivational Best Price Banner & Filling Bar */}
+      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white rounded-2xl p-5 shadow-lg relative overflow-hidden">
+        <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-md rounded-full text-[11px] font-black uppercase tracking-wider text-emerald-100">
+              <Flame size={13} className="text-amber-300 animate-pulse" />
+              <span>Guaranteed Best Price Lock</span>
+            </div>
+            <h2 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
+              <span>You’re just about to get the best price!</span>
+              <Sparkles size={18} className="text-amber-300 animate-bounce" />
+            </h2>
+            <p className="text-xs text-emerald-100/90 font-medium">
+              {answeredCount === 0 
+                ? 'Select answers below to reveal your highest guaranteed cash payout.' 
+                : answeredCount < questions.length 
+                  ? `Keep going! Every answer locks in maximum transparency and value.` 
+                  : '🎉 Awesome! You have unlocked your highest guaranteed valuation!'}
+            </p>
+          </div>
+          <div className="text-left sm:text-right flex-shrink-0">
+            <div className="text-xs font-black text-white/90">
+              {answeredCount} of {questions.length} Answered
+            </div>
+            <div className="text-2xl font-black font-tabular text-amber-300">
+              {progress}%
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic Filling Bar */}
+        <div className="mt-4 relative">
+          <div className="w-full h-3.5 bg-black/30 rounded-full p-0.5 backdrop-blur-sm overflow-hidden border border-white/20">
+            <div 
+              className="h-full rounded-full bg-gradient-to-r from-amber-300 via-emerald-300 to-white transition-all duration-500 ease-out shadow-sm"
+              style={{ width: `${Math.max(progress, 4)}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Price bar */}
       <div className={`bg-white rounded-2xl border border-border shadow-sm p-5 flex items-center justify-between ${priceAnimation ? 'price-pulse' : ''}`}>
         <div>
@@ -150,6 +189,11 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
           }`}>
             ₹{sellState.currentPrice.toLocaleString('en-IN')}
           </div>
+          {sellState.lenses && sellState.lenses.length > 0 && (
+            <p className="text-xs text-emerald-700 font-semibold mt-1">
+              Includes {sellState.lenses.length} Camera Lens (+₹{sellState.lenses.reduce((a, b) => a + b.price, 0).toLocaleString('en-IN')})
+            </p>
+          )}
         </div>
         {lastDelta !== 0 && priceAnimation && (
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold fade-in ${
@@ -160,7 +204,7 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
           </div>
         )}
         <div className="text-right hidden sm:block">
-          <p className="text-xs text-muted-foreground">{Object.keys(sellState.answers).length} of {questions.length} answered</p>
+          <p className="text-xs text-muted-foreground">{answeredCount} of {questions.length} answered</p>
           <div className="w-24 h-1.5 bg-muted rounded-full mt-1.5 overflow-hidden">
             <div className="h-full gradient-green rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
           </div>
@@ -253,23 +297,6 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
                 })}
               </div>
 
-              {/* Prominent Device Verification Section immediately ABOVE Get My Quote */}
-              {qi === questions.length - 1 && (
-                <DeviceVerificationSection
-                  selectedBrand={sellState.brandName}
-                  selectedModel={sellState.modelName}
-                  selectedVariant={sellState.storage || undefined}
-                  verificationReport={sellState.deviceVerification}
-                  onVerified={(report) => {
-                    onUpdate({ deviceVerification: report });
-                  }}
-                  onRecheck={() => {
-                    onUpdate({ deviceVerification: null });
-                    if (onSelectModel) onSelectModel();
-                  }}
-                />
-              )}
-
               {/* Navigation */}
               <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/60">
                 <button onClick={() => setActiveQ(q => Math.max(q - 1, 0))} disabled={activeQ === 0}
@@ -286,17 +313,9 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
                     >
                       Skip Question →
                     </button>
-                  ) : isVerified ? (
-                    <button onClick={onNext} className="flex items-center gap-2 px-6 py-2.5 gradient-green text-white rounded-xl font-semibold text-sm shadow-green btn-press">
-                      Get My Quote →
-                    </button>
                   ) : (
-                    <button
-                      onClick={() => setShowVerifyModal(true)}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-md transition-all btn-press"
-                    >
-                      <Lock size={14} className="text-emerald-400" />
-                      <span>Verify Device to Unlock Quote →</span>
+                    <button onClick={onNext} className="flex items-center gap-2 px-6 py-2.5 gradient-green text-white rounded-xl font-bold text-sm shadow-green btn-press">
+                      Get My Quote →
                     </button>
                   )}
                 </div>
@@ -309,35 +328,11 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
       {/* Continue button — allow proceeding whether answered or skipped */}
       {(allAnswered || activeQ === questions.length - 1 || Object.keys(sellState.answers).length >= 1) && (
         <div className="fade-in">
-          {isVerified ? (
-            <button onClick={onNext} className="w-full py-4 gradient-green text-white rounded-2xl font-bold text-base shadow-green btn-press flex items-center justify-center gap-2">
-              <span>🎉 Get My Final Quote — ₹{sellState.currentPrice.toLocaleString('en-IN')}</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setShowVerifyModal(true)}
-              className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold text-base shadow-md btn-press flex items-center justify-center gap-2.5 transition-all"
-            >
-              <Lock size={18} className="text-emerald-400" />
-              <span>🔒 Verify Device to Get Quote — ₹{sellState.currentPrice.toLocaleString('en-IN')}</span>
-            </button>
-          )}
+          <button onClick={onNext} className="w-full py-4 gradient-green text-white rounded-2xl font-bold text-base shadow-green btn-press flex items-center justify-center gap-2">
+            <span>🎉 Get My Final Quote — ₹{sellState.currentPrice.toLocaleString('en-IN')}</span>
+          </button>
         </div>
-      )}
-
-      {/* Verification Modal */}
-      {showVerifyModal && (
-        <DeviceVerificationModal
-          selectedBrand={sellState.brandName}
-          selectedModel={sellState.modelName}
-          selectedVariant={sellState.storage || undefined}
-          onSuccess={(report) => {
-            onUpdate({ deviceVerification: report });
-            setShowVerifyModal(false);
-          }}
-          onClose={() => setShowVerifyModal(false)}
-        />
       )}
     </div>
   );
-}
+}

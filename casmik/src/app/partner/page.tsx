@@ -12,10 +12,11 @@ import PartnerProfile from './components/PartnerProfile';
 import PartnerCustomers from './components/PartnerCustomers';
 import PartnerReports from './components/PartnerReports';
 import PartnerSettings from './components/PartnerSettings';
+import PartnerRiders from './components/PartnerRiders';
 import { Clock, ShieldAlert, RefreshCw, LogOut, ArrowRight } from 'lucide-react';
 import { partners, Partner } from '@/lib/casmikData';
 
-export type PartnerSection = 'dashboard' | 'orders' | 'inspection' | 'payouts' | 'customers' | 'reports' | 'settings' | 'support' | 'profile';
+export type PartnerSection = 'dashboard' | 'orders' | 'inspection' | 'payouts' | 'customers' | 'reports' | 'riders' | 'settings' | 'support' | 'profile';
 
 export default function PartnerPage() {
   const [activeSection, setActiveSection] = useState<PartnerSection>('dashboard');
@@ -169,6 +170,7 @@ export default function PartnerPage() {
       case 'payouts': return <PartnerPayouts />;
       case 'customers': return <PartnerCustomers onNavigate={setActiveSection} />;
       case 'reports': return <PartnerReports />;
+      case 'riders': return <PartnerRiders partner={session} />;
       case 'settings': return <PartnerSettings partner={session} onUpdateSession={setSession} />;
       case 'support': return <SupportTicketsPanel panelType="partner" userName={session?.name || "Partner"} />;
       case 'profile': return <PartnerProfile partner={session} onUpdateSession={setSession} />;

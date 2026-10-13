@@ -20,6 +20,7 @@ export type SellState = {
   modelName: string;
   storage: string | null;
   color: string | null;
+  lenses?: { id: string; name: string; price: number }[];
   answers: Record<string, string>;
   currentPrice: number;
   basePrice: number;
@@ -36,6 +37,7 @@ const INITIAL_STATE: SellState = {
   modelName: '',
   storage: null,
   color: null,
+  lenses: [],
   answers: {},
   currentPrice: 0,
   basePrice: 0,
@@ -248,8 +250,9 @@ export default function SellDeviceWorkflow() {
               selectedModel={sellState.model}
               selectedStorage={sellState.storage}
               selectedColor={sellState.color}
-              onSelect={(modelId, modelName, storage, color, basePrice) => {
-                updateState({ model: modelId, modelName, storage, color, basePrice, currentPrice: basePrice, adjustments: [], deviceVerification: null });
+              selectedLenses={sellState.lenses}
+              onSelect={(modelId, modelName, storage, color, basePrice, lenses) => {
+                updateState({ model: modelId, modelName, storage, color, basePrice, currentPrice: basePrice, adjustments: [], deviceVerification: null, lenses: lenses || [] });
                 goNext();
               }}
               onBack={goBack}

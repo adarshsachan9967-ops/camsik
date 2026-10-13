@@ -150,6 +150,21 @@ export interface Partner {
   joinedAt: string;
   avatar: string;
   commission: number;
+  commissionType?: 'percentage' | 'fixed';
+  password?: string;
+  documents?: {
+    aadhar?: boolean;
+    aadharNumber?: string;
+    pan?: boolean;
+    panNumber?: string;
+    gst?: boolean;
+    gstNumber?: string;
+    shopLicense?: boolean;
+    bankProof?: boolean;
+    accountNumber?: string;
+    ifscCode?: string;
+    verified?: boolean;
+  };
 }
 
 export interface DeliveryAgent {
@@ -169,6 +184,24 @@ export interface DeliveryAgent {
   vehicleNumber: string;
   avatar: string;
   joinedAt: string;
+  password?: string;
+  partnerId?: string | null;
+  partnerName?: string | null;
+  commission?: number;
+  commissionType?: 'fixed' | 'percentage';
+  approvalStatus?: 'approved' | 'pending' | 'rejected';
+  documents?: {
+    aadhar?: boolean;
+    aadharNumber?: string;
+    pan?: boolean;
+    panNumber?: string;
+    drivingLicense?: boolean;
+    dlNumber?: string;
+    vehicleRC?: boolean;
+    rcNumber?: string;
+    insurance?: boolean;
+    verified?: boolean;
+  };
 }
 
 export interface Customer {
