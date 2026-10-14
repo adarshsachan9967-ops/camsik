@@ -5,7 +5,6 @@ import '../rent/rental_cameras_screen.dart';
 import 'widgets/action_hub.dart';
 import 'widgets/banner_carousel.dart';
 import 'widgets/categories_bar.dart';
-import 'widgets/faq_section.dart';
 import 'widgets/how_it_works_section.dart';
 import 'widgets/rental_cameras_showcase.dart';
 import 'widgets/top_deals_showcase.dart';
@@ -22,6 +21,7 @@ class HomeScreen extends StatelessWidget {
   final Function(UserOrder) onOrderCreated;
   final Function(String catId) onNavigateToSellWithCategory;
   final Function(int index) onNavigateToTab;
+  final Future<void> Function()? onRefresh;
 
   const HomeScreen({
     super.key,
@@ -34,25 +34,31 @@ class HomeScreen extends StatelessWidget {
     required this.onOrderCreated,
     required this.onNavigateToSellWithCategory,
     required this.onNavigateToTab,
+    this.onRefresh,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 30),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return RefreshIndicator(
+      color: const Color(0xFF059669),
+      backgroundColor: Colors.white,
+      onRefresh: onRefresh ?? () async {},
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 30),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // 1. FULL-WIDTH INFINITE LOOPING BANNER
           Padding(
-            padding: const EdgeInsets.only(top: 14, bottom: 8),
+            padding: const EdgeInsets.only(top: 6, bottom: 2),
             child: CamsikFullWidthBannerCarousel(
               banners: banners,
               onBannerTap: onNavigateToSellWithCategory,
             ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
 
           // 2. COMPACT HORIZONTAL 1-ROW ACTION HUB (SELL | BUY | EXCHANGE | RENT)
           CompactHorizontalActionHub(
@@ -115,13 +121,9 @@ class HomeScreen extends StatelessWidget {
 
           // 7. WHY CAMSIK
           const WhyCamsikSection(),
-
-          const SizedBox(height: 24),
-
-          // 8. FAQS & GUARANTEES
-          const CamsikFaqSectionWidget(),
         ],
       ),
+      )
     );
   }
 }

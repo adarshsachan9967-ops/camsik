@@ -1,5 +1,7 @@
 class FallbackCategories {
-  static final List<Map<String, dynamic>> data = [
+  // Static data commented out as requested. Real data is loaded dynamically via API.
+  /*
+  static final List<Map<String, dynamic>> _staticData = [
     {
       'id': 'cat-dslr',
       'name': 'DSLR & Mirrorless',
@@ -81,4 +83,6 @@ class FallbackCategories {
       'modelCount': 20,
     },
   ];
+  */
+  static final List<Map<String, dynamic>> data = const [];
 }

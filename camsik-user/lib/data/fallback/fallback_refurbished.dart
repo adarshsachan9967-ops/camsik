@@ -1,5 +1,7 @@
 class FallbackRefurbished {
-  static final List<Map<String, dynamic>> data = [
+  // Static data commented out as requested. Real data is loaded dynamically via API.
+  /*
+  static final List<Map<String, dynamic>> _staticData = [
     {
       'id': 'ref-phone-15-pro',
       'modelId': 'iphone-15-pro',
@@ -291,5 +293,6 @@ class FallbackRefurbished {
       ],
     },
   ];
-
+  */
+  static final List<Map<String, dynamic>> data = const [];
 }

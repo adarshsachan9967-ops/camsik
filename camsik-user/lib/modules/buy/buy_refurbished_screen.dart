@@ -111,12 +111,57 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
           ),
           Expanded(
             child: filtered.isEmpty
-                ? const Center(child: Text('No devices found matching your criteria.'))
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.search_off_rounded, size: 36, color: Color(0xFF94A3B8)),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'No Certified Devices Found',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Try adjusting your category, condition, or search query.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          ),
+                          const SizedBox(height: 14),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF059669),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _selectedCategory = 'all';
+                                _selectedCondition = 'all';
+                                _searchQuery = '';
+                              });
+                            },
+                            child: const Text('Reset All Filters', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
                 : GridView.builder(
                     padding: const EdgeInsets.all(12),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      childAspectRatio: 0.72,
+                      childAspectRatio: 0.67,
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
                     ),
@@ -138,13 +183,20 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
                             _activeDetailProduct = p;
                           });
                         },
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(20),
                         child: Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(11),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: const Color(0xFFE2E8F0)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,50 +205,53 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFEDE9FE),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
                                       condition,
-                                      style: const TextStyle(color: Color(0xFF6D28D9), fontSize: 9, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(color: Color(0xFF6D28D9), fontSize: 9, fontWeight: FontWeight.w800),
                                     ),
                                   ),
                                   Text(
                                     '${units.isEmpty ? 2 : units.length} Units',
-                                    style: const TextStyle(color: Color(0xFF059669), fontSize: 9, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(color: Color(0xFF059669), fontSize: 9, fontWeight: FontWeight.w800),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 8),
                               Expanded(
                                 child: Center(
                                   child: CamsikSmartImage(
                                     image: image,
                                     fit: BoxFit.contain,
-                                    iconSize: 36,
+                                    iconSize: 40,
                                     iconColor: const Color(0xFF94A3B8),
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 8),
                               Text(
                                 name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A)),
+                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: Color(0xFF0F172A), letterSpacing: -0.2),
                               ),
+                              const SizedBox(height: 2),
                               Text(
                                 battery,
-                                style: const TextStyle(color: Color(0xFF64748B), fontSize: 10),
+                                style: const TextStyle(color: Color(0xFF64748B), fontSize: 10, fontWeight: FontWeight.w500),
                               ),
                               const SizedBox(height: 4),
                               Row(
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
                                 children: [
                                   Text(
                                     formatCurrency(price),
-                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Color(0xFF059669)),
+                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5, color: Color(0xFF059669)),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
@@ -204,7 +259,7 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
                                     style: const TextStyle(
                                       decoration: TextDecoration.lineThrough,
                                       color: Color(0xFF94A3B8),
-                                      fontSize: 9,
+                                      fontSize: 9.5,
                                     ),
                                   ),
                                 ],

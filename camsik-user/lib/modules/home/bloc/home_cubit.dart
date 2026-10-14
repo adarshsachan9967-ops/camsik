@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/services/api_service.dart';
-import '../../../data/fallback/fallback_banners.dart';
-import '../../../data/fallback/fallback_categories.dart';
-import '../../../data/fallback/fallback_refurbished.dart';
-import '../../../data/fallback/fallback_rental_cameras.dart';
+// import '../../../data/fallback/fallback_banners.dart';
+// import '../../../data/fallback/fallback_categories.dart';
+// import '../../../data/fallback/fallback_refurbished.dart';
+// import '../../../data/fallback/fallback_rental_cameras.dart';
 import '../data/models/responses/banners_response.dart';
 import '../data/models/responses/categories_response.dart';
 import '../data/repositories/catalog_repository.dart';
@@ -21,6 +21,8 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> loadHomeData() async {
     emit(const HomeLoading());
 
+    // Static fallback data commented out as per requirement - live API loaded directly
+    /*
     List<BannerModel> banners = FallbackBanners.data
         .map((e) => BannerModel.fromJson(e))
         .toList();
@@ -29,6 +31,11 @@ class HomeCubit extends Cubit<HomeState> {
         .toList();
     List<Map<String, dynamic>> refurbished = List<Map<String, dynamic>>.from(FallbackRefurbished.data);
     List<Map<String, dynamic>> rentals = List<Map<String, dynamic>>.from(FallbackRentalCameras.data);
+    */
+    List<BannerModel> banners = [];
+    List<CategoryModel> categories = [];
+    List<Map<String, dynamic>> refurbished = [];
+    List<Map<String, dynamic>> rentals = [];
 
     try {
       final bannersFuture = _catalogRepository.getBanners();

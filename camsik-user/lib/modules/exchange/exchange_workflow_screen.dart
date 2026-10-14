@@ -93,9 +93,16 @@ class _ExchangeWorkflowWidgetState extends State<ExchangeWorkflowWidget> {
   }
 
   void _loadTradeInDevices() {
+    // Static fallback models commented out as requested - live API models fetched directly
+    /*
     final allModels = ApiService.getFallbackModelsSync();
-    setState(() {
-      _tradeInDevices = allModels;
+    */
+    ApiService.fetchModels().then((models) {
+      if (mounted && models.isNotEmpty) {
+        setState(() {
+          _tradeInDevices = models;
+        });
+      }
     });
   }
 

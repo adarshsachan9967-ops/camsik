@@ -85,14 +85,36 @@ class RentalCamerasShowcase extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         SizedBox(
-          height: 226,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: rentalCameras.length,
-            itemBuilder: (ctx, idx) {
+          height: 232,
+          child: rentalCameras.isEmpty
+              ? ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: 3,
+                  itemBuilder: (ctx, idx) => Container(
+                    width: 175,
+                    margin: const EdgeInsets.symmetric(horizontal: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFF1F5F9)),
+                    ),
+                    child: const Center(
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFE11D48)),
+                      ),
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: rentalCameras.length,
+                  itemBuilder: (ctx, idx) {
               final c = rentalCameras[idx];
               final name = c['model'] as String? ?? 'Camera';
               final dailyPrice = (c['dailyPrice'] as num?)?.toInt() ?? 0;

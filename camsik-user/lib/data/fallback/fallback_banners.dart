@@ -1,5 +1,7 @@
 class FallbackBanners {
-  static final List<Map<String, dynamic>> data = [
+  // Static data commented out as requested. Real data is loaded dynamically via API.
+  /*
+  static final List<Map<String, dynamic>> _staticBanners = [
     {
       'id': 'slide-smartphone',
       'badge': '#1 SMARTPHONE & IPHONE BUYBACK',
@@ -79,4 +81,6 @@ class FallbackBanners {
       'bgGradient': [0xFF064E3B, 0xFF134E4A],
     },
   ];
+  */
+  static final List<Map<String, dynamic>> data = const [];
 }

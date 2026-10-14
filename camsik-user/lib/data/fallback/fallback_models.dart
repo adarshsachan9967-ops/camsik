@@ -1,7 +1,8 @@
 class FallbackModels {
-  static List<Map<String, dynamic>> getModels({String? categoryId, String? search}) {
-    final allModels = [
-      // ── DSLR & Mirrorless Cameras ──
+  // Static data commented out as requested. Real data is loaded dynamically via API.
+  /*
+  static final List<Map<String, dynamic>> _staticModels = [
+    // ── DSLR & Mirrorless Cameras ──
       {
         'id': 'cam-canon-rp',
         'categoryId': 'cat-dslr',
@@ -329,18 +330,9 @@ class FallbackModels {
         'specs': '11" Dynamic AMOLED 2X 120Hz, Snapdragon 8 Gen 2, S-Pen',
       },
     ];
+  */
 
-    var filtered = allModels;
-    if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') {
-      filtered = filtered.where((m) => m['categoryId'] == categoryId).toList();
-    }
-    if (search != null && search.trim().isNotEmpty) {
-      final s = search.toLowerCase().trim();
-      filtered = filtered.where((m) =>
-        (m['name'] as String).toLowerCase().contains(s) ||
-        (m['brand'] as String).toLowerCase().contains(s)
-      ).toList();
-    }
-    return filtered;
+  static List<Map<String, dynamic>> getModels({String? categoryId, String? search}) {
+    return const [];
   }
 }

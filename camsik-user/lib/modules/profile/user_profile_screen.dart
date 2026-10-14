@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../core/services/api_service.dart';
 import '../../models/user_order.dart';
 import '../../models/user_profile.dart';
+import 'screens/customer_support_screen.dart';
+import 'screens/faq_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/payout_settings_screen.dart';
+import 'screens/policy_details_screen.dart';
 import 'screens/saved_addresses_screen.dart';
-import 'widgets/customer_support_sheet.dart';
+import 'screens/serviceable_cities_screen.dart';
 import 'widgets/order_card_widget.dart';
-import 'widgets/payout_bottom_sheet.dart';
-import 'widgets/policy_details_sheet.dart';
 
 class UserProfileWidget extends StatelessWidget {
   final UserProfile profile;
@@ -191,21 +193,14 @@ class UserProfileWidget extends StatelessWidget {
                 ? profile.upiId
                 : 'Configure instant bank / UPI payout',
             onTap: () {
-              PayoutBottomSheet.show(
+              Navigator.push(
                 context,
-                currentUpiId: profile.upiId,
-                currentBankAccount: profile.bankAccount,
-                onSave: (upi, bank) {
-                  onProfileUpdate(profile.copyWith(
-                    upiId: upi,
-                    bankAccount: bank,
-                  ));
-                  ApiService.updateUserProfile(
-                    phone: profile.phone,
-                    upiId: upi,
-                    bankAccount: bank,
-                  );
-                },
+                MaterialPageRoute(
+                  builder: (ctx) => PayoutSettingsScreen(
+                    profile: profile,
+                    onProfileUpdate: onProfileUpdate,
+                  ),
+                ),
               );
             },
           ),
@@ -214,105 +209,13 @@ class UserProfileWidget extends StatelessWidget {
             icon: Icons.location_city_outlined,
             title: 'Serviceable Cities & Pincodes',
             subtitle: 'Check instant doorstep pickup in your area',
-            onTap: () async {
-              final cities = await ApiService.fetchCities();
-              if (context.mounted) {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                  ),
-                  builder: (ctx) => StatefulBuilder(
-                    builder: (ctx, setModalState) {
-                      final controller = TextEditingController();
-                      String? checkResult;
-                      return Padding(
-                        padding: EdgeInsets.only(
-                          left: 20,
-                          right: 20,
-                          top: 20,
-                          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Serviceable Metro Hubs & Cities',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Live doorstep pickup & inspection available across India:',
-                              style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
-                            ),
-                            const SizedBox(height: 14),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: cities.map((c) {
-                                return Chip(
-                                  backgroundColor: const Color(0xFFECFDF5),
-                                  label: Text(
-                                    c['name']?.toString() ?? '',
-                                    style: const TextStyle(
-                                      color: Color(0xFF059669),
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  avatar: const Icon(Icons.check_circle, size: 14, color: Color(0xFF059669)),
-                                );
-                              }).toList(),
-                            ),
-                            const SizedBox(height: 16),
-                            const Text('Check your pincode:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: controller,
-                                    keyboardType: TextInputType.number,
-                                    decoration: InputDecoration(
-                                      hintText: 'e.g. 401107 or 110001',
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF059669),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  ),
-                                  onPressed: () async {
-                                    if (controller.text.trim().isEmpty) return;
-                                    final res = await ApiService.checkPincodeServiceability(controller.text.trim());
-                                    setModalState(() {
-                                      checkResult = res['message']?.toString() ?? 'Pincode checked';
-                                    });
-                                  },
-                                  child: const Text('Check', style: TextStyle(color: Colors.white)),
-                                ),
-                              ],
-                            ),
-                            if (checkResult != null) ...[
-                              const SizedBox(height: 10),
-                              Text(
-                                checkResult!,
-                                style: const TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold, fontSize: 12),
-                              ),
-                            ],
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                );
-              }
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (ctx) => const ServiceableCitiesScreen(),
+                ),
+              );
             },
           ),
           _buildSettingsTile(
@@ -320,47 +223,27 @@ class UserProfileWidget extends StatelessWidget {
             icon: Icons.notifications_none_outlined,
             title: 'Notifications & Alerts',
             subtitle: 'Offers, pickup updates & transaction alerts',
-            onTap: () async {
-              final notifs = await ApiService.fetchNotifications(phone: profile.phone);
-              if (context.mounted) {
-                showModalBottomSheet(
-                  context: context,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                  ),
-                  builder: (ctx) => Container(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Recent Notifications',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        const SizedBox(height: 12),
-                        if (notifs.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 20),
-                            child: Center(
-                              child: Text('No new notifications', style: TextStyle(color: Color(0xFF94A3B8))),
-                            ),
-                          )
-                        else
-                          ...notifs.map((n) => ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: const CircleAvatar(
-                                  backgroundColor: Color(0xFFECFDF5),
-                                  child: Icon(Icons.notifications_active, color: Color(0xFF059669), size: 18),
-                                ),
-                                title: Text(n['title']?.toString() ?? 'Alert', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                subtitle: Text(n['body']?.toString() ?? '', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                              )),
-                      ],
-                    ),
-                  ),
-                );
-              }
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (ctx) => NotificationsScreen(phone: profile.phone),
+                ),
+              );
+            },
+          ),
+          _buildSettingsTile(
+            context,
+            icon: Icons.help_outline_rounded,
+            title: 'Frequently Asked Questions (FAQs)',
+            subtitle: 'Device valuation, payout, pickup & warranty answers',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (ctx) => const FaqScreen(),
+                ),
+              );
             },
           ),
           _buildSettingsTile(
@@ -368,21 +251,42 @@ class UserProfileWidget extends StatelessWidget {
             icon: Icons.support_agent_outlined,
             title: 'Customer Support',
             subtitle: 'WhatsApp: +91 8976000010',
-            onTap: () => CustomerSupportSheet.show(context),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (ctx) => const CustomerSupportScreen(),
+                ),
+              );
+            },
           ),
           _buildSettingsTile(
             context,
             icon: Icons.verified_outlined,
             title: 'Warranty & Data Protection Policy',
             subtitle: 'DoD 5220.22-M Wipe Certificate',
-            onTap: () => PolicyDetailsSheet.showWarranty(context),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (ctx) => PolicyDetailsScreen.warranty(),
+                ),
+              );
+            },
           ),
           _buildSettingsTile(
             context,
             icon: Icons.privacy_tip_outlined,
             title: 'Privacy Policy & Terms',
             subtitle: 'Camsik ReCommerce terms',
-            onTap: () => PolicyDetailsSheet.showPrivacyTerms(context),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (ctx) => PolicyDetailsScreen.privacyTerms(),
+                ),
+              );
+            },
           ),
 
           const SizedBox(height: 20),

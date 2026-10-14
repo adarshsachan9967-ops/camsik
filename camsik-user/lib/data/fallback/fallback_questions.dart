@@ -1,5 +1,7 @@
 class FallbackQuestions {
-  static List<Map<String, dynamic>> getQuestions(String categoryId) {
+  // Static data commented out as requested. Real data is loaded dynamically via API.
+  /*
+  static List<Map<String, dynamic>> _getStaticQuestions(String categoryId) {
     if (categoryId == 'cat-smartphone' || categoryId == 'cat-tablet') {
       return [
         {
@@ -158,5 +160,9 @@ class FallbackQuestions {
       ];
     }
   }
+  */
 
+  static List<Map<String, dynamic>> getQuestions(String categoryId) {
+    return const [];
+  }
 }

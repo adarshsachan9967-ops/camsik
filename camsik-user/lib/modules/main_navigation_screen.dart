@@ -51,23 +51,28 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
     _loadInitialData();
   }
 
-  void _loadInitialData() {
-    // 1. Silent background sync to get any admin updates without showing any progress spinner
-    ApiService.syncDataInBackground().then((_) {
+  Future<void> _refreshAllData() async {
+    try {
+      final results = await Future.wait([
+        ApiService.fetchBanners(),
+        ApiService.fetchCategories(),
+        ApiService.fetchRefurbished(),
+        ApiService.fetchRentalCameras(),
+      ]);
       if (mounted) {
         setState(() {
-          _banners = ApiService.cachedBanners;
-          _categories = ApiService.cachedCategories;
-          _refurbishedProducts = ApiService.cachedRefurbished;
-          _rentalCameras = ApiService.cachedRentalCameras;
+          _banners = results[0];
+          _categories = results[1];
+          _refurbishedProducts = results[2];
+          _rentalCameras = results[3];
         });
       }
-    });
+    } catch (_) {}
 
-    // 2. Fetch user orders if logged in
     if (widget.userProfile.phone.isNotEmpty) {
-      ApiService.fetchOrders(phone: widget.userProfile.phone)
-          .then((fetchedOrders) {
+      try {
+        final fetchedOrders =
+            await ApiService.fetchOrders(phone: widget.userProfile.phone);
         if (mounted && fetchedOrders.isNotEmpty) {
           setState(() {
             _orders.clear();
@@ -76,8 +81,12 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
             }
           });
         }
-      });
+      } catch (_) {}
     }
+  }
+
+  void _loadInitialData() {
+    _refreshAllData();
   }
 
   void _navigateToSellWithCategory(String catId) {
@@ -133,111 +142,159 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(68),
-        child: AppBar(
-          backgroundColor: const Color(0xFF0F172A),
-          automaticallyImplyLeading: false,
-          elevation: 0,
-          title: Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF7C3AED),
-                        Color(0xFF4F46E5),
-                        Color(0xFF2563EB)
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF0B132B), Color(0xFF0F172A)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            automaticallyImplyLeading: false,
+            elevation: 0,
+            title: Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF059669),
+                          Color(0xFF10B981),
+                        ],
+                        begin: Alignment.bottomLeft,
+                        end: Alignment.topRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              const Color(0xFF059669).withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
                       ],
-                      begin: Alignment.bottomLeft,
-                      end: Alignment.topRight,
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            const Color(0xFF7C3AED).withValues(alpha: 0.35),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                    child: const Center(
+                      child:
+                          Icon(Icons.camera_alt_rounded, color: Colors.white, size: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          RichText(
+                            text: const TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'CAM',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 20,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'SIK',
+                                  style: TextStyle(
+                                    color: Color(0xFF34D399),
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 20,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4), width: 0.6),
+                            ),
+                            child: const Text(
+                              'LIVE',
+                              style: TextStyle(
+                                color: Color(0xFF34D399),
+                                fontSize: 8,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      InkWell(
+                        onTap: _openLocationPicker,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.place_rounded,
+                                color: Color(0xFF34D399), size: 12),
+                            const SizedBox(width: 3),
+                            Text(
+                              '$_selectedArea, $_selectedCity',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const Icon(Icons.keyboard_arrow_down_rounded,
+                                color: Colors.white70, size: 16),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child:
-                        Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                ],
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.location_on_outlined,
+                    color: Colors.white70, size: 22),
+                tooltip: 'Select Location',
+                onPressed: _openLocationPicker,
+              ),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none_rounded,
+                        color: Colors.white70, size: 22),
+                    tooltip: 'Notifications',
+                    onPressed: _showNotificationsDialog,
                   ),
-                ),
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    RichText(
-                      text: const TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'CAM',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 20,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          TextSpan(
-                            text: 'SIK',
-                            style: TextStyle(
-                              color: Color(0xFF818CF8),
-                              fontWeight: FontWeight.w900,
-                              fontSize: 20,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ],
+                  Positioned(
+                    top: 14,
+                    right: 14,
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF10B981),
+                        shape: BoxShape.circle,
                       ),
                     ),
-                    InkWell(
-                      onTap: _openLocationPicker,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.place,
-                              color: Color(0xFF34D399), size: 12),
-                          const SizedBox(width: 2),
-                          Text(
-                            '$_selectedArea, $_selectedCity',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const Icon(Icons.arrow_drop_down,
-                              color: Colors.white70, size: 16),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 4),
+            ],
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.location_on_outlined,
-                  color: Colors.white70, size: 22),
-              tooltip: 'Select Location',
-              onPressed: _openLocationPicker,
-            ),
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined,
-                  color: Colors.white70, size: 22),
-              tooltip: 'Notifications',
-              onPressed: _showNotificationsDialog,
-            ),
-            const SizedBox(width: 4),
-          ],
         ),
       ),
       body: IndexedStack(
@@ -253,6 +310,7 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
             onOrderCreated: _handleOrderCreated,
             onNavigateToSellWithCategory: _navigateToSellWithCategory,
             onNavigateToTab: (idx) => setState(() => _currentIndex = idx),
+            onRefresh: _refreshAllData,
           ),
           SellWorkflowWidget(
             categories: _categories,

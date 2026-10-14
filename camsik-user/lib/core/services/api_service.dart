@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import '../../data/fallback/fallback_banners.dart';
-import '../../data/fallback/fallback_categories.dart';
-import '../../data/fallback/fallback_models.dart';
-import '../../data/fallback/fallback_questions.dart';
-import '../../data/fallback/fallback_refurbished.dart';
-import '../../data/fallback/fallback_rental_cameras.dart';
+// import '../../data/fallback/fallback_banners.dart';
+// import '../../data/fallback/fallback_categories.dart';
+// import '../../data/fallback/fallback_models.dart';
+// import '../../data/fallback/fallback_questions.dart';
+// import '../../data/fallback/fallback_refurbished.dart';
+// import '../../data/fallback/fallback_rental_cameras.dart';
 import '../constants/api_constants.dart';
 import '../constants/app_keys.dart';
 import '../utils/api_sanitizer.dart';
@@ -129,6 +129,26 @@ class ApiService {
             return handler.next(e);
           }
 
+          // Failover from unreachable local dev server to production server
+          if (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.connectionTimeout) {
+            final uriStr = e.requestOptions.uri.toString();
+            if (uriStr.contains("127.0.0.1:4028") || uriStr.contains("localhost:4028") || uriStr.contains("10.0.2.2:4028")) {
+              try {
+                appLog("🔄 Unreachable local server, auto-failing over to production: https://casmik-one.vercel.app");
+                final retryOptions = e.requestOptions;
+                final newUri = uriStr
+                    .replaceAll("http://127.0.0.1:4028", "https://casmik-one.vercel.app")
+                    .replaceAll("http://localhost:4028", "https://casmik-one.vercel.app")
+                    .replaceAll("http://10.0.2.2:4028", "https://casmik-one.vercel.app");
+                retryOptions.path = newUri;
+                final res = await dio.fetch(retryOptions);
+                return handler.resolve(res);
+              } catch (failoverErr) {
+                appLog("❌ Failover to production failed: $failoverErr");
+              }
+            }
+          }
+
           if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
             appLog("⚠️ Timeout: The API took too long to respond.");
             try {
@@ -150,11 +170,17 @@ class ApiService {
       ),
     );
 
-  // ── IN-MEMORY CACHES FOR 0ms UI RENDERING ──
-  static List<Map<String, dynamic>> cachedBanners = List<Map<String, dynamic>>.from(FallbackBanners.data);
-  static List<Map<String, dynamic>> cachedCategories = List<Map<String, dynamic>>.from(FallbackCategories.data);
-  static List<Map<String, dynamic>> cachedRefurbished = List<Map<String, dynamic>>.from(FallbackRefurbished.data);
-  static List<Map<String, dynamic>> cachedRentalCameras = List<Map<String, dynamic>>.from(FallbackRentalCameras.data);
+  // ── IN-MEMORY CACHES FOR REAL API DATA (STATIC DATA COMMENTED OUT) ──
+  /*
+  static List<Map<String, dynamic>> _staticBanners = List<Map<String, dynamic>>.from(FallbackBanners.data);
+  static List<Map<String, dynamic>> _staticCategories = List<Map<String, dynamic>>.from(FallbackCategories.data);
+  static List<Map<String, dynamic>> _staticRefurbished = List<Map<String, dynamic>>.from(FallbackRefurbished.data);
+  static List<Map<String, dynamic>> _staticRentalCameras = List<Map<String, dynamic>>.from(FallbackRentalCameras.data);
+  */
+  static List<Map<String, dynamic>> cachedBanners = [];
+  static List<Map<String, dynamic>> cachedCategories = [];
+  static List<Map<String, dynamic>> cachedRefurbished = [];
+  static List<Map<String, dynamic>> cachedRentalCameras = [];
 
   // ── IMAGE & DATA SANITIZATION ──
   static String cleanImagePath(dynamic path, {String? categoryId}) =>
@@ -353,11 +379,19 @@ class ApiService {
   }
 
   // ── MODELS & QUESTIONS ──
+  // Static sync fallbacks commented out as per requirement - live API is used directly
+  /*
   static List<Map<String, dynamic>> getFallbackModelsSync({String? categoryId, String? search}) {
     final list = FallbackModels.getModels(categoryId: categoryId, search: search);
     ApiSanitizer.sanitizeModels(list);
     return list;
   }
+  static List<Map<String, dynamic>> getQuestionsSync({required String categoryId}) {
+    return FallbackQuestions.getQuestions(categoryId);
+  }
+  */
+  static List<Map<String, dynamic>> getFallbackModelsSync({String? categoryId, String? search}) => const [];
+  static List<Map<String, dynamic>> getQuestionsSync({required String categoryId}) => const [];
 
   static Future<List<Map<String, dynamic>>> fetchModels({String? categoryId, String? search}) async {
     try {
@@ -374,13 +408,7 @@ class ApiService {
         }
       }
     } catch (_) {}
-    final fallback = FallbackModels.getModels(categoryId: categoryId, search: search);
-    ApiSanitizer.sanitizeModels(fallback);
-    return fallback;
-  }
-
-  static List<Map<String, dynamic>> getQuestionsSync({required String categoryId}) {
-    return FallbackQuestions.getQuestions(categoryId);
+    return const [];
   }
 
   static Future<List<Map<String, dynamic>>> fetchQuestions({required String categoryId}) async {
@@ -391,7 +419,7 @@ class ApiService {
         if (list.isNotEmpty) return list;
       }
     } catch (_) {}
-    return FallbackQuestions.getQuestions(categoryId);
+    return const [];
   }
 
   // ── REFURBISHED & RENTALS ──

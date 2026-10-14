@@ -12,38 +12,103 @@ class CamsikBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return NavigationBar(
-      selectedIndex: selectedIndex,
-      onDestinationSelected: onItemSelected,
-      backgroundColor: Colors.white,
-      indicatorColor: const Color(0xFF059669).withValues(alpha: 0.15),
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(Icons.home, color: Color(0xFF059669)),
-          label: 'Home',
+    final items = [
+      _BarItem(icon: Icons.home_rounded, outlineIcon: Icons.home_outlined, label: 'Home', activeColor: const Color(0xFF059669)),
+      _BarItem(icon: Icons.currency_rupee_rounded, outlineIcon: Icons.currency_rupee, label: 'Sell', activeColor: const Color(0xFF059669)),
+      _BarItem(icon: Icons.shopping_bag_rounded, outlineIcon: Icons.shopping_bag_outlined, label: 'Buy', activeColor: const Color(0xFF4F46E5)),
+      _BarItem(icon: Icons.swap_horiz_rounded, outlineIcon: Icons.swap_horiz_outlined, label: 'Exchange', activeColor: const Color(0xFF7C3AED)),
+      _BarItem(icon: Icons.person_rounded, outlineIcon: Icons.person_outline_rounded, label: 'Profile', activeColor: const Color(0xFF0F172A)),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(
+          top: BorderSide(color: Color(0xFFF1F5F9), width: 1),
         ),
-        NavigationDestination(
-          icon: Icon(Icons.attach_money_rounded),
-          selectedIcon: Icon(Icons.attach_money, color: Color(0xFF059669)),
-          label: 'Sell',
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(items.length, (index) {
+              final isSelected = selectedIndex == index;
+              final item = items[index];
+
+              return Expanded(
+                child: InkWell(
+                  onTap: () => onItemSelected(index),
+                  borderRadius: BorderRadius.circular(16),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isSelected ? 16 : 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? item.activeColor.withValues(alpha: 0.12)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            isSelected ? item.icon : item.outlineIcon,
+                            size: 22,
+                            color: isSelected ? item.activeColor : const Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                            color: isSelected ? item.activeColor : const Color(0xFF64748B),
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
         ),
-        NavigationDestination(
-          icon: Icon(Icons.shopping_bag_outlined),
-          selectedIcon: Icon(Icons.shopping_bag, color: Color(0xFF059669)),
-          label: 'Buy',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.swap_horiz_rounded),
-          selectedIcon: Icon(Icons.swap_horiz, color: Color(0xFF7C3AED)),
-          label: 'Exchange',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.person_outline),
-          selectedIcon: Icon(Icons.person, color: Color(0xFF059669)),
-          label: 'Profile',
-        ),
-      ],
+      ),
     );
   }
 }
+
+class _BarItem {
+  final IconData icon;
+  final IconData outlineIcon;
+  final String label;
+  final Color activeColor;
+
+  const _BarItem({
+    required this.icon,
+    required this.outlineIcon,
+    required this.label,
+    required this.activeColor,
+  });
+}
+

@@ -69,15 +69,15 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
   }
 
   void _loadModelsForCategory(String catId) {
+    // Static sync fallback data commented out as requested - live API models & questions loaded directly
+    /*
     final syncModels = ApiService.getFallbackModelsSync(categoryId: catId);
     final syncQuestions = ApiService.getQuestionsSync(categoryId: catId);
+    */
     setState(() {
-      _models = syncModels;
-      _questions = syncQuestions;
+      _models = [];
+      _questions = [];
       _selectedAnswers.clear();
-      for (int i = 0; i < _questions.length; i++) {
-        _selectedAnswers[i] = 0;
-      }
     });
     _recalculatePrice();
 
@@ -139,30 +139,54 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF0F172A),
-        elevation: 1,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: _step > 0
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                onPressed: () => setState(() => _step--),
+              )
+            : null,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               _getStepTitle(),
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
             ),
-            if (_step > 0)
-              Text(
-                '${_selectedCategory['name']}${_selectedModel != null ? ' > ${_selectedModel!['name']}' : ''}',
-                style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
-              ),
+            Text(
+              _step > 0
+                  ? '${_selectedCategory['name']}${_selectedModel != null ? ' > ${_selectedModel!['name']}' : ''}'
+                  : 'Instant AI Valuation • Free Doorstep Pickup',
+              style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+            ),
           ],
         ),
-        leading: _step > 0
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => setState(() => _step--),
-              )
-            : null,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(6),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+            child: Row(
+              children: List.generate(6, (idx) {
+                final isPassedOrCurrent = idx <= _step;
+                return Expanded(
+                  child: Container(
+                    height: 3.5,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(
+                      color: isPassedOrCurrent ? const Color(0xFF059669) : const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ),
       ),
       body: _buildStepContent(),
     );
@@ -232,9 +256,13 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
         );
       case 3:
         return SellQuestionsStep(
+          selectedModel: _selectedModel,
+          selectedStorage: _selectedStorage,
+          selectedColor: _selectedColor,
+          basePrice: _basePrice,
+          calculatedPrice: _calculatedPrice,
           questions: _questions,
           selectedAnswers: _selectedAnswers,
-          calculatedPrice: _calculatedPrice,
           onAnswerSelected: (qIdx, optIdx) {
             setState(() {
               _selectedAnswers[qIdx] = optIdx;
@@ -256,6 +284,11 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
         );
       case 5:
         return SellPickupStep(
+          selectedModel: _selectedModel,
+          selectedStorage: _selectedStorage,
+          selectedColor: _selectedColor,
+          calculatedPrice: _calculatedPrice,
+          userProfile: widget.userProfile,
           selectedDate: _selectedDate,
           selectedSlot: _selectedSlot,
           addressController: _addressController,
@@ -263,6 +296,7 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
           onDateChanged: (d) => setState(() => _selectedDate = d),
           onSlotChanged: (s) => setState(() => _selectedSlot = s),
           onConfirmOrder: _handleConfirmSellOrder,
+          onProfileUpdate: widget.onProfileUpdate,
         );
       default:
         return const SizedBox.shrink();
