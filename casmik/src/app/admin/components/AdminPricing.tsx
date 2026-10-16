@@ -31,15 +31,54 @@ export default function AdminPricing({ initialTab = 'lenses' }: { initialTab?: '
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
   // ── QUESTIONS STATE ──
-  const [questions, setQuestions] = useState<Question[]>(sellQuestions);
-  const [expandedQ, setExpandedQ] = useState<string | null>('q-display');
+  const [selectedCategory, setSelectedCategory] = useState<string>('cat-dslr');
+  const [loadingQuestions, setLoadingQuestions] = useState<boolean>(false);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [expandedQ, setExpandedQ] = useState<string | null>(null);
   const [editingOption, setEditingOption] = useState<{ qId: string; optId: string; adjustment: number } | null>(null);
   const [showAddQuestion, setShowAddQuestion] = useState(false);
   const [showAddOption, setShowAddOption] = useState<string | null>(null);
 
   // New question form state
-  const [newQ, setNewQ] = useState({ question: '', subtext: '', categoryId: 'cat-smartphone' });
+  const [newQ, setNewQ] = useState({ question: '', subtext: '', categoryId: 'cat-dslr' });
   const [newOpt, setNewOpt] = useState({ label: '', description: '', icon: '📱', priceAdjustment: 0 });
+
+  // Fetch Questions from backend API
+  const fetchQuestions = async (catId: string) => {
+    setLoadingQuestions(true);
+    try {
+      const res = await fetch(`/api/questions?categoryId=${catId}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.questions)) {
+        const mapped: Question[] = data.questions.map((q: any) => ({
+          id: q.id,
+          categoryId: q.categoryId,
+          question: q.question,
+          subtext: q.subtext || '',
+          sortOrder: q.sortOrder || 1,
+          active: q.active !== false,
+          options: (q.options || []).map((o: any) => ({
+            id: o.id,
+            questionId: q.id,
+            label: o.label || '',
+            description: o.sublabel || o.description || '',
+            icon: o.icon || '🔍',
+            illustration: o.illustration || 'check',
+            priceAdjustment: o.adj !== undefined ? o.adj : (o.priceAdjustment || 0),
+            adjustmentType: o.adjustmentType || 'fixed',
+            conditionGrade: o.conditionGrade || 'good',
+            bulletPoints: o.bulletPoints || [o.sublabel || o.description || ''],
+          })),
+        }));
+        setQuestions(mapped);
+        if (mapped.length > 0) setExpandedQ(mapped[0].id);
+      }
+    } catch (err) {
+      console.error('Error fetching questions:', err);
+    } finally {
+      setLoadingQuestions(false);
+    }
+  };
 
   // Fetch Lenses from backend API
   const fetchLenses = async () => {
@@ -59,6 +98,7 @@ export default function AdminPricing({ initialTab = 'lenses' }: { initialTab?: '
 
   useEffect(() => {
     fetchLenses();
+    fetchQuestions('cat-dslr');
   }, []);
 
   const triggerSuccess = (msg: string) => {
@@ -136,51 +176,123 @@ export default function AdminPricing({ initialTab = 'lenses' }: { initialTab?: '
   };
 
   // ── QUESTIONS ACTIONS ──
-  const handleAdjustmentSave = () => {
+  const handleAdjustmentSave = async () => {
     if (!editingOption) return;
-    setQuestions(prev =>
-      prev.map(q =>
-        q.id === editingOption.qId
-          ? {
-              ...q,
-              options: q.options.map(o =>
-                o.id === editingOption.optId ? { ...o, priceAdjustment: editingOption.adjustment } : o
-              ),
-            }
-          : q
-      )
+    const targetQ = questions.find(q => q.id === editingOption.qId);
+    if (!targetQ) return;
+
+    const updatedOptions = targetQ.options.map(o =>
+      o.id === editingOption.optId ? { ...o, priceAdjustment: editingOption.adjustment } : o
     );
-    setEditingOption(null);
+
+    const payload = {
+      id: targetQ.id,
+      categoryId: selectedCategory,
+      question: targetQ.question,
+      subtext: targetQ.subtext,
+      active: targetQ.active,
+      options: updatedOptions.map(o => ({
+        id: o.id,
+        label: o.label,
+        sublabel: o.description || '',
+        adj: o.priceAdjustment,
+      })),
+    };
+
+    try {
+      const res = await fetch('/api/questions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setQuestions(prev =>
+          prev.map(q =>
+            q.id === editingOption.qId
+              ? { ...q, options: updatedOptions }
+              : q
+          )
+        );
+        triggerSuccess('Option deduction amount saved successfully!');
+        setEditingOption(null);
+      }
+    } catch {
+      alert('Failed to save adjustment');
+    }
   };
 
-  const handleAddQuestion = () => {
+  const handleAddQuestion = async () => {
     if (!newQ.question.trim()) return;
-    const id = `q-custom-${Date.now()}`;
-    const newQuestion: Question = {
-      id,
-      categoryId: newQ.categoryId,
+    const defaultOptions = [
+      { id: `opt-1-${Date.now()}`, label: 'Works Perfectly / Flawless', sublabel: 'Original & 100% functional', adj: 0 },
+      { id: `opt-2-${Date.now()}`, label: 'Minor Flaw / Cosmetic Wear', sublabel: 'Light scratches or normal usage', adj: -2500 },
+      { id: `opt-3-${Date.now()}`, label: 'Major Defect / Damaged', sublabel: 'Requires repair or replacement', adj: -7000 },
+    ];
+    const payload = {
+      categoryId: newQ.categoryId || selectedCategory,
       question: newQ.question,
       subtext: newQ.subtext,
-      sortOrder: questions.length + 1,
       active: true,
-      options: [],
+      options: defaultOptions,
     };
-    setQuestions(prev => [...prev, newQuestion]);
-    setNewQ({ question: '', subtext: '', categoryId: 'cat-smartphone' });
-    setShowAddQuestion(false);
-    setExpandedQ(id);
+    try {
+      const res = await fetch('/api/questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        triggerSuccess(`Added question: "${newQ.question}"`);
+        setShowAddQuestion(false);
+        setNewQ({ question: '', subtext: '', categoryId: selectedCategory });
+        fetchQuestions(selectedCategory);
+      }
+    } catch {
+      alert('Failed to create question');
+    }
   };
 
-  const handleDeleteQuestion = (qId: string) => {
-    setQuestions(prev => prev.filter(q => q.id !== qId));
+  const handleDeleteQuestion = async (qId: string) => {
+    if (!confirm('Are you sure you want to delete this question?')) return;
+    try {
+      const res = await fetch(`/api/questions?id=${qId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setQuestions(prev => prev.filter(q => q.id !== qId));
+        triggerSuccess('Question deleted successfully');
+      }
+    } catch {
+      alert('Failed to delete question');
+    }
   };
 
-  const handleToggleActive = (qId: string) => {
-    setQuestions(prev => prev.map(q => (q.id === qId ? { ...q, active: !q.active } : q)));
+  const handleToggleActive = async (qId: string) => {
+    const targetQ = questions.find(q => q.id === qId);
+    if (!targetQ) return;
+    const newActive = !targetQ.active;
+    try {
+      const res = await fetch('/api/questions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: qId, active: newActive }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setQuestions(prev => prev.map(q => q.id === qId ? { ...q, active: newActive } : q));
+        triggerSuccess(`Question ${newActive ? 'Enabled' : 'Disabled'}`);
+      }
+    } catch {
+      alert('Failed to toggle question status');
+    }
   };
 
-  const handleAddOption = (qId: string) => {
+  const handleAddOption = async (qId: string) => {
     if (!newOpt.label.trim()) return;
+    const targetQ = questions.find(q => q.id === qId);
+    if (!targetQ) return;
+
     const optId = `opt-${qId}-${Date.now()}`;
     const option: QuestionOption = {
       id: optId,
@@ -194,15 +306,61 @@ export default function AdminPricing({ initialTab = 'lenses' }: { initialTab?: '
       conditionGrade: 'good',
       bulletPoints: [newOpt.description],
     };
-    setQuestions(prev => prev.map(q => (q.id === qId ? { ...q, options: [...q.options, option] } : q)));
-    setNewOpt({ label: '', description: '', icon: '📱', priceAdjustment: 0 });
-    setShowAddOption(null);
+    const updatedOptions = [...targetQ.options, option];
+
+    try {
+      const res = await fetch('/api/questions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: qId,
+          options: updatedOptions.map(o => ({
+            id: o.id,
+            label: o.label,
+            sublabel: o.description || '',
+            adj: o.priceAdjustment,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setQuestions(prev => prev.map(q => (q.id === qId ? { ...q, options: updatedOptions } : q)));
+        setNewOpt({ label: '', description: '', icon: '📱', priceAdjustment: 0 });
+        setShowAddOption(null);
+        triggerSuccess('New answer option added!');
+      }
+    } catch {
+      alert('Failed to add option');
+    }
   };
 
-  const handleDeleteOption = (qId: string, optId: string) => {
-    setQuestions(prev =>
-      prev.map(q => (q.id === qId ? { ...q, options: q.options.filter(o => o.id !== optId) } : q))
-    );
+  const handleDeleteOption = async (qId: string, optId: string) => {
+    const targetQ = questions.find(q => q.id === qId);
+    if (!targetQ) return;
+    const updatedOptions = targetQ.options.filter(o => o.id !== optId);
+
+    try {
+      const res = await fetch('/api/questions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: qId,
+          options: updatedOptions.map(o => ({
+            id: o.id,
+            label: o.label,
+            sublabel: o.description || '',
+            adj: o.priceAdjustment,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setQuestions(prev => prev.map(q => (q.id === qId ? { ...q, options: updatedOptions } : q)));
+        triggerSuccess('Option deleted!');
+      }
+    } catch {
+      alert('Failed to delete option');
+    }
   };
 
   return (
@@ -242,7 +400,10 @@ export default function AdminPricing({ initialTab = 'lenses' }: { initialTab?: '
           </div>
         ) : (
           <button
-            onClick={() => setShowAddQuestion(true)}
+            onClick={() => {
+              setNewQ(p => ({ ...p, categoryId: selectedCategory }));
+              setShowAddQuestion(true);
+            }}
             className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"
           >
             <Plus size={16} /> Add Question
@@ -395,8 +556,69 @@ export default function AdminPricing({ initialTab = 'lenses' }: { initialTab?: '
             </div>
           </div>
 
+          {/* Category Filter Chips for Diagnostic Questions */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
+              {[
+                { id: 'cat-dslr', name: 'DSLR & Mirrorless', icon: '📷' },
+                { id: 'cat-smartphone', name: 'Smartphones & Mobile', icon: '📱' },
+                { id: 'cat-laptop', name: 'Laptops & MacBooks', icon: '💻' },
+                { id: 'cat-lens', name: 'Camera Lenses', icon: '🔍' },
+                { id: 'cat-tablet', name: 'Tablets & iPads', icon: '📟' },
+                { id: 'cat-action-camera', name: 'Action Cameras', icon: '🏄' },
+                { id: 'cat-video-camera', name: 'Video Cameras', icon: '📹' },
+                { id: 'cat-gimbal', name: 'Gimbals', icon: '🕹️' },
+              ].map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => {
+                    setSelectedCategory(c.id);
+                    fetchQuestions(c.id);
+                  }}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                    selectedCategory === c.id
+                      ? 'bg-primary text-white shadow-md shadow-primary/20 scale-[1.02]'
+                      : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span>{c.icon}</span>
+                  <span>{c.name}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-xl flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Live Questions API: <span className="text-primary font-black">{questions.length} Active</span>
+            </div>
+          </div>
+
+          {loadingQuestions && (
+            <div className="py-12 text-center text-gray-400 font-medium">Loading category questions from API...</div>
+          )}
+
+          {!loadingQuestions && questions.length === 0 && (
+            <div className="py-12 bg-white rounded-2xl border border-dashed border-gray-200 text-center space-y-3 p-6">
+              <div className="text-3xl">❓</div>
+              <h4 className="font-bold text-gray-800 text-base">No diagnostic questions for this category yet</h4>
+              <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                Add condition questions and valuation deductions for this category so users get accurate doorstep quotes.
+              </p>
+              <button
+                onClick={() => {
+                  setNewQ(p => ({ ...p, categoryId: selectedCategory }));
+                  setShowAddQuestion(true);
+                }}
+                className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-md shadow-primary/20 hover:bg-primary/90"
+              >
+                + Add First Question
+              </button>
+            </div>
+          )}
+
           {/* Questions List */}
-          <div className="space-y-3">
+          {!loadingQuestions && questions.length > 0 && (
+            <div className="space-y-3">
             {questions.map((q, qi) => (
               <div key={q.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="flex items-center">
@@ -538,6 +760,7 @@ export default function AdminPricing({ initialTab = 'lenses' }: { initialTab?: '
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 
@@ -757,10 +980,13 @@ export default function AdminPricing({ initialTab = 'lenses' }: { initialTab?: '
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
                 >
                   <option value="cat-dslr">Cameras & DSLR</option>
+                  <option value="cat-smartphone">Smartphones & Mobile</option>
+                  <option value="cat-laptop">Laptops & MacBooks</option>
                   <option value="cat-lens">Camera Lenses</option>
+                  <option value="cat-tablet">Tablets & iPads</option>
+                  <option value="cat-action-camera">Action Cameras</option>
                   <option value="cat-video-camera">Video Cameras</option>
-                  <option value="cat-smartphone">Smartphones</option>
-                  <option value="cat-laptop">Laptops</option>
+                  <option value="cat-gimbal">Gimbals & Stabilizers</option>
                 </select>
               </div>
             </div>

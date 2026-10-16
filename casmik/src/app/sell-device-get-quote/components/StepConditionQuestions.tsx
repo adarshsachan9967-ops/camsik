@@ -1,10 +1,10 @@
 'use client';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, TrendingUp, TrendingDown, Sparkles, Flame, CheckCircle2 } from 'lucide-react';
 import type { SellState } from './SellDeviceWorkflow';
 
-// Illustrated condition questions with proper answer cards like reference screenshot
-const questions = [
+// Default fallback condition questions
+const defaultQuestions = [
   {
     id: 'q-power',
     question: 'Does the device turn on?',
@@ -95,17 +95,51 @@ interface Props {
 }
 
 export default function StepConditionQuestions({ sellState, onUpdate, onNext, onBack, onSelectModel }: Props) {
+  const [questionsList, setQuestionsList] = useState(defaultQuestions);
   const [activeQ, setActiveQ] = useState(0);
   const [priceAnimation, setPriceAnimation] = useState<'up' | 'down' | null>(null);
   const [lastDelta, setLastDelta] = useState<number>(0);
   const prevPrice = useRef(sellState.currentPrice);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadCategoryQuestions() {
+      if (!sellState.category) return;
+      try {
+        const res = await fetch(`/api/questions?categoryId=${encodeURIComponent(sellState.category)}`);
+        const data = await res.json();
+        if (isMounted && data.success && Array.isArray(data.questions) && data.questions.length > 0) {
+          const mapped = data.questions.map((q: any) => ({
+            id: q.id,
+            question: q.question,
+            subtext: q.subtext || '',
+            options: (q.options || []).map((o: any) => ({
+              id: o.id,
+              label: o.label,
+              desc: o.sublabel || o.desc || '',
+              adjustment: typeof o.adj === 'number' ? o.adj : (o.adjustment || 0),
+              icon: o.icon || '✓',
+              illustration: o.illustration || (sellState.category === 'cat-dslr' ? '📷' : sellState.category === 'cat-laptop' ? '💻' : sellState.category === 'cat-lens' ? '🔍' : '📱'),
+              bulletPoints: o.bulletPoints || [o.sublabel || o.desc || o.label],
+            })),
+          }));
+          setQuestionsList(mapped);
+          setActiveQ(0);
+        }
+      } catch (err) {
+        console.warn('Failed to load dynamic questions on web:', err);
+      }
+    }
+    loadCategoryQuestions();
+    return () => { isMounted = false; };
+  }, [sellState.category]);
 
   const handleAnswer = (qId: string, optId: string, adjustment: number) => {
     const newAnswers = { ...sellState.answers, [qId]: optId };
     let newPrice = sellState.basePrice;
     const newAdjustments: SellState['adjustments'] = [];
 
-    questions.forEach(q => {
+    questionsList.forEach(q => {
       const answeredOptId = q.id === qId ? optId : newAnswers[q.id];
       if (!answeredOptId) return;
       const opt = q.options.find(o => o.id === answeredOptId);
@@ -128,13 +162,13 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
     onUpdate({ answers: newAnswers, currentPrice: Math.max(newPrice, 5000), adjustments: newAdjustments });
 
     setTimeout(() => {
-      if (activeQ < questions.length - 1) setActiveQ(q => q + 1);
+      if (activeQ < questionsList.length - 1) setActiveQ(q => q + 1);
     }, 350);
   };
 
   const answeredCount = Object.keys(sellState.answers).length;
-  const allAnswered = questions.every(q => sellState.answers[q.id]);
-  const progress = Math.round((answeredCount / questions.length) * 100);
+  const allAnswered = questionsList.every(q => sellState.answers[q.id]);
+  const progress = Math.round((answeredCount / questionsList.length) * 100);
 
   return (
     <div className="space-y-4 fade-in">
@@ -154,14 +188,14 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
             <p className="text-xs text-emerald-100/90 font-medium">
               {answeredCount === 0 
                 ? 'Select answers below to reveal your highest guaranteed cash payout.' 
-                : answeredCount < questions.length 
+                : answeredCount < questionsList.length 
                   ? `Keep going! Every answer locks in maximum transparency and value.` 
                   : '🎉 Awesome! You have unlocked your highest guaranteed valuation!'}
             </p>
           </div>
           <div className="text-left sm:text-right flex-shrink-0">
             <div className="text-xs font-black text-white/90">
-              {answeredCount} of {questions.length} Answered
+              {answeredCount} of {questionsList.length} Answered
             </div>
             <div className="text-2xl font-black font-tabular text-amber-300">
               {progress}%
@@ -204,7 +238,7 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
           </div>
         )}
         <div className="text-right hidden sm:block">
-          <p className="text-xs text-muted-foreground">{answeredCount} of {questions.length} answered</p>
+          <p className="text-xs text-muted-foreground">{answeredCount} of {questionsList.length} answered</p>
           <div className="w-24 h-1.5 bg-muted rounded-full mt-1.5 overflow-hidden">
             <div className="h-full gradient-green rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
           </div>
@@ -220,13 +254,13 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
         <div className="p-6">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-xl font-bold text-foreground">Device Condition</h2>
-            <span className="text-xs text-muted-foreground font-medium">Question {Math.min(activeQ + 1, questions.length)} of {questions.length}</span>
+            <span className="text-xs text-muted-foreground font-medium">Question {Math.min(activeQ + 1, questionsList.length)} of {questionsList.length}</span>
           </div>
           <p className="text-sm text-muted-foreground mb-5">Answer honestly for the most accurate price</p>
 
           {/* Question tabs */}
           <div className="flex gap-1.5 mb-6 overflow-x-auto scrollbar-hide pb-1">
-            {questions.map((q, i) => {
+            {questionsList.map((q, i) => {
               const answered = !!sellState.answers[q.id];
               return (
                 <button key={`qtab-${q.id}`} onClick={() => setActiveQ(i)}
@@ -240,14 +274,14 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
           </div>
 
           {/* Active question */}
-          {questions.map((q, qi) => qi === activeQ && (
+          {questionsList.map((q, qi) => qi === activeQ && (
             <div key={`q-${q.id}`} className="fade-in">
               <h3 className="text-base font-bold text-foreground mb-1">{q.question}</h3>
               <p className="text-xs text-muted-foreground mb-5">{q.subtext}</p>
 
               {/* Answer cards — with direct selection and full inline details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-                {q.options.map((opt) => {
+                {q.options.map((opt: any) => {
                   const selected = sellState.answers[q.id] === opt.id;
                   return (
                     <button
@@ -278,7 +312,7 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
                       {/* Detailed bullets shown directly inline */}
                       {opt.bulletPoints && opt.bulletPoints.length > 0 && (
                         <div className="w-full text-left space-y-1 mt-1 pt-2 border-t border-border/60">
-                          {opt.bulletPoints.map((bp, bpi) => (
+                          {opt.bulletPoints.map((bp: string, bpi: number) => (
                             <p key={bpi} className="text-[11px] text-muted-foreground flex items-start gap-1 leading-tight">
                               <span className="text-primary font-bold text-[9px] mt-0.5">•</span>
                               <span>{bp}</span>
@@ -305,7 +339,7 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
                 </button>
 
                 <div className="flex items-center gap-2">
-                  {activeQ < questions.length - 1 ? (
+                  {activeQ < questionsList.length - 1 ? (
                     <button
                       type="button"
                       onClick={() => setActiveQ(q => q + 1)}
@@ -326,7 +360,7 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
       </div>
 
       {/* Continue button — allow proceeding whether answered or skipped */}
-      {(allAnswered || activeQ === questions.length - 1 || Object.keys(sellState.answers).length >= 1) && (
+      {(allAnswered || activeQ === questionsList.length - 1 || Object.keys(sellState.answers).length >= 1) && (
         <div className="fade-in">
           <button onClick={onNext} className="w-full py-4 gradient-green text-white rounded-2xl font-bold text-base shadow-green btn-press flex items-center justify-center gap-2">
             <span>🎉 Get My Final Quote — ₹{sellState.currentPrice.toLocaleString('en-IN')}</span>

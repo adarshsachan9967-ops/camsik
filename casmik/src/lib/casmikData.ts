@@ -331,48 +331,48 @@ export const categories: Category[] = [
 
 export const brands: Brand[] = [
   // DSLR / Mirrorless Brands
-  { id: 'brand-canon', categoryId: 'cat-dslr', name: 'Canon', slug: 'canon', logo: 'https://camsik.com/img/productBrand/4bd0ce5a-6914-4263-9f81-6b0127bec025.png', alt: 'Canon Camera Brand', modelCount: 16, active: true },
-  { id: 'brand-nikon', categoryId: 'cat-dslr', name: 'Nikon', slug: 'nikon', logo: 'https://camsik.com/img/productBrand/9f533d3d-4304-48e9-8a0d-a7c8fdd7318c.png', alt: 'Nikon Camera Brand', modelCount: 14, active: true },
-  { id: 'brand-sony', categoryId: 'cat-dslr', name: 'Sony', slug: 'sony', logo: 'https://camsik.com/img/productBrand/bbd3f7f8-4909-43fd-85c9-7191a3b64dcd.png', alt: 'Sony Camera Brand', modelCount: 18, active: true },
-  { id: 'brand-fujifilm', categoryId: 'cat-dslr', name: 'Fujifilm', slug: 'fujifilm', logo: 'https://camsik.com/img/productBrand/ccd22eff-5208-4a76-9b0f-8d1a1bca00a2.png', alt: 'Fujifilm Camera Brand', modelCount: 8, active: true },
-  { id: 'brand-lumix', categoryId: 'cat-dslr', name: 'LUMIX', slug: 'lumix', logo: 'https://camsik.com/img/productBrand/378fcf74-3103-45f4-b195-82c32e575075.png', alt: 'LUMIX Camera Brand', modelCount: 9, active: true },
+  { id: 'brand-canon', categoryId: 'cat-dslr', name: 'Canon', slug: 'canon', logo: 'https://camsik.com/img/productBrand/4bd0ce5a-6914-4263-9f81-6b0127bec025.png', alt: 'Canon Camera Brand', modelCount: 2, active: true },
+  { id: 'brand-nikon', categoryId: 'cat-dslr', name: 'Nikon', slug: 'nikon', logo: 'https://camsik.com/img/productBrand/9f533d3d-4304-48e9-8a0d-a7c8fdd7318c.png', alt: 'Nikon Camera Brand', modelCount: 3, active: true },
+  { id: 'brand-sony', categoryId: 'cat-dslr', name: 'Sony', slug: 'sony', logo: 'https://camsik.com/img/productBrand/bbd3f7f8-4909-43fd-85c9-7191a3b64dcd.png', alt: 'Sony Camera Brand', modelCount: 3, active: true },
+  { id: 'brand-fujifilm', categoryId: 'cat-dslr', name: 'Fujifilm', slug: 'fujifilm', logo: 'https://camsik.com/img/productBrand/ccd22eff-5208-4a76-9b0f-8d1a1bca00a2.png', alt: 'Fujifilm Camera Brand', modelCount: 2, active: true },
+  { id: 'brand-lumix', categoryId: 'cat-dslr', name: 'LUMIX', slug: 'lumix', logo: 'https://camsik.com/img/productBrand/378fcf74-3103-45f4-b195-82c32e575075.png', alt: 'LUMIX Camera Brand', modelCount: 2, active: true },
 
   // Lens Brands
-  { id: 'brand-sigma', categoryId: 'cat-lens', name: 'Sigma', slug: 'sigma', logo: 'https://camsik.com/img/productBrand/6a7e9cc4-ef20-4afd-8258-478d2f860f12.png', alt: 'Sigma Lens Brand', modelCount: 12, active: true },
-  { id: 'brand-tamron', categoryId: 'cat-lens', name: 'Tamron', slug: 'tamron', logo: 'https://camsik.com/img/productBrand/8e522ebd-f7e0-407c-81dc-d19510321cae.png', alt: 'Tamron Lens Brand', modelCount: 10, active: true },
-  { id: 'brand-samyang', categoryId: 'cat-lens', name: 'Samyang', slug: 'samyang', logo: 'https://camsik.com/img/productBrand/8b1ef337-0491-492b-a3b2-517fe787160e.png', alt: 'Samyang Lens Brand', modelCount: 6, active: true },
+  { id: 'brand-sigma', categoryId: 'cat-lens', name: 'Sigma', slug: 'sigma', logo: 'https://camsik.com/img/productBrand/6a7e9cc4-ef20-4afd-8258-478d2f860f12.png', alt: 'Sigma Lens Brand', modelCount: 1, active: true },
+  { id: 'brand-tamron', categoryId: 'cat-lens', name: 'Tamron', slug: 'tamron', logo: 'https://camsik.com/img/productBrand/8e522ebd-f7e0-407c-81dc-d19510321cae.png', alt: 'Tamron Lens Brand', modelCount: 1, active: true },
+  { id: 'brand-samyang', categoryId: 'cat-lens', name: 'Samyang', slug: 'samyang', logo: 'https://camsik.com/img/productBrand/8b1ef337-0491-492b-a3b2-517fe787160e.png', alt: 'Samyang Lens Brand', modelCount: 2, active: true },
 
   // Video Camera Brands
-  { id: 'brand-panasonic', categoryId: 'cat-video-camera', name: 'Panasonic', slug: 'panasonic', logo: 'https://camsik.com/img/productBrand/ed216802-37df-4f15-96cb-9ed34b42006b.png', alt: 'Panasonic Video Cameras', modelCount: 6, active: true },
+  { id: 'brand-panasonic', categoryId: 'cat-video-camera', name: 'Panasonic', slug: 'panasonic', logo: 'https://camsik.com/img/productBrand/ed216802-37df-4f15-96cb-9ed34b42006b.png', alt: 'Panasonic Video Cameras', modelCount: 1, active: true },
 
   // Action Camera Brands
-  { id: 'brand-gopro', categoryId: 'cat-action-camera', name: 'GoPro', slug: 'gopro', logo: 'https://camsik.com/img/productBrand/17a259cc-2f9c-4bfe-82f9-8143df8cb30d.png', alt: 'GoPro Action Cameras', modelCount: 10, active: true },
-  { id: 'brand-dji', categoryId: 'cat-action-camera', name: 'DJI', slug: 'dji', logo: 'https://camsik.com/img/productBrand/6e8121dd-49f6-4df5-b458-7990f5d11eae.png', alt: 'DJI Cameras & Gimbals', modelCount: 12, active: true },
-  { id: 'brand-insta360', categoryId: 'cat-action-camera', name: 'Insta 360', slug: 'insta360', logo: 'https://camsik.com/img/productBrand/2a349fb4-1de7-4f51-a2be-f4d60f909eaf.png', alt: 'Insta 360 Cameras', modelCount: 8, active: true },
+  { id: 'brand-gopro', categoryId: 'cat-action-camera', name: 'GoPro', slug: 'gopro', logo: 'https://camsik.com/img/productBrand/17a259cc-2f9c-4bfe-82f9-8143df8cb30d.png', alt: 'GoPro Action Cameras', modelCount: 2, active: true },
+  { id: 'brand-dji', categoryId: 'cat-action-camera', name: 'DJI', slug: 'dji', logo: 'https://camsik.com/img/productBrand/6e8121dd-49f6-4df5-b458-7990f5d11eae.png', alt: 'DJI Cameras & Gimbals', modelCount: 2, active: true },
+  { id: 'brand-insta360', categoryId: 'cat-action-camera', name: 'Insta 360', slug: 'insta360', logo: 'https://camsik.com/img/productBrand/2a349fb4-1de7-4f51-a2be-f4d60f909eaf.png', alt: 'Insta 360 Cameras', modelCount: 2, active: true },
 
   // Gimbal Brands
-  { id: 'brand-zhiyun', categoryId: 'cat-gimbal', name: 'ZHIYUN', slug: 'zhiyun', logo: 'https://camsik.com/img/productBrand/1898d608-4b2f-4448-b9c8-72498f0ebf30.png', alt: 'ZHIYUN Gimbals', modelCount: 6, active: true },
-  { id: 'brand-feiyutech', categoryId: 'cat-gimbal', name: 'FeiyuTech', slug: 'feiyutech', logo: 'https://camsik.com/img/productBrand/427d8103-5927-4055-be99-91a21d32d4e8.png', alt: 'FeiyuTech Gimbals', modelCount: 5, active: true },
+  { id: 'brand-zhiyun', categoryId: 'cat-gimbal', name: 'ZHIYUN', slug: 'zhiyun', logo: 'https://camsik.com/img/productBrand/1898d608-4b2f-4448-b9c8-72498f0ebf30.png', alt: 'ZHIYUN Gimbals', modelCount: 1, active: true },
+  { id: 'brand-feiyutech', categoryId: 'cat-gimbal', name: 'FeiyuTech', slug: 'feiyutech', logo: 'https://camsik.com/img/productBrand/427d8103-5927-4055-be99-91a21d32d4e8.png', alt: 'FeiyuTech Gimbals', modelCount: 1, active: true },
 
   // Smartphone Brands
-  { id: 'brand-apple-phone', categoryId: 'cat-smartphone', name: 'Apple', slug: 'apple-phone', logo: '/assets/images/brands/apple.svg', alt: 'Apple iPhone Brand', modelCount: 15, active: true },
-  { id: 'brand-samsung-phone', categoryId: 'cat-smartphone', name: 'Samsung', slug: 'samsung-phone', logo: '/assets/images/brands/samsung.svg', alt: 'Samsung Galaxy Brand', modelCount: 16, active: true },
-  { id: 'brand-google-phone', categoryId: 'cat-smartphone', name: 'Google', slug: 'google-phone', logo: '/assets/images/brands/google.svg', alt: 'Google Pixel Brand', modelCount: 8, active: true },
-  { id: 'brand-oneplus-phone', categoryId: 'cat-smartphone', name: 'OnePlus', slug: 'oneplus-phone', logo: '/assets/images/brands/oneplus.svg', alt: 'OnePlus Brand', modelCount: 10, active: true },
-  { id: 'brand-xiaomi-phone', categoryId: 'cat-smartphone', name: 'Xiaomi', slug: 'xiaomi-phone', logo: '/assets/images/brands/xiaomi.svg', alt: 'Xiaomi Brand', modelCount: 12, active: true },
+  { id: 'brand-apple-phone', categoryId: 'cat-smartphone', name: 'Apple', slug: 'apple-phone', logo: '/assets/images/brands/apple.svg', alt: 'Apple iPhone Brand', modelCount: 6, active: true },
+  { id: 'brand-samsung-phone', categoryId: 'cat-smartphone', name: 'Samsung', slug: 'samsung-phone', logo: '/assets/images/brands/samsung.svg', alt: 'Samsung Galaxy Brand', modelCount: 3, active: true },
+  { id: 'brand-google-phone', categoryId: 'cat-smartphone', name: 'Google', slug: 'google-phone', logo: '/assets/images/brands/google.svg', alt: 'Google Pixel Brand', modelCount: 2, active: true },
+  { id: 'brand-oneplus-phone', categoryId: 'cat-smartphone', name: 'OnePlus', slug: 'oneplus-phone', logo: '/assets/images/brands/oneplus.svg', alt: 'OnePlus Brand', modelCount: 2, active: true },
+  { id: 'brand-xiaomi-phone', categoryId: 'cat-smartphone', name: 'Xiaomi', slug: 'xiaomi-phone', logo: '/assets/images/brands/xiaomi.svg', alt: 'Xiaomi Brand', modelCount: 1, active: true },
 
   // Laptop Brands
-  { id: 'brand-apple-laptop', categoryId: 'cat-laptop', name: 'Apple', slug: 'apple-laptop', logo: '/assets/images/brands/apple.svg', alt: 'Apple MacBook Brand', modelCount: 10, active: true },
-  { id: 'brand-dell-laptop', categoryId: 'cat-laptop', name: 'Dell', slug: 'dell-laptop', logo: '/assets/images/brands/dell.svg', alt: 'Dell Laptop Brand', modelCount: 12, active: true },
-  { id: 'brand-hp-laptop', categoryId: 'cat-laptop', name: 'HP', slug: 'hp-laptop', logo: '/assets/images/brands/hp.svg', alt: 'HP Laptop Brand', modelCount: 10, active: true },
-  { id: 'brand-lenovo-laptop', categoryId: 'cat-laptop', name: 'Lenovo', slug: 'lenovo-laptop', logo: '/assets/images/brands/lenovo.svg', alt: 'Lenovo Laptop Brand', modelCount: 11, active: true },
-  { id: 'brand-asus-laptop', categoryId: 'cat-laptop', name: 'ASUS', slug: 'asus-laptop', logo: '/assets/images/brands/asus.svg', alt: 'ASUS Laptop Brand', modelCount: 9, active: true },
+  { id: 'brand-apple-laptop', categoryId: 'cat-laptop', name: 'Apple', slug: 'apple-laptop', logo: '/assets/images/brands/apple.svg', alt: 'Apple MacBook Brand', modelCount: 4, active: true },
+  { id: 'brand-dell-laptop', categoryId: 'cat-laptop', name: 'Dell', slug: 'dell-laptop', logo: '/assets/images/brands/dell.svg', alt: 'Dell Laptop Brand', modelCount: 2, active: true },
+  { id: 'brand-hp-laptop', categoryId: 'cat-laptop', name: 'HP', slug: 'hp-laptop', logo: '/assets/images/brands/hp.svg', alt: 'HP Laptop Brand', modelCount: 2, active: true },
+  { id: 'brand-lenovo-laptop', categoryId: 'cat-laptop', name: 'Lenovo', slug: 'lenovo-laptop', logo: '/assets/images/brands/lenovo.svg', alt: 'Lenovo Laptop Brand', modelCount: 2, active: true },
+  { id: 'brand-asus-laptop', categoryId: 'cat-laptop', name: 'ASUS', slug: 'asus-laptop', logo: '/assets/images/brands/asus.svg', alt: 'ASUS Laptop Brand', modelCount: 1, active: true },
 
   // Tablet Brands
-  { id: 'brand-apple-tablet', categoryId: 'cat-tablet', name: 'Apple', slug: 'apple-tablet', logo: '/assets/images/brands/apple.svg', alt: 'Apple iPad Brand', modelCount: 12, active: true },
-  { id: 'brand-samsung-tablet', categoryId: 'cat-tablet', name: 'Samsung', slug: 'samsung-tablet', logo: '/assets/images/brands/samsung.svg', alt: 'Samsung Galaxy Tab Brand', modelCount: 8, active: true },
-  { id: 'brand-oneplus-tablet', categoryId: 'cat-tablet', name: 'OnePlus', slug: 'oneplus-tablet', logo: '/assets/images/brands/oneplus.svg', alt: 'OnePlus Pad Brand', modelCount: 4, active: true },
-  { id: 'brand-lenovo-tablet', categoryId: 'cat-tablet', name: 'Lenovo', slug: 'lenovo-tablet', logo: '/assets/images/brands/lenovo.svg', alt: 'Lenovo Tab Brand', modelCount: 5, active: true },
+  { id: 'brand-apple-tablet', categoryId: 'cat-tablet', name: 'Apple', slug: 'apple-tablet', logo: '/assets/images/brands/apple.svg', alt: 'Apple iPad Brand', modelCount: 6, active: true },
+  { id: 'brand-samsung-tablet', categoryId: 'cat-tablet', name: 'Samsung', slug: 'samsung-tablet', logo: '/assets/images/brands/samsung.svg', alt: 'Samsung Galaxy Tab Brand', modelCount: 2, active: true },
+  { id: 'brand-oneplus-tablet', categoryId: 'cat-tablet', name: 'OnePlus', slug: 'oneplus-tablet', logo: '/assets/images/brands/oneplus.svg', alt: 'OnePlus Pad Brand', modelCount: 1, active: true },
+  { id: 'brand-lenovo-tablet', categoryId: 'cat-tablet', name: 'Lenovo', slug: 'lenovo-tablet', logo: '/assets/images/brands/lenovo.svg', alt: 'Lenovo Tab Brand', modelCount: 1, active: true },
 ];
 
 // ─── CAMERA PRODUCTS CATALOG ─────────────────────────────────────────────────

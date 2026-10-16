@@ -28,10 +28,23 @@ export async function GET(request: Request) {
       );
     }
 
-    // Associated brands
-    const activeBrands = categoryId && categoryId !== 'all'
+    // Associated brands enriched with accurate dynamic modelCount
+    const rawBrands = categoryId && categoryId !== 'all'
       ? brands.filter((b) => b.categoryId === categoryId && b.active)
       : brands.filter((b) => b.active);
+
+    const activeBrands = rawBrands.map((b) => {
+      const count = deviceModels.filter(
+        (m) =>
+          m.brandId === b.id &&
+          (!b.categoryId || b.categoryId === 'all' || m.categoryId === b.categoryId) &&
+          m.active
+      ).length;
+      return {
+        ...b,
+        modelCount: count,
+      };
+    });
 
     return NextResponse.json({
       success: true,

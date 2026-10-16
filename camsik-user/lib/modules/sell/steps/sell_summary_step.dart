@@ -6,6 +6,8 @@ import '../widgets/device_imei_verification_sheet.dart';
 
 class SellSummaryStep extends StatefulWidget {
   final Map<String, dynamic>? selectedModel;
+  final String? categoryId;
+  final String? categoryName;
   final String selectedStorage;
   final String selectedColor;
   final List<Map<String, dynamic>> selectedLenses;
@@ -18,6 +20,8 @@ class SellSummaryStep extends StatefulWidget {
   const SellSummaryStep({
     super.key,
     required this.selectedModel,
+    this.categoryId,
+    this.categoryName,
     required this.selectedStorage,
     required this.selectedColor,
     this.selectedLenses = const [],
@@ -40,6 +44,18 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
     final modelName = widget.selectedModel?['name'] as String? ?? 'Selected Device';
     final modelImage = widget.selectedModel?['image'] as String? ?? 'assets/images/categories/dslr.png';
     final priceDiff = widget.calculatedPrice - widget.basePrice;
+    final catId = (widget.categoryId ?? widget.selectedModel?['categoryId'] ?? '').toString().toLowerCase();
+    final catName = (widget.categoryName ?? '').toString().toLowerCase();
+    final modelNameLower = modelName.toLowerCase();
+    final isMobileOrSmartphone = catId == 'cat-smartphone' ||
+        catId == 'cat-mobile' ||
+        catId.contains('phone') ||
+        catId.contains('mobile') ||
+        catName.contains('phone') ||
+        catName.contains('mobile') ||
+        modelNameLower.contains('iphone') ||
+        modelNameLower.contains('galaxy') ||
+        modelNameLower.contains('pixel');
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -268,92 +284,93 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
             ),
           ),
 
-          const SizedBox(height: 14),
-
-          // ── 2. INSTANT IMEI / SERIAL VERIFICATION CARD ──
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: _verificationReport != null ? const Color(0xFFF0FDF4) : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _verificationReport != null ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
-                width: 1.2,
+          // ── 2. INSTANT IMEI / SERIAL VERIFICATION CARD (ONLY FOR MOBILES & SMARTPHONES) ──
+          if (isMobileOrSmartphone) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _verificationReport != null ? const Color(0xFFF0FDF4) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _verificationReport != null ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    color: (_verificationReport != null ? const Color(0xFF16A34A) : const Color(0xFF059669))
-                        .withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: (_verificationReport != null ? const Color(0xFF16A34A) : const Color(0xFF059669))
+                          .withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _verificationReport != null ? Icons.verified_rounded : Icons.phonelink_setup_rounded,
+                      color: _verificationReport != null ? const Color(0xFF16A34A) : const Color(0xFF059669),
+                      size: 20,
+                    ),
                   ),
-                  child: Icon(
-                    _verificationReport != null ? Icons.verified_rounded : Icons.phonelink_setup_rounded,
-                    color: _verificationReport != null ? const Color(0xFF16A34A) : const Color(0xFF059669),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _verificationReport != null
-                            ? 'Device IMEI Verified'
-                            : 'Verify Device Authenticity',
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: Color(0xFF0F172A)),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        _verificationReport != null
-                            ? 'Serial/IMEI: ${_verificationReport!.imei} · Status: Verified'
-                            : 'Validate IMEI to lock in expedited doorstep handover',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          color: _verificationReport != null ? const Color(0xFF15803D) : const Color(0xFF64748B),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _verificationReport != null
+                              ? 'Device IMEI Verified'
+                              : 'Verify Device Authenticity',
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: Color(0xFF0F172A)),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 1),
+                        Text(
+                          _verificationReport != null
+                              ? 'Serial/IMEI: ${_verificationReport!.imei} · Status: Verified'
+                              : 'Validate IMEI to lock in expedited doorstep handover',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: _verificationReport != null ? const Color(0xFF15803D) : const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _verificationReport != null ? const Color(0xFFDCFCE7) : const Color(0xFF059669),
-                    foregroundColor: _verificationReport != null ? const Color(0xFF15803D) : Colors.white,
-                    elevation: _verificationReport != null ? 0 : 2,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    minimumSize: const Size(60, 30),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _verificationReport != null ? const Color(0xFFDCFCE7) : const Color(0xFF059669),
+                      foregroundColor: _verificationReport != null ? const Color(0xFF15803D) : Colors.white,
+                      elevation: _verificationReport != null ? 0 : 2,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      minimumSize: const Size(60, 30),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: () async {
+                      final report = await DeviceImeiVerificationSheet.show(
+                        context,
+                        selectedModel: widget.selectedModel,
+                        selectedVariant: widget.selectedStorage,
+                      );
+                      if (report != null && mounted) {
+                        setState(() => _verificationReport = report);
+                      }
+                    },
+                    child: Text(
+                      _verificationReport != null ? 'Re-check' : 'Verify',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+                    ),
                   ),
-                  onPressed: () async {
-                    final report = await DeviceImeiVerificationSheet.show(
-                      context,
-                      selectedModel: widget.selectedModel,
-                      selectedVariant: widget.selectedStorage,
-                    );
-                    if (report != null && mounted) {
-                      setState(() => _verificationReport = report);
-                    }
-                  },
-                  child: Text(
-                    _verificationReport != null ? 'Re-check' : 'Verify',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
 
           const SizedBox(height: 16),
 

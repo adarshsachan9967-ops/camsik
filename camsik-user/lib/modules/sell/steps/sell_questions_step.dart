@@ -31,6 +31,11 @@ class SellQuestionsStep extends StatelessWidget {
     final modelName = selectedModel?['name'] as String? ?? 'Selected Device';
     final modelImage = selectedModel?['image'] as String? ?? 'assets/images/categories/dslr.png';
     final priceDiff = calculatedPrice - basePrice;
+    final bool allAnswered = questions.isNotEmpty &&
+        List.generate(questions.length, (i) => i).every((i) => selectedAnswers.containsKey(i));
+    final int answeredCount = questions.isEmpty
+        ? 0
+        : List.generate(questions.length, (i) => i).where((i) => selectedAnswers.containsKey(i)).length;
 
     return Column(
       children: [
@@ -300,7 +305,8 @@ class SellQuestionsStep extends StatelessWidget {
                 final qText = q['question'] as String? ?? 'Diagnostic Check';
                 final subtext = q['subtext'] as String? ?? '';
                 final options = (q['options'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-                final selectedOptIdx = selectedAnswers[qIdx] ?? 0;
+                final isAnswered = selectedAnswers.containsKey(qIdx);
+                final selectedOptIdx = selectedAnswers[qIdx];
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 14),
@@ -308,7 +314,10 @@ class SellQuestionsStep extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                    border: Border.all(
+                      color: isAnswered ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0),
+                      width: 1.2,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.02),
@@ -320,23 +329,26 @@ class SellQuestionsStep extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Question Number Capsule & Text
+                      // Question Number Capsule, Text & Answered Status Pill
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFECFDF5),
+                              color: isAnswered ? const Color(0xFFECFDF5) : const Color(0xFFFFFBEB),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: const Color(0xFFA7F3D0), width: 0.8),
+                              border: Border.all(
+                                color: isAnswered ? const Color(0xFFA7F3D0) : const Color(0xFFFDE68A),
+                                width: 0.8,
+                              ),
                             ),
                             child: Text(
                               'Q${qIdx + 1} of ${questions.length}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.w900,
-                                color: Color(0xFF047857),
+                                color: isAnswered ? const Color(0xFF047857) : const Color(0xFFB45309),
                               ),
                             ),
                           ),
@@ -350,6 +362,33 @@ class SellQuestionsStep extends StatelessWidget {
                                 color: Color(0xFF0F172A),
                                 height: 1.25,
                               ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: isAnswered ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isAnswered ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+                                  size: 11,
+                                  color: isAnswered ? const Color(0xFF16A34A) : const Color(0xFF94A3B8),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  isAnswered ? 'Answered' : 'Required',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: isAnswered ? const Color(0xFF15803D) : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -387,7 +426,7 @@ class SellQuestionsStep extends StatelessWidget {
                         final label = opt['label'] as String? ?? '';
                         final sublabel = opt['sublabel'] as String? ?? '';
                         final adj = (opt['adj'] as num?)?.toInt() ?? 0;
-                        final isSelected = selectedOptIdx == optIdx;
+                        final isSelected = selectedOptIdx != null && selectedOptIdx == optIdx;
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8),
@@ -550,64 +589,91 @@ class SellQuestionsStep extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 width: double.infinity,
                 height: 50,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF059669), Color(0xFF10B981)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  gradient: allAnswered
+                      ? const LinearGradient(
+                          colors: [Color(0xFF059669), Color(0xFF10B981)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  color: allAnswered ? null : const Color(0xFFE2E8F0),
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF059669).withValues(alpha: 0.35),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  boxShadow: allAnswered
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF059669).withValues(alpha: 0.35),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: onProceed,
+                    onTap: allAnswered ? onProceed : null,
                     borderRadius: BorderRadius.circular(16),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           'View Final Quote Summary',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: allAnswered ? Colors.white : const Color(0xFF94A3B8),
                             fontSize: 14.5,
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.2,
                           ),
                         ),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 17),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          color: allAnswered ? Colors.white : const Color(0xFF94A3B8),
+                          size: 17,
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 8),
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.verified_rounded, size: 12, color: Color(0xFF059669)),
-                  SizedBox(width: 4),
-                  Text(
-                    '100% Free doorstep pickup & instant UPI payout',
-                    style: TextStyle(
-                      color: Color(0xFF64748B),
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w600,
+              if (allAnswered)
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.verified_rounded, size: 12, color: Color(0xFF059669)),
+                    SizedBox(width: 4),
+                    Text(
+                      '100% Free doorstep pickup & instant UPI payout',
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                )
+              else
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.info_outline_rounded, size: 13, color: Color(0xFFD97706)),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Answer all questions to unlock final quote ($answeredCount of ${questions.length} completed)',
+                      style: const TextStyle(
+                        color: Color(0xFFD97706),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),

@@ -28,9 +28,26 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
   String _selectedCategory = 'all';
   String _selectedCondition = 'all';
   String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
   Map<String, dynamic>? _activeDetailProduct;
   late List<Map<String, dynamic>> _liveProducts;
   bool _isLoading = false;
+
+  final List<Map<String, String>> _categories = [
+    {'id': 'all', 'label': 'All Devices', 'icon': '✨'},
+    {'id': 'smartphones', 'label': 'Smartphones', 'icon': '📱'},
+    {'id': 'cameras', 'label': 'Cameras', 'icon': '📷'},
+    {'id': 'laptops', 'label': 'Laptops', 'icon': '💻'},
+    {'id': 'tablets', 'label': 'Tablets', 'icon': '📟'},
+    {'id': 'smartwatches', 'label': 'Watches', 'icon': '⌚'},
+  ];
+
+  final List<Map<String, String>> _conditions = [
+    {'id': 'all', 'label': 'All Grades'},
+    {'id': 'superb', 'label': 'Superb (Like New)'},
+    {'id': 'good', 'label': 'Good Condition'},
+    {'id': 'fair', 'label': 'Fair (Budget)'},
+  ];
 
   @override
   void initState() {
@@ -39,6 +56,12 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
         ? widget.products
         : ApiService.cachedRefurbished;
     _fetchLiveProducts();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -77,73 +100,268 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
 
     var filtered = _liveProducts;
     if (_selectedCategory != 'all') {
-      filtered = filtered.where((p) => (p['category'] as String).toLowerCase() == _selectedCategory.toLowerCase()).toList();
+      filtered = filtered
+          .where((p) =>
+              (p['category'] as String).toLowerCase() ==
+              _selectedCategory.toLowerCase())
+          .toList();
     }
     if (_selectedCondition != 'all') {
-      filtered = filtered.where((p) => (p['condition'] as String).toLowerCase() == _selectedCondition.toLowerCase()).toList();
+      filtered = filtered
+          .where((p) =>
+              (p['condition'] as String).toLowerCase() ==
+              _selectedCondition.toLowerCase())
+          .toList();
     }
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.toLowerCase().trim();
-      filtered = filtered.where((p) =>
-        (p['model'] as String).toLowerCase().contains(q) ||
-        (p['brand'] as String).toLowerCase().contains(q)
-      ).toList();
+      filtered = filtered
+          .where((p) =>
+              (p['model'] as String).toLowerCase().contains(q) ||
+              (p['brand'] as String).toLowerCase().contains(q))
+          .toList();
     }
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
+        elevation: 0,
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF0F172A),
-        elevation: 1,
-        title: const Text('Buy Certified Refurbished', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-      ),
-      body: Column(
-        children: [
-          // Search & Filter Bar
-          Container(
-            padding: const EdgeInsets.all(12),
-            color: Colors.white,
-            child: Column(
+        titleSpacing: 16,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                TextField(
-                  onChanged: (v) => setState(() => _searchQuery = v),
-                  decoration: InputDecoration(
-                    hintText: 'Search iPhone, MacBook, Canon, Sony...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    filled: true,
-                    fillColor: const Color(0xFFF1F5F9),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                const Text(
+                  'Certified Refurbished',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0F172A),
+                    letterSpacing: -0.4,
                   ),
                 ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildCategoryChip('all', 'All Categories'),
-                      _buildCategoryChip('smartphones', 'Smartphones'),
-                      _buildCategoryChip('cameras', 'Cameras'),
-                      _buildCategoryChip('laptops', 'Laptops'),
-                      _buildCategoryChip('tablets', 'Tablets'),
-                    ],
+                const SizedBox(width: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFA7F3D0)),
                   ),
-                ),
-                const SizedBox(height: 6),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildConditionChip('all', 'All Conditions'),
-                      _buildConditionChip('superb', 'Superb (Like New)'),
-                      _buildConditionChip('good', 'Good Condition'),
-                      _buildConditionChip('fair', 'Fair Condition'),
-                    ],
+                  child: const Text(
+                    '✓ Tested',
+                    style: TextStyle(
+                      color: Color(0xFF059669),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 2),
+            const Text(
+              '45-Point Inspected · 12-Month Warranty · Free Delivery',
+              style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+            ),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          // ── MODERN SEARCH & FILTER SECTION ──
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(14, 6, 14, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Search Box
+                Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(14),
+                    border:
+                        Border.all(color: const Color(0xFFE2E8F0), width: 0.8),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (v) => setState(() => _searchQuery = v),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0F172A),
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Search iPhone, MacBook, Canon, Sony...',
+                      hintStyle: const TextStyle(
+                        fontSize: 12.5,
+                        color: Color(0xFF94A3B8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: Color(0xFF059669),
+                        size: 20,
+                      ),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.close_rounded,
+                                  size: 18, color: Color(0xFF64748B)),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // 2. Category Filter Pills (Horizontal Scroll)
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _categories.length,
+                    separatorBuilder: (context, index) => const SizedBox(width: 6),
+                    itemBuilder: (ctx, idx) {
+                      final cat = _categories[idx];
+                      final isSel = _selectedCategory == cat['id'];
+                      return GestureDetector(
+                        onTap: () =>
+                            setState(() => _selectedCategory = cat['id']!),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isSel
+                                ? const Color(0xFF059669)
+                                : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSel
+                                  ? const Color(0xFF059669)
+                                  : const Color(0xFFE2E8F0),
+                              width: 1,
+                            ),
+                            boxShadow: isSel
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFF059669)
+                                          .withValues(alpha: 0.25),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    )
+                                  ]
+                                : [],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(cat['icon']!,
+                                  style: const TextStyle(fontSize: 13)),
+                              const SizedBox(width: 5),
+                              Text(
+                                cat['label']!,
+                                style: TextStyle(
+                                  color: isSel
+                                      ? Colors.white
+                                      : const Color(0xFF334155),
+                                  fontSize: 11.5,
+                                  fontWeight: isSel
+                                      ? FontWeight.w900
+                                      : FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // 3. Condition Segmented Tabs + Live Count
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: _conditions.map((cond) {
+                            final isSel = _selectedCondition == cond['id'];
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: GestureDetector(
+                                onTap: () => setState(
+                                    () => _selectedCondition = cond['id']!),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 9, vertical: 4.5),
+                                  decoration: BoxDecoration(
+                                    color: isSel
+                                        ? const Color(0xFF6D28D9)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isSel
+                                          ? const Color(0xFF6D28D9)
+                                          : const Color(0xFFE2E8F0),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    cond['label']!,
+                                    style: TextStyle(
+                                      color: isSel
+                                          ? Colors.white
+                                          : const Color(0xFF64748B),
+                                      fontSize: 10.5,
+                                      fontWeight: isSel
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${filtered.length} units',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF059669),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
+
+          // ── PRODUCT GRID ──
           Expanded(
             child: _isLoading
                 ? const Center(
@@ -156,7 +374,9 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
                         ? ListView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             children: [
-                              SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+                              SizedBox(
+                                  height: MediaQuery.of(context).size.height *
+                                      0.12),
                               Center(
                                 child: Padding(
                                   padding: const EdgeInsets.all(24),
@@ -164,40 +384,60 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Container(
-                                        padding: const EdgeInsets.all(16),
+                                        padding: const EdgeInsets.all(18),
                                         decoration: const BoxDecoration(
                                           color: Color(0xFFF1F5F9),
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(Icons.search_off_rounded, size: 36, color: Color(0xFF94A3B8)),
+                                        child: const Icon(
+                                            Icons.search_off_rounded,
+                                            size: 40,
+                                            color: Color(0xFF94A3B8)),
                                       ),
-                                      const SizedBox(height: 12),
+                                      const SizedBox(height: 14),
                                       const Text(
                                         'No Certified Devices Found',
-                                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFF0F172A),
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
                                       const Text(
                                         'Try adjusting your category, condition, or search query.',
                                         textAlign: TextAlign.center,
-                                        style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: Color(0xFF64748B)),
                                       ),
-                                      const SizedBox(height: 14),
+                                      const SizedBox(height: 16),
                                       ElevatedButton(
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF059669),
+                                          backgroundColor:
+                                              const Color(0xFF059669),
                                           foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 20, vertical: 10),
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12)),
                                           elevation: 0,
                                         ),
                                         onPressed: () {
+                                          _searchController.clear();
                                           setState(() {
                                             _selectedCategory = 'all';
                                             _selectedCondition = 'all';
                                             _searchQuery = '';
                                           });
                                         },
-                                        child: const Text('Reset All Filters', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                        child: const Text(
+                                          'Reset All Filters',
+                                          style: TextStyle(
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w800),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -207,156 +447,283 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
                           )
                         : GridView.builder(
                             physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(12),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.67,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                    ),
-                    itemCount: filtered.length,
-                    itemBuilder: (ctx, idx) {
-                      final p = filtered[idx];
-                      final name = p['model'] as String? ?? 'Device';
-                      final price = (p['sellingPrice'] as num?)?.toInt() ?? 0;
-                      final origPrice = (p['originalPrice'] as num?)?.toInt() ?? 0;
-                      final bRaw = p['batteryHealth'];
-                      final battery = bRaw is num ? '$bRaw% Battery' : (bRaw?.toString() ?? '98% Battery');
-                      final condition = p['condition'] as String? ?? 'Superb';
-                      final image = p['image'] as String? ?? '';
-                      final units = (p['availableUnits'] as List?) ?? [];
-
-                      return InkWell(
-                        onTap: () {
-                          setState(() {
-                            _activeDetailProduct = p;
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          padding: const EdgeInsets.all(11),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.03),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
+                            padding: const EdgeInsets.all(12),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.61,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                            ),
+                            itemCount: filtered.length,
+                            itemBuilder: (ctx, idx) {
+                              final p = filtered[idx];
+                              return _buildModernProductCard(p);
+                            },
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEDE9FE),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      condition,
-                                      style: const TextStyle(color: Color(0xFF6D28D9), fontSize: 9, fontWeight: FontWeight.w800),
-                                    ),
-                                  ),
-                                  Text(
-                                    '${units.isEmpty ? 2 : units.length} Units',
-                                    style: const TextStyle(color: Color(0xFF059669), fontSize: 9, fontWeight: FontWeight.w800),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Expanded(
-                                child: Center(
-                                  child: CamsikSmartImage(
-                                    image: image,
-                                    fit: BoxFit.contain,
-                                    iconSize: 40,
-                                    iconColor: const Color(0xFF94A3B8),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: Color(0xFF0F172A), letterSpacing: -0.2),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                battery,
-                                style: const TextStyle(color: Color(0xFF64748B), fontSize: 10, fontWeight: FontWeight.w500),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(
-                                    formatCurrency(price),
-                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5, color: Color(0xFF059669)),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    formatCurrency(origPrice),
-                                    style: const TextStyle(
-                                      decoration: TextDecoration.lineThrough,
-                                      color: Color(0xFF94A3B8),
-                                      fontSize: 9.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
                   ),
-                ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryChip(String val, String label) {
-    final isSel = _selectedCategory == val;
-    return Padding(
-      padding: const EdgeInsets.only(right: 6),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: isSel,
-        onSelected: (s) => setState(() => _selectedCategory = val),
-        selectedColor: const Color(0xFF059669),
-        labelStyle: TextStyle(
-          color: isSel ? Colors.white : const Color(0xFF0F172A),
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
+  Widget _buildModernProductCard(Map<String, dynamic> p) {
+    final name = p['model'] as String? ?? 'Device';
+    final price = (p['sellingPrice'] as num?)?.toInt() ?? 0;
+    final origPrice = (p['originalPrice'] as num?)?.toInt() ?? price;
+    final discount = (p['discount'] as num?)?.toInt() ??
+        (origPrice > price
+            ? (((origPrice - price) / origPrice) * 100).round()
+            : 0);
 
-  Widget _buildConditionChip(String val, String label) {
-    final isSel = _selectedCondition == val;
-    return Padding(
-      padding: const EdgeInsets.only(right: 6),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: isSel,
-        onSelected: (s) => setState(() => _selectedCondition = val),
-        selectedColor: const Color(0xFF4F46E5),
-        labelStyle: TextStyle(
-          color: isSel ? Colors.white : const Color(0xFF0F172A),
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
+    final bRaw = p['batteryHealth'];
+    final battery = bRaw is num
+        ? '$bRaw% Battery'
+        : (bRaw?.toString().replaceAll('Battery', '').trim().isNotEmpty == true
+            ? '${bRaw.toString().replaceAll('Battery', '').trim()}% Battery'
+            : '98% Battery');
+
+    final condition = p['condition'] as String? ?? 'Superb';
+    final image = p['image'] as String? ?? '';
+    final stock = (p['stock'] as num?)?.toInt() ?? 3;
+    final storage = p['storage']?.toString() ?? '128GB';
+
+    // Condition Colors
+    Color condBg;
+    Color condText;
+    if (condition.toLowerCase() == 'superb') {
+      condBg = const Color(0xFFEDE9FE);
+      condText = const Color(0xFF6D28D9);
+    } else if (condition.toLowerCase() == 'good') {
+      condBg = const Color(0xFFEFF6FF);
+      condText = const Color(0xFF2563EB);
+    } else {
+      condBg = const Color(0xFFFFFBEB);
+      condText = const Color(0xFFD97706);
+    }
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _activeDetailProduct = p;
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.035),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── TOP IMAGE AREA WITH BADGES ──
+            Container(
+              height: 140,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(19)),
+              ),
+              child: Stack(
+                children: [
+                  // Product Image
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: CamsikSmartImage(
+                        image: image,
+                        fit: BoxFit.contain,
+                        iconSize: 52,
+                        iconColor: const Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ),
+
+                  // Top Left: Condition Badge
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: condBg,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        condition,
+                        style: TextStyle(
+                          color: condText,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Top Right: Discount Badge
+                  if (discount > 0)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDCFCE7),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '$discount% OFF',
+                          style: const TextStyle(
+                            color: Color(0xFF059669),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // ── DETAILS AREA ──
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+
+                  // Specs / Storage & Battery
+                  Row(
+                    children: [
+                      Text(
+                        storage,
+                        style: const TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Text(
+                        ' · ',
+                        style:
+                            TextStyle(color: Color(0xFFCBD5E1), fontSize: 10),
+                      ),
+                      Expanded(
+                        child: Text(
+                          battery,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF059669),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+
+                  // Warranty Tag & Stock Count
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.shield_outlined,
+                                size: 10, color: Color(0xFF2563EB)),
+                            SizedBox(width: 3),
+                            Text(
+                              '12M Warranty',
+                              style: TextStyle(
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1E293B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '$stock left',
+                        style: const TextStyle(
+                          fontSize: 9.5,
+                          color: Color(0xFF94A3B8),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Price Row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        formatCurrency(price),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14.5,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      if (origPrice > price) ...[
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            formatCurrency(origPrice),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              color: Color(0xFF94A3B8),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -394,10 +394,40 @@ class ApiService {
   static List<Map<String, dynamic>> getFallbackModelsSync({String? categoryId, String? search}) => const [];
   static List<Map<String, dynamic>> getQuestionsSync({required String categoryId}) => const [];
 
-  static Future<List<Map<String, dynamic>>> fetchModels({String? categoryId, String? search}) async {
+  static Future<List<Map<String, dynamic>>> fetchBrands({String? categoryId, String? search}) async {
     try {
       final queryParams = <String, dynamic>{};
       if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') queryParams['categoryId'] = categoryId;
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+
+      final res = await dio.get(ApiConstants.brands, queryParameters: queryParams);
+      if (res.data != null && res.data['brands'] is List) {
+        final list = (res.data['brands'] as List).cast<Map<String, dynamic>>();
+        if (list.isNotEmpty) {
+          return list;
+        }
+      }
+    } catch (_) {}
+
+    // Fallback: extract brands from models endpoint
+    try {
+      final res = await dio.get(ApiConstants.models, queryParameters: categoryId != null ? {'categoryId': categoryId} : null);
+      if (res.data != null && res.data['brands'] is List) {
+        final list = (res.data['brands'] as List).cast<Map<String, dynamic>>();
+        if (list.isNotEmpty) {
+          return list;
+        }
+      }
+    } catch (_) {}
+
+    return const [];
+  }
+
+  static Future<List<Map<String, dynamic>>> fetchModels({String? categoryId, String? brandId, String? search}) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') queryParams['categoryId'] = categoryId;
+      if (brandId != null && brandId.isNotEmpty && brandId != 'all') queryParams['brandId'] = brandId;
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
 
       final res = await dio.get(ApiConstants.models, queryParameters: queryParams);

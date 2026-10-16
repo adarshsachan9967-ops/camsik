@@ -33,6 +33,7 @@ class ApiConstants {
   // ── Catalog & Home Endpoints ──
   static const String banners = "$baseUrl/banners";
   static const String categories = "$baseUrl/categories";
+  static const String brands = "$baseUrl/brands";
   static const String models = "$baseUrl/models";
   static const String questions = "$baseUrl/questions";
   static const String refurbished = "$baseUrl/refurbished";

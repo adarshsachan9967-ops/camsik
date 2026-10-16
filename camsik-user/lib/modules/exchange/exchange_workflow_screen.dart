@@ -222,39 +222,143 @@ class _ExchangeWorkflowWidgetState extends State<ExchangeWorkflowWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF0F172A),
-        elevation: 1,
-        title: Text(_getStepTitle(),
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        titleSpacing: _step > 0 && _step < 5 ? 0 : 16,
         leading: _step > 0 && _step < 5
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Color(0xFF0F172A),
+                ),
                 onPressed: () => setState(() => _step--),
               )
             : null,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Text(
+                  _getStepShortName(),
+                  style: const TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                if (_step < 5) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEDE9FE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Step ${_step + 1} of 5',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF7C3AED),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 1.5),
+            Text(
+              _getStepSubtitle(),
+              style: const TextStyle(
+                fontSize: 10.5,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(8),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: List.generate(5, (index) {
+                    final isFilled = index <= _step && _step < 5;
+                    return Expanded(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        height: 3.5,
+                        margin: EdgeInsets.only(right: index < 4 ? 4 : 0),
+                        decoration: BoxDecoration(
+                          color: isFilled
+                              ? const Color(0xFF7C3AED)
+                              : const Color(0xFFE2E8F0),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+              const SizedBox(height: 5),
+            ],
+          ),
+        ),
       ),
       body: _buildStepContent(),
     );
   }
 
-  String _getStepTitle() {
+  String _getStepShortName() {
     switch (_step) {
       case 0:
-        return 'Step 1 of 5: Select Old Device';
+        return 'Select Old Device';
       case 1:
-        return 'Step 2 of 5: Old Device Condition';
+        return 'Device Condition';
       case 2:
-        return 'Step 3 of 5: Select Upgrade Device';
+        return 'Select Upgrade';
       case 3:
-        return 'Step 4 of 5: Upgrade Details';
+        return 'Upgrade Details';
       case 4:
-        return 'Step 5 of 5: Exchange Checkout';
+        return 'Exchange Checkout';
       case 5:
-        return '1-Step Exchange Confirmed';
+        return 'Exchange Confirmed';
       default:
         return 'Device Exchange';
+    }
+  }
+
+  String _getStepSubtitle() {
+    switch (_step) {
+      case 0:
+        return 'Choose your camera, lens, or phone to trade-in';
+      case 1:
+        return 'Quick diagnostic questions for instant valuation';
+      case 2:
+        return 'Pick certified refurbished gear from Camsik Store';
+      case 3:
+        return 'Inspect specifications, condition & warranty';
+      case 4:
+        return 'Review doorstep swap slot, coupon & final pay';
+      case 5:
+        return 'Order placed! Our technician will visit for doorstep swap';
+      default:
+        return 'Camsik 1-Step Exchange';
     }
   }
 

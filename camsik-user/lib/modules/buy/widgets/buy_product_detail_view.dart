@@ -269,12 +269,16 @@ class _BuyProductDetailViewState extends State<BuyProductDetailView> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        '$_activeCondition  ·  $conditionNote',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF059669),
+                      Expanded(
+                        child: Text(
+                          '$_activeCondition  ·  $conditionNote',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF059669),
+                          ),
                         ),
                       ),
                     ],
@@ -349,8 +353,6 @@ class _BuyProductDetailViewState extends State<BuyProductDetailView> {
             ),
 
             const SizedBox(height: 10),
-
-            // ── 1. SELECT CONDITION GRADE ──
             Container(
               color: Colors.white,
               padding: const EdgeInsets.all(16),
@@ -360,25 +362,32 @@ class _BuyProductDetailViewState extends State<BuyProductDetailView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF059669),
-                              shape: BoxShape.circle,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF059669),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Text('1', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
                             ),
-                            child: const Text('1', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'SELECT CONDITION GRADE',
-                            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, letterSpacing: 0.5, color: Color(0xFF0F172A)),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            const Flexible(
+                              child: Text(
+                                'SELECT CONDITION GRADE',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.3, color: Color(0xFF0F172A)),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 6),
                       const Text(
-                        '6 certified units listed',
+                        '6 units listed',
                         style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
                       ),
                     ],
@@ -450,25 +459,32 @@ class _BuyProductDetailViewState extends State<BuyProductDetailView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF0F172A),
-                              shape: BoxShape.circle,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF0F172A),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Text('2', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
                             ),
-                            child: const Text('2', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'AVAILABLE UNITS IN ${_activeCondition.toUpperCase()}',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'AVAILABLE UNITS IN ${_activeCondition.toUpperCase()}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 6),
                       const Text(
-                        'Tap unit to switch',
+                        'Tap to switch',
                         style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                       ),
                     ],

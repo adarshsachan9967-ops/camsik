@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/user_order.dart';
 import '../../models/user_profile.dart';
 import '../../core/services/api_service.dart';
+import 'steps/sell_brand_step.dart';
 import 'steps/sell_category_step.dart';
 import 'steps/sell_model_step.dart';
 import 'steps/sell_pickup_step.dart';
@@ -30,9 +31,18 @@ class SellWorkflowWidget extends StatefulWidget {
 }
 
 class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
-  int _step = 0; // 0: Category, 1: Brand/Model, 2: Variant, 3: Questions, 4: Summary, 5: Pickup Slot
+  // Steps: 0: Category, 1: Brand, 2: Model, 3: Variant, 4: Questions, 5: Summary, 6: Pickup Slot
+  int _step = 0;
   late Map<String, dynamic> _selectedCategory;
+
+  // Brands state
+  List<Map<String, dynamic>> _brands = [];
+  bool _loadingBrands = false;
+  Map<String, dynamic>? _selectedBrand;
+
+  // Models state
   List<Map<String, dynamic>> _models = [];
+  bool _loadingModels = false;
   Map<String, dynamic>? _selectedModel;
   String _selectedStorage = 'Body Only';
   String _selectedColor = 'Black';
@@ -59,7 +69,9 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
     );
     _addressController.text = widget.userProfile.address;
     _upiController.text = widget.userProfile.upiId;
-    _loadModelsForCategory(_selectedCategory['id'] as String);
+    final catId = _selectedCategory['id'] as String;
+    _loadBrandsForCategory(catId);
+    _loadQuestionsForCategory(catId);
   }
 
   @override
@@ -69,32 +81,58 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
     super.dispose();
   }
 
-  void _loadModelsForCategory(String catId) {
-    // Static sync fallback data commented out as requested - live API models & questions loaded directly
-    /*
-    final syncModels = ApiService.getFallbackModelsSync(categoryId: catId);
-    final syncQuestions = ApiService.getQuestionsSync(categoryId: catId);
-    */
+  void _loadBrandsForCategory(String catId) {
+    setState(() {
+      _brands = [];
+      _loadingBrands = true;
+      _selectedBrand = null;
+      _models = [];
+      _selectedModel = null;
+    });
+
+    ApiService.fetchBrands(categoryId: catId).then((brands) {
+      if (mounted) {
+        setState(() {
+          _brands = brands;
+          _loadingBrands = false;
+        });
+      }
+    }).catchError((_) {
+      if (mounted) setState(() => _loadingBrands = false);
+    });
+  }
+
+  void _loadModelsForBrand(String catId, String brandId) {
     setState(() {
       _models = [];
+      _loadingModels = true;
+      _selectedModel = null;
+    });
+
+    ApiService.fetchModels(categoryId: catId, brandId: brandId).then((models) {
+      if (mounted) {
+        setState(() {
+          _models = models;
+          _loadingModels = false;
+        });
+      }
+    }).catchError((_) {
+      if (mounted) setState(() => _loadingModels = false);
+    });
+  }
+
+  void _loadQuestionsForCategory(String catId) {
+    setState(() {
       _questions = [];
       _selectedAnswers.clear();
     });
     _recalculatePrice();
 
-    ApiService.fetchModels(categoryId: catId).then((models) {
-      if (mounted && models.isNotEmpty) {
-        setState(() => _models = models);
-      }
-    });
     ApiService.fetchQuestions(categoryId: catId).then((questions) {
       if (mounted && questions.isNotEmpty) {
         setState(() {
           _questions = questions;
-          _selectedAnswers.clear();
-          for (int i = 0; i < _questions.length; i++) {
-            _selectedAnswers[i] = 0;
-          }
+          _selectedAnswers.clear(); // Starts empty so user explicitly answers all questions
         });
         _recalculatePrice();
       }
@@ -104,11 +142,13 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
   void _recalculatePrice() {
     int price = _basePrice;
     for (int qIdx = 0; qIdx < _questions.length; qIdx++) {
-      final optIdx = _selectedAnswers[qIdx] ?? 0;
-      final options = _questions[qIdx]['options'] as List?;
-      if (options != null && optIdx < options.length) {
-        final adj = (options[optIdx]['adj'] as num?)?.toInt() ?? 0;
-        price += adj;
+      final optIdx = _selectedAnswers[qIdx];
+      if (optIdx != null) {
+        final options = _questions[qIdx]['options'] as List?;
+        if (options != null && optIdx < options.length) {
+          final adj = (options[optIdx]['adj'] as num?)?.toInt() ?? 0;
+          price += adj;
+        }
       }
     }
     final lensBonus = _selectedLenses.fold<int>(
@@ -169,7 +209,7 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
             ),
             Text(
               _step > 0
-                  ? '${_selectedCategory['name']}${_selectedModel != null ? ' > ${_selectedModel!['name']}' : ''}'
+                  ? '${_selectedCategory['name']}${_selectedBrand != null ? ' > ${_selectedBrand!['name']}' : ''}${_selectedModel != null ? ' > ${_selectedModel!['name']}' : ''}'
                   : 'Instant AI Valuation • Free Doorstep Pickup',
               style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
             ),
@@ -180,7 +220,7 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
             child: Row(
-              children: List.generate(6, (idx) {
+              children: List.generate(7, (idx) {
                 final isPassedOrCurrent = idx <= _step;
                 return Expanded(
                   child: Container(
@@ -204,17 +244,19 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
   String _getStepTitle() {
     switch (_step) {
       case 0:
-        return 'Step 1 of 6: Select Category';
+        return 'Step 1 of 7: Select Category';
       case 1:
-        return 'Step 2 of 6: Select Device Model';
+        return 'Step 2 of 7: Select Brand';
       case 2:
-        return 'Step 3 of 6: Storage & Variant';
+        return 'Step 3 of 7: Select Device Model';
       case 3:
-        return 'Step 4 of 6: Device Condition';
+        return 'Step 4 of 7: Storage & Variant';
       case 4:
-        return 'Step 5 of 6: Valuation Summary';
+        return 'Step 5 of 7: Device Condition';
       case 5:
-        return 'Step 6 of 6: Schedule Pickup';
+        return 'Step 6 of 7: Valuation Summary';
+      case 6:
+        return 'Step 7 of 7: Schedule Pickup';
       default:
         return 'Sell Device';
     }
@@ -230,12 +272,30 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
               _selectedCategory = cat;
               _step = 1;
             });
-            _loadModelsForCategory(cat['id'] as String);
+            final catId = cat['id'] as String;
+            _loadBrandsForCategory(catId);
+            _loadQuestionsForCategory(catId);
           },
         );
       case 1:
+        return SellBrandStep(
+          categoryName: _selectedCategory['name'] as String? ?? 'Device',
+          categoryId: _selectedCategory['id'] as String,
+          brands: _brands,
+          isLoading: _loadingBrands,
+          onSelectBrand: (brand) {
+            setState(() {
+              _selectedBrand = brand;
+              _step = 2;
+            });
+            _loadModelsForBrand(_selectedCategory['id'] as String, brand['id'] as String);
+          },
+        );
+      case 2:
         return SellModelStep(
           models: _models,
+          brandName: _selectedBrand?['name'] as String?,
+          isLoading: _loadingModels,
           onSelectModel: (m) {
             setState(() {
               _selectedModel = m;
@@ -248,12 +308,12 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
               if (colors != null && colors.isNotEmpty) {
                 _selectedColor = colors.first as String;
               }
-              _step = 2;
+              _step = 3;
             });
             _recalculatePrice();
           },
         );
-      case 2:
+      case 3:
         return SellVariantStep(
           selectedModel: _selectedModel,
           categoryId: _selectedCategory['id'] as String?,
@@ -267,9 +327,9 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
             setState(() => _selectedLenses = lenses);
             _recalculatePrice();
           },
-          onProceed: () => setState(() => _step = 3),
+          onProceed: () => setState(() => _step = 4),
         );
-      case 3:
+      case 4:
         return SellQuestionsStep(
           selectedModel: _selectedModel,
           selectedStorage: _selectedStorage,
@@ -284,11 +344,13 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
             });
             _recalculatePrice();
           },
-          onProceed: () => setState(() => _step = 4),
+          onProceed: () => setState(() => _step = 5),
         );
-      case 4:
+      case 5:
         return SellSummaryStep(
           selectedModel: _selectedModel,
+          categoryId: _selectedCategory['id'] as String?,
+          categoryName: _selectedCategory['name'] as String?,
           selectedStorage: _selectedStorage,
           selectedColor: _selectedColor,
           selectedLenses: _selectedLenses,
@@ -296,9 +358,9 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
           calculatedPrice: _calculatedPrice,
           questions: _questions,
           selectedAnswers: _selectedAnswers,
-          onProceed: () => setState(() => _step = 5),
+          onProceed: () => setState(() => _step = 6),
         );
-      case 5:
+      case 6:
         return SellPickupStep(
           selectedModel: _selectedModel,
           selectedStorage: _selectedStorage,
