@@ -44,6 +44,18 @@ export default function StepModelSelect({ brand, brandId, categoryId, selectedMo
   const [addedLenses, setAddedLenses] = useState<{ id: string; name: string; price: number }[]>(selectedLenses);
   const [customLensName, setCustomLensName] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [availableLenses, setAvailableLenses] = useState(COMMON_LENSES);
+
+  React.useEffect(() => {
+    fetch('/api/lenses')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.lenses) && data.lenses.length > 0) {
+          setAvailableLenses(data.lenses.filter((l: any) => l.active !== false));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   React.useEffect(() => {
     if (selectedModel) {
@@ -177,7 +189,7 @@ export default function StepModelSelect({ brand, brandId, categoryId, selectedMo
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {COMMON_LENSES.map(lens => {
+                {availableLenses.map(lens => {
                   const isSelected = !!addedLenses.find(l => l.id === lens.id);
                   return (
                     <button

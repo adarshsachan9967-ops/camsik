@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { AdminSection } from '../page';
-import { LayoutDashboard, ShoppingBag, Tag, Globe, Package, Calculator, Users, Handshake, Truck, FileText, BarChart3, Settings, ChevronLeft, ChevronRight, Bell, Menu, X, CreditCard, Send, LogOut, Wrench, Warehouse, MessageSquare, Percent, RefreshCw, Camera } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Tag, Globe, Package, Calculator, Users, Handshake, Truck, FileText, BarChart3, Settings, ChevronLeft, ChevronRight, Bell, Menu, X, CreditCard, Send, LogOut, Wrench, Warehouse, MessageSquare, Percent, RefreshCw, Camera, Aperture } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 
 interface NavItem { id: AdminSection; icon: React.ElementType; label: string; badge?: string | number; badgeColor?: string; }
@@ -108,6 +108,7 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
       { id: 'categories', icon: Tag, label: 'Categories' },
       { id: 'brands', icon: Globe, label: 'Brands' },
       { id: 'models', icon: Package, label: 'Models' },
+      { id: 'lenses', icon: Aperture, label: 'Camera Lenses', badge: 'Live', badgeColor: 'bg-emerald-600' },
       { id: 'refurbished', icon: RefreshCw, label: 'Refurbished Devices' },
       { id: 'rental_cameras', icon: Camera, label: 'Rental Cameras (Fleet)', badge: 'Pro', badgeColor: 'bg-rose-600' },
       { id: 'repair_issues', icon: Wrench, label: 'Repair Issues' },

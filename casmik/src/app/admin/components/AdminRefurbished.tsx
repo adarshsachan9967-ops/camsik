@@ -68,8 +68,23 @@ export default function AdminRefurbished() {
   const [formSpecs, setFormSpecs] = useState('');
   const [formStatus, setFormStatus] = useState<'available' | 'reserved' | 'sold'>('available');
 
-  useEffect(() => {
+  const fetchDevices = async () => {
+    try {
+      const res = await fetch('/api/refurbished');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.products) && data.products.length > 0) {
+        setDevices(data.products);
+        saveRefurbishedProducts(data.products);
+        return;
+      }
+    } catch (e) {
+      console.warn('Error fetching refurbished from API:', e);
+    }
     setDevices(getRefurbishedProducts());
+  };
+
+  useEffect(() => {
+    fetchDevices();
   }, []);
 
   const openAddModal = () => {
@@ -170,31 +185,35 @@ export default function AdminRefurbished() {
     let updatedList: RefurbishedProduct[];
 
     if (editProduct) {
-      updatedList = devices.map((item) => {
-        if (item.id === editProduct.id) {
-          return {
-            ...item,
-            model: formModel,
-            brand: formBrand,
-            category: formCategory,
-            condition: formCondition,
-            conditionNote: formConditionNote,
-            storage: formStorage,
-            color: formColor,
-            sellingPrice: sellP,
-            originalPrice: origP,
-            discount,
-            batteryHealth: isNaN(Number(formBattery)) ? formBattery : Number(formBattery),
-            warranty: formWarranty,
-            stock: stockQty,
-            image: formImage,
-            gallery: [formImage, ...(item.gallery.filter((g) => g !== formImage).slice(0, 2))],
-            specs: formSpecs,
-            status: formStatus,
-          };
-        }
-        return item;
-      });
+      const updatedItem: RefurbishedProduct = {
+        ...editProduct,
+        model: formModel,
+        brand: formBrand,
+        category: formCategory,
+        condition: formCondition,
+        conditionNote: formConditionNote,
+        storage: formStorage,
+        color: formColor,
+        sellingPrice: sellP,
+        originalPrice: origP,
+        discount,
+        batteryHealth: isNaN(Number(formBattery)) ? formBattery : Number(formBattery),
+        warranty: formWarranty,
+        stock: stockQty,
+        image: formImage,
+        gallery: [formImage, ...(editProduct.gallery.filter((g) => g !== formImage).slice(0, 2))],
+        specs: formSpecs,
+        status: formStatus,
+      };
+
+      updatedList = devices.map((item) => (item.id === editProduct.id ? updatedItem : item));
+
+      // Live MongoDB Update
+      fetch('/api/refurbished', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedItem),
+      }).catch((err) => console.error('Failed to update product via API:', err));
     } else {
       const computedModelId =
         formModelId && formModelId.trim() !== ''
@@ -233,7 +252,15 @@ export default function AdminRefurbished() {
           sensor: 'Passed',
         },
       };
+
       updatedList = [newProduct, ...devices];
+
+      // Live MongoDB Insert
+      fetch('/api/refurbished', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProduct),
+      }).catch((err) => console.error('Failed to create product via API:', err));
     }
 
     setDevices(updatedList);
@@ -244,14 +271,34 @@ export default function AdminRefurbished() {
 
   const handleDelete = (id: string) => {
     if (confirm('Are you sure you want to delete this refurbished product?')) {
+      // Live MongoDB Delete
+      fetch(`/api/refurbished?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      }).catch((err) => console.error('Failed to delete product via API:', err));
+
       const updatedList = devices.filter((x) => x.id !== id);
       setDevices(updatedList);
       saveRefurbishedProducts(updatedList);
     }
   };
 
-  const handleReset = () => {
-    if (confirm('Reset refurbished inventory to official default catalog (16 devices)?')) {
+  const handleReset = async () => {
+    if (confirm('Reset refurbished inventory to official default catalog?')) {
+      try {
+        const res = await fetch('/api/refurbished', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reset' }),
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.products)) {
+          setDevices(data.products);
+          saveRefurbishedProducts(data.products);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to reset via API:', err);
+      }
       const resetList = resetRefurbishedProducts();
       setDevices(resetList);
     }

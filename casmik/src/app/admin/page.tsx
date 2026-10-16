@@ -25,7 +25,7 @@ import AdminSupportTickets from './components/AdminSupportTickets';
 import AdminCoupons from './components/AdminCoupons';
 import AdminRentalCameras from './components/AdminRentalCameras';
 
-export type AdminSection = 'overview' | 'orders' | 'categories' | 'brands' | 'models' | 'pricing' | 'partners' | 'delivery' | 'customers' | 'payouts' | 'cms' | 'reports' | 'settings' | 'notifications' | 'push_notifications' | 'refurbished' | 'repair_issues' | 'inventory' | 'support_tickets' | 'coupons' | 'rental_cameras' | 'rental_orders';
+export type AdminSection = 'overview' | 'orders' | 'categories' | 'brands' | 'models' | 'lenses' | 'pricing' | 'partners' | 'delivery' | 'customers' | 'payouts' | 'cms' | 'reports' | 'settings' | 'notifications' | 'push_notifications' | 'refurbished' | 'repair_issues' | 'inventory' | 'support_tickets' | 'coupons' | 'rental_cameras' | 'rental_orders';
 
 export interface AdminNavigationOptions {
   filterStatus?: string;
@@ -113,7 +113,8 @@ export default function AdminPage() {
       case 'categories': return <AdminCategories />;
       case 'brands': return <AdminBrands />;
       case 'models': return <AdminModels />;
-      case 'pricing': return <AdminPricing />;
+      case 'lenses': return <AdminPricing initialTab="lenses" />;
+      case 'pricing': return <AdminPricing initialTab="questions" />;
       case 'partners': return <AdminPartners />;
       case 'delivery': return <AdminDelivery />;
       case 'customers': return <AdminCustomers />;

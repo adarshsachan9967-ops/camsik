@@ -8,6 +8,7 @@ class SellSummaryStep extends StatefulWidget {
   final Map<String, dynamic>? selectedModel;
   final String selectedStorage;
   final String selectedColor;
+  final List<Map<String, dynamic>> selectedLenses;
   final int basePrice;
   final int calculatedPrice;
   final List<Map<String, dynamic>> questions;
@@ -19,6 +20,7 @@ class SellSummaryStep extends StatefulWidget {
     required this.selectedModel,
     required this.selectedStorage,
     required this.selectedColor,
+    this.selectedLenses = const [],
     required this.basePrice,
     required this.calculatedPrice,
     required this.questions,
@@ -428,6 +430,68 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
                 ),
 
                 const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+                // Camera Lenses Bundle
+                if (widget.selectedLenses.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Camera Lenses Bundle (${widget.selectedLenses.length})',
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                            Text(
+                              '+₹${widget.selectedLenses.fold<int>(0, (sum, l) => sum + ((l['price'] as num?)?.toInt() ?? 0)).toString()}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF059669),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        ...widget.selectedLenses.map((l) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '• ${l['name']}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Text(
+                                    '+₹${l['price']}',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF059669),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                ],
 
                 // Diagnostic Adjustments
                 Padding(

@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/notification_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   final String phone;
+  final VoidCallback? onNavigateToOrders;
 
-  const NotificationsScreen({super.key, required this.phone});
+  const NotificationsScreen({
+    super.key,
+    required this.phone,
+    this.onNavigateToOrders,
+  });
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -24,9 +30,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     setState(() => _isLoading = true);
     try {
       final notifs = await ApiService.fetchNotifications(phone: widget.phone);
+      final localNotifs = NotificationService.inAppNotifications.map((n) => {
+        'id': n['id'] ?? 'local-${DateTime.now().millisecondsSinceEpoch}',
+        'title': n['title'] ?? 'Notification',
+        'body': n['message'] ?? '',
+        'time': 'Just now',
+        'isOrder': true,
+      }).toList();
+
+      final combined = [...localNotifs, ...notifs];
+
       if (mounted) {
         setState(() {
-          _notifications = notifs;
+          _notifications = combined;
           _isLoading = false;
         });
       }
@@ -71,22 +87,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       final body = n['body']?.toString() ?? '';
                       final time = n['time']?.toString() ?? n['timestamp']?.toString() ?? 'Just now';
 
-                      return Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.02),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      return InkWell(
+                        onTap: () {
+                          if (widget.onNavigateToOrders != null) {
+                            Navigator.pop(context);
+                            widget.onNavigateToOrders!();
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.02),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
                               padding: const EdgeInsets.all(9),
@@ -142,8 +166,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             ),
                           ],
                         ),
-                      );
-                    },
+                      ),
+                    );
+                  },
                   ),
       ),
     );

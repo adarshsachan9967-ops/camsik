@@ -29,18 +29,53 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
   String _selectedCondition = 'all';
   String _searchQuery = '';
   Map<String, dynamic>? _activeDetailProduct;
+  late List<Map<String, dynamic>> _liveProducts;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _liveProducts = widget.products.isNotEmpty
+        ? widget.products
+        : ApiService.cachedRefurbished;
+    _fetchLiveProducts();
+  }
+
+  @override
+  void didUpdateWidget(BuyRefurbishedWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.products != oldWidget.products && widget.products.isNotEmpty) {
+      setState(() {
+        _liveProducts = widget.products;
+      });
+    }
+  }
+
+  Future<void> _fetchLiveProducts() async {
+    if (_liveProducts.isEmpty) {
+      setState(() => _isLoading = true);
+    }
+    final fetched = await ApiService.fetchRefurbished();
+    if (mounted) {
+      setState(() {
+        _liveProducts = fetched;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     if (_activeDetailProduct != null) {
       return BuyProductDetailView(
         product: _activeDetailProduct!,
+        allProducts: _liveProducts,
         onBack: () => setState(() => _activeDetailProduct = null),
         onCheckout: (finalPrice) => _handleBuyCheckout(finalPrice),
       );
     }
 
-    var filtered = widget.products;
+    var filtered = _liveProducts;
     if (_selectedCategory != 'all') {
       filtered = filtered.where((p) => (p['category'] as String).toLowerCase() == _selectedCategory.toLowerCase()).toList();
     }
@@ -110,54 +145,68 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
             ),
           ),
           Expanded(
-            child: filtered.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.search_off_rounded, size: 36, color: Color(0xFF94A3B8)),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'No Certified Devices Found',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Try adjusting your category, condition, or search query.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                          ),
-                          const SizedBox(height: 14),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF059669),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              elevation: 0,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _selectedCategory = 'all';
-                                _selectedCondition = 'all';
-                                _searchQuery = '';
-                              });
-                            },
-                            child: const Text('Reset All Filters', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                    ),
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF059669)),
                   )
-                : GridView.builder(
+                : RefreshIndicator(
+                    color: const Color(0xFF059669),
+                    onRefresh: _fetchLiveProducts,
+                    child: filtered.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+                              Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFF1F5F9),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.search_off_rounded, size: 36, color: Color(0xFF94A3B8)),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      const Text(
+                                        'No Certified Devices Found',
+                                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        'Try adjusting your category, condition, or search query.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                      ),
+                                      const SizedBox(height: 14),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF059669),
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          elevation: 0,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _selectedCategory = 'all';
+                                            _selectedCondition = 'all';
+                                            _searchQuery = '';
+                                          });
+                                        },
+                                        child: const Text('Reset All Filters', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : GridView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(12),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
@@ -270,6 +319,7 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
                       );
                     },
                   ),
+                ),
           ),
         ],
       ),

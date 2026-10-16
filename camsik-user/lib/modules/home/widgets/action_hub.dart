@@ -17,215 +17,210 @@ class CompactHorizontalActionHub extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Title: What would you like to do?
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'What would you like to do?',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF0F172A),
+              letterSpacing: -0.4,
             ),
-          ],
+          ),
         ),
-        child: Row(
-          children: [
-            // Action 1: Sell
-            Expanded(
-              child: InkWell(
-                onTap: onTapSell,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF059669), Color(0xFF10B981)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF059669).withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Text(
-                            kRupee,
-                            style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900),
-                          ),
-                        ),
+        const SizedBox(height: 12),
+
+        // 2x2 Grid Layout
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Column(
+            children: [
+              // Row 1: Sell & Buy
+              Row(
+                children: [
+                  // 1. Sell
+                  _buildActionCard(
+                    title: 'Sell',
+                    subtitle: 'Instant Cash',
+                    cardBgColor: const Color(0xFFF0FDF4),
+                    borderColor: const Color(0xFFDCFCE7),
+                    iconBgColor: const Color(0xFF059669),
+                    subtitleColor: const Color(0xFF059669),
+                    chevronColor: const Color(0xFF059669),
+                    icon: const Text(
+                      kRupee,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
                       ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Sell',
-                        style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 13),
-                      ),
-                      const Text(
-                        'Instant Cash',
-                        style: TextStyle(color: Color(0xFF059669), fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                    ),
+                    onTap: onTapSell,
                   ),
+                  const SizedBox(width: 10),
+
+                  // 2. Buy
+                  _buildActionCard(
+                    title: 'Buy',
+                    subtitle: 'Refurbished',
+                    cardBgColor: const Color(0xFFEEF2FF),
+                    borderColor: const Color(0xFFE0E7FF),
+                    iconBgColor: const Color(0xFF4F46E5),
+                    subtitleColor: const Color(0xFF6366F1),
+                    chevronColor: const Color(0xFF6366F1),
+                    icon: const Icon(
+                      Icons.shopping_bag_outlined,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    onTap: onTapBuy,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Row 2: Exchange & Rent
+              Row(
+                children: [
+                  // 3. Exchange
+                  _buildActionCard(
+                    title: 'Exchange',
+                    subtitle: 'Upgrade your gear',
+                    cardBgColor: const Color(0xFFFAF5FF),
+                    borderColor: const Color(0xFFF3E8FF),
+                    iconBgColor: const Color(0xFF9333EA),
+                    subtitleColor: const Color(0xFFA855F7),
+                    chevronColor: const Color(0xFFA855F7),
+                    icon: const Icon(
+                      Icons.swap_horiz_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    onTap: onTapExchange,
+                  ),
+                  const SizedBox(width: 10),
+
+                  // 4. Rent
+                  _buildActionCard(
+                    title: 'Rent',
+                    subtitle: 'Pro Cameras',
+                    cardBgColor: const Color(0xFFFEF2F2),
+                    borderColor: const Color(0xFFFEE2E2),
+                    iconBgColor: const Color(0xFFEF4444),
+                    subtitleColor: const Color(0xFFEF4444),
+                    chevronColor: const Color(0xFFEF4444),
+                    icon: const Icon(
+                      Icons.videocam_outlined,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    onTap: onTapRent,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionCard({
+    required String title,
+    required String subtitle,
+    required Color cardBgColor,
+    required Color borderColor,
+    required Color iconBgColor,
+    required Color subtitleColor,
+    required Color chevronColor,
+    required Widget icon,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: cardBgColor,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: borderColor, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Circle Icon Container
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: iconBgColor.withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(child: icon),
+              ),
+              const SizedBox(width: 10),
+
+              // Title & Subtitle Column
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF0F172A),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14.5,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: subtitleColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            Container(width: 1, height: 48, color: const Color(0xFFE2E8F0)),
-            // Action 2: Buy
-            Expanded(
-              child: InkWell(
-                onTap: onTapBuy,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 22),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Buy',
-                        style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 13),
-                      ),
-                      const Text(
-                        'Refurbished',
-                        style: TextStyle(color: Color(0xFF4F46E5), fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
+
+              // Right Arrow Chevron
+              Icon(
+                Icons.chevron_right_rounded,
+                color: chevronColor,
+                size: 20,
               ),
-            ),
-            Container(width: 1, height: 48, color: const Color(0xFFE2E8F0)),
-            // Action 3: Exchange
-            Expanded(
-              child: InkWell(
-                onTap: onTapExchange,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF7C3AED), Color(0xFF9333EA)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 24),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Exchange',
-                        style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 13),
-                      ),
-                      const Text(
-                        '+$kRupee 5,000 Bonus',
-                        style: TextStyle(color: Color(0xFF7C3AED), fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Container(width: 1, height: 48, color: const Color(0xFFE2E8F0)),
-            // Action 4: Rent Pro Cameras
-            Expanded(
-              child: InkWell(
-                onTap: onTapRent,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFE11D48), Color(0xFFF43F5E)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFE11D48).withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Icon(Icons.videocam_outlined, color: Colors.white, size: 22),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Rent',
-                        style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 13),
-                      ),
-                      const Text(
-                        'Pro Cameras',
-                        style: TextStyle(color: Color(0xFFE11D48), fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

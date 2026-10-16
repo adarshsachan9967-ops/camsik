@@ -181,6 +181,7 @@ class ApiService {
   static List<Map<String, dynamic>> cachedCategories = [];
   static List<Map<String, dynamic>> cachedRefurbished = [];
   static List<Map<String, dynamic>> cachedRentalCameras = [];
+  static List<Map<String, dynamic>> cachedLenses = [];
 
   // ── IMAGE & DATA SANITIZATION ──
   static String cleanImagePath(dynamic path, {String? categoryId}) =>
@@ -461,6 +462,26 @@ class ApiService {
       }
     } catch (_) {}
     return cachedRentalCameras;
+  }
+
+  // ── CAMERA LENSES ──
+  static Future<List<Map<String, dynamic>>> fetchLenses() async {
+    try {
+      final res = await dio.get(ApiConstants.lenses);
+      if (res.data != null && res.data['lenses'] is List) {
+        final list = (res.data['lenses'] as List)
+            .cast<Map<String, dynamic>>()
+            .where((l) => l['active'] != false)
+            .toList();
+        if (list.isNotEmpty) {
+          cachedLenses = list;
+          return list;
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch lenses from API: $e');
+    }
+    return cachedLenses;
   }
 
   // ── ORDERS ──

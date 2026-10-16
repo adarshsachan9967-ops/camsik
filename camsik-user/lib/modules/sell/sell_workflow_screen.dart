@@ -36,6 +36,7 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
   Map<String, dynamic>? _selectedModel;
   String _selectedStorage = 'Body Only';
   String _selectedColor = 'Black';
+  List<Map<String, dynamic>> _selectedLenses = [];
 
   // Dynamic Questions from backend
   List<Map<String, dynamic>> _questions = [];
@@ -110,12 +111,20 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
         price += adj;
       }
     }
+    final lensBonus = _selectedLenses.fold<int>(
+      0,
+      (sum, l) => sum + ((l['price'] as num?)?.toInt() ?? 0),
+    );
+    price += lensBonus;
     setState(() {
       _calculatedPrice = price > 3000 ? price : 3000;
     });
   }
 
   void _handleConfirmSellOrder() async {
+    final lensSummary = _selectedLenses.isNotEmpty
+        ? ' + ${_selectedLenses.length} Lens (${_selectedLenses.map((l) => l['name']).join(', ')})'
+        : '';
     final orderData = {
       'type': 'sell',
       'customerName': widget.userProfile.name,
@@ -125,7 +134,7 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
       'pickupSlot': _selectedSlot,
       'paymentMethod': 'Instant UPI (${_upiController.text.trim()})',
       'amount': _calculatedPrice,
-      'deviceName': '${_selectedModel?['name'] ?? 'Device'} ($_selectedStorage)',
+      'deviceName': '${_selectedModel?['name'] ?? 'Device'} ($_selectedStorage)$lensSummary',
       'status': 'Order Placed',
     };
 
@@ -247,11 +256,17 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
       case 2:
         return SellVariantStep(
           selectedModel: _selectedModel,
+          categoryId: _selectedCategory['id'] as String?,
           basePrice: _basePrice,
           selectedStorage: _selectedStorage,
           selectedColor: _selectedColor,
+          selectedLenses: _selectedLenses,
           onStorageChanged: (s) => setState(() => _selectedStorage = s),
           onColorChanged: (c) => setState(() => _selectedColor = c),
+          onLensesChanged: (lenses) {
+            setState(() => _selectedLenses = lenses);
+            _recalculatePrice();
+          },
           onProceed: () => setState(() => _step = 3),
         );
       case 3:
@@ -276,6 +291,7 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
           selectedModel: _selectedModel,
           selectedStorage: _selectedStorage,
           selectedColor: _selectedColor,
+          selectedLenses: _selectedLenses,
           basePrice: _basePrice,
           calculatedPrice: _calculatedPrice,
           questions: _questions,

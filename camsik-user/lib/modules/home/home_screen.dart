@@ -39,91 +39,106 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      color: const Color(0xFF059669),
-      backgroundColor: Colors.white,
-      onRefresh: onRefresh ?? () async {},
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 30),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-          // 1. FULL-WIDTH INFINITE LOOPING BANNER
-          Padding(
-            padding: const EdgeInsets.only(top: 6, bottom: 2),
-            child: CamsikFullWidthBannerCarousel(
-              banners: banners,
-              onBannerTap: onNavigateToSellWithCategory,
-            ),
-          ),
+    return Container(
+      color: const Color(0xFF0B132B),
+      child: RefreshIndicator(
+        color: const Color(0xFF059669),
+        backgroundColor: Colors.white,
+        onRefresh: onRefresh ?? () async {},
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. TOP HERO BANNER (DARK BACKGROUND)
+              CamsikFullWidthBannerCarousel(
+                banners: banners,
+                onBannerTap: onNavigateToSellWithCategory,
+                onBrowseDeals: () => onNavigateToTab(2),
+              ),
 
-          const SizedBox(height: 6),
-
-          // 2. COMPACT HORIZONTAL 1-ROW ACTION HUB (SELL | BUY | EXCHANGE | RENT)
-          CompactHorizontalActionHub(
-            onTapSell: () => onNavigateToTab(1),
-            onTapBuy: () => onNavigateToTab(2),
-            onTapExchange: () => onNavigateToTab(3),
-            onTapRent: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (ctx) => RentalCamerasWidget(
-                    rentalCameras: rentalCameras,
-                    userProfile: userProfile,
-                    onProfileUpdate: onProfileUpdate,
-                    onOrderCreated: onOrderCreated,
-                  ),
+              // 2. WHITE OVERLAY SHEET CONTAINING ALL SECTIONS
+              Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
                 ),
-              );
-            },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 18),
+
+                    // ACTION HUB (SELL | BUY | EXCHANGE | RENT) - 4 INDIVIDUAL CARDS
+                    CompactHorizontalActionHub(
+                      onTapSell: () => onNavigateToTab(1),
+                      onTapBuy: () => onNavigateToTab(2),
+                      onTapExchange: () => onNavigateToTab(3),
+                      onTapRent: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (ctx) => RentalCamerasWidget(
+                              rentalCameras: rentalCameras,
+                              userProfile: userProfile,
+                              onProfileUpdate: onProfileUpdate,
+                              onOrderCreated: onOrderCreated,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    // TRENDING CATEGORIES (4 CARDS IN A ROW)
+                    EightCategoriesBar(
+                      categories: categories,
+                      onCategorySelected: onNavigateToSellWithCategory,
+                      onViewAll: () => onNavigateToTab(1),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    // HOT DEALS ON REFURBISHED (2 SIDE-BY-SIDE CARDS)
+                    TopDealsShowcase(
+                      products: refurbishedProducts,
+                      onShopAll: () => onNavigateToTab(2),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    // CAMSIK QUALITY & TRUST GUARANTEE
+                    const TrustScorecard(),
+
+                    const SizedBox(height: 24),
+
+                    // RENT PRO GEAR SHOWCASE
+                    RentalCamerasShowcase(
+                      rentalCameras: rentalCameras,
+                      userProfile: userProfile,
+                      onProfileUpdate: onProfileUpdate,
+                      onOrderCreated: onOrderCreated,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // 3-STEP RECOMMERCE WORKFLOW
+                    const HowItWorksSection(),
+
+                    const SizedBox(height: 24),
+
+                    // WHY CAMSIK SECTION
+                    const WhyCamsikSection(),
+
+                    const SizedBox(height: 36),
+                  ],
+                ),
+              ),
+            ],
           ),
-
-          const SizedBox(height: 24),
-
-          // 3. EXPLORE 8 TECH CATEGORIES
-          EightCategoriesBar(
-            categories: categories,
-            onCategorySelected: onNavigateToSellWithCategory,
-            onViewAll: () => onNavigateToTab(1),
-          ),
-
-          const SizedBox(height: 24),
-
-          // 4. TOP REFURBISHED DEALS
-          TopDealsShowcase(
-            products: refurbishedProducts,
-            onShopAll: () => onNavigateToTab(2),
-          ),
-
-          const SizedBox(height: 24),
-
-          // 4b. RENT PRO CAMERAS & GEAR
-          RentalCamerasShowcase(
-            rentalCameras: rentalCameras,
-            userProfile: userProfile,
-            onProfileUpdate: onProfileUpdate,
-            onOrderCreated: onOrderCreated,
-          ),
-
-          const SizedBox(height: 24),
-
-          // 5. CAMSIK TRUST SCORECARD
-          const TrustScorecard(),
-
-          const SizedBox(height: 24),
-
-          // 6. 3-STEP RECOMMERCE WORKFLOW
-          const HowItWorksSection(),
-
-          const SizedBox(height: 24),
-
-          // 7. WHY CAMSIK
-          const WhyCamsikSection(),
-        ],
+        ),
       ),
-      )
     );
   }
 }

@@ -6,9 +6,11 @@ class ApiConstants {
   // where the newly created APIs (profile, addresses, otp, etc.) are running.
   // Set to false when targeting the remote production Vercel server.
   static const bool useLocalBackend = true;
-  static const String serverUrl = useLocalBackend
+  static const String serverUrl = 
+  useLocalBackend
       ? "http://127.0.0.1:4028"
-      : "https://casmik-one.vercel.app";
+      :
+       "https://casmik-one.vercel.app";
   static const String baseUrl = "$serverUrl/api";
 
   // Fallback Server URLs for local development / testing
@@ -35,6 +37,7 @@ class ApiConstants {
   static const String questions = "$baseUrl/questions";
   static const String refurbished = "$baseUrl/refurbished";
   static const String rentals = "$baseUrl/rentals";
+  static const String lenses = "$baseUrl/lenses";
 
   // ── Orders & Transactions Endpoints ──
   static const String orders = "$baseUrl/orders";

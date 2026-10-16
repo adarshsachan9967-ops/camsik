@@ -4,8 +4,8 @@ import '../core/services/notification_service.dart';
 import '../models/user_order.dart';
 import '../models/user_profile.dart';
 import '../widgets/camsik_bottom_bar.dart';
-import '../widgets/location_picker_sheet.dart';
-import '../widgets/notification_bottom_sheet.dart';
+import 'home/screens/select_location_screen.dart';
+import 'profile/screens/notifications_screen.dart';
 import 'buy/buy_refurbished_screen.dart';
 import 'exchange/exchange_workflow_screen.dart';
 import 'home/home_screen.dart';
@@ -58,6 +58,7 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
         ApiService.fetchCategories(),
         ApiService.fetchRefurbished(),
         ApiService.fetchRentalCameras(),
+        ApiService.fetchLenses(),
       ]);
       if (mounted) {
         setState(() {
@@ -115,25 +116,36 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
     );
   }
 
-  void _openLocationPicker() {
-    LocationPickerSheet.show(
-      context: context,
-      selectedCity: _selectedCity,
-      onLocationSelected: (city, area) {
-        setState(() {
-          _selectedCity = city;
-          _selectedArea = area;
-        });
-      },
+  Future<void> _openLocationPicker() async {
+    final result = await Navigator.push<Map<String, String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SelectLocationScreen(
+          selectedCity: _selectedCity,
+          selectedArea: _selectedArea,
+        ),
+      ),
     );
+
+    if (result != null && mounted) {
+      setState(() {
+        _selectedCity = result['city'] ?? _selectedCity;
+        _selectedArea = result['area'] ?? _selectedArea;
+      });
+    }
   }
 
   void _showNotificationsDialog() {
-    NotificationBottomSheet.show(
-      context: context,
-      onNavigateToOrders: () {
-        setState(() => _currentIndex = 4);
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NotificationsScreen(
+          phone: widget.userProfile.phone,
+          onNavigateToOrders: () {
+            setState(() => _currentIndex = 4);
+          },
+        ),
+      ),
     );
   }
 
@@ -279,14 +291,25 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
                     onPressed: _showNotificationsDialog,
                   ),
                   Positioned(
-                    top: 14,
-                    right: 14,
+                    top: 10,
+                    right: 10,
                     child: Container(
-                      width: 7,
-                      height: 7,
+                      width: 14,
+                      height: 14,
                       decoration: const BoxDecoration(
-                        color: Color(0xFF10B981),
+                        color: Color(0xFFEF4444),
                         shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Text(
+                          '1',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w900,
+                            height: 1.0,
+                          ),
+                        ),
                       ),
                     ),
                   ),

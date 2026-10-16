@@ -62,12 +62,31 @@ export default function BuyRefurbishedPage() {
 
   // Load products & listen to admin updates
   useEffect(() => {
+    // 1. Initial fast local render
     const loaded = getRefurbishedProducts();
     setProducts(loaded);
     setSelectedProduct((prev) => {
       if (!prev) return null;
       return loaded.find((p) => p.id === prev.id) || prev;
     });
+
+    // 2. Live fetch from MongoDB /api/refurbished
+    const fetchLiveProducts = async () => {
+      try {
+        const res = await fetch('/api/refurbished');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.products) && data.products.length > 0) {
+          setProducts(data.products);
+          setSelectedProduct((prev) => {
+            if (!prev) return null;
+            return data.products.find((p: any) => p.id === prev.id) || prev;
+          });
+        }
+      } catch (err) {
+        console.warn('Error fetching live refurbished from API:', err);
+      }
+    };
+    fetchLiveProducts();
 
     const handleUpdate = (e: Event) => {
       const customEvent = e as CustomEvent<RefurbishedProduct[]>;

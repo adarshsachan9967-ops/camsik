@@ -928,7 +928,7 @@ export default function AdminOrders({
                         <select
                           id="admin-modal-status-select"
                           value={selectedOrder.status}
-                          disabled={selectedOrder.status === 'completed'}
+                          disabled={selectedOrder.status === 'paid' || (selectedOrder.status as string) === 'completed'}
                           onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value as OrderStatus)}
                           className="w-full text-xs font-bold bg-white border border-gray-300 rounded-xl pl-3 pr-8 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
                         >
