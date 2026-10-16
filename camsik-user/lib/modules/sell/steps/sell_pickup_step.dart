@@ -253,8 +253,6 @@ class _SellPickupStepState extends State<SellPickupStep> {
     final modelImage = widget.selectedModel?['image'] as String? ?? 'assets/images/categories/dslr.png';
     final currentAddress = widget.addressController.text.trim();
     final hasAddress = currentAddress.isNotEmpty;
-
-    // Find active UserAddress object if it matches current text
     UserAddress? activeAddressObj;
     if (hasAddress && _savedAddresses.isNotEmpty) {
       try {

@@ -6,7 +6,7 @@ class BuyProductDetailView extends StatefulWidget {
   final Map<String, dynamic> product;
   final List<Map<String, dynamic>> allProducts;
   final VoidCallback onBack;
-  final Function(int finalPrice) onCheckout;
+  final Function(int finalPrice, String condition, String storage, String color) onCheckout;
 
   const BuyProductDetailView({
     super.key,
@@ -770,7 +770,11 @@ class _BuyProductDetailViewState extends State<BuyProductDetailView> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 elevation: 0,
               ),
-              onPressed: () => widget.onCheckout(currentPrice),
+              onPressed: () {
+                final storage = _selectedProduct['storage']?.toString() ?? '128GB';
+                final color = _selectedProduct['color']?.toString() ?? 'Default';
+                widget.onCheckout(currentPrice, _activeCondition, storage, color);
+              },
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

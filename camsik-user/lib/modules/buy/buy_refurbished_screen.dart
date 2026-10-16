@@ -4,6 +4,7 @@ import '../../core/utils/currency_formatter.dart';
 import '../../models/user_order.dart';
 import '../../models/user_profile.dart';
 import '../../widgets/camsik_smart_image.dart';
+import 'screens/buy_checkout_screen.dart';
 import 'widgets/buy_product_detail_view.dart';
 
 class BuyRefurbishedWidget extends StatefulWidget {
@@ -30,6 +31,11 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   Map<String, dynamic>? _activeDetailProduct;
+  Map<String, dynamic>? _checkoutProduct;
+  int _checkoutPrice = 0;
+  String _checkoutCondition = 'Superb';
+  String _checkoutStorage = '128GB';
+  String _checkoutColor = 'Default';
   late List<Map<String, dynamic>> _liveProducts;
   bool _isLoading = false;
 
@@ -89,12 +95,40 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (_checkoutProduct != null) {
+      return BuyCheckoutScreen(
+        product: _checkoutProduct!,
+        selectedPrice: _checkoutPrice,
+        selectedCondition: _checkoutCondition,
+        selectedStorage: _checkoutStorage,
+        selectedColor: _checkoutColor,
+        userProfile: widget.userProfile,
+        onProfileUpdate: widget.onProfileUpdate,
+        onBack: () => setState(() => _checkoutProduct = null),
+        onOrderCreated: (order) {
+          setState(() {
+            _checkoutProduct = null;
+            _activeDetailProduct = null;
+          });
+          widget.onOrderCreated(order);
+        },
+      );
+    }
+
     if (_activeDetailProduct != null) {
       return BuyProductDetailView(
         product: _activeDetailProduct!,
         allProducts: _liveProducts,
         onBack: () => setState(() => _activeDetailProduct = null),
-        onCheckout: (finalPrice) => _handleBuyCheckout(finalPrice),
+        onCheckout: (finalPrice, condition, storage, color) {
+          setState(() {
+            _checkoutProduct = _activeDetailProduct;
+            _checkoutPrice = finalPrice;
+            _checkoutCondition = condition;
+            _checkoutStorage = storage;
+            _checkoutColor = color;
+          });
+        },
       );
     }
 
@@ -727,24 +761,5 @@ class _BuyRefurbishedWidgetState extends State<BuyRefurbishedWidget> {
         ),
       ),
     );
-  }
-
-  void _handleBuyCheckout(int finalPrice) async {
-    final orderData = {
-      'type': 'buy',
-      'customerName': widget.userProfile.name,
-      'customerPhone': widget.userProfile.phone,
-      'customerAddress': widget.userProfile.address,
-      'amount': finalPrice,
-      'deviceName': 'Refurbished ${_activeDetailProduct!['model']}',
-      'status': 'Order Placed',
-      'paymentMethod': 'Prepaid / Online UPI',
-    };
-
-    final created = await ApiService.createOrder(orderData);
-    if (created != null && mounted) {
-      setState(() => _activeDetailProduct = null);
-      widget.onOrderCreated(UserOrder.fromJson(created));
-    }
   }
 }

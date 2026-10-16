@@ -1089,7 +1089,8 @@ export default function BuyRefurbishedPage() {
                   return (
                     <div
                       key={product.id}
-                      className="bg-white rounded-3xl border border-slate-200/90 hover:border-emerald-500/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden group"
+                      onClick={() => handleSelectProduct(product)}
+                      className="bg-white rounded-3xl border border-slate-200/90 hover:border-emerald-500/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden group cursor-pointer"
                     >
                       <div className="p-5">
                         {/* Top Badges & Image Showcase (matches Screenshot 2) */}
@@ -1167,7 +1168,10 @@ export default function BuyRefurbishedPage() {
                       <div className="p-5 pt-0">
                         <button
                           type="button"
-                          onClick={() => handleSelectProduct(product)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectProduct(product);
+                          }}
                           className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-sm shadow-md shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all flex items-center justify-center gap-1.5"
                         >
                           View Details
