@@ -34,6 +34,29 @@ export default function AdminModels() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editModel, setEditModel] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
+  const [loading, setLoading] = useState(false);
+
+  const fetchModelsFromApi = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/models');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.models) && data.models.length > 0) {
+        setModelsList(data.models);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('casmik_models_v1', JSON.stringify(data.models));
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch models from API:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchModelsFromApi();
+  }, []);
 
   const filtered = modelsList.filter(m => {
     const matchSearch = m.name.toLowerCase().includes(search.toLowerCase());
@@ -58,24 +81,35 @@ export default function AdminModels() {
       categoryId: m.categoryId,
       brandId: m.brandId,
       basePrice: m.basePrice,
-      storageOptions: m.storages.join(', '),
+      storageOptions: (m.storages || []).join(', '),
       image: m.image,
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const storagesArr = form.storageOptions.split(',').map(s => s.trim()).filter(Boolean);
     let updated: typeof deviceModels;
+
     if (editModel) {
-      updated = modelsList.map(m => m.id === editModel ? {
-        ...m,
+      const targetModel = modelsList.find(m => m.id === editModel);
+      const updatedModel = {
+        ...targetModel,
+        id: editModel,
         name: form.name,
         categoryId: form.categoryId,
         brandId: form.brandId,
         basePrice: Number(form.basePrice) || 0,
-        storages: storagesArr.length ? storagesArr : m.storages,
+        storages: storagesArr.length ? storagesArr : (targetModel?.storages || ['128GB']),
         image: form.image,
-      } : m);
+      };
+      updated = modelsList.map(m => m.id === editModel ? updatedModel as any : m);
+
+      // Live API Update
+      fetch('/api/models', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedModel),
+      }).catch(err => console.error('Failed to update model in DB:', err));
     } else {
       const newModel = {
         id: `mod-${Date.now()}`,
@@ -84,7 +118,7 @@ export default function AdminModels() {
         name: form.name,
         slug: form.name.toLowerCase().replace(/\s+/g, '-'),
         basePrice: Number(form.basePrice) || 0,
-        image: form.image,
+        image: form.image || '/assets/images/phones/generic.png',
         alt: form.name,
         storages: storagesArr.length ? storagesArr : ['128GB', '256GB'],
         colors: ['Default'],
@@ -92,19 +126,32 @@ export default function AdminModels() {
         popular: false,
         specs: {},
       };
-      updated = [newModel, ...modelsList];
+      updated = [newModel as any, ...modelsList];
+
+      // Live API Create
+      fetch('/api/models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newModel),
+      }).catch(err => console.error('Failed to create model in DB:', err));
     }
+
     setModelsList(updated);
     if (typeof window !== 'undefined') localStorage.setItem('casmik_models_v1', JSON.stringify(updated));
     setShowAddModal(false);
     setEditModel(null);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this model?')) {
       const updated = modelsList.filter(m => m.id !== id);
       setModelsList(updated);
       if (typeof window !== 'undefined') localStorage.setItem('casmik_models_v1', JSON.stringify(updated));
+
+      // Live API Delete
+      fetch(`/api/models?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      }).catch(err => console.error('Failed to delete model from DB:', err));
     }
   };
 

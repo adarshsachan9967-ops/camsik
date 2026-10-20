@@ -490,16 +490,23 @@ const getCategoryFallbackImage = (category?: string) => {
 export default function ExchangeDevicePage() {
   const [step, setStep] = useState<ExchangeWizardStep>('select-old');
 
-  // Step 1: Old Device Selection
+  // Step 1: Dynamic Old Devices for Trade-in
+  const [tradeInDevices, setTradeInDevices] = useState<OldDeviceItem[]>(oldTradeInDevices);
   const [oldCategoryFilter, setOldCategoryFilter] = useState<string>('all');
   const [oldSearchQuery, setOldSearchQuery] = useState('');
   const [selectedOldDevice, setSelectedOldDevice] = useState<OldDeviceItem | null>(null);
 
-  // Step 2: Diagnostics & Answers
+  // Step 2: Dynamic Category Diagnostics & Questions
+  const [categoryQuestionsMap, setCategoryQuestionsMap] = useState<Record<string, DiagnosticQuestion[]>>({
+    Cameras: cameraQuestions,
+    Smartphones: smartphoneQuestions,
+    Laptops: laptopQuestions,
+    Lenses: cameraQuestions,
+  });
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const exchangeBonus = 3000; // Guaranteed Camsik bonus
 
-  // Step 3 & 4: Upgrade Products Catalog & Selection
+  // Step 3 & 4: Dynamic Upgrade Products Catalog & Selection
   const [refurbishedCatalog, setRefurbishedCatalog] = useState<RefurbishedProduct[]>([]);
   const [newCategoryFilter, setNewCategoryFilter] = useState<string>('all');
   const [newSearchQuery, setNewSearchQuery] = useState('');
@@ -536,11 +543,94 @@ export default function ExchangeDevicePage() {
   // Confirmed Order
   const [confirmedOrder, setConfirmedOrder] = useState<CustomerOrderRecord | null>(null);
 
-  // ── Load Catalog & Auth on Mount ──
+  // ── Load Live Catalog, Questions & Models from MongoDB APIs on Mount ──
   useEffect(() => {
+    // 1. Initial local refurbished fallback
     const products = getRefurbishedProducts();
     setRefurbishedCatalog(products);
 
+    // 2. Fetch dynamic trade-in models from /api/models (Admin-managed)
+    fetch('/api/models')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.models) && data.models.length > 0) {
+          const mapped: OldDeviceItem[] = data.models.map((m: any) => {
+            let cat: 'Cameras' | 'Lenses' | 'Smartphones' | 'Laptops' = 'Smartphones';
+            const cLower = (m.categoryId || '').toLowerCase();
+            if (cLower.includes('dslr') || cLower.includes('camera') || cLower.includes('cam')) cat = 'Cameras';
+            else if (cLower.includes('lens')) cat = 'Lenses';
+            else if (cLower.includes('laptop')) cat = 'Laptops';
+            else if (cLower.includes('phone') || cLower.includes('mobile') || cLower.includes('smart')) cat = 'Smartphones';
+
+            const brandName = m.brandId ? m.brandId.charAt(0).toUpperCase() + m.brandId.slice(1) : 'Brand';
+            return {
+              id: m.id,
+              category: cat,
+              brand: brandName,
+              name: m.name,
+              image: m.image || '/assets/images/phones/generic.png',
+              basePrice: Number(m.basePrice) || 30000,
+              specs: Array.isArray(m.storages) && m.storages.length > 0 ? m.storages.join(' / ') : 'Certified trade-in',
+            };
+          });
+          setTradeInDevices(mapped);
+        }
+      })
+      .catch((err) => console.warn('Failed to load dynamic models in exchange page:', err));
+
+    // 3. Fetch dynamic refurbished upgrade devices from /api/refurbished (Admin-managed)
+    fetch('/api/refurbished')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.products) && data.products.length > 0) {
+          setRefurbishedCatalog(data.products);
+        }
+      })
+      .catch((err) => console.warn('Failed to load dynamic refurbished in exchange page:', err));
+
+    // 4. Fetch dynamic diagnostic questions from /api/questions (Admin-managed)
+    fetch('/api/questions')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.questions) && data.questions.length > 0) {
+          const qMap: Record<string, DiagnosticQuestion[]> = {
+            Cameras: [],
+            Smartphones: [],
+            Laptops: [],
+            Lenses: [],
+          };
+          data.questions.forEach((q: any) => {
+            const catId = (q.categoryId || '').toLowerCase();
+            let targetKey: string | null = null;
+            if (catId.includes('dslr') || catId.includes('camera')) targetKey = 'Cameras';
+            else if (catId.includes('lens')) targetKey = 'Lenses';
+            else if (catId.includes('laptop')) targetKey = 'Laptops';
+            else if (catId.includes('phone') || catId.includes('smartphone')) targetKey = 'Smartphones';
+
+            if (targetKey && Array.isArray(q.options) && q.options.length > 0) {
+              qMap[targetKey].push({
+                id: q.id,
+                question: q.question,
+                options: q.options.map((opt: any) => ({
+                  label: opt.label,
+                  sublabel: opt.sublabel || '',
+                  adj: Number(opt.adj) || 0,
+                })),
+              });
+            }
+          });
+
+          setCategoryQuestionsMap((prev) => ({
+            Cameras: qMap.Cameras.length > 0 ? qMap.Cameras : prev.Cameras,
+            Smartphones: qMap.Smartphones.length > 0 ? qMap.Smartphones : prev.Smartphones,
+            Laptops: qMap.Laptops.length > 0 ? qMap.Laptops : prev.Laptops,
+            Lenses: qMap.Lenses.length > 0 ? qMap.Lenses : (qMap.Cameras.length > 0 ? qMap.Cameras : prev.Lenses),
+          }));
+        }
+      })
+      .catch((err) => console.warn('Failed to load dynamic questions in exchange page:', err));
+
+    // 5. Auth & Delivery presets
     const user = getCurrentUser();
     setCurrentUserState(user);
     if (user) {
@@ -565,13 +655,11 @@ export default function ExchangeDevicePage() {
     } catch {}
   }, []);
 
-  // ── Diagnostics questions resolver based on chosen old device ──
+  // ── Diagnostics questions resolver based on chosen old device & category ──
   const activeQuestions = useMemo(() => {
-    if (!selectedOldDevice) return cameraQuestions;
-    if (selectedOldDevice.category === 'Smartphones') return smartphoneQuestions;
-    if (selectedOldDevice.category === 'Laptops') return laptopQuestions;
-    return cameraQuestions;
-  }, [selectedOldDevice]);
+    if (!selectedOldDevice) return categoryQuestionsMap.Cameras;
+    return categoryQuestionsMap[selectedOldDevice.category] || categoryQuestionsMap.Cameras;
+  }, [selectedOldDevice, categoryQuestionsMap]);
 
   // ── Valuation Calculation ──
   const diagnosticAdjustmentsTotal = useMemo(() => {
@@ -588,9 +676,9 @@ export default function ExchangeDevicePage() {
     return oldDeviceNetValuation + exchangeBonus;
   }, [oldDeviceNetValuation, exchangeBonus]);
 
-  // ── Filtered Old Devices ──
+  // ── Filtered Old Devices (Using Live tradeInDevices) ──
   const filteredOldDevices = useMemo(() => {
-    return oldTradeInDevices.filter((d) => {
+    return tradeInDevices.filter((d) => {
       const matchCat =
         oldCategoryFilter === 'all' ||
         d.category.toLowerCase() === oldCategoryFilter.toLowerCase();
@@ -601,7 +689,7 @@ export default function ExchangeDevicePage() {
         d.specs.toLowerCase().includes(oldSearchQuery.toLowerCase());
       return matchCat && matchSearch;
     });
-  }, [oldCategoryFilter, oldSearchQuery]);
+  }, [tradeInDevices, oldCategoryFilter, oldSearchQuery]);
 
   // ── Filtered Upgrade Products ──
   const filteredUpgradeProducts = useMemo(() => {
@@ -647,13 +735,11 @@ export default function ExchangeDevicePage() {
     setSelectedOldDevice(item);
     const defaults: Record<string, number> = {};
     const questions =
-      item.category === 'Smartphones'
-        ? smartphoneQuestions
-        : item.category === 'Laptops'
-        ? laptopQuestions
-        : cameraQuestions;
+      categoryQuestionsMap[item.category] || categoryQuestionsMap.Cameras;
     questions.forEach((q) => {
-      defaults[q.id] = q.options[0].adj;
+      if (q.options && q.options.length > 0) {
+        defaults[q.id] = q.options[0].adj;
+      }
     });
     setAnswers(defaults);
     setStep('condition');
@@ -808,6 +894,20 @@ export default function ExchangeDevicePage() {
     setConfirmedOrder(orderRecord);
     setStep('confirmed');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Live MongoDB API Order Insertion for cross-platform and Admin panel sync
+    fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...orderRecord,
+        type: 'exchange',
+        deviceName: `${selectedOldDevice?.name || 'Old Device'} ➔ ${selectedUpgradeProduct?.model || 'Upgrade Device'}`,
+        amount: netPayableAmount,
+        quotedPrice: upgradeDevicePrice,
+        finalPrice: netPayableAmount,
+      }),
+    }).catch((err) => console.error('Failed to sync exchange order to database:', err));
   };
 
   return (

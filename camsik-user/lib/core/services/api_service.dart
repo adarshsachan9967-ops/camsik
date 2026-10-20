@@ -1,17 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-// import '../../data/fallback/fallback_banners.dart';
-// import '../../data/fallback/fallback_categories.dart';
-// import '../../data/fallback/fallback_models.dart';
-// import '../../data/fallback/fallback_questions.dart';
-// import '../../data/fallback/fallback_refurbished.dart';
-// import '../../data/fallback/fallback_rental_cameras.dart';
 import '../constants/api_constants.dart';
 import '../constants/app_keys.dart';
 import '../utils/api_sanitizer.dart';
 import '../utils/logger.dart';
 import '../utils/session_manager.dart';
-import 'session_service.dart';
 import 'storage_service.dart';
 
 class ApiService {
@@ -170,13 +163,7 @@ class ApiService {
       ),
     );
 
-  // ── IN-MEMORY CACHES FOR REAL API DATA (STATIC DATA COMMENTED OUT) ──
-  /*
-  static List<Map<String, dynamic>> _staticBanners = List<Map<String, dynamic>>.from(FallbackBanners.data);
-  static List<Map<String, dynamic>> _staticCategories = List<Map<String, dynamic>>.from(FallbackCategories.data);
-  static List<Map<String, dynamic>> _staticRefurbished = List<Map<String, dynamic>>.from(FallbackRefurbished.data);
-  static List<Map<String, dynamic>> _staticRentalCameras = List<Map<String, dynamic>>.from(FallbackRentalCameras.data);
-  */
+  // ── IN-MEMORY CACHES FOR QUICK INITIAL RENDERING ──
   static List<Map<String, dynamic>> cachedBanners = [];
   static List<Map<String, dynamic>> cachedCategories = [];
   static List<Map<String, dynamic>> cachedRefurbished = [];
@@ -192,60 +179,18 @@ class ApiService {
     required String identifier,
     required String password,
   }) async {
-    final cleanId = identifier.trim();
     try {
-      final res = await dio.post(ApiConstants.login, data: {'identifier': cleanId, 'password': password.trim()});
-      if (res.data != null && res.data is Map) {
-        final mapRes = Map<String, dynamic>.from(res.data as Map);
-        if (mapRes['success'] == true) {
-          if (mapRes['user'] != null && mapRes['user'] is Map) {
-            final u = Map<String, dynamic>.from(mapRes['user'] as Map);
-            await SessionService.saveLocalAccount(
-              phone: u['phone']?.toString() ?? cleanId,
-              password: password.trim(),
-              name: u['name']?.toString() ?? 'Camsik Customer',
-              email: u['email']?.toString() ?? '',
-            );
-          }
-          if (mapRes['token'] != null) {
-            final prefs = await SharedPreferencesService.getInstance();
-            await prefs.setString(AppKeys.accessToken, mapRes['token'].toString());
-          }
-          return mapRes;
-        }
+      final res = await dio.post(ApiConstants.login, data: {
+        'identifier': identifier.trim(),
+        'password': password.trim(),
+      });
+      if (res.data is Map) {
+        return Map<String, dynamic>.from(res.data as Map);
       }
     } catch (e) {
-      appLog("Login network attempt failed: $e");
-      String msg = 'Login failed. Please check your credentials.';
-      if (e is DioException) {
-        final data = e.response?.data;
-        if (data is Map && data['message'] != null) {
-          msg = data['message'].toString();
-        } else if (e.response?.statusCode == 401) {
-          msg = 'Incorrect password or account not found.';
-        }
-      }
-      /*
-      // --- Offline / Demo Fallback (Commented Out) ---
-      final localAccount = SessionService.verifyLocalAccount(identifier: cleanId, password: password.trim());
-      if (localAccount != null) {
-        return {
-          'success': true,
-          'token': 'camsik-local-jwt-${DateTime.now().millisecondsSinceEpoch}',
-          'user': {'id': 'usr-local', 'phone': localAccount['phone'], 'name': localAccount['name'], 'email': localAccount['email'], 'role': 'user'},
-        };
-      }
-      if (cleanId == '9876543210' || cleanId.toLowerCase() == 'test@camsik.in') {
-        return {
-          'success': true,
-          'token': 'camsik-default-jwt-${DateTime.now().millisecondsSinceEpoch}',
-          'user': {'id': 'usr-default', 'phone': '9876543210', 'name': 'Rahul Sharma', 'email': 'rahul.s@camsik.in', 'role': 'user'},
-        };
-      }
-      */
-      return {'success': false, 'message': msg};
+      appLog("Login network error: $e");
     }
-    return {'success': false, 'message': 'Invalid credentials. If new, please switch to Create Account.'};
+    return {'success': false, 'message': 'Login request failed'};
   }
 
   static Future<Map<String, dynamic>> signUp({
@@ -254,59 +199,21 @@ class ApiService {
     required String email,
     required String password,
   }) async {
-    final cleanPhone = phone.trim().replaceAll(RegExp(r'\D'), '');
-    final cleanEmail = email.trim();
-    final cleanName = name.trim();
-
     try {
       final res = await dio.post(ApiConstants.register, data: {
-        'name': cleanName,
-        'phone': cleanPhone,
-        'email': cleanEmail,
+        'name': name.trim(),
+        'phone': phone.trim().replaceAll(RegExp(r'\D'), ''),
+        'email': email.trim(),
         'password': password.trim(),
         'role': 'user',
       });
-      if (res.data != null && res.data is Map) {
-        final mapRes = Map<String, dynamic>.from(res.data as Map);
-        if (mapRes['success'] == true) {
-          await SessionService.saveLocalAccount(
-            phone: cleanPhone,
-            password: password.trim(),
-            name: cleanName,
-            email: cleanEmail,
-          );
-          if (mapRes['token'] != null) {
-            final prefs = await SharedPreferencesService.getInstance();
-            await prefs.setString(AppKeys.accessToken, mapRes['token'].toString());
-          }
-          return mapRes;
-        }
+      if (res.data is Map) {
+        return Map<String, dynamic>.from(res.data as Map);
       }
     } catch (e) {
-      appLog("Registration network attempt failed: $e");
-      String msg = 'Registration failed. Please try again.';
-      if (e is DioException) {
-        final data = e.response?.data;
-        if (data is Map && data['message'] != null) {
-          msg = data['message'].toString();
-        } else if (e.response?.statusCode == 409) {
-          msg = 'Mobile number is already registered. Please sign in.';
-        }
-      }
-      /*
-      // --- Offline Local Account Fallback (Commented Out) ---
-      await SessionService.saveLocalAccount(
-        phone: cleanPhone, password: password.trim(), name: cleanName, email: cleanEmail,
-      );
-      return {
-        'success': true,
-        'token': 'camsik-local-jwt-${DateTime.now().millisecondsSinceEpoch}',
-        'user': {'id': 'usr-${DateTime.now().millisecondsSinceEpoch}', 'phone': cleanPhone, 'name': cleanName, 'email': cleanEmail, 'role': 'user'},
-      };
-      */
-      return {'success': false, 'message': msg};
+      appLog("Registration network error: $e");
     }
-    return {'success': false, 'message': 'Registration failed. Please try again.'};
+    return {'success': false, 'message': 'Registration request failed'};
   }
 
   // ── BACKGROUND SYNC ──
@@ -379,21 +286,7 @@ class ApiService {
     return cachedCategories;
   }
 
-  // ── MODELS & QUESTIONS ──
-  // Static sync fallbacks commented out as per requirement - live API is used directly
-  /*
-  static List<Map<String, dynamic>> getFallbackModelsSync({String? categoryId, String? search}) {
-    final list = FallbackModels.getModels(categoryId: categoryId, search: search);
-    ApiSanitizer.sanitizeModels(list);
-    return list;
-  }
-  static List<Map<String, dynamic>> getQuestionsSync({required String categoryId}) {
-    return FallbackQuestions.getQuestions(categoryId);
-  }
-  */
-  static List<Map<String, dynamic>> getFallbackModelsSync({String? categoryId, String? search}) => const [];
-  static List<Map<String, dynamic>> getQuestionsSync({required String categoryId}) => const [];
-
+  // ── BRANDS, MODELS & QUESTIONS ──
   static Future<List<Map<String, dynamic>>> fetchBrands({String? categoryId, String? search}) async {
     try {
       final queryParams = <String, dynamic>{};
@@ -403,23 +296,9 @@ class ApiService {
       final res = await dio.get(ApiConstants.brands, queryParameters: queryParams);
       if (res.data != null && res.data['brands'] is List) {
         final list = (res.data['brands'] as List).cast<Map<String, dynamic>>();
-        if (list.isNotEmpty) {
-          return list;
-        }
+        if (list.isNotEmpty) return list;
       }
     } catch (_) {}
-
-    // Fallback: extract brands from models endpoint
-    try {
-      final res = await dio.get(ApiConstants.models, queryParameters: categoryId != null ? {'categoryId': categoryId} : null);
-      if (res.data != null && res.data['brands'] is List) {
-        final list = (res.data['brands'] as List).cast<Map<String, dynamic>>();
-        if (list.isNotEmpty) {
-          return list;
-        }
-      }
-    } catch (_) {}
-
     return const [];
   }
 
@@ -532,29 +411,12 @@ class ApiService {
     try {
       final res = await dio.post(ApiConstants.createOrder, data: orderData);
       if (res.data != null && res.data['success'] == true && res.data['order'] != null) {
-        return res.data['order'] as Map<String, dynamic>;
+        return Map<String, dynamic>.from(res.data['order'] as Map);
       }
-    } catch (_) {}
-    final fallbackOrderNumber =
-        'CSM-${orderData['type'] == 'buy' ? 'BUY' : orderData['type'] == 'exchange' ? 'EXC' : orderData['type'] == 'rent' ? 'RNT' : 'SELL'}-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
-    return {
-      'id': 'ord-${DateTime.now().millisecondsSinceEpoch}',
-      'orderNumber': fallbackOrderNumber,
-      'type': orderData['type'] ?? 'sell',
-      'status': 'Order Placed',
-      'createdAt': DateTime.now().toIso8601String(),
-      'customerName': orderData['customerName'] ?? 'Valued Customer',
-      'customerPhone': orderData['customerPhone'] ?? '',
-      'customerAddress': orderData['customerAddress'] ?? '',
-      'city': orderData['city'] ?? 'Mumbai',
-      'pincode': orderData['pincode'] ?? '401107',
-      'pickupDate': orderData['pickupDate'] ?? 'Tomorrow',
-      'pickupSlot': orderData['pickupSlot'] ?? '11:00 AM – 1:00 PM',
-      'paymentMethod': orderData['paymentMethod'] ?? 'Instant UPI',
-      'amount': orderData['amount'] ?? 0,
-      'deviceName': orderData['deviceName'] ?? 'Device',
-      'otp': '${1000 + (DateTime.now().millisecondsSinceEpoch % 8999)}',
-    };
+    } catch (e) {
+      appLog("⚠️ ApiService createOrder error: $e");
+    }
+    return null;
   }
 
   // ── USER PROFILE & PAYOUT SYNC ──
@@ -643,12 +505,7 @@ class ApiService {
     } catch (e) {
       appLog("⚠️ Fetch cities error: $e");
     }
-    return [
-      {'id': 'mumbai', 'name': 'Mumbai', 'serviceable': true},
-      {'id': 'delhi', 'name': 'Delhi NCR', 'serviceable': true},
-      {'id': 'bengaluru', 'name': 'Bengaluru', 'serviceable': true},
-      {'id': 'pune', 'name': 'Pune', 'serviceable': true},
-    ];
+    return [];
   }
 
   static Future<Map<String, dynamic>> checkPincodeServiceability(String pincode) async {
@@ -676,6 +533,17 @@ class ApiService {
       appLog("⚠️ Fetch notifications error: $e");
     }
     return [];
+  }
+
+  static Future<void> markNotificationAsRead(String id) async {
+    try {
+      await dio.post(ApiConstants.notifications, data: {
+        'action': 'mark_read',
+        'id': id,
+      });
+    } catch (e) {
+      appLog("⚠️ Mark notification read error: $e");
+    }
   }
 
   // ── OTP AUTHENTICATION ──

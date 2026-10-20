@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../core/services/api_service.dart';
 import '../../../data/fallback/fallback_models.dart';
 import '../../../data/fallback/fallback_questions.dart';
+import '../../orders/bloc/orders_cubit.dart';
 import '../../orders/data/models/requests/create_order_request.dart';
 import '../../orders/data/repositories/orders_repository.dart';
 import '../data/models/requests/fetch_models_request.dart';
@@ -97,11 +97,9 @@ class SellCubit extends Cubit<SellState> {
       }
     } catch (_) {}
 
-    // Fallback order creation
-    final order = await ApiService.createOrder(request.toJson());
-    if (order != null) {
-      emit(SellOrderCreatedSuccess(order));
-    }
+    // Fallback offline order generation handled in BLoC
+    final order = OrdersCubit.generateFallbackOrder(request.toJson());
+    emit(SellOrderCreatedSuccess(order));
     return order;
   }
 }

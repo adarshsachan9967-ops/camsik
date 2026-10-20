@@ -36,9 +36,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         'body': n['message'] ?? '',
         'time': 'Just now',
         'isOrder': true,
+        'read': n['read'] == true,
       }).toList();
 
-      final combined = [...localNotifs, ...notifs];
+      final combined = [...localNotifs, ...notifs].map((n) {
+        final id = n['id']?.toString() ?? '';
+        final isAlreadyRead = NotificationService.isNotificationRead(
+          id,
+          defaultRead: n['read'] == true,
+        );
+        return {
+          ...n,
+          'isNew': !isAlreadyRead,
+        };
+      }).toList();
 
       if (mounted) {
         setState(() {
@@ -46,6 +57,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           _isLoading = false;
         });
       }
+
+      // Mark all as read now that the user has opened and viewed the notifications
+      await NotificationService.markAllAsRead(
+        phone: widget.phone,
+        notifications: combined,
+      );
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -133,15 +150,43 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
-                                        child: Text(
-                                          title,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 13.5,
-                                            color: Color(0xFF0F172A),
-                                          ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                title,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 13.5,
+                                                  color: Color(0xFF0F172A),
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (n['isNew'] == true) ...[
+                                              const SizedBox(width: 6),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: const Text(
+                                                  'NEW',
+                                                  style: TextStyle(
+                                                    color: Color(0xFFEF4444),
+                                                    fontSize: 8.5,
+                                                    fontWeight: FontWeight.w900,
+                                                    letterSpacing: 0.3,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
                                         ),
                                       ),
+                                      const SizedBox(width: 8),
                                       Text(
                                         time,
                                         style: const TextStyle(

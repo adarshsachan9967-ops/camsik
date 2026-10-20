@@ -84,10 +84,14 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
         }
       } catch (_) {}
     }
+
+    // Refresh notifications count
+    NotificationService.checkUnreadCount(phone: widget.userProfile.phone);
   }
 
   void _loadInitialData() {
     _refreshAllData();
+    NotificationService.checkUnreadCount(phone: widget.userProfile.phone);
   }
 
   void _navigateToSellWithCategory(String catId) {
@@ -135,8 +139,8 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
     }
   }
 
-  void _showNotificationsDialog() {
-    Navigator.push(
+  Future<void> _showNotificationsDialog() async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => NotificationsScreen(
@@ -147,6 +151,9 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
         ),
       ),
     );
+    if (mounted) {
+      NotificationService.checkUnreadCount(phone: widget.userProfile.phone);
+    }
   }
 
   @override
@@ -283,6 +290,7 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
               ),
               Stack(
                 alignment: Alignment.center,
+                clipBehavior: Clip.none,
                 children: [
                   IconButton(
                     icon: const Icon(Icons.notifications_none_rounded,
@@ -290,28 +298,45 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
                     tooltip: 'Notifications',
                     onPressed: _showNotificationsDialog,
                   ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFEF4444),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Center(
-                        child: Text(
-                          '1',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w900,
-                            height: 1.0,
+                  ValueListenableBuilder<int>(
+                    valueListenable: NotificationService.unreadCountNotifier,
+                    builder: (context, unreadCount, _) {
+                      if (unreadCount <= 0) {
+                        return const SizedBox.shrink();
+                      }
+                      return Positioned(
+                        top: 8,
+                        right: 8,
+                        child: IgnorePointer(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEF4444),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFF0F172A),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                unreadCount > 9 ? '9+' : '$unreadCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w900,
+                                  height: 1.0,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ],
               ),

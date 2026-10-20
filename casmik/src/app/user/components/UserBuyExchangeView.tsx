@@ -135,6 +135,18 @@ export default function UserBuyExchangeView({ onOrderBooked }: UserBuyExchangeVi
       }
     }
 
+    // Persist to MongoDB live via /api/orders
+    fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...exchangeOrder,
+        orderNumber: exchangeOrder.id,
+        amount: Math.max(netPayable, 0),
+        deviceName: `${exchangeOldDevice} ➔ ${exchangeTargetDevice}`,
+      }),
+    }).catch(err => console.error('Failed to sync exchange order to database:', err));
+
     setExchangeSuccess(true);
     onOrderBooked(exchangeOrder);
   };

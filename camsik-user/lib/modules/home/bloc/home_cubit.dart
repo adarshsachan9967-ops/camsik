@@ -1,10 +1,4 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../core/services/api_service.dart';
-// import '../../../data/fallback/fallback_banners.dart';
-// import '../../../data/fallback/fallback_categories.dart';
-// import '../../../data/fallback/fallback_refurbished.dart';
-// import '../../../data/fallback/fallback_rental_cameras.dart';
 import '../data/models/responses/banners_response.dart';
 import '../data/models/responses/categories_response.dart';
 import '../data/repositories/catalog_repository.dart';
@@ -40,29 +34,33 @@ class HomeCubit extends Cubit<HomeState> {
     try {
       final bannersFuture = _catalogRepository.getBanners();
       final categoriesFuture = _catalogRepository.getCategories();
-      final refFuture = ApiService.fetchRefurbished();
-      final rentFuture = ApiService.fetchRentalCameras();
+      final refFuture = _catalogRepository.getRefurbished();
+      final rentFuture = _catalogRepository.getRentalCameras();
 
       final results = await Future.wait([bannersFuture, categoriesFuture, refFuture, rentFuture]);
 
-      final bannersRes = results[0] as Response;
+      final bannersRes = results[0];
       if (bannersRes.data != null) {
         final bRes = BannersResponse.fromJson(Map<String, dynamic>.from(bannersRes.data as Map));
         if (bRes.banners.isNotEmpty) banners = bRes.banners;
       }
 
-      final catRes = results[1] as Response;
+      final catRes = results[1];
       if (catRes.data != null) {
         final cRes = CategoriesResponse.fromJson(Map<String, dynamic>.from(catRes.data as Map));
         if (cRes.categories.isNotEmpty) categories = cRes.categories;
       }
 
-      if (results[2] is List<Map<String, dynamic>> && (results[2] as List).isNotEmpty) {
-        refurbished = results[2] as List<Map<String, dynamic>>;
+      final refRes = results[2];
+      if (refRes.data != null && refRes.data['products'] is List) {
+        final list = (refRes.data['products'] as List).cast<Map<String, dynamic>>();
+        refurbished = list;
       }
 
-      if (results[3] is List<Map<String, dynamic>> && (results[3] as List).isNotEmpty) {
-        rentals = results[3] as List<Map<String, dynamic>>;
+      final rentRes = results[3];
+      if (rentRes.data != null && rentRes.data['cameras'] is List) {
+        final list = (rentRes.data['cameras'] as List).cast<Map<String, dynamic>>();
+        rentals = list;
       }
     } catch (_) {}
 

@@ -12,6 +12,39 @@ class OrdersCubit extends Cubit<OrdersState> {
       : _ordersRepository = ordersRepository ?? OrdersRepositoryImpl(),
         super(const OrdersInitial());
 
+  /// Centralized business logic for generating offline fallback orders
+  static Map<String, dynamic> generateFallbackOrder(Map<String, dynamic> orderData) {
+    final type = orderData['type']?.toString().toLowerCase() ?? 'sell';
+    final typePrefix = type == 'buy'
+        ? 'BUY'
+        : type == 'exchange'
+            ? 'EXC'
+            : type == 'rent'
+                ? 'RNT'
+                : 'SELL';
+    final fallbackOrderNumber =
+        'CSM-$typePrefix-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+
+    return {
+      'id': 'ord-${DateTime.now().millisecondsSinceEpoch}',
+      'orderNumber': fallbackOrderNumber,
+      'type': type,
+      'status': 'Order Placed',
+      'createdAt': DateTime.now().toIso8601String(),
+      'customerName': orderData['customerName'] ?? 'Valued Customer',
+      'customerPhone': orderData['customerPhone'] ?? '',
+      'customerAddress': orderData['customerAddress'] ?? '',
+      'city': orderData['city'] ?? 'Mumbai',
+      'pincode': orderData['pincode'] ?? '401107',
+      'pickupDate': orderData['pickupDate'] ?? 'Tomorrow',
+      'pickupSlot': orderData['pickupSlot'] ?? '11:00 AM – 1:00 PM',
+      'paymentMethod': orderData['paymentMethod'] ?? 'Instant UPI',
+      'amount': orderData['amount'] ?? 0,
+      'deviceName': orderData['deviceName'] ?? 'Device',
+      'otp': '${1000 + (DateTime.now().millisecondsSinceEpoch % 8999)}',
+    };
+  }
+
   Future<void> fetchOrders({String? phone}) async {
     emit(const OrdersLoading());
     try {
@@ -23,9 +56,13 @@ class OrdersCubit extends Cubit<OrdersState> {
       }
     } catch (_) {}
 
-    // Fallback to ApiService cache
-    final cached = await ApiService.fetchOrders(phone: phone);
-    emit(OrdersLoaded(cached));
+    // Fallback: try direct API service or emit empty
+    try {
+      final cached = await ApiService.fetchOrders(phone: phone);
+      emit(OrdersLoaded(cached));
+    } catch (_) {
+      emit(const OrdersLoaded([]));
+    }
   }
 
   Future<Map<String, dynamic>?> createOrder(CreateOrderRequest request) async {
@@ -39,41 +76,31 @@ class OrdersCubit extends Cubit<OrdersState> {
       }
     } catch (_) {}
 
-    // Fallback
-    final fallbackOrder = await ApiService.createOrder(request.toJson());
-    if (fallbackOrder != null) {
-      emit(OrderCreateSuccess(fallbackOrder));
-    }
+    // Fallback order generation handled in BLoC
+    final fallbackOrder = generateFallbackOrder(request.toJson());
+    emit(OrderCreateSuccess(fallbackOrder));
     return fallbackOrder;
   }
 
   Future<bool> cancelOrder(String orderId, {String? reason, String? phone}) async {
     try {
       final response = await _ordersRepository.cancelOrder(orderId, reason: reason);
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && response.data != null && response.data['success'] == true) {
         if (phone != null) await fetchOrders(phone: phone);
         return true;
       }
-    } catch (_) {
-      final success = await ApiService.cancelOrder(orderId: orderId, reason: reason);
-      if (success && phone != null) await fetchOrders(phone: phone);
-      return success;
-    }
+    } catch (_) {}
     return false;
   }
 
   Future<bool> rescheduleOrder(String orderId, {required String newDate, required String newSlot, String? phone}) async {
     try {
       final response = await _ordersRepository.rescheduleOrder(orderId, newDate: newDate, newSlot: newSlot);
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && response.data != null && response.data['success'] == true) {
         if (phone != null) await fetchOrders(phone: phone);
         return true;
       }
-    } catch (_) {
-      final success = await ApiService.rescheduleOrder(orderId: orderId, newDate: newDate, newSlot: newSlot);
-      if (success && phone != null) await fetchOrders(phone: phone);
-      return success;
-    }
+    } catch (_) {}
     return false;
   }
 }

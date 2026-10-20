@@ -33,12 +33,29 @@ class _ServiceableCitiesScreenState extends State<ServiceableCitiesScreen> {
       final cities = await ApiService.fetchCities();
       if (mounted) {
         setState(() {
-          _cities = cities;
+          _cities = cities.isNotEmpty
+              ? cities
+              : const [
+                  {'id': 'mumbai', 'name': 'Mumbai', 'serviceable': true},
+                  {'id': 'delhi', 'name': 'Delhi NCR', 'serviceable': true},
+                  {'id': 'bengaluru', 'name': 'Bengaluru', 'serviceable': true},
+                  {'id': 'pune', 'name': 'Pune', 'serviceable': true},
+                ];
           _isLoadingCities = false;
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _isLoadingCities = false);
+      if (mounted) {
+        setState(() {
+          _cities = const [
+            {'id': 'mumbai', 'name': 'Mumbai', 'serviceable': true},
+            {'id': 'delhi', 'name': 'Delhi NCR', 'serviceable': true},
+            {'id': 'bengaluru', 'name': 'Bengaluru', 'serviceable': true},
+            {'id': 'pune', 'name': 'Pune', 'serviceable': true},
+          ];
+          _isLoadingCities = false;
+        });
+      }
     }
   }
 

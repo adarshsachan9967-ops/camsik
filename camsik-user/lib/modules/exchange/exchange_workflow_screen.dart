@@ -372,9 +372,25 @@ class _ExchangeWorkflowWidgetState extends State<ExchangeWorkflowWidget> {
           onSearchChanged: (v) => setState(() => _oldSearchQuery = v),
           onCategoryChanged: (catId) =>
               setState(() => _oldCategoryFilter = catId),
-          onDeviceSelected: (d) {
-            final catId = d['categoryId'] as String? ?? 'cat-dslr';
-            final questions = ApiService.getQuestionsSync(categoryId: catId);
+          onDeviceSelected: (d) async {
+            final rawCat = (d['categoryId'] as String? ?? '').toLowerCase();
+            String catId = 'cat-dslr';
+            if (rawCat.contains('phone') || rawCat.contains('mobile') || rawCat.contains('smart')) {
+              catId = 'cat-smartphone';
+            } else if (rawCat.contains('laptop')) {
+              catId = 'cat-laptop';
+            } else if (rawCat.contains('lens')) {
+              catId = 'cat-lens';
+            } else if (rawCat.isNotEmpty) {
+              catId = rawCat;
+            }
+
+            var questions = await ApiService.fetchQuestions(categoryId: catId);
+            if (questions.isEmpty && catId != 'cat-dslr') {
+              questions = await ApiService.fetchQuestions(categoryId: 'cat-dslr');
+            }
+
+            if (!mounted) return;
             setState(() {
               _selectedOldDevice = d;
               _oldBaseValue = (d['basePrice'] as num?)?.toInt() ?? 45000;
@@ -451,6 +467,8 @@ class _ExchangeWorkflowWidgetState extends State<ExchangeWorkflowWidget> {
           pincodeController: _pincodeController,
           isPlacingOrder: _isPlacingOrder,
           onConfirmExchange: _handleConfirmExchange,
+          userProfile: widget.userProfile,
+          onProfileUpdate: widget.onProfileUpdate,
         );
       case 5:
         return ExchangeConfirmedStep(

@@ -1,1 +1,1 @@
-// export { POST, dynamic } from '../signup/route';
+export { POST, dynamic } from '../signup/route';
