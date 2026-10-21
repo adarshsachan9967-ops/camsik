@@ -212,6 +212,9 @@ class ApiService {
     double? finalPrice,
     int? inspectionScore,
     String? notes,
+    String? deliveryAgentId,
+    String? deliveryAgentName,
+    String? deliveryAgentPhone,
   }) async {
     try {
       final payload = <String, dynamic>{
@@ -221,6 +224,9 @@ class ApiService {
       if (finalPrice != null) payload['finalPrice'] = finalPrice;
       if (inspectionScore != null) payload['inspectionScore'] = inspectionScore;
       if (notes != null) payload['notes'] = notes;
+      if (deliveryAgentId != null) payload['deliveryAgentId'] = deliveryAgentId;
+      if (deliveryAgentName != null) payload['deliveryAgentName'] = deliveryAgentName;
+      if (deliveryAgentPhone != null) payload['deliveryAgentPhone'] = deliveryAgentPhone;
 
       final res = await dio.patch(ApiConstants.orders, data: payload);
       return res.data != null && res.data['success'] == true;

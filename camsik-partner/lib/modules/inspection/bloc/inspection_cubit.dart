@@ -10,7 +10,18 @@ class InspectionCubit extends Cubit<InspectionState> {
     PartnerOrder? initialOrder,
     InspectionRepository? inspectionRepository,
   })  : _inspectionRepository = inspectionRepository ?? InspectionRepositoryImpl(),
-        super(InspectionState(selectedOrder: initialOrder));
+        super(InspectionState(selectedOrder: initialOrder)) {
+    loadCriteria();
+  }
+
+  Future<void> loadCriteria() async {
+    try {
+      final list = await _inspectionRepository.fetchInspectionCriteria();
+      if (list.isNotEmpty) {
+        emit(state.copyWith(criteria: list));
+      }
+    } catch (_) {}
+  }
 
   void selectOrder(PartnerOrder order) {
     emit(state.copyWith(

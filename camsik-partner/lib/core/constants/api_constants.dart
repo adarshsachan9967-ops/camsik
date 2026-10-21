@@ -27,6 +27,7 @@ class ApiConstants {
   // ── Orders & Operations ──
   static const String orders = "$baseUrl/orders";
   static const String orderMessages = "$baseUrl/orders/messages";
+  static const String deliveryAgents = "$baseUrl/delivery-agents";
 
   // ── Device Inspection & Diagnostics ──
   static const String validateImei = "$baseUrl/device-verification/validate-imei";

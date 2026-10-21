@@ -83,6 +83,7 @@ export interface Order {
   deviceColor: string;
   quotedPrice: number;
   finalPrice: number;
+  amount?: number;
   partnerId: string | null;
   partnerName: string | null;
   partnerPhone?: string | null;

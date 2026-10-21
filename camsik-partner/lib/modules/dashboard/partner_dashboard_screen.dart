@@ -5,7 +5,10 @@ import '../../core/extensions/order_extensions.dart';
 import '../../core/services/session_service.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../models/partner_models.dart';
+import '../customers/partner_customers_screen.dart';
 import '../orders/widgets/order_detail_sheet.dart';
+import '../reports/partner_reports_screen.dart';
+import '../riders/partner_riders_screen.dart';
 import 'data/models/dashboard_stats_model.dart';
 import 'data/repositories/dashboard_repository.dart';
 
@@ -55,7 +58,7 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.loading && widget.orders.isEmpty && _stats == null) {
+    if ((widget.loading || _fetchingStats) && widget.orders.isEmpty && _stats == null) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
       );
@@ -154,7 +157,7 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
                               color: Color(0xFF34D399), size: 14),
                           SizedBox(width: 1.w),
                           Text(
-                            '+12.4% MoM',
+                            _stats?.momGrowth ?? '+14.2% MoM',
                             style: TextStyle(
                               color: const Color(0xFF34D399),
                               fontSize: 14.sp,
@@ -178,7 +181,7 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
                 ),
                 SizedBox(height: 0.6.h),
                 Text(
-                  '$completedCount Orders Liquidated • ${orders.length} Total Registered',
+                  '$completedCount Orders Liquidated • $totalUnitsCount Total Registered',
                   style: TextStyle(
                     color: const Color(0xFF34D399),
                     fontSize: 14.sp,
@@ -251,7 +254,7 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Commission (5%)',
+                              'Commission (${commissionRate.toStringAsFixed(1)}%)',
                               style: TextStyle(
                                 color: const Color(0xFF94A3B8),
                                 fontSize: 14.sp,
@@ -284,7 +287,7 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
             children: [
               Expanded(
                 child: InkWell(
-                  onTap: () => onNavigate(2),
+                  onTap: () => widget.onNavigate(2),
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
                     padding: EdgeInsets.symmetric(
@@ -327,7 +330,7 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
               SizedBox(width: 3.w),
               Expanded(
                 child: InkWell(
-                  onTap: () => onNavigate(3),
+                  onTap: () => widget.onNavigate(3),
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
                     padding: EdgeInsets.symmetric(
@@ -398,14 +401,14 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
                 ],
               ),
               TextButton(
-                onPressed: () => onNavigate(1),
+                onPressed: () => widget.onNavigate(1),
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  'View All (${orders.length}) →',
+                  'View All (${widget.orders.length}) →',
                   style: TextStyle(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
@@ -417,7 +420,7 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
           ),
           SizedBox(height: 1.2.h),
 
-          if (orders.isEmpty)
+          if (widget.orders.isEmpty)
             Container(
               padding: EdgeInsets.all(6.w),
               decoration: BoxDecoration(
@@ -447,8 +450,185 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
               ),
             )
           else
-            ...orders.take(5).map((order) => _buildOrderTile(context, order)),
+            ...widget.orders.take(5).map((order) => _buildOrderTile(context, order)),
+
+          SizedBox(height: 2.5.h),
+
+          // Store Operations Hub (Fleet, Customers, Analytics)
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D9488),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(width: 2.w),
+              Text(
+                'Store Operations Hub',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 1.2.h),
+
+          // 3 Feature Cards
+          _buildOperationTile(
+            context: context,
+            title: 'Delivery Fleet & Riders',
+            subtitle: 'Onboard, assign & track real-time agent dispatch',
+            badge: 'LIVE FLEET',
+            badgeColor: const Color(0xFF0D9488),
+            icon: Icons.delivery_dining_rounded,
+            iconBg: const Color(0xFF0D9488).withValues(alpha: 0.12),
+            iconColor: const Color(0xFF0D9488),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PartnerRidersScreen()),
+            ),
+          ),
+          SizedBox(height: 1.2.h),
+          _buildOperationTile(
+            context: context,
+            title: 'Customer Directory',
+            subtitle: 'Client portfolio, repeat device sellers & tier classification',
+            badge: 'PORTFOLIO',
+            badgeColor: const Color(0xFF6366F1),
+            icon: Icons.people_alt_rounded,
+            iconBg: const Color(0xFF6366F1).withValues(alpha: 0.12),
+            iconColor: const Color(0xFF6366F1),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PartnerCustomersScreen(orders: widget.orders),
+              ),
+            ),
+          ),
+          SizedBox(height: 1.2.h),
+          _buildOperationTile(
+            context: context,
+            title: 'Performance & Audit Reports',
+            subtitle: 'Trade metrics, commission yield breakdown & channel analytics',
+            badge: 'METRICS',
+            badgeColor: const Color(0xFFF59E0B),
+            icon: Icons.insights_rounded,
+            iconBg: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+            iconColor: const Color(0xFFF59E0B),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PartnerReportsScreen(orders: widget.orders),
+              ),
+            ),
+          ),
+          SizedBox(height: 3.h),
         ],
+      ),
+    );
+  }
+
+  Widget _buildOperationTile({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required String badge,
+    required Color badgeColor,
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: EdgeInsets.all(3.5.w),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 12.w > 48 ? 48 : 12.w,
+                height: 12.w > 48 ? 48 : 12.w,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: iconColor, size: 24),
+              ),
+              SizedBox(width: 3.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15.sp,
+                              color: const Color(0xFF0F172A),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        SizedBox(width: 2.w),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 2.w,
+                            vertical: 0.3.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            badge,
+                            style: TextStyle(
+                              color: badgeColor,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 0.4.h),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: const Color(0xFF64748B),
+                        fontSize: 14.sp,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 2.w),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF94A3B8),
+                size: 22,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -467,7 +647,7 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
               backgroundColor: Colors.transparent,
               builder: (_) => OrderDetailSheet(
                 order: order,
-                onOrderUpdated: onRefresh,
+                onOrderUpdated: widget.onRefresh,
               ),
             );
           },

@@ -146,6 +146,10 @@ class PartnerOrder {
   final String pickupSlot;
   String notes;
   final String createdAt;
+  String? deliveryAgentId;
+  String? deliveryAgentName;
+  String? deliveryAgentPhone;
+  String? partnerId;
 
   PartnerOrder({
     required this.id,
@@ -169,6 +173,10 @@ class PartnerOrder {
     required this.pickupSlot,
     this.notes = '',
     required this.createdAt,
+    this.deliveryAgentId,
+    this.deliveryAgentName,
+    this.deliveryAgentPhone,
+    this.partnerId,
   });
 
   factory PartnerOrder.fromJson(Map<String, dynamic> json) {
@@ -194,6 +202,10 @@ class PartnerOrder {
       pickupSlot: json['pickupSlot']?.toString() ?? '10:00 AM - 1:00 PM',
       notes: json['notes']?.toString() ?? '',
       createdAt: json['createdAt']?.toString() ?? DateTime.now().toIso8601String(),
+      deliveryAgentId: json['deliveryAgentId']?.toString() ?? json['delivery_agent_id']?.toString(),
+      deliveryAgentName: json['deliveryAgentName']?.toString() ?? json['delivery_agent_name']?.toString(),
+      deliveryAgentPhone: json['deliveryAgentPhone']?.toString() ?? json['delivery_agent_phone']?.toString(),
+      partnerId: json['partnerId']?.toString() ?? json['assignedPartnerId']?.toString(),
     );
   }
 

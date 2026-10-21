@@ -208,11 +208,21 @@ class _ProfileView extends StatelessWidget {
               'Contact & Registered Location',
               Icons.location_on_outlined,
               [
-                _buildInfoRow('Phone', activeUser?.phone ?? '+91 98765 43210'),
-                _buildInfoRow('Email', activeUser?.email ?? 'partner@camsik.com'),
+                _buildInfoRow(
+                  'Phone',
+                  activeUser?.phone.isNotEmpty == true
+                      ? activeUser!.phone
+                      : 'Not provided',
+                ),
+                _buildInfoRow(
+                  'Email',
+                  activeUser?.email.isNotEmpty == true
+                      ? activeUser!.email
+                      : 'partner@camsik.com',
+                ),
                 _buildInfoRow(
                   'City & State',
-                  '${activeUser?.city ?? "Mumbai"}, ${activeUser?.state ?? "Maharashtra"}',
+                  '${activeUser?.city.isNotEmpty == true ? activeUser!.city : "All Hubs"}, ${activeUser?.state.isNotEmpty == true ? activeUser!.state : "India"}',
                 ),
               ],
             ),
@@ -236,7 +246,41 @@ class _ProfileView extends StatelessWidget {
                   'Operating Pin Codes',
                   activeUser?.pinCodes.isNotEmpty == true
                       ? activeUser!.pinCodes.join(', ')
-                      : '400001, 400050, 401107',
+                      : 'All Serviced Hubs',
+                ),
+              ],
+            ),
+
+            SizedBox(height: 1.5.h),
+
+            // Bank & Settlement Account
+            _buildInfoCard(
+              'Settlement Bank Account',
+              Icons.account_balance_rounded,
+              [
+                _buildInfoRow(
+                  'Bank Name',
+                  activeUser?.bankName.isNotEmpty == true
+                      ? activeUser!.bankName
+                      : 'HDFC Bank',
+                ),
+                _buildInfoRow(
+                  'Account Number',
+                  activeUser?.accountNumber.isNotEmpty == true
+                      ? activeUser!.accountNumber
+                      : '•••• 4892',
+                ),
+                _buildInfoRow(
+                  'IFSC Code',
+                  activeUser?.ifscCode.isNotEmpty == true
+                      ? activeUser!.ifscCode
+                      : 'HDFC0001234',
+                ),
+                _buildInfoRow(
+                  'Verification Status',
+                  activeUser?.isBankVerified == true
+                      ? 'Verified Merchant (IMPS)'
+                      : 'Verification Pending',
                 ),
               ],
             ),

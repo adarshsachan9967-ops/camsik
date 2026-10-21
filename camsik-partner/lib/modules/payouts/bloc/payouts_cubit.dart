@@ -4,7 +4,6 @@ import '../../../../core/services/session_service.dart';
 import '../../../../models/partner_models.dart';
 import '../../orders/data/repositories/orders_repository.dart';
 import '../../profile/data/repositories/partner_repository.dart';
-import '../data/models/payout_transaction_model.dart';
 import '../data/repositories/payouts_repository.dart';
 import 'payouts_state.dart';
 

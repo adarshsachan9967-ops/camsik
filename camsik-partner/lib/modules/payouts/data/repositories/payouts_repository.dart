@@ -44,17 +44,19 @@ class PayoutsRepositoryImpl implements PayoutsRepository {
     String? ifscCode,
   }) async {
     try {
+      final payload = <String, dynamic>{
+        'partnerId': partnerId,
+        'amount': amount,
+        'notes': notes ?? 'Float withdrawal to verified merchant account',
+        'method': 'bank_transfer',
+      };
+      if (bankName != null) payload['bankName'] = bankName;
+      if (accountNumber != null) payload['accountNumber'] = accountNumber;
+      if (ifscCode != null) payload['ifscCode'] = ifscCode;
+
       final res = await _dio.post(
         ApiConstants.partnerPayouts,
-        data: {
-          'partnerId': partnerId,
-          'amount': amount,
-          'notes': notes ?? 'Float withdrawal to verified merchant account',
-          'method': 'bank_transfer',
-          if (bankName != null) 'bankName': bankName,
-          if (accountNumber != null) 'accountNumber': accountNumber,
-          if (ifscCode != null) 'ifscCode': ifscCode,
-        },
+        data: payload,
       );
 
       if (res.data != null && res.data['success'] == true) {

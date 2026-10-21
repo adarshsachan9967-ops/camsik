@@ -143,6 +143,7 @@ class _MainNavigationContent extends StatelessWidget {
                 children: [
                   PartnerDashboardScreen(
                     orders: orders,
+                    user: user,
                     loading: loading,
                     onRefresh: () => context.read<OrdersCubit>().loadOrders(),
                     onNavigate: (idx) =>

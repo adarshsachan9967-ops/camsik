@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/services/api_service.dart';
 import '../models/device_verification_report_model.dart';
+import '../models/inspection_criteria_model.dart';
 
 abstract class InspectionRepository {
   Future<DeviceVerificationReportModel?> validateImei({
@@ -24,6 +25,8 @@ abstract class InspectionRepository {
     required int inspectionScore,
     String? notes,
   });
+
+  Future<List<InspectionCriterionModel>> fetchInspectionCriteria();
 }
 
 class InspectionRepositoryImpl implements InspectionRepository {
@@ -98,5 +101,18 @@ class InspectionRepositoryImpl implements InspectionRepository {
       inspectionScore: inspectionScore,
       notes: notes ?? '45-Point QA Score: $inspectionScore/100. Certified by Hub Technician.',
     );
+  }
+
+  @override
+  Future<List<InspectionCriterionModel>> fetchInspectionCriteria() async {
+    try {
+      final res = await _dio.get(ApiConstants.partnerInspectionCriteria);
+      if (res.data != null && res.data['success'] == true && res.data['criteria'] is List) {
+        return (res.data['criteria'] as List)
+            .map((item) => InspectionCriterionModel.fromJson(Map<String, dynamic>.from(item)))
+            .toList();
+      }
+    } catch (_) {}
+    return [];
   }
 }

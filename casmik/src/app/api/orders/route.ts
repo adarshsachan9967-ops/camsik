@@ -22,29 +22,37 @@ export async function GET(request: Request) {
       const db = await getDatabase();
       const collection = db.collection('orders');
 
-      const query: any = {};
+      const conditions: any[] = [];
       if (phone) {
         const clean = phone.replace(/\D/g, '').slice(-10);
-        query.$or = [
-          { customerPhone: { $regex: clean } },
-          { phone: { $regex: clean } },
-        ];
+        conditions.push({
+          $or: [
+            { customerPhone: { $regex: clean } },
+            { phone: { $regex: clean } },
+          ],
+        });
       }
       if (orderId) {
-        query.$or = [{ id: orderId }, { orderNumber: orderId }];
+        conditions.push({ $or: [{ id: orderId }, { orderNumber: orderId }] });
       }
       if (partnerId && partnerId !== 'all') {
-        query.partnerId = partnerId;
+        conditions.push({
+          $or: [{ partnerId: partnerId }, { assignedPartnerId: partnerId }],
+        });
       }
       if (deliveryAgentId && deliveryAgentId !== 'all') {
-        query.deliveryAgentId = deliveryAgentId;
+        conditions.push({
+          $or: [{ deliveryAgentId: deliveryAgentId }, { assignedRiderId: deliveryAgentId }],
+        });
       }
       if (status && status !== 'all') {
-        query.status = status;
+        conditions.push({ status });
       }
       if (type && type !== 'all') {
-        query.type = type;
+        conditions.push({ type });
       }
+
+      const query = conditions.length > 0 ? { $and: conditions } : {};
 
       const dbOrders = await collection.find(query).sort({ createdAt: -1 }).limit(100).toArray();
       if (dbOrders && dbOrders.length > 0) {
@@ -84,10 +92,14 @@ export async function GET(request: Request) {
       filtered = filtered.filter((o) => o.id === orderId || o.orderNumber === orderId);
     }
     if (partnerId && partnerId !== 'all') {
-      filtered = filtered.filter((o) => o.partnerId === partnerId);
+      filtered = filtered.filter(
+        (o) => o.partnerId === partnerId || o.assignedPartnerId === partnerId
+      );
     }
     if (deliveryAgentId && deliveryAgentId !== 'all') {
-      filtered = filtered.filter((o) => o.deliveryAgentId === deliveryAgentId);
+      filtered = filtered.filter(
+        (o) => o.deliveryAgentId === deliveryAgentId || o.assignedRiderId === deliveryAgentId
+      );
     }
     if (status && status !== 'all') {
       filtered = filtered.filter((o) => o.status === status);
@@ -232,6 +244,32 @@ export async function PATCH(request: Request) {
         { success: false, message: 'orderId is required for update' },
         { status: 400 }
       );
+    }
+
+    // Bidirectional harmonization between partner & rider fields across admin, partner, and delivery systems
+    if (body.assignedPartnerId && !body.partnerId) {
+      body.partnerId = body.assignedPartnerId;
+    }
+    if (body.partnerId && !body.assignedPartnerId) {
+      body.assignedPartnerId = body.partnerId;
+    }
+    if (body.assignedPartnerName && !body.partnerName) {
+      body.partnerName = body.assignedPartnerName;
+    }
+    if (body.partnerName && !body.assignedPartnerName) {
+      body.assignedPartnerName = body.partnerName;
+    }
+    if (body.assignedRiderId && !body.deliveryAgentId) {
+      body.deliveryAgentId = body.assignedRiderId;
+    }
+    if (body.deliveryAgentId && !body.assignedRiderId) {
+      body.assignedRiderId = body.deliveryAgentId;
+    }
+    if (body.assignedRiderName && !body.deliveryAgentName) {
+      body.deliveryAgentName = body.assignedRiderName;
+    }
+    if (body.deliveryAgentName && !body.assignedRiderName) {
+      body.assignedRiderName = body.deliveryAgentName;
     }
 
     // Find in memory cache
