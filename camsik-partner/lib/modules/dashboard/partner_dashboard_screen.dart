@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:sizer/sizer.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/extensions/order_extensions.dart';
+import '../../core/services/session_service.dart';
+import '../../core/utils/currency_formatter.dart';
 import '../../models/partner_models.dart';
+import '../orders/widgets/order_detail_sheet.dart';
+import 'data/models/dashboard_stats_model.dart';
+import 'data/repositories/dashboard_repository.dart';
 
-class PartnerDashboardScreen extends StatelessWidget {
+class PartnerDashboardScreen extends StatefulWidget {
   final List<PartnerOrder> orders;
+  final PartnerUser? user;
   final bool loading;
   final Future<void> Function() onRefresh;
   final Function(int) onNavigate;
@@ -11,122 +19,252 @@ class PartnerDashboardScreen extends StatelessWidget {
   const PartnerDashboardScreen({
     super.key,
     required this.orders,
+    this.user,
     required this.loading,
     required this.onRefresh,
     required this.onNavigate,
   });
 
   @override
+  State<PartnerDashboardScreen> createState() => _PartnerDashboardScreenState();
+}
+
+class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
+  final DashboardRepository _dashboardRepo = DashboardRepositoryImpl();
+  DashboardStatsModel? _stats;
+  bool _fetchingStats = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    final activeUser = widget.user ?? SessionService.currentUser;
+    final partnerId = activeUser?.id.isNotEmpty == true ? activeUser!.id : 'partner-001';
+    setState(() => _fetchingStats = true);
+    final data = await _dashboardRepo.fetchDashboardStats(partnerId);
+    if (mounted) {
+      setState(() {
+        _stats = data;
+        _fetchingStats = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (loading && orders.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)));
+    if (widget.loading && widget.orders.isEmpty && _stats == null) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
 
-    final totalVolume = orders.fold<double>(0.0, (sum, o) => sum + o.finalPrice);
-    final completedCount = orders.filterCompleted().length;
-    final commissionEarned = totalVolume * 0.05; // 5% commission tier
+    final activeUser = widget.user ?? SessionService.currentUser;
+    final commissionRate = _stats?.commissionRate ?? (activeUser?.commission ?? 5.0);
+
+    final calculatedVolume = widget.orders.fold<double>(0.0, (sum, o) => sum + o.finalPrice);
+    final totalVolume = (_stats?.storeTradeVolume != null && _stats!.storeTradeVolume > 0)
+        ? _stats!.storeTradeVolume
+        : calculatedVolume;
+
+    final completedOrders = widget.orders.filterCompleted();
+    final completedCount = _stats?.completedOrdersCount ?? completedOrders.length;
+    final totalUnitsCount = _stats?.totalOrdersCount ?? widget.orders.length;
+    final pendingCount = _stats?.activePipelineCount ?? (widget.orders.length - completedOrders.length);
+
+    final commissionEarned = (_stats?.totalCommissionEarned != null && _stats!.totalCommissionEarned > 0)
+        ? _stats!.totalCommissionEarned
+        : ((totalVolume * commissionRate) / 100);
 
     return RefreshIndicator(
-      onRefresh: onRefresh,
+      color: AppColors.primary,
+      onRefresh: () async {
+        await Future.wait([
+          widget.onRefresh(),
+          _loadStats(),
+        ]);
+      },
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+        physics: const AlwaysScrollableScrollPhysics(),
         children: [
           // Store Volume & Financial Overview Card
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(5.w > 22 ? 22 : 5.w),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF0F172A), Color(0xFF1E293B)]),
+              gradient: AppColors.heroGradient,
               borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: const Color(0xFF334155)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'STORE TRADE VOLUME',
-                      style: TextStyle(
-                        color: Colors.white60,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.1,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.monetization_on_outlined,
+                            color: Color(0xFF60A5FA),
+                            size: 16,
+                          ),
+                        ),
+                        SizedBox(width: 2.w),
+                        Text(
+                          'STORE TRADE VOLUME',
+                          style: TextStyle(
+                            color: const Color(0xFF94A3B8),
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 2.5.w,
+                        vertical: 0.5.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF065F46).withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFF059669)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.trending_up_rounded,
+                              color: Color(0xFF34D399), size: 14),
+                          SizedBox(width: 1.w),
+                          Text(
+                            '+12.4% MoM',
+                            style: TextStyle(
+                              color: const Color(0xFF34D399),
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Icon(Icons.trending_up, color: Color(0xFF10B981), size: 18),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 1.5.h),
                 Text(
-                  '₹${totalVolume.toStringAsFixed(0)}',
-                  style: const TextStyle(
+                  CurrencyFormatter.format(totalVolume),
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 28,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 0.6.h),
                 Text(
-                  '$completedCount Orders Processed • ${orders.length} Total Registered',
-                  style: const TextStyle(
-                    color: Color(0xFF34D399),
-                    fontSize: 11,
+                  '$completedCount Orders Liquidated • ${orders.length} Total Registered',
+                  style: TextStyle(
+                    color: const Color(0xFF34D399),
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 2.h),
+
+                // Financial Breakdown Sub-cards
                 Row(
                   children: [
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: EdgeInsets.all(3.w),
                         decoration: BoxDecoration(
-                          color: Colors.white10,
-                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFF0B132B).withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Active Orders', style: TextStyle(color: Colors.white60, fontSize: 10)),
-                            const SizedBox(height: 2),
                             Text(
-                              '${orders.length - completedCount}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                              'Active Pipeline',
+                              style: TextStyle(
+                                color: const Color(0xFF94A3B8),
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
                               ),
+                            ),
+                            SizedBox(height: 0.5.h),
+                            Row(
+                              children: [
+                                Text(
+                                  '$pendingCount',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16.sp,
+                                  ),
+                                ),
+                                SizedBox(width: 1.5.w),
+                                Text(
+                                  'units',
+                                  style: TextStyle(
+                                    color: const Color(0xFF64748B),
+                                    fontSize: 14.sp,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 2.5.w),
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: EdgeInsets.all(3.w),
                         decoration: BoxDecoration(
-                          color: Colors.white10,
-                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFF0B132B).withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Commission (5%)', style: TextStyle(color: Colors.white60, fontSize: 10)),
-                            const SizedBox(height: 2),
                             Text(
-                              '₹${commissionEarned.toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                color: Color(0xFF60A5FA),
+                              'Commission (5%)',
+                              style: TextStyle(
+                                color: const Color(0xFF94A3B8),
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(height: 0.5.h),
+                            Text(
+                              CurrencyFormatter.format(commissionEarned),
+                              style: TextStyle(
+                                color: const Color(0xFF60A5FA),
                                 fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                                fontSize: 16.sp,
                               ),
                             ),
                           ],
@@ -139,91 +277,177 @@ class PartnerDashboardScreen extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 18),
+          SizedBox(height: 2.h),
 
-          // Action Shortcuts
+          // Quick Action Shortcuts
           Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                child: InkWell(
+                  onTap: () => onNavigate(2),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 3.5.w,
+                      vertical: 1.6.h,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: AppColors.primaryGradient,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.qr_code_scanner_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        SizedBox(width: 2.w),
+                        Text(
+                          '45-Point QA',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15.sp,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  icon: const Icon(Icons.qr_code_scanner, size: 18),
-                  label: const Text(
-                    '45-Point QA',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                  onPressed: () => onNavigate(2),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 3.w),
               Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                child: InkWell(
+                  onTap: () => onNavigate(3),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 3.5.w,
+                      vertical: 1.6.h,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: AppColors.successGradient,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.flash_on_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        SizedBox(width: 2.w),
+                        Text(
+                          'Spot Payout',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15.sp,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  icon: const Icon(Icons.flash_on, size: 18),
-                  label: const Text(
-                    'Spot Payout',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                  onPressed: () => onNavigate(3),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 24),
+          SizedBox(height: 2.5.h),
+
+          // Header: Active Queue & Store Tasks
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Active Queue & Store Tasks',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
-                ),
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  SizedBox(width: 2.w),
+                  Text(
+                    'Active Queue & Tasks',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                ],
               ),
               TextButton(
                 onPressed: () => onNavigate(1),
-                child: const Text(
-                  'View All',
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'View All (${orders.length}) →',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2563EB),
+                    color: AppColors.primary,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 1.2.h),
 
           if (orders.isEmpty)
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(6.w),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
-              child: const Center(
-                child: Text(
-                  'No active orders in store queue right now.',
-                  style: TextStyle(color: Colors.black45, fontSize: 12),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.inbox_outlined,
+                      size: 40,
+                      color: const Color(0xFF94A3B8).withValues(alpha: 0.6),
+                    ),
+                    SizedBox(height: 1.h),
+                    Text(
+                      'No active orders in store queue right now.',
+                      style: TextStyle(
+                        color: const Color(0xFF64748B),
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             )
           else
-            ...orders.take(4).map((order) => _buildOrderTile(context, order)),
+            ...orders.take(5).map((order) => _buildOrderTile(context, order)),
         ],
       ),
     );
@@ -231,67 +455,111 @@ class PartnerDashboardScreen extends StatelessWidget {
 
   Widget _buildOrderTile(BuildContext context, PartnerOrder order) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
+      margin: EdgeInsets.only(bottom: 1.2.h),
+      child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
+        child: InkWell(
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => OrderDetailSheet(
+                order: order,
+                onOrderUpdated: onRefresh,
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: EdgeInsets.all(3.5.w),
             decoration: BoxDecoration(
-              color: order.typeColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
-            child: Icon(Icons.devices, color: order.typeColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  order.deviceName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                // Device Type Icon Container
+                Container(
+                  width: 12.w > 48 ? 48 : 12.w,
+                  height: 12.w > 48 ? 48 : 12.w,
+                  decoration: BoxDecoration(
+                    color: order.typeColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    Icons.devices_rounded,
+                    color: order.typeColor,
+                    size: 22,
+                  ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Cust: ${order.customerName} • ${order.orderNumber}',
-                  style: const TextStyle(color: Colors.black54, fontSize: 11),
+                SizedBox(width: 3.w),
+
+                // Order and Device Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        order.deviceName,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15.sp,
+                          color: const Color(0xFF0F172A),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 0.3.h),
+                      Text(
+                        'Cust: ${order.customerName} • ${order.orderNumber}',
+                        style: TextStyle(
+                          color: const Color(0xFF64748B),
+                          fontSize: 14.sp,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 0.5.h),
+                      Text(
+                        'Valuation: ${CurrencyFormatter.format(order.finalPrice)}',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.5.sp,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Valuation: ₹${order.finalPrice.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    color: Color(0xFF2563EB),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+
+                // Status Badge
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 2.5.w,
+                    vertical: 0.5.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: order.statusColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: order.statusColor.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Text(
+                    order.statusDisplay,
+                    style: TextStyle(
+                      color: order.statusColor,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: order.statusColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              order.statusDisplay,
-              style: TextStyle(
-                color: order.statusColor,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

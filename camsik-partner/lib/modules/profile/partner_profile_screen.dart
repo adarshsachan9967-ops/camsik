@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sizer/sizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/routes/app_routes.dart';
@@ -26,6 +27,75 @@ class _ProfileView extends StatelessWidget {
 
   const _ProfileView({this.initialUser});
 
+  void _confirmLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.logout_rounded, color: AppColors.error, size: 22),
+            SizedBox(width: 2.w),
+            Text(
+              'Sign Out',
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to log out of your Camsik Partner portal session?',
+          style: TextStyle(
+            fontSize: 15.sp,
+            color: const Color(0xFF64748B),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: const Color(0xFF64748B),
+                fontSize: 15.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await context.read<ProfileCubit>().logout();
+              if (context.mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  AppRoutes.login,
+                  (route) => false,
+                );
+              }
+            },
+            child: Text(
+              'Confirm Log Out',
+              style: TextStyle(
+                fontSize: 14.5.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfileCubit, ProfileState>(
@@ -38,57 +108,89 @@ class _ProfileView extends StatelessWidget {
         }
 
         return ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
           children: [
-            Center(
+            // Store Identity Hero Card
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 3.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
               child: Column(
                 children: [
                   Container(
-                    width: 72,
-                    height: 72,
+                    width: 18.w > 72 ? 72 : 18.w,
+                    height: 18.w > 72 ? 72 : 18.w,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
+                      gradient: AppColors.primaryGradient,
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
                     child: const Icon(
-                      Icons.storefront,
-                      size: 36,
-                      color: AppColors.primary,
+                      Icons.storefront_rounded,
+                      size: 34,
+                      color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 1.5.h),
                   Text(
                     activeUser?.storeName ?? 'Tech Store Hub',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
-                      fontSize: 18,
-                      color: AppColors.textPrimary,
+                      fontSize: 17.sp,
+                      color: const Color(0xFF0F172A),
                     ),
+                    textAlign: TextAlign.center,
                   ),
+                  SizedBox(height: 0.3.h),
                   Text(
                     activeUser?.name ?? 'Partner Owner',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
+                    style: TextStyle(
+                      color: const Color(0xFF64748B),
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 1.2.h),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 3.w,
+                      vertical: 0.6.h,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFECFDF5),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFA7F3D0)),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.verified, size: 14, color: Color(0xFF059669)),
-                        SizedBox(width: 4),
+                        const Icon(
+                          Icons.verified_rounded,
+                          size: 16,
+                          color: Color(0xFF059669),
+                        ),
+                        SizedBox(width: 1.5.w),
                         Text(
                           'Verified Camsik Partner Hub',
                           style: TextStyle(
-                            color: Color(0xFF059669),
-                            fontSize: 11,
+                            color: const Color(0xFF059669),
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -99,95 +201,126 @@ class _ProfileView extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
+            SizedBox(height: 2.h),
 
-            _buildInfoCard('Contact & Location', [
-              _buildInfoRow('Phone', activeUser?.phone ?? '+91 98765 43210'),
-              _buildInfoRow('Email', activeUser?.email ?? 'partner@camsik.com'),
-              _buildInfoRow(
-                'City & State',
-                '${activeUser?.city ?? "Mumbai"}, ${activeUser?.state ?? "Maharashtra"}',
-              ),
-            ]),
+            // Contact & Location Card
+            _buildInfoCard(
+              'Contact & Registered Location',
+              Icons.location_on_outlined,
+              [
+                _buildInfoRow('Phone', activeUser?.phone ?? '+91 98765 43210'),
+                _buildInfoRow('Email', activeUser?.email ?? 'partner@camsik.com'),
+                _buildInfoRow(
+                  'City & State',
+                  '${activeUser?.city ?? "Mumbai"}, ${activeUser?.state ?? "Maharashtra"}',
+                ),
+              ],
+            ),
 
-            const SizedBox(height: 14),
+            SizedBox(height: 1.5.h),
 
-            _buildInfoCard('Operating Parameters', [
-              _buildInfoRow(
-                'Commission Rate',
-                '${activeUser?.commission ?? 5.0}% per unit liquidated',
-              ),
-              _buildInfoRow(
-                'Operating Pin Codes',
-                activeUser?.pinCodes.isNotEmpty == true
-                    ? activeUser!.pinCodes.join(', ')
-                    : '400001, 400050, 401107',
-              ),
-            ]),
+            // Operating Parameters
+            _buildInfoCard(
+              'Operating Parameters',
+              Icons.tune_rounded,
+              [
+                _buildInfoRow(
+                  'Commission Rate',
+                  '${activeUser?.commission ?? 5.0}% per unit liquidated',
+                ),
+                _buildInfoRow(
+                  'Store Rating',
+                  '★ ${activeUser?.rating ?? 4.9} / 5.0 (Top Merchant)',
+                ),
+                _buildInfoRow(
+                  'Operating Pin Codes',
+                  activeUser?.pinCodes.isNotEmpty == true
+                      ? activeUser!.pinCodes.join(', ')
+                      : '400001, 400050, 401107',
+                ),
+              ],
+            ),
 
-            const SizedBox(height: 14),
+            SizedBox(height: 1.5.h),
 
+            // Legal & Data Protection Card
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(4.w),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.divider),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Legal & Data Protection',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.shield_outlined,
+                        size: 18,
+                        color: Color(0xFF64748B),
+                      ),
+                      SizedBox(width: 2.w),
+                      Text(
+                        'Legal & Data Protection',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15.sp,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 1.2.h),
                   InkWell(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     onTap: () async {
-                      final url = Uri.parse('https://casmik-one.vercel.app/partner/privacy');
+                      final url = Uri.parse(
+                        'https://casmik-one.vercel.app/partner/privacy',
+                      );
                       try {
-                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                        await launchUrl(
+                          url,
+                          mode: LaunchMode.externalApplication,
+                        );
                       } catch (_) {}
                     },
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: EdgeInsets.symmetric(vertical: 0.8.h),
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
                               Icons.privacy_tip_outlined,
-                              size: 18,
+                              size: 20,
                               color: AppColors.primary,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          const Expanded(
+                          SizedBox(width: 3.w),
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'Partner Privacy Policy',
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: 15.sp,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
+                                    color: const Color(0xFF0F172A),
                                   ),
                                 ),
+                                SizedBox(height: 0.2.h),
                                 Text(
                                   'DPDP Act 2023 & B2B Data Confidentiality',
                                   style: TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.textSecondary,
+                                    fontSize: 14.sp,
+                                    color: const Color(0xFF64748B),
                                   ),
                                 ),
                               ],
@@ -196,7 +329,7 @@ class _ProfileView extends StatelessWidget {
                           const Icon(
                             Icons.arrow_forward_ios_rounded,
                             size: 14,
-                            color: AppColors.textSecondary,
+                            color: Color(0xFF94A3B8),
                           ),
                         ],
                       ),
@@ -206,59 +339,73 @@ class _ProfileView extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
+            SizedBox(height: 3.h),
 
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFEE2E2),
-                foregroundColor: AppColors.error,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+            // Logout Button
+            Container(
+              height: 50,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: InkWell(
+                onTap: () => _confirmLogout(context),
+                borderRadius: BorderRadius.circular(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.logout_rounded,
+                      size: 20,
+                      color: AppColors.error,
+                    ),
+                    SizedBox(width: 2.w),
+                    Text(
+                      'Sign Out from Partner App',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15.sp,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ],
                 ),
-                elevation: 0,
               ),
-              icon: const Icon(Icons.logout, size: 18),
-              label: const Text(
-                'Sign Out from Partner App',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              onPressed: () async {
-                await context.read<ProfileCubit>().logout();
-                if (context.mounted) {
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    AppRoutes.login,
-                    (route) => false,
-                  );
-                }
-              },
             ),
+            SizedBox(height: 2.h),
           ],
         );
       },
     );
   }
 
-  Widget _buildInfoCard(String title, List<Widget> children) {
+  Widget _buildInfoCard(String title, IconData icon, List<Widget> children) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(4.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
+          Row(
+            children: [
+              Icon(icon, size: 18, color: const Color(0xFF64748B)),
+              SizedBox(width: 2.w),
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15.sp,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 1.5.h),
           ...children,
         ],
       ),
@@ -267,20 +414,23 @@ class _ProfileView extends StatelessWidget {
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 1.2.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: const Color(0xFF64748B),
+            ),
           ),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: 14.5.sp,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: const Color(0xFF0F172A),
             ),
           ),
         ],

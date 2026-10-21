@@ -1,0 +1,79 @@
+import 'package:dio/dio.dart';
+import '../../../../core/constants/api_constants.dart';
+import '../../../../core/services/api_service.dart';
+import '../models/payout_transaction_model.dart';
+
+abstract class PayoutsRepository {
+  Future<PartnerWalletData?> fetchWalletData(String partnerId);
+  Future<Map<String, dynamic>> requestWithdrawal({
+    required String partnerId,
+    required double amount,
+    String? notes,
+    String? bankName,
+    String? accountNumber,
+    String? ifscCode,
+  });
+}
+
+class PayoutsRepositoryImpl implements PayoutsRepository {
+  final Dio _dio;
+
+  PayoutsRepositoryImpl({Dio? dio}) : _dio = dio ?? ApiService.dio;
+
+  @override
+  Future<PartnerWalletData?> fetchWalletData(String partnerId) async {
+    try {
+      final res = await _dio.get(
+        ApiConstants.partnerPayouts,
+        queryParameters: {'partnerId': partnerId},
+      );
+      if (res.data != null && res.data['success'] == true) {
+        return PartnerWalletData.fromJson(Map<String, dynamic>.from(res.data));
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  @override
+  Future<Map<String, dynamic>> requestWithdrawal({
+    required String partnerId,
+    required double amount,
+    String? notes,
+    String? bankName,
+    String? accountNumber,
+    String? ifscCode,
+  }) async {
+    try {
+      final res = await _dio.post(
+        ApiConstants.partnerPayouts,
+        data: {
+          'partnerId': partnerId,
+          'amount': amount,
+          'notes': notes ?? 'Float withdrawal to verified merchant account',
+          'method': 'bank_transfer',
+          if (bankName != null) 'bankName': bankName,
+          if (accountNumber != null) 'accountNumber': accountNumber,
+          if (ifscCode != null) 'ifscCode': ifscCode,
+        },
+      );
+
+      if (res.data != null && res.data['success'] == true) {
+        return {
+          'success': true,
+          'message': res.data['message'] ?? 'Withdrawal successful',
+          'payout': res.data['payout'],
+          'wallet': res.data['wallet'],
+        };
+      }
+      return {
+        'success': false,
+        'message': res.data?['message'] ?? 'Withdrawal request failed',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to process withdrawal. Please try again.',
+      };
+    }
+  }
+}

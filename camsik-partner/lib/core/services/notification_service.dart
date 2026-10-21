@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sizer/sizer.dart';
 
 class NotificationService {
   static const MethodChannel _channel = MethodChannel('in.camsik.user/notifications');
@@ -66,13 +67,17 @@ class NotificationService {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15.sp,
+                      ),
                     ),
                     Text(
                       message,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                      style: TextStyle(color: Colors.white70, fontSize: 14.sp),
                     ),
                   ],
                 ),
@@ -83,9 +88,13 @@ class NotificationService {
                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
                     onTapViewOrder();
                   },
-                  child: const Text(
+                  child: Text(
                     'VIEW',
-                    style: TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold, fontSize: 12),
+                    style: TextStyle(
+                      color: const Color(0xFF38BDF8),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.sp,
+                    ),
                   ),
                 ),
             ],

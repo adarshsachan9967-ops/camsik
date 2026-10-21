@@ -20,6 +20,9 @@ class ApiConstants {
 
   // ── Partner Portal Endpoints ──
   static const String partners = "$baseUrl/partners";
+  static const String partnerPayouts = "$baseUrl/partners/payouts";
+  static const String partnerDashboard = "$baseUrl/partners/dashboard";
+  static const String partnerInspectionCriteria = "$baseUrl/partners/inspection-criteria";
 
   // ── Orders & Operations ──
   static const String orders = "$baseUrl/orders";

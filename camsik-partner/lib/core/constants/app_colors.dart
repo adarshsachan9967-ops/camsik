@@ -28,5 +28,30 @@ class AppColors {
   static const Color background = Color(0xFFF8FAFC);
   static const Color border = Color(0xFFE2E8F0);
   static const Color divider = Color(0xFFE2E8F0);
+
+  static const Color darkBg = Color(0xFF0F172A);
+  static const Color darkCard = Color(0xFF1E293B);
+  static const Color darkCardBorder = Color(0xFF334155);
+
+  static const Color accent = Color(0xFF6366F1); // Indigo
+  static const Color accentCyan = Color(0xFF06B6D4);
+
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient heroGradient = LinearGradient(
+    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient successGradient = LinearGradient(
+    colors: [Color(0xFF10B981), Color(0xFF059669)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 }
 

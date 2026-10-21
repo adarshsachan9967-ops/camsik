@@ -20,6 +20,10 @@ class PartnerUser {
   final double availableBalance;
   final double commission;
   final String joinedAt;
+  final String bankName;
+  final String accountNumber;
+  final String ifscCode;
+  final bool isBankVerified;
 
   PartnerUser({
     required this.id,
@@ -41,9 +45,31 @@ class PartnerUser {
     this.availableBalance = 0,
     this.commission = 5.0,
     required this.joinedAt,
+    this.bankName = 'HDFC Bank',
+    this.accountNumber = '•••• 4892',
+    this.ifscCode = 'HDFC0001234',
+    this.isBankVerified = true,
   });
 
   factory PartnerUser.fromJson(Map<String, dynamic> json) {
+    final docs = json['documents'] is Map ? json['documents'] as Map : null;
+    final bankInfo = json['bankDetails'] is Map ? json['bankDetails'] as Map : null;
+
+    final bName = bankInfo?['bankName']?.toString() ??
+        json['bankName']?.toString() ??
+        'HDFC Bank';
+    final accNum = bankInfo?['accountNumber']?.toString() ??
+        docs?['accountNumber']?.toString() ??
+        json['accountNumber']?.toString() ??
+        '•••• 4892';
+    final ifsc = bankInfo?['ifscCode']?.toString() ??
+        docs?['ifscCode']?.toString() ??
+        json['ifscCode']?.toString() ??
+        'HDFC0001234';
+    final isVer = bankInfo?['isVerified'] == true ||
+        docs?['verified'] == true ||
+        json['isBankVerified'] == true;
+
     return PartnerUser(
       id: json['id']?.toString() ?? 'partner-001',
       name: json['name']?.toString() ?? 'Partner Owner',
@@ -64,6 +90,10 @@ class PartnerUser {
       availableBalance: (json['availableBalance'] as num?)?.toDouble() ?? 0,
       commission: (json['commission'] as num?)?.toDouble() ?? 5.0,
       joinedAt: json['joinedAt']?.toString() ?? '2026-01-01',
+      bankName: bName,
+      accountNumber: accNum,
+      ifscCode: ifsc,
+      isBankVerified: isVer,
     );
   }
 
@@ -87,6 +117,10 @@ class PartnerUser {
     'availableBalance': availableBalance,
     'commission': commission,
     'joinedAt': joinedAt,
+    'bankName': bankName,
+    'accountNumber': accountNumber,
+    'ifscCode': ifscCode,
+    'isBankVerified': isBankVerified,
   };
 }
 

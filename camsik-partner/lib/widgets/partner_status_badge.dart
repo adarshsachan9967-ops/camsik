@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sizer/sizer.dart';
 import '../core/constants/app_colors.dart';
 
 class PartnerStatusBadge extends StatelessWidget {
@@ -9,17 +10,23 @@ class PartnerStatusBadge extends StatelessWidget {
   Color _getStatusColor() {
     switch (status.toLowerCase()) {
       case 'completed':
+      case 'paid':
       case 'inspection_completed':
-        return AppColors.success;
+        return const Color(0xFF10B981);
+      case 'assigned':
+      case 'accepted':
       case 'pickup_scheduled':
-      case 'in_progress':
-      case 'scheduled':
         return AppColors.primary;
+      case 'inspection':
+      case 'picked_up':
+      case 'in_transit':
+      case 'final_price':
+        return const Color(0xFFD97706);
       case 'cancelled':
-        return AppColors.error;
-      case 'pending':
+      case 'rejected':
+        return const Color(0xFFEF4444);
       default:
-        return AppColors.warning;
+        return const Color(0xFF64748B);
     }
   }
 
@@ -31,16 +38,17 @@ class PartnerStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _getStatusColor();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: EdgeInsets.symmetric(horizontal: 2.5.w, vertical: 0.5.h),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Text(
         _formatStatus(),
         style: TextStyle(
           color: color,
-          fontSize: 10,
+          fontSize: 14.sp,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.4,
         ),
