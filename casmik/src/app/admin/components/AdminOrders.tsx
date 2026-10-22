@@ -124,19 +124,35 @@ function dbToOrder(o: DBOrder): Order {
   };
 }
 
+const isMockOrder = (o: any) => {
+  if (!o) return false;
+  const num = String(o.orderNumber || '');
+  const id = String(o.id || '');
+  if (id.startsWith('ord-100') || id.startsWith('ord-101') || id.startsWith('ord-102')) return true;
+  if (num.startsWith('CSM-2024-00') || num.startsWith('CSM-2024-01') || num.startsWith('CSM-2024-02') || num.startsWith('CSM-2024-03')) return true;
+  if (o.customerName === 'Rahul Sharma' || o.customerName === 'Ananya Deshmukh' || o.customerName === 'Vikramaditya Rathore') return true;
+  return false;
+};
+
 const getStoredOrders = (): Order[] => {
   if (typeof window !== 'undefined') {
     try {
       const saved = localStorage.getItem('casmik_orders_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          const clean = parsed.filter(o => !isMockOrder(o));
+          if (clean.length !== parsed.length) {
+            localStorage.setItem('casmik_orders_v1', JSON.stringify(clean));
+          }
+          return clean;
+        }
       }
     } catch (e) {
       console.warn('Failed to parse local orders', e);
     }
   }
-  return defaultOrders;
+  return [];
 };
 
 const getAvailableDeliveryAgents = (): DeliveryAgent[] => {
@@ -145,11 +161,14 @@ const getAvailableDeliveryAgents = (): DeliveryAgent[] => {
       const saved = localStorage.getItem('casmik_delivery_agents_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          const clean = parsed.filter((a: any) => !a.id?.startsWith('agent-10') && !a.id?.startsWith('delivery-00'));
+          return clean;
+        }
       }
     } catch {}
   }
-  return deliveryAgents;
+  return [];
 };
 
 interface AdminOrdersProps {
@@ -224,6 +243,23 @@ export default function AdminOrders({
   }, [initialOrderId, orderList]);
 
   const fetchOrders = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/orders');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.orders)) {
+        setOrderList(json.orders);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('casmik_orders_v1', JSON.stringify(json.orders));
+        }
+        setIsConnected(true);
+        setLoading(false);
+        return;
+      }
+    } catch (e) {
+      console.warn('API fetch orders notice:', e);
+    }
+
     try {
       const { data, error } = await supabase
         .from('orders')
@@ -236,6 +272,7 @@ export default function AdminOrders({
           localStorage.setItem('casmik_orders_v1', JSON.stringify(mapped));
         }
         setIsConnected(true);
+        setLoading(false);
         return;
       }
     } catch (err: any) {
@@ -245,9 +282,7 @@ export default function AdminOrders({
     // Fallback to local store or defaults
     const fallback = getStoredOrders();
     setOrderList(fallback);
-    if (typeof window !== 'undefined' && !localStorage.getItem('casmik_orders_v1')) {
-      localStorage.setItem('casmik_orders_v1', JSON.stringify(fallback));
-    }
+    setLoading(false);
   }, [supabase]);
 
   useEffect(() => {

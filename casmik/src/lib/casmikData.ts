@@ -1626,6 +1626,7 @@ export const sellQuestions = questions;
 // ─── INITIAL ORDERS & DATA ───────────────────────────────────────────────────
 
 export const orders: Order[] = [
+  /*
   {
     "id": "ord-1001",
     "orderNumber": "CSM-2024-001",
@@ -3083,9 +3084,11 @@ export const orders: Order[] = [
     "inspectionScore": null,
     "notes": "Order logged into system."
   }
+  */
 ];
 
 export const partners: Partner[] = [
+  /*
   {
     id: 'partner-001',
     name: 'Camera Hub Store',
@@ -3125,7 +3128,7 @@ export const partners: Partner[] = [
     pendingPayout: 14200,
     availableBalance: 31000,
     joinedAt: '2023-06-15',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80',
     commission: 5.0,
   },
   {
@@ -3149,9 +3152,11 @@ export const partners: Partner[] = [
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80',
     commission: 4.0,
   },
+  */
 ];
 
 export const deliveryAgents: DeliveryAgent[] = [
+  /*
   {
     id: 'agent-101',
     name: 'Raghu Sharma',
@@ -3242,9 +3247,11 @@ export const deliveryAgents: DeliveryAgent[] = [
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80',
     joinedAt: '2024-01-10',
   },
+  */
 ];
 
 export const customers: Customer[] = [
+  /*
   {
     id: 'cust-101',
     name: 'Aditya Kashyap',
@@ -3258,6 +3265,7 @@ export const customers: Customer[] = [
     status: 'active',
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&q=80',
   },
+  */
 ];
 
 // ─── HELPER FUNCTIONS ────────────────────────────────────────────────────────

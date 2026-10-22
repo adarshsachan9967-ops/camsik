@@ -26,11 +26,13 @@ interface Coupon {
 }
 
 const initialCoupons: Coupon[] = [
+  /* Static mock coupons commented out for live data:
   { id: 'cpn-001', code: 'CASMIK100', title: 'Flat ₹100 Off', description: 'Get flat ₹100 off on your first sell order. Valid for all devices.', discountType: 'fixed', discountValue: 100, minOrderValue: 2000, maxDiscount: 100, applicableTo: 'sell', usageLimit: 500, usedCount: 127, validFrom: '2024-12-01', validUntil: '2025-01-31', status: 'active', userType: 'new', color: 'from-green-500 to-emerald-600' },
   { id: 'cpn-002', code: 'SELL10', title: '10% Extra on Sell', description: 'Get 10% extra on your device sell price. Maximum discount ₹500.', discountType: 'percentage', discountValue: 10, minOrderValue: 5000, maxDiscount: 500, applicableTo: 'sell', usageLimit: 1000, usedCount: 342, validFrom: '2024-12-01', validUntil: '2025-02-28', status: 'active', userType: 'all', color: 'from-blue-500 to-indigo-600' },
   { id: 'cpn-003', code: 'REPAIR200', title: '₹200 Off on Repair', description: 'Save ₹200 on any repair service. Valid on screen, battery and camera repairs.', discountType: 'fixed', discountValue: 200, minOrderValue: 1000, maxDiscount: 200, applicableTo: 'repair', usageLimit: 300, usedCount: 89, validFrom: '2024-12-15', validUntil: '2025-01-15', status: 'active', userType: 'all', color: 'from-orange-500 to-red-500' },
   { id: 'cpn-004', code: 'BUYBACK15', title: '15% Off on Buy', description: 'Get 15% off on certified refurbished device purchase. Max discount ₹2000.', discountType: 'percentage', discountValue: 15, minOrderValue: 10000, maxDiscount: 2000, applicableTo: 'buy', usageLimit: 200, usedCount: 56, validFrom: '2024-12-01', validUntil: '2024-12-31', status: 'expired', userType: 'all', color: 'from-purple-500 to-pink-500' },
   { id: 'cpn-005', code: 'EXCHANGE500', title: '₹500 Off on Exchange', description: 'Get ₹500 extra value on device exchange. Valid on all exchange orders.', discountType: 'fixed', discountValue: 500, minOrderValue: 8000, maxDiscount: 500, applicableTo: 'exchange', usageLimit: 150, usedCount: 23, validFrom: '2025-01-01', validUntil: '2025-03-31', status: 'inactive', userType: 'all', color: 'from-teal-500 to-cyan-600' },
+  */
 ];
 
 const statusColors: Record<CouponStatus, string> = { active: 'bg-green-50 text-green-700', inactive: 'bg-gray-100 text-gray-500', expired: 'bg-red-50 text-red-600' };

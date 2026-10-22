@@ -14,10 +14,12 @@ const audienceOptions = [
   { key: 'custom', label: 'Custom Selection', desc: 'Search and select specific recipients', icon: Search, color: 'bg-orange-50 border-orange-200 text-orange-700' },
 ];
 
-const sentHistory = [
+const sentHistory: { id: number; title: string; body: string; audience: string; sent: string; recipients: number; opened: number }[] = [
+  /* Static mock history commented out for live data:
   { id: 1, title: 'New Year Offer!', body: 'Get 20% extra on all sell orders this January!', audience: 'All Users', sent: '1 Jan 2025', recipients: 1250, opened: 892 },
   { id: 2, title: 'Partner Commission Update', body: 'Commission rates updated for Q1 2025. Check your dashboard.', audience: 'All Partners', sent: '28 Dec 2024', recipients: 5, opened: 5 },
   { id: 3, title: 'New Task Available', body: 'Multiple pickup tasks available in your area. Check now!', audience: 'All Delivery Agents', sent: '27 Dec 2024', recipients: 5, opened: 4 },
+  */
 ];
 
 export default function AdminPushNotifications() {

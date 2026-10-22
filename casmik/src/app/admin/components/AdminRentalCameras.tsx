@@ -80,6 +80,17 @@ export default function AdminRentalCameras({ initialTab = 'fleet' }: { initialTa
   const loadData = () => {
     setCameras(getRentalCameras());
     setRentalOrders(getRentalOrders());
+    fetch('/api/orders')
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && Array.isArray(d.orders)) {
+          const rents = d.orders.filter((o: Order) => o.type === 'rent');
+          if (rents.length > 0) {
+            setRentalOrders(rents);
+          }
+        }
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {

@@ -13,17 +13,27 @@ const docLabels = [
   { key: 'insurance', label: 'Vehicle Insurance', icon: '🛡️' },
 ];
 
+const isMockOrder = (o: any) => {
+  if (!o) return false;
+  const num = String(o.orderNumber || '');
+  const id = String(o.id || '');
+  if (id.startsWith('ord-100') || id.startsWith('ord-101') || id.startsWith('ord-102')) return true;
+  if (num.startsWith('CSM-2024-00') || num.startsWith('CSM-2024-01') || num.startsWith('CSM-2024-02') || num.startsWith('CSM-2024-03')) return true;
+  if (o.customerName === 'Rahul Sharma' || o.customerName === 'Ananya Deshmukh' || o.customerName === 'Vikramaditya Rathore') return true;
+  return false;
+};
+
 const getStoredPartners = (): Partner[] => {
   if (typeof window !== 'undefined') {
     try {
       const saved = localStorage.getItem('casmik_partners_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed.filter((p: any) => !p.id?.startsWith('partner-00'));
       }
     } catch {}
   }
-  return partners;
+  return [];
 };
 
 const getInitialAgents = (): DeliveryAgent[] => {
@@ -32,18 +42,17 @@ const getInitialAgents = (): DeliveryAgent[] => {
       const saved = localStorage.getItem('casmik_delivery_agents_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          const clean = parsed.filter((a: any) => !a.id?.startsWith('agent-10') && !a.id?.startsWith('delivery-00'));
+          if (clean.length !== parsed.length) {
+            localStorage.setItem('casmik_delivery_agents_v1', JSON.stringify(clean));
+          }
+          return clean;
+        }
       }
     } catch {}
   }
-  return deliveryAgents.map(a => ({
-    ...a,
-    approvalStatus: a.approvalStatus || 'approved',
-    commission: a.commission ?? 150,
-    commissionType: a.commissionType || 'fixed',
-    partnerId: a.partnerId || null,
-    partnerName: a.partnerName || null,
-  }));
+  return [];
 };
 
 const getStoredOrders = (): Order[] => {
@@ -52,11 +61,11 @@ const getStoredOrders = (): Order[] => {
       const saved = localStorage.getItem('casmik_orders_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed.filter(o => !isMockOrder(o));
       }
     } catch {}
   }
-  return defaultOrders;
+  return [];
 };
 
 export default function AdminDelivery() {
@@ -105,6 +114,15 @@ export default function AdminDelivery() {
   const [formInsurance, setFormInsurance] = useState(true);
 
   useEffect(() => {
+    fetch('/api/delivery-agents')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.agents)) {
+          setAgents(data.agents);
+        }
+      })
+      .catch(() => {});
+
     const handleSync = () => {
       setOrdersList(getStoredOrders());
       setPartnerList(getStoredPartners());

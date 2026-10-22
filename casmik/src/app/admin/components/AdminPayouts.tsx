@@ -3,21 +3,26 @@ import React, { useState } from 'react';
 import { partners } from '@/lib/casmikData';
 import { CheckCircle, XCircle, Eye, CreditCard, RefreshCw, X } from 'lucide-react';
 
-const gatewayPayments = [
+const gatewayPayments: { id: string; partner: string; partnerName: string; amount: number; date: string; method: string; txnId: string; status: string }[] = [
+  /* Static mock gateway payments commented out for live data:
   { id: 'GP-001', partner: 'TechHub Store', partnerName: 'Rajesh Kumar', amount: 5000, date: '10 Aug 2026', method: 'UPI', txnId: 'UPI2026081001', status: 'success' },
   { id: 'GP-002', partner: 'MobileHub Store', partnerName: 'Pradeep Sharma', amount: 12000, date: '11 Aug 2026', method: 'Net Banking', txnId: 'NB2026081101', status: 'success' },
   { id: 'GP-003', partner: 'GadgetZone', partnerName: 'Sunil Reddy', amount: 8500, date: '12 Aug 2026', method: 'Card', txnId: 'CARD2026081201', status: 'pending' },
+  */
 ];
 
-const bankTransfers = [
+const bankTransfers: { id: string; partner: string; partnerName: string; amount: number; date: string; ref: string | null; receipt: string | null; status: string }[] = [
+  /* Static mock bank transfers commented out for live data:
   { id: 'BT-001', partner: 'TechHub Store', partnerName: 'Rajesh Kumar', amount: 12000, date: '10 Aug 2026', ref: 'REF123456', receipt: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=200', status: 'awaiting' },
   { id: 'BT-002', partner: 'MobileHub Store', partnerName: 'Pradeep Sharma', amount: 50000, date: '10 Aug 2026', ref: '32424235', receipt: null, status: 'resolved' },
   { id: 'BT-003', partner: 'GadgetZone', partnerName: 'Sunil Reddy', amount: 500000, date: '11 Aug 2026', ref: null, receipt: null, status: 'resolved' },
   { id: 'BT-004', partner: 'iRepair Center', partnerName: 'Anil Menon', amount: 1000000, date: '19 Aug 2026', ref: null, receipt: null, status: 'resolved' },
   { id: 'BT-005', partner: 'DigiWorld', partnerName: 'Vikash Singh', amount: 10000000, date: '22 Aug 2026', ref: null, receipt: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=200', status: 'open' },
+  */
 ];
 
-const verificationTickets = [
+const verificationTickets: { id: string; partner: string; partnerName: string; amount: number; date: string; ref: string | null; receipt: string | null; status: string }[] = [
+  /* Static mock verification tickets commented out for live data:
   { id: 'TCK-202', partner: 'TechHub Store', partnerName: 'Rajesh Kumar', amount: 12000, date: '10 Aug 2026', ref: 'REF123456', receipt: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=200', status: 'awaiting' },
   { id: 'TCK-159083', partner: 'MobileHub Store', partnerName: 'Pradeep Sharma', amount: 50000, date: '10 Aug 2026', ref: '32424235', receipt: null, status: 'resolved' },
   { id: 'TCK-380786', partner: 'GadgetZone', partnerName: 'Sunil Reddy', amount: 500000, date: '10 Aug 2026', ref: null, receipt: null, status: 'resolved' },
@@ -25,6 +30,7 @@ const verificationTickets = [
   { id: 'TCK-716811', partner: 'TechHub Store', partnerName: 'Rajesh Kumar', amount: 100000, date: '19 Aug 2026', ref: null, receipt: null, status: 'resolved' },
   { id: 'TCK-477850', partner: 'MobileHub Store', partnerName: 'Pradeep Sharma', amount: 10000000, date: '20 Aug 2026', ref: null, receipt: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=200', status: 'resolved' },
   { id: 'TCK-494660', partner: 'DigiWorld', partnerName: 'Vikash Singh', amount: 10000000, date: '22 Aug 2026', ref: null, receipt: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=200', status: 'open' },
+  */
 ];
 
 export default function AdminPayouts() {

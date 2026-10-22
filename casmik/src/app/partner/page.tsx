@@ -164,7 +164,7 @@ export default function PartnerPage() {
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'dashboard': return <PartnerDashboard onNavigate={setActiveSection} />;
+      case 'dashboard': return <PartnerDashboard onNavigate={setActiveSection} partner={session} />;
       case 'orders': return <PartnerOrders onStartInspection={handleStartInspection} />;
       case 'inspection': return <PartnerInspection initialOrderId={inspectingOrderId} onBackToOrders={() => setActiveSection('orders')} />;
       case 'payouts': return <PartnerPayouts />;
@@ -174,7 +174,7 @@ export default function PartnerPage() {
       case 'settings': return <PartnerSettings partner={session} onUpdateSession={setSession} />;
       case 'support': return <SupportTicketsPanel panelType="partner" userName={session?.name || "Partner"} />;
       case 'profile': return <PartnerProfile partner={session} onUpdateSession={setSession} />;
-      default: return <PartnerDashboard onNavigate={setActiveSection} />;
+      default: return <PartnerDashboard onNavigate={setActiveSection} partner={session} />;
     }
   };
 

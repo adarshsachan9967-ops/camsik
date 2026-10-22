@@ -62,7 +62,7 @@ export default function AdminPanelLayout({ activeSection, onSectionChange, child
             setSupportCount(openTickets.length);
           }
         } else {
-          setSupportCount(5); // default initial open tickets count
+          setSupportCount(0);
         }
         const rawNotifs = localStorage.getItem('casmik_notifications_v1');
         if (rawNotifs) {

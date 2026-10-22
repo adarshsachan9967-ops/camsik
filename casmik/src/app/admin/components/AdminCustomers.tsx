@@ -1,11 +1,48 @@
 'use client';
-import React, { useState } from 'react';
-import { customers } from '@/lib/casmikData';
+import React, { useState, useEffect } from 'react';
+import { Customer } from '@/lib/casmikData';
 import { Search, Eye, Ban, CheckCircle } from 'lucide-react';
 
 export default function AdminCustomers() {
-  const [customerList, setCustomerList] = useState(customers);
+  const [customerList, setCustomerList] = useState<Customer[]>([]);
   const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/orders')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.orders)) {
+          const map = new Map<string, Customer>();
+          data.orders.forEach((o: any) => {
+            const phone = (o.customerPhone || o.phone || '').trim();
+            if (!phone) return;
+            if (!map.has(phone)) {
+              map.set(phone, {
+                id: `cust-${phone}`,
+                name: o.customerName || 'Customer',
+                phone: phone,
+                email: o.customerEmail || `${phone}@camsik.in`,
+                city: o.city || 'Mumbai',
+                pinCode: o.pinCode || '400001',
+                totalOrders: 1,
+                totalValue: o.finalPrice || o.quotedPrice || 0,
+                joinedAt: o.createdAt || new Date().toISOString(),
+                status: 'active',
+                avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&q=80',
+              });
+            } else {
+              const existing = map.get(phone)!;
+              existing.totalOrders += 1;
+              existing.totalValue += (o.finalPrice || o.quotedPrice || 0);
+            }
+          });
+          setCustomerList(Array.from(map.values()));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = customerList.filter(c =>
     c.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -44,7 +81,15 @@ export default function AdminCustomers() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {filtered.map((customer) => (
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="text-center py-8 text-xs text-gray-400">Loading live customers from real orders...</td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="text-center py-8 text-xs text-gray-400">No customers found. As live orders arrive, customers will appear here automatically.</td>
+              </tr>
+            ) : filtered.map((customer) => (
               <tr key={customer.id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-3">

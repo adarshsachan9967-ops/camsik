@@ -89,10 +89,10 @@ export default function PartnerPayouts() {
       {/* Balance Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Available Balance', value: `₹${balance?.toLocaleString('en-IN')}`, icon: '💳', color: 'bg-blue-50 text-blue-700', sub: 'Ready for instant withdrawal transfer' },
-          { label: 'Total Earnings', value: `₹${partner?.totalEarnings?.toLocaleString('en-IN')}`, icon: '💰', color: 'bg-green-50 text-green-700', sub: 'All time' },
-          { label: 'Pending Payout', value: `₹${partner?.pendingPayout?.toLocaleString('en-IN')}`, icon: '⏳', color: 'bg-orange-50 text-orange-700', sub: 'Processing' },
-          { label: 'Total Paid', value: `₹${(partner?.totalEarnings - partner?.pendingPayout)?.toLocaleString('en-IN')}`, icon: '✅', color: 'bg-purple-50 text-purple-700', sub: 'Lifetime' },
+          { label: 'Available Balance', value: `₹${(balance ?? 0).toLocaleString('en-IN')}`, icon: '💳', color: 'bg-blue-50 text-blue-700', sub: 'Ready for instant withdrawal transfer' },
+          { label: 'Total Earnings', value: `₹${(partner?.totalEarnings ?? 0).toLocaleString('en-IN')}`, icon: '💰', color: 'bg-green-50 text-green-700', sub: 'All time' },
+          { label: 'Pending Payout', value: `₹${(partner?.pendingPayout ?? 0).toLocaleString('en-IN')}`, icon: '⏳', color: 'bg-orange-50 text-orange-700', sub: 'Processing' },
+          { label: 'Total Paid', value: `₹${Math.max(0, (partner?.totalEarnings ?? 0) - (partner?.pendingPayout ?? 0)).toLocaleString('en-IN')}`, icon: '✅', color: 'bg-purple-50 text-purple-700', sub: 'Lifetime' },
         ]?.map(card => (
           <div key={card?.label} className={`${card?.color} rounded-2xl p-4 border border-white`}>
             <div className="flex items-center justify-between mb-2">
@@ -110,7 +110,7 @@ export default function PartnerPayouts() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-bold text-gray-900 mb-1">Request Payout</h3>
-            <p className="text-sm text-gray-500">Available balance: <span className="font-black text-green-700">₹{balance?.toLocaleString('en-IN')}</span></p>
+            <p className="text-sm text-gray-500">Available balance: <span className="font-black text-green-700">₹{(balance ?? 0).toLocaleString('en-IN')}</span></p>
             <p className="text-xs text-gray-400 mt-0.5">Payouts are processed within 2-3 business days</p>
           </div>
           <button onClick={handleRequestPayout} disabled={balance === 0}

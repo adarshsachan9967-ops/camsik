@@ -145,6 +145,8 @@ export function showBrowserNotification(title: string, body: string) {
 }
 
 // ─── NOTIFICATION STORE & SEED DATA ───────────────────────────────────────────
+// [STATIC DATA COMMENTED OUT - RUNNING ON DYNAMIC LIVE NOTIFICATIONS]
+/*
 const INITIAL_NOTIFICATIONS: CasmikNotification[] = [
   {
     id: 'notif-init-1',
@@ -203,20 +205,28 @@ const INITIAL_NOTIFICATIONS: CasmikNotification[] = [
     read: true,
   },
 ];
+*/
+const INITIAL_NOTIFICATIONS: CasmikNotification[] = [];
 
 export function getStoredNotifications(role: NotificationRole = 'all'): CasmikNotification[] {
-  if (typeof window === 'undefined') return INITIAL_NOTIFICATIONS;
+  if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     let list: CasmikNotification[] = raw ? JSON.parse(raw) : [];
-    if (!list || list.length === 0) {
-      list = INITIAL_NOTIFICATIONS;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    if (Array.isArray(list)) {
+      // Filter out legacy mock notifications
+      const cleaned = list.filter(n => !n.id.startsWith('notif-init-'));
+      if (cleaned.length !== list.length) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+        list = cleaned;
+      }
+    } else {
+      list = [];
     }
     if (role === 'all') return list;
     return list.filter(n => n.targetRole === 'all' || n.targetRole === role);
   } catch {
-    return INITIAL_NOTIFICATIONS;
+    return [];
   }
 }
 

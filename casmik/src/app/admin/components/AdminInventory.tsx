@@ -19,6 +19,7 @@ interface InventoryItem {
 }
 
 const initialInventory: InventoryItem[] = [
+  /* Static mock inventory commented out for live data:
   { id: 'inv-1', invId: 'INV-001', modelId: 'iphone-15-pro-max', modelName: 'iPhone 15 Pro Max', category: 'Smartphones', brand: 'Apple', basePrice: 75000, stockLevel: 84, alertThreshold: 3, location: 'Warehouse - Mumbai Miraroad', photos: ['https://img.rocket.new/generatedImages/rocket_gen_img_17b82fb7a-1772960574407.png'], status: 'Good Stock' },
   { id: 'inv-2', invId: 'INV-002', modelId: 'macbook-pro-14-m4', modelName: 'MacBook Pro M3', category: 'Laptops', brand: 'Apple', basePrice: 95000, stockLevel: 100, alertThreshold: 10, location: 'Warehouse Mumbai', photos: ['https://img.rocket.new/generatedImages/rocket_gen_img_11ad868de-1766607648821.png'], status: 'Good Stock' },
   { id: 'inv-3', invId: 'INV-003', modelId: 's23', modelName: 'Galaxy S23 FE', category: 'Smartphones', brand: 'Samsung', basePrice: 28000, stockLevel: 40, alertThreshold: 5, location: 'Main Warehouse', photos: [], status: 'Good Stock' },
@@ -40,6 +41,7 @@ const initialInventory: InventoryItem[] = [
   { id: 'inv-19', invId: 'INV-016', modelId: 'galaxy-tab-s9-ultra', modelName: 'Galaxy Tab S9 Ultra', category: 'Tablets', brand: 'Samsung', basePrice: 74000, stockLevel: 14, alertThreshold: 4, location: 'Warehouse - Delhi', photos: [], status: 'Good Stock' },
   { id: 'inv-20', invId: 'INV-017', modelId: 'cam-sony-a7iii', modelName: 'Sony Alpha A7 III', category: 'Cameras', brand: 'Sony', basePrice: 85000, stockLevel: 12, alertThreshold: 3, location: 'Warehouse - Mumbai', photos: [], status: 'Good Stock' },
   { id: 'inv-21', invId: 'INV-018', modelId: 'cam-canon-rp', modelName: 'Canon EOS RP', category: 'Cameras', brand: 'Canon', basePrice: 58000, stockLevel: 8, alertThreshold: 2, location: 'Warehouse - Noida', photos: [], status: 'Good Stock' },
+  */
 ];
 
 export default function AdminInventory() {

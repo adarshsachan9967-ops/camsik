@@ -5,7 +5,8 @@ import { TrendingUp, TrendingDown, ShoppingBag, Users, Handshake, Truck, DollarS
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import type { AdminSection, AdminNavigationOptions } from '../page';
 
-const revenueData = [
+const revenueData: { day: string; revenue: number; orders: number }[] = [
+  /* Static mock chart data commented out for live data:
   { day: 'Mon', revenue: 125000, orders: 18 },
   { day: 'Tue', revenue: 148000, orders: 22 },
   { day: 'Wed', revenue: 132000, orders: 19 },
@@ -13,19 +14,32 @@ const revenueData = [
   { day: 'Fri', revenue: 189000, orders: 31 },
   { day: 'Sat', revenue: 210000, orders: 35 },
   { day: 'Sun', revenue: 178000, orders: 28 },
+  */
 ];
 
-const categoryData = [
+const categoryData: { name: string; value: number; section: AdminSection }[] = [
+  /* Static mock category data commented out for live data:
   { name: 'Smartphones', value: 62, section: 'models' as AdminSection },
   { name: 'Laptops', value: 18, section: 'models' as AdminSection },
   { name: 'Tablets', value: 10, section: 'models' as AdminSection },
   { name: 'Smartwatches', value: 6, section: 'models' as AdminSection },
   { name: 'Others', value: 4, section: 'categories' as AdminSection },
+  */
 ];
 
 interface AdminOverviewProps {
   onNavigate?: (section: AdminSection, options?: AdminNavigationOptions) => void;
 }
+
+const isMockOrder = (o: any) => {
+  if (!o) return false;
+  const num = String(o.orderNumber || '');
+  const id = String(o.id || '');
+  if (id.startsWith('ord-100') || id.startsWith('ord-101') || id.startsWith('ord-102')) return true;
+  if (num.startsWith('CSM-2024-00') || num.startsWith('CSM-2024-01') || num.startsWith('CSM-2024-02') || num.startsWith('CSM-2024-03')) return true;
+  if (o.customerName === 'Rahul Sharma' || o.customerName === 'Ananya Deshmukh' || o.customerName === 'Vikramaditya Rathore') return true;
+  return false;
+};
 
 export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
   const [orderList, setOrderList] = useState<Order[]>(() => {
@@ -34,11 +48,11 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
         const raw = localStorage.getItem('casmik_orders_v1');
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed)) return parsed.filter(o => !isMockOrder(o));
         }
       } catch {}
     }
-    return orders;
+    return [];
   });
 
   const [partnersList, setPartnersList] = useState<Partner[]>(() => {
@@ -47,11 +61,11 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
         const raw = localStorage.getItem('casmik_partners_v1');
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed)) return parsed.filter((p: any) => !p.id?.startsWith('partner-00'));
         }
       } catch {}
     }
-    return partners;
+    return [];
   });
 
   const [agentList, setAgentList] = useState<DeliveryAgent[]>(() => {
@@ -60,35 +74,65 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
         const raw = localStorage.getItem('casmik_delivery_agents_v1');
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed)) return parsed.filter((a: any) => !a.id?.startsWith('agent-10') && !a.id?.startsWith('delivery-00'));
         }
       } catch {}
     }
-    return deliveryAgents;
+    return [];
   });
 
   useEffect(() => {
+    // Live fetches from APIs
+    fetch('/api/orders')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.orders)) {
+          setOrderList(data.orders);
+          if (typeof window !== 'undefined') localStorage.setItem('casmik_orders_v1', JSON.stringify(data.orders));
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/partners')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.partners)) {
+          setPartnersList(data.partners);
+          if (typeof window !== 'undefined') localStorage.setItem('casmik_partners_v1', JSON.stringify(data.partners));
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/delivery-agents')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.agents)) {
+          setAgentList(data.agents);
+          if (typeof window !== 'undefined') localStorage.setItem('casmik_delivery_agents_v1', JSON.stringify(data.agents));
+        }
+      })
+      .catch(() => {});
+
     const syncData = () => {
       try {
         const rawOrders = localStorage.getItem('casmik_orders_v1');
         if (rawOrders) {
           const parsed = JSON.parse(rawOrders);
-          if (Array.isArray(parsed)) setOrderList(parsed);
+          if (Array.isArray(parsed)) setOrderList(parsed.filter(o => !isMockOrder(o)));
         }
         const rawPartners = localStorage.getItem('casmik_partners_v1');
         if (rawPartners) {
           const parsed = JSON.parse(rawPartners);
-          if (Array.isArray(parsed)) setPartnersList(parsed);
+          if (Array.isArray(parsed)) setPartnersList(parsed.filter((p: any) => !p.id?.startsWith('partner-00')));
         }
         const rawAgents = localStorage.getItem('casmik_delivery_agents_v1');
         if (rawAgents) {
           const parsed = JSON.parse(rawAgents);
-          if (Array.isArray(parsed)) setAgentList(parsed);
+          if (Array.isArray(parsed)) setAgentList(parsed.filter((a: any) => !a.id?.startsWith('agent-10') && !a.id?.startsWith('delivery-00')));
         }
       } catch {}
     };
 
-    syncData();
     window.addEventListener('casmik_orders_updated', syncData);
     window.addEventListener('casmik_partner_orders_updated', syncData);
     window.addEventListener('casmik_partners_updated', syncData);
@@ -100,6 +144,58 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
       window.removeEventListener('storage', syncData);
     };
   }, []);
+
+  // Compute live revenue chart data from actual orderList
+  const dynamicRevenueData = React.useMemo(() => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const dayMap: Record<string, { revenue: number; orders: number }> = {
+      Mon: { revenue: 0, orders: 0 },
+      Tue: { revenue: 0, orders: 0 },
+      Wed: { revenue: 0, orders: 0 },
+      Thu: { revenue: 0, orders: 0 },
+      Fri: { revenue: 0, orders: 0 },
+      Sat: { revenue: 0, orders: 0 },
+      Sun: { revenue: 0, orders: 0 },
+    };
+    orderList.forEach((o) => {
+      const d = o.createdAt ? new Date(o.createdAt) : null;
+      if (d && !isNaN(d.getTime())) {
+        const dayName = days[(d.getDay() + 6) % 7];
+        if (dayMap[dayName]) {
+          dayMap[dayName].revenue += (o.finalPrice || o.quotedPrice || 0);
+          dayMap[dayName].orders += 1;
+        }
+      }
+    });
+    return days.map((day) => ({
+      day,
+      revenue: dayMap[day].revenue,
+      orders: dayMap[day].orders,
+    }));
+  }, [orderList]);
+
+  // Compute live category data from actual orderList
+  const dynamicCategoryData = React.useMemo(() => {
+    if (orderList.length === 0) {
+      return [];
+    }
+    const map: Record<string, number> = {};
+    orderList.forEach((o) => {
+      let cat = 'Cameras & Devices';
+      const name = (o.deviceName || '').toLowerCase();
+      if (o.type === 'rent') cat = 'Rental Fleet';
+      else if (name.includes('macbook') || name.includes('laptop') || name.includes('dell')) cat = 'Laptops';
+      else if (name.includes('iphone') || name.includes('phone') || name.includes('s23') || name.includes('s24')) cat = 'Smartphones';
+      else if (name.includes('sony') || name.includes('canon') || name.includes('nikon') || name.includes('lens')) cat = 'Cameras & Lenses';
+      map[cat] = (map[cat] || 0) + 1;
+    });
+    const total = orderList.length || 1;
+    return Object.entries(map).map(([name, count]) => ({
+      name,
+      value: Math.round((count / total) * 100),
+      section: 'orders' as AdminSection,
+    }));
+  }, [orderList]);
 
   const totalRevenue = orderList
     .filter(o => o.paymentStatus === 'paid' || o.status === 'completed')
@@ -113,7 +209,28 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
   const pendingPayouts = partnersList.reduce((s, p) => s + (p.pendingPayout || 0), 0);
 
   const customerPhones = new Set(orderList.map(o => o.customerPhone).filter(Boolean));
-  const totalCustomers = Math.max(customerPhones.size, customers.length);
+  const totalCustomers = customerPhones.size;
+
+  const now = Date.now();
+  const msWeek = 7 * 24 * 60 * 60 * 1000;
+  const thisWeekOrders = orderList.filter(o => {
+    const t = o.createdAt ? new Date(o.createdAt).getTime() : 0;
+    return t >= now - msWeek;
+  });
+  const prevWeekOrders = orderList.filter(o => {
+    const t = o.createdAt ? new Date(o.createdAt).getTime() : 0;
+    return t >= now - 2 * msWeek && t < now - msWeek;
+  });
+  const thisWeekRev = thisWeekOrders.reduce((s, o) => s + (o.finalPrice || o.quotedPrice || 0), 0);
+  const prevWeekRev = prevWeekOrders.reduce((s, o) => s + (o.finalPrice || o.quotedPrice || 0), 0);
+
+  const revSub = prevWeekRev > 0
+    ? `${thisWeekRev >= prevWeekRev ? '+' : ''}${Math.round(((thisWeekRev - prevWeekRev) / prevWeekRev) * 100)}% vs last week`
+    : `${completedOrders} completed orders`;
+
+  const orderSub = prevWeekOrders.length > 0
+    ? `${thisWeekOrders.length >= prevWeekOrders.length ? '+' : ''}${Math.round(((thisWeekOrders.length - prevWeekOrders.length) / prevWeekOrders.length) * 100)}% vs last week`
+    : `${thisWeekOrders.length} this week`;
 
   const navigateTo = (section: AdminSection, options?: AdminNavigationOptions) => {
     if (onNavigate) {
@@ -127,8 +244,8 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
   const kpis = [
     {
       label: 'Total Revenue',
-      value: `₹${(totalRevenue / 100000).toFixed(1)}L`,
-      sub: '+18.6% vs last week',
+      value: totalRevenue >= 100000 ? `₹${(totalRevenue / 100000).toFixed(1)}L` : `₹${totalRevenue.toLocaleString('en-IN')}`,
+      sub: revSub,
       icon: DollarSign,
       color: 'bg-green-50 text-green-600',
       trend: 'up',
@@ -139,7 +256,7 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
     {
       label: 'Total Orders',
       value: orderList.length.toString(),
-      sub: '+12.4% vs last week',
+      sub: orderSub,
       icon: ShoppingBag,
       color: 'bg-blue-50 text-blue-600',
       trend: 'up',
@@ -161,7 +278,7 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
     {
       label: 'Pending',
       value: pendingOrders.toString(),
-      sub: 'Needs attention',
+      sub: pendingOrders > 0 ? `${pendingOrders} need attention` : 'All caught up',
       icon: Clock,
       color: 'bg-yellow-50 text-yellow-600',
       trend: 'neutral',
@@ -193,8 +310,8 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
     },
     {
       label: 'Customers',
-      value: `${totalCustomers}+`,
-      sub: 'Registered users',
+      value: totalCustomers.toString(),
+      sub: `${totalCustomers} verified clients`,
       icon: Users,
       color: 'bg-indigo-50 text-indigo-600',
       trend: 'up',
@@ -204,7 +321,7 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
     },
     {
       label: 'Pending Payouts',
-      value: `₹${pendingPayouts >= 100000 ? (pendingPayouts / 100000).toFixed(1) + 'L' : (pendingPayouts / 1000).toFixed(0) + 'K'}`,
+      value: `₹${pendingPayouts >= 100000 ? (pendingPayouts / 100000).toFixed(1) + 'L' : pendingPayouts.toLocaleString('en-IN')}`,
       sub: 'Due to partners',
       icon: Zap,
       color: 'bg-orange-50 text-orange-600',
@@ -270,7 +387,7 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
             </button>
           </div>
           <ResponsiveContainer width="100%" height={210}>
-            <AreaChart data={revenueData}>
+            <AreaChart data={dynamicRevenueData}>
               <defs>
                 <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#16a34a" stopOpacity={0.2} />
@@ -300,7 +417,9 @@ export default function AdminOverview({ onNavigate }: AdminOverviewProps) {
           <p className="text-xs text-gray-400 mb-3">Click any category to inspect models &amp; inventory</p>
 
           <div className="space-y-2.5">
-            {categoryData.map((cat, i) => {
+            {dynamicCategoryData.length === 0 ? (
+              <p className="text-xs text-gray-400 py-4 text-center">No order categories recorded yet.</p>
+            ) : dynamicCategoryData.map((cat, i) => {
               const colors = ['bg-green-500', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-gray-400'];
               return (
                 <div

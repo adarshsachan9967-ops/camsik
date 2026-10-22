@@ -1,48 +1,169 @@
 'use client';
-import React, { useState } from 'react';
-import { orders, partners } from '@/lib/casmikData';
+import React, { useState, useEffect, useMemo } from 'react';
+import type { Order, Partner } from '@/lib/casmikData';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-const partner = partners[1] || partners[0] || {
-  totalEarnings: 385000,
-  totalOrders: 420,
-  commission: 4.5,
-  pendingPayout: 18500,
-};
-
-const earningsData = [
-  { day: '06 May', earnings: 8200 },
-  { day: '07 May', earnings: 9500 },
-  { day: '08 May', earnings: 11200 },
-  { day: '09 May', earnings: 10800 },
-  { day: '10 May', earnings: 14850 },
-  { day: '11 May', earnings: 13200 },
-  { day: '12 May', earnings: 15000 },
-];
-
-const topCategories = [
-  { name: 'Mobile Phones', pct: 62, count: 78, color: 'bg-green-500' },
-  { name: 'Laptops & MacBooks', pct: 18, count: 23, color: 'bg-blue-500' },
-  { name: 'DSLR & Cameras', pct: 12, count: 16, color: 'bg-purple-500' },
-  { name: 'iPads & Tablets', pct: 6, count: 8, color: 'bg-orange-500' },
-  { name: 'Accessories', pct: 2, count: 3, color: 'bg-gray-400' },
-];
-
-const recentOrders = orders.slice(0, 4);
 
 interface PartnerDashboardProps {
   onNavigate?: (section: any) => void;
+  partner?: Partner | null;
 }
 
-export default function PartnerDashboard({ onNavigate }: PartnerDashboardProps = {}) {
+export default function PartnerDashboard({ onNavigate, partner }: PartnerDashboardProps = {}) {
   const [dateRange, setDateRange] = useState('This Week');
+  const [partnerOrders, setPartnerOrders] = useState<Order[]>([]);
+
+  // Resolve active partner session with safe fallbacks
+  const currentPartner = useMemo(() => {
+    if (partner) return partner;
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('casmik_partner_session');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === 'object') return parsed as Partner;
+        }
+      } catch {}
+    }
+    return {
+      id: 'partner-default',
+      storeName: 'Camsik Certified Hub',
+      name: 'Partner',
+      phone: '',
+      email: '',
+      city: 'Delhi NCR',
+      state: 'Delhi',
+      pinCodes: [],
+      status: 'active' as const,
+      rating: 4.8,
+      totalOrders: 0,
+      completedOrders: 0,
+      totalEarnings: 0,
+      commission: 5,
+      commissionType: 'percentage' as const,
+      availableBalance: 0,
+      pendingPayout: 0,
+      joinedAt: new Date().toISOString(),
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&q=80',
+    };
+  }, [partner]);
+
+  // Fetch real orders for this partner
+  useEffect(() => {
+    fetch('/api/orders')
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && Array.isArray(d.orders)) {
+          const pId = currentPartner.id;
+          const pName = currentPartner.storeName || currentPartner.name;
+          const matched = d.orders.filter((o: Order) => 
+            !pId || pId === 'partner-default' || o.partnerId === pId || o.partnerName === pName
+          );
+          setPartnerOrders(matched.length > 0 ? matched : d.orders.slice(0, 10));
+        }
+      })
+      .catch(() => {});
+  }, [currentPartner]);
+
+  // Dynamic earnings and orders calculation
+  const totalEarnings = currentPartner.totalEarnings ?? partnerOrders
+    .filter(o => o.status === 'completed' || o.paymentStatus === 'paid')
+    .reduce((s, o) => s + (o.finalPrice || o.quotedPrice || 0), 0);
+
+  const totalOrdersCount = partnerOrders.length || currentPartner.totalOrders || 0;
+  const commissionRate = currentPartner.commission ?? 5;
+  const totalCommission = Math.round((totalEarnings * commissionRate) / 100);
+  const pendingPayout = currentPartner.pendingPayout ?? 0;
+  const availableBalance = currentPartner.availableBalance ?? Math.max(0, totalEarnings - pendingPayout);
+
+  // Dynamic 7-day earnings chart
+  const earningsData = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const now = new Date();
+    const result = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dayLabel = `${d.getDate().toString().padStart(2, '0')} ${d.toLocaleString('en-US', { month: 'short' })}`;
+      const dayOrders = partnerOrders.filter(o => {
+        const od = o.createdAt ? new Date(o.createdAt) : null;
+        return od && od.toDateString() === d.toDateString();
+      });
+      const dayEarnings = dayOrders.reduce((s, o) => s + (o.finalPrice || o.quotedPrice || 0), 0);
+      result.push({ day: dayLabel, earnings: dayEarnings });
+    }
+    return result;
+  }, [partnerOrders]);
+
+  // Dynamic category breakdown
+  const topCategories = useMemo(() => {
+    if (partnerOrders.length === 0) {
+      return [
+        { name: 'Cameras & Lenses', pct: 60, count: 0, color: 'bg-emerald-500' },
+        { name: 'Smartphones', pct: 25, count: 0, color: 'bg-blue-500' },
+        { name: 'Laptops', pct: 15, count: 0, color: 'bg-purple-500' },
+      ];
+    }
+    const map: Record<string, number> = {};
+    partnerOrders.forEach(o => {
+      const name = (o.deviceName || '').toLowerCase();
+      let cat = 'Cameras & Lenses';
+      if (name.includes('iphone') || name.includes('samsung') || name.includes('phone')) cat = 'Smartphones';
+      else if (name.includes('macbook') || name.includes('laptop') || name.includes('dell')) cat = 'Laptops';
+      else if (o.type === 'rent') cat = 'Rental Fleet';
+      map[cat] = (map[cat] || 0) + 1;
+    });
+    const total = partnerOrders.length || 1;
+    const colors = ['bg-emerald-500', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500'];
+    return Object.entries(map).map(([name, count], i) => ({
+      name,
+      count,
+      pct: Math.round((count / total) * 100),
+      color: colors[i % colors.length],
+    }));
+  }, [partnerOrders]);
+
+  const recentOrders = partnerOrders.slice(0, 4);
 
   const kpis = [
-    { label: 'TOTAL EARNINGS', value: `₹${partner.totalEarnings.toLocaleString('en-IN')}`, sub: '↑ 18.6% vs last week', icon: '💰', color: 'text-green-600', action: () => onNavigate?.('payouts') },
-    { label: 'TOTAL ORDERS', value: partner.totalOrders.toString(), sub: '↑ 12.4% vs last week', icon: '🛒', color: 'text-blue-600', action: () => onNavigate?.('orders') },
-    { label: 'TOTAL COMMISSION', value: `₹${Math.round(partner.totalEarnings * partner.commission / 100).toLocaleString('en-IN')}`, sub: '↑ 15.3% vs last week', icon: '🏅', color: 'text-yellow-600', action: () => onNavigate?.('reports') },
-    { label: 'PRODUCTS SOLD', value: '156', sub: '↑ 10.7% vs last week', icon: '📦', color: 'text-purple-600', action: () => onNavigate?.('orders') },
-    { label: 'PENDING PAYOUT', value: `₹${partner.pendingPayout.toLocaleString('en-IN')}`, sub: 'Will be paid on 15 May 2025', icon: '⏳', color: 'text-orange-600', action: () => onNavigate?.('payouts') },
+    { 
+      label: 'TOTAL EARNINGS', 
+      value: `₹${(totalEarnings ?? 0).toLocaleString('en-IN')}`, 
+      sub: `${partnerOrders.length} active orders`, 
+      icon: '💰', 
+      color: 'text-green-600', 
+      action: () => onNavigate?.('payouts') 
+    },
+    { 
+      label: 'TOTAL ORDERS', 
+      value: totalOrdersCount.toString(), 
+      sub: 'Live store orders', 
+      icon: '🛒', 
+      color: 'text-blue-600', 
+      action: () => onNavigate?.('orders') 
+    },
+    { 
+      label: 'COMMISSION RATE', 
+      value: `${commissionRate}%`, 
+      sub: `Earned ₹${(totalCommission ?? 0).toLocaleString('en-IN')}`, 
+      icon: '🏅', 
+      color: 'text-yellow-600', 
+      action: () => onNavigate?.('reports') 
+    },
+    { 
+      label: 'AVAILABLE BALANCE', 
+      value: `₹${(availableBalance ?? 0).toLocaleString('en-IN')}`, 
+      sub: 'Ready for withdrawal', 
+      icon: '💳', 
+      color: 'text-purple-600', 
+      action: () => onNavigate?.('payouts') 
+    },
+    { 
+      label: 'PENDING PAYOUT', 
+      value: `₹${(pendingPayout ?? 0).toLocaleString('en-IN')}`, 
+      sub: 'In processing', 
+      icon: '⏳', 
+      color: 'text-orange-600', 
+      action: () => onNavigate?.('payouts') 
+    },
   ];
 
   return (
@@ -50,7 +171,9 @@ export default function PartnerDashboard({ onNavigate }: PartnerDashboardProps =
       {/* Welcome */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black text-gray-900">Welcome back, MobileHub Store! 👋</h2>
+          <h2 className="text-xl sm:text-2xl font-black text-gray-900">
+            Welcome back, {currentPartner.storeName || currentPartner.name || 'Partner'}! 👋
+          </h2>
           <p className="text-xs sm:text-sm text-gray-500">Here&apos;s what&apos;s happening with your business today.</p>
         </div>
         <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm shadow-sm self-start sm:self-auto">
@@ -106,7 +229,7 @@ export default function PartnerDashboard({ onNavigate }: PartnerDashboardProps =
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="day" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${v / 1000}K`} />
-              <Tooltip formatter={(v: number) => [`₹${v.toLocaleString('en-IN')}`, 'Earnings']} />
+              <Tooltip formatter={(v: number) => [`₹${(v ?? 0).toLocaleString('en-IN')}`, 'Earnings']} />
               <Area type="monotone" dataKey="earnings" stroke="#16a34a" strokeWidth={2.5} fill="url(#earnGrad)" dot={{ fill: '#16a34a', r: 5, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 7 }} />
             </AreaChart>
           </ResponsiveContainer>
@@ -156,24 +279,28 @@ export default function PartnerDashboard({ onNavigate }: PartnerDashboardProps =
             </span>
           </div>
           <div className="space-y-3">
-            {recentOrders.map((order) => (
-              <div
-                key={order.id}
-                onClick={() => onNavigate?.('orders')}
-                className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 px-2 rounded-xl cursor-pointer transition-colors"
-              >
-                <div>
-                  <p className="text-sm font-bold text-gray-900">{order.deviceName.split(' ').slice(0, 4).join(' ')}</p>
-                  <p className="text-xs text-gray-400">ID: {order.orderNumber} · {new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
+            {recentOrders.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-6">No orders assigned to this store yet.</p>
+            ) : (
+              recentOrders.map((order) => (
+                <div
+                  key={order.id}
+                  onClick={() => onNavigate?.('orders')}
+                  className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 px-2 rounded-xl cursor-pointer transition-colors"
+                >
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">{(order.deviceName || 'Device').split(' ').slice(0, 4).join(' ')}</p>
+                    <p className="text-xs text-gray-400">ID: {order.orderNumber} · {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN') : 'Recent'}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-black text-gray-900">₹{(order.quotedPrice ?? 0).toLocaleString('en-IN')}</p>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${order.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      {(order.status || 'pending').replace(/_/g, ' ')}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-black text-gray-900">₹{order.quotedPrice.toLocaleString('en-IN')}</p>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${order.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                    {order.status.replace(/_/g, ' ')}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -192,7 +319,7 @@ export default function PartnerDashboard({ onNavigate }: PartnerDashboardProps =
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <div>
                 <p className="text-xs text-gray-500">AVAILABLE BALANCE</p>
-                <p className="text-2xl font-black text-gray-900">₹{partner.availableBalance.toLocaleString('en-IN')}</p>
+                <p className="text-2xl font-black text-gray-900">₹{(availableBalance ?? 0).toLocaleString('en-IN')}</p>
               </div>
               <button
                 onClick={() => onNavigate?.('payouts')}
@@ -204,11 +331,11 @@ export default function PartnerDashboard({ onNavigate }: PartnerDashboardProps =
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-green-50 rounded-xl p-3">
                 <p className="text-xs text-gray-500">Total Paid</p>
-                <p className="text-sm font-black text-green-700">₹{(partner.totalEarnings - partner.pendingPayout).toLocaleString('en-IN')}</p>
+                <p className="text-sm font-black text-green-700">₹{Math.max(0, (totalEarnings ?? 0) - (pendingPayout ?? 0)).toLocaleString('en-IN')}</p>
               </div>
               <div className="bg-orange-50 rounded-xl p-3">
                 <p className="text-xs text-gray-500">Pending</p>
-                <p className="text-sm font-black text-orange-700">₹{partner.pendingPayout.toLocaleString('en-IN')}</p>
+                <p className="text-sm font-black text-orange-700">₹{(pendingPayout ?? 0).toLocaleString('en-IN')}</p>
               </div>
             </div>
           </div>
@@ -217,12 +344,12 @@ export default function PartnerDashboard({ onNavigate }: PartnerDashboardProps =
             <h3 className="font-bold text-gray-900 uppercase text-xs sm:text-sm tracking-wide mb-3">Account Summary</h3>
             <div className="space-y-2">
               {[
-                { label: 'Partner Name', value: partner.storeName },
-                { label: 'Partner ID', value: 'CFN12345' },
-                { label: 'City', value: partner.city },
-                { label: 'Commission Rate', value: `${partner.commission}%` },
-                { label: 'Rating', value: `⭐ ${partner.rating}/5` },
-                { label: 'Member Since', value: new Date(partner.joinedAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) },
+                { label: 'Partner Name', value: currentPartner.storeName || currentPartner.name },
+                { label: 'Partner ID', value: currentPartner.id || 'N/A' },
+                { label: 'City', value: currentPartner.city || 'Delhi NCR' },
+                { label: 'Commission Rate', value: `${commissionRate}%` },
+                { label: 'Rating', value: `⭐ ${currentPartner.rating || 4.8}/5` },
+                { label: 'Member Since', value: currentPartner.joinedAt ? new Date(currentPartner.joinedAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : '2024' },
               ].map(item => (
                 <div key={item.label} className="flex justify-between text-xs">
                   <span className="text-gray-500">{item.label}</span>

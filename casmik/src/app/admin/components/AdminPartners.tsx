@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { partners, Partner } from '@/lib/casmikData';
 import { Search, Eye, CheckCircle, XCircle, Star, FileText, Shield, Clock, AlertTriangle, Plus, Edit2, Key, Percent, DollarSign, Building, Phone, Mail, MapPin, Check, EyeOff } from 'lucide-react';
 
@@ -17,15 +17,32 @@ const getInitialPartners = (): Partner[] => {
       const saved = localStorage.getItem('casmik_partners_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          const clean = parsed.filter((p: any) => !p.id?.startsWith('partner-00'));
+          if (clean.length !== parsed.length) {
+            localStorage.setItem('casmik_partners_v1', JSON.stringify(clean));
+          }
+          return clean;
+        }
       }
     } catch {}
   }
-  return partners;
+  return [];
 };
 
 export default function AdminPartners() {
   const [partnerList, setPartnerList] = useState<Partner[]>(getInitialPartners);
+
+  useEffect(() => {
+    fetch('/api/partners')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.partners)) {
+          setPartnerList(data.partners);
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [query, setQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selected, setSelected] = useState<Partner | null>(null);
@@ -252,7 +269,15 @@ export default function AdminPartners() {
           { label: 'Active Partners', value: partnerList.filter(p => p.status === 'active').length, color: 'text-green-600', bg: 'bg-green-50' },
           { label: 'Pending Approval', value: partnerList.filter(p => p.status === 'pending').length, color: 'text-yellow-600', bg: 'bg-yellow-50' },
           { label: 'Total Orders', value: partnerList.reduce((s, p) => s + (p.totalOrders || 0), 0), color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Total Payouts', value: `₹${((partnerList.reduce((s, p) => s + (p.totalEarnings || 0), 0)) / 100000).toFixed(1)}L`, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { 
+            label: 'Total Payouts', 
+            value: (() => {
+              const val = partnerList.reduce((s, p) => s + (p.totalEarnings || 0), 0);
+              return val >= 100000 ? `₹${(val / 100000).toFixed(1)}L` : `₹${val.toLocaleString('en-IN')}`;
+            })(), 
+            color: 'text-purple-600', 
+            bg: 'bg-purple-50' 
+          },
         ].map(s => (
           <div key={s.label} className={`${s.bg} rounded-2xl p-4 border border-white`}>
             <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>

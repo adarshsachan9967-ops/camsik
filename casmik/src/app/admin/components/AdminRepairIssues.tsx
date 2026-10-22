@@ -17,6 +17,7 @@ interface RepairIssue {
 }
 
 const initialIssues: RepairIssue[] = [
+  /* Static mock repair issues commented out for live data:
   { id: 'rep-001', category: 'Smartphones', title: 'Screen Replacement', description: 'Cracked or broken display replacement with original quality screen', estimatedPrice: 2500, maxPrice: 8500, estimatedTime: '2-4 hours', warranty: '3 Months', icon: '📱', active: true, bookings: 142 },
   { id: 'rep-002', category: 'Smartphones', title: 'Battery Replacement', description: 'Original battery replacement for improved battery life and performance', estimatedPrice: 1200, maxPrice: 3500, estimatedTime: '1-2 hours', warranty: '6 Months', icon: '🔋', active: true, bookings: 98 },
   { id: 'rep-003', category: 'Smartphones', title: 'Charging Port Repair', description: 'Fix loose or non-functional charging port', estimatedPrice: 800, maxPrice: 2500, estimatedTime: '1-3 hours', warranty: '3 Months', icon: '🔌', active: true, bookings: 76 },
@@ -37,6 +38,7 @@ const initialIssues: RepairIssue[] = [
   { id: 'rep-018', category: 'Smartwatches', title: 'Screen Replacement', description: 'Replace cracked smartwatch display', estimatedPrice: 1500, maxPrice: 6000, estimatedTime: '2-4 hours', warranty: '3 Months', icon: '⌚', active: true, bookings: 11 },
   { id: 'rep-019', category: 'Smartwatches', title: 'Battery Replacement', description: 'Replace smartwatch battery for better battery life', estimatedPrice: 800, maxPrice: 2500, estimatedTime: '1-2 hours', warranty: '3 Months', icon: '🔋', active: true, bookings: 9 },
   { id: 'rep-020', category: 'Earbuds', title: 'Charging Case Repair', description: 'Fix charging case not charging earbuds', estimatedPrice: 500, maxPrice: 2000, estimatedTime: '1-2 hours', warranty: '1 Month', icon: '🎧', active: true, bookings: 16 },
+  */
 ];
 
 const categoryList = ['All', 'Smartphones', 'Laptops', 'Tablets', 'Smartwatches', 'Earbuds'];

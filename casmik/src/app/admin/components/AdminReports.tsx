@@ -1,17 +1,19 @@
 'use client';
-import React, { useState } from 'react';
-import { partners, deliveryAgents, orders } from '@/lib/casmikData';
+import React, { useState, useEffect, useMemo } from 'react';
+import type { Partner, DeliveryAgent, Order } from '@/lib/casmikData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { Download, TrendingUp, Package, Star, CheckCircle } from 'lucide-react';
 
-const monthlyData = [
+// const monthlyData: { month: string; orders: number; revenue: number; completed: number }[] = [
+  /* Static mock monthly data commented out for live data:
   { month: 'Jul', orders: 42, revenue: 285000, completed: 38 },
   { month: 'Aug', orders: 58, revenue: 412000, completed: 52 },
   { month: 'Sep', orders: 71, revenue: 538000, completed: 65 },
   { month: 'Oct', orders: 85, revenue: 624000, completed: 78 },
   { month: 'Nov', orders: 94, revenue: 712000, completed: 88 },
   { month: 'Dec', orders: 112, revenue: 892000, completed: 105 },
-];
+  */
+// ];
 
 const COLORS = ['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
 
@@ -19,23 +21,134 @@ export default function AdminReports() {
   const [activeTab, setActiveTab] = useState<'partners' | 'delivery' | 'orders'>('partners');
   const [dateRange, setDateRange] = useState('last30');
 
-  const partnerStats = partners.map(p => ({
-    ...p,
-    completionRate: p.totalOrders > 0 ? Math.round((p.completedOrders / p.totalOrders) * 100) : 0,
-    avgOrderValue: p.totalOrders > 0 ? Math.round(p.totalEarnings / p.totalOrders) : 0,
-  }));
+  const [reportPartners, setReportPartners] = useState<Partner[]>([]);
+  const [reportAgents, setReportAgents] = useState<DeliveryAgent[]>([]);
+  const [reportOrders, setReportOrders] = useState<Order[]>([]);
 
-  const agentStats = deliveryAgents.map(a => ({
-    ...a,
-    successRate: a.totalDeliveries > 0 ? Math.round(((a.totalDeliveries - Math.floor(a.totalDeliveries * 0.05)) / a.totalDeliveries) * 100) : 0,
-    avgDailyDeliveries: Math.round(a.totalDeliveries / 180),
-  }));
+  useEffect(() => {
+    fetch('/api/partners')
+      .then(r => r.json())
+      .then(d => { if (d.success && Array.isArray(d.partners)) setReportPartners(d.partners); })
+      .catch(() => {});
+
+    fetch('/api/delivery-agents')
+      .then(r => r.json())
+      .then(d => { if (d.success && Array.isArray(d.agents)) setReportAgents(d.agents); })
+      .catch(() => {});
+
+    fetch('/api/orders')
+      .then(r => r.json())
+      .then(d => { if (d.success && Array.isArray(d.orders)) setReportOrders(d.orders); })
+      .catch(() => {});
+  }, []);
+
+  const filteredOrders = useMemo(() => {
+    if (!reportOrders.length) return [];
+    const now = Date.now();
+    let cutoff = 0;
+    if (dateRange === 'last7') cutoff = now - 7 * 24 * 60 * 60 * 1000;
+    else if (dateRange === 'last30') cutoff = now - 30 * 24 * 60 * 60 * 1000;
+    else if (dateRange === 'last90') cutoff = now - 90 * 24 * 60 * 60 * 1000;
+    else if (dateRange === 'thisYear') {
+      cutoff = new Date(new Date().getFullYear(), 0, 1).getTime();
+    }
+    if (!cutoff) return reportOrders;
+    return reportOrders.filter(o => {
+      const t = o.createdAt ? new Date(o.createdAt).getTime() : 0;
+      return t >= cutoff;
+    });
+  }, [reportOrders, dateRange]);
+
+  const partnerStats = useMemo(() => {
+    return reportPartners.map(p => {
+      const pOrders = filteredOrders.filter(o => o.partnerId === p.id || o.partnerName === p.storeName || o.partnerName === p.name);
+      const pCompleted = pOrders.filter(o => o.status === 'completed' || o.paymentStatus === 'paid');
+      const pEarnings = pCompleted.reduce((s, o) => s + (o.finalPrice || o.quotedPrice || 0), 0);
+      const totOrders = pOrders.length || p.totalOrders || 0;
+      const compOrders = pCompleted.length || p.completedOrders || 0;
+      const totEarn = pEarnings || p.totalEarnings || 0;
+      return {
+        ...p,
+        totalOrders: totOrders,
+        completedOrders: compOrders,
+        totalEarnings: totEarn,
+        completionRate: totOrders > 0 ? Math.round((compOrders / totOrders) * 100) : 0,
+        avgOrderValue: totOrders > 0 ? Math.round(totEarn / totOrders) : 0,
+      };
+    });
+  }, [reportPartners, filteredOrders]);
+
+  const agentStats = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    return reportAgents.map(a => {
+      const aOrders = filteredOrders.filter(o => o.deliveryAgentId === a.id || o.deliveryAgentName === a.name);
+      const aCompleted = aOrders.filter(o => o.status === 'completed' || o.status === 'picked_up');
+      const totDeliv = aOrders.length || a.totalDeliveries || 0;
+      const compDeliv = aCompleted.length;
+      const todayPickups = aOrders.filter(o => o.pickupDate === todayStr).length || a.todayPickups || 0;
+      const todayDeliveries = aOrders.filter(o => (o.status === 'completed' || o.status === 'picked_up') && o.updatedAt?.startsWith(todayStr)).length || a.todayDeliveries || 0;
+      const earnings = aOrders.reduce((s, o) => s + (o.finalPrice ? Math.round(o.finalPrice * 0.05) : 250), 0) || a.earnings || 0;
+      return {
+        ...a,
+        todayPickups,
+        todayDeliveries,
+        totalDeliveries: totDeliv,
+        earnings,
+        successRate: totDeliv > 0 ? Math.round((compDeliv / totDeliv) * 100) : (a.totalDeliveries > 0 ? 100 : 0),
+      };
+    });
+  }, [reportAgents, filteredOrders]);
 
   const orderTypeData = [
-    { name: 'Sell', value: orders.filter(o => o.type === 'sell').length },
-    { name: 'Buy', value: orders.filter(o => o.type === 'buy').length },
-    { name: 'Exchange', value: orders.filter(o => o.type === 'exchange').length },
-    { name: 'Repair', value: orders.filter(o => o.type === 'repair').length },
+    { name: 'Sell', value: filteredOrders.filter(o => o.type === 'sell').length },
+    { name: 'Buy', value: filteredOrders.filter(o => o.type === 'buy').length },
+    { name: 'Exchange', value: filteredOrders.filter(o => o.type === 'exchange').length },
+    { name: 'Repair', value: filteredOrders.filter(o => o.type === 'repair').length },
+    { name: 'Rent', value: filteredOrders.filter(o => o.type === 'rent').length },
+  ];
+
+  const dynamicMonthlyData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const map: Record<string, { orders: number; revenue: number; completed: number }> = {};
+    months.forEach(m => { map[m] = { orders: 0, revenue: 0, completed: 0 }; });
+
+    filteredOrders.forEach(o => {
+      const d = o.createdAt ? new Date(o.createdAt) : null;
+      if (d && !isNaN(d.getTime())) {
+        const m = months[d.getMonth()];
+        if (map[m]) {
+          map[m].orders += 1;
+          map[m].revenue += (o.finalPrice || o.quotedPrice || 0);
+          if (o.status === 'completed' || o.paymentStatus === 'paid') map[m].completed += 1;
+        }
+      }
+    });
+
+    const currentMonthIdx = new Date().getMonth();
+    const last6 = [];
+    for (let i = 5; i >= 0; i--) {
+      const idx = (currentMonthIdx - i + 12) % 12;
+      const m = months[idx];
+      last6.push({
+        month: m,
+        orders: map[m].orders,
+        revenue: map[m].revenue,
+        completed: map[m].completed,
+      });
+    }
+    return last6;
+  }, [filteredOrders]);
+
+  const totalRev = filteredOrders
+    .filter(o => o.paymentStatus === 'paid' || o.status === 'completed')
+    .reduce((s, o) => s + (o.finalPrice || o.quotedPrice || 0), 0);
+  const activePartnersCount = reportPartners.filter(p => p.status === 'active').length;
+
+  const kpis = [
+    { label: 'Total Revenue', value: totalRev >= 100000 ? `₹${(totalRev / 100000).toFixed(1)}L` : `₹${totalRev.toLocaleString('en-IN')}`, change: 'Live', icon: '💰', color: 'bg-green-50 text-green-700' },
+    { label: 'Total Orders', value: String(filteredOrders.length), change: 'Live', icon: '📦', color: 'bg-blue-50 text-blue-700' },
+    { label: 'Active Partners', value: String(activePartnersCount), change: 'Live', icon: '🤝', color: 'bg-purple-50 text-purple-700' },
+    { label: 'Delivery Agents', value: String(reportAgents.length), change: 'Live', icon: '🚚', color: 'bg-orange-50 text-orange-700' },
   ];
 
   return (
@@ -61,12 +174,7 @@ export default function AdminReports() {
 
       {/* Overview KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Revenue', value: '₹8.92L', change: '+18%', icon: '💰', color: 'bg-green-50 text-green-700' },
-          { label: 'Total Orders', value: '112', change: '+19%', icon: '📦', color: 'bg-blue-50 text-blue-700' },
-          { label: 'Active Partners', value: '4', change: '+0%', icon: '🤝', color: 'bg-purple-50 text-purple-700' },
-          { label: 'Delivery Agents', value: '5', change: '+25%', icon: '🚚', color: 'bg-orange-50 text-orange-700' },
-        ].map(kpi => (
+        {kpis.map(kpi => (
           <div key={kpi.label} className={`${kpi.color} rounded-2xl p-4 border border-white`}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-2xl">{kpi.icon}</span>
@@ -83,7 +191,7 @@ export default function AdminReports() {
         <div className="col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h3 className="font-bold text-gray-900 mb-4">Monthly Revenue & Orders</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={monthlyData}>
+            <BarChart data={dynamicMonthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
@@ -278,10 +386,10 @@ export default function AdminReports() {
           <div className="p-5">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
               {[
-                { label: 'Total Orders', value: orders.length, icon: <Package size={18} className="text-blue-600" />, bg: 'bg-blue-50' },
-                { label: 'Completed', value: orders.filter(o => o.status === 'completed').length, icon: <CheckCircle size={18} className="text-green-600" />, bg: 'bg-green-50' },
-                { label: 'Total Revenue', value: `₹${orders.reduce((s, o) => s + (o.finalPrice || o.quotedPrice), 0).toLocaleString('en-IN')}`, icon: <TrendingUp size={18} className="text-purple-600" />, bg: 'bg-purple-50' },
-                { label: 'Avg Order Value', value: `₹${Math.round(orders.reduce((s, o) => s + o.quotedPrice, 0) / orders.length).toLocaleString('en-IN')}`, icon: <Star size={18} className="text-yellow-600" />, bg: 'bg-yellow-50' },
+                { label: 'Total Orders', value: filteredOrders.length, icon: <Package size={18} className="text-blue-600" />, bg: 'bg-blue-50' },
+                { label: 'Completed', value: filteredOrders.filter(o => o.status === 'completed').length, icon: <CheckCircle size={18} className="text-green-600" />, bg: 'bg-green-50' },
+                { label: 'Total Revenue', value: `₹${filteredOrders.reduce((s, o) => s + (o.finalPrice || o.quotedPrice || 0), 0).toLocaleString('en-IN')}`, icon: <TrendingUp size={18} className="text-purple-600" />, bg: 'bg-purple-50' },
+                { label: 'Avg Order Value', value: `₹${filteredOrders.length > 0 ? Math.round(filteredOrders.reduce((s, o) => s + (o.quotedPrice || 0), 0) / filteredOrders.length).toLocaleString('en-IN') : 0}`, icon: <Star size={18} className="text-yellow-600" />, bg: 'bg-yellow-50' },
               ].map(kpi => (
                 <div key={kpi.label} className={`${kpi.bg} rounded-xl p-4`}>
                   <div className="mb-2">{kpi.icon}</div>
@@ -291,7 +399,7 @@ export default function AdminReports() {
               ))}
             </div>
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={monthlyData}>
+              <LineChart data={dynamicMonthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
