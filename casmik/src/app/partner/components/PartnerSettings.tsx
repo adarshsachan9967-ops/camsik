@@ -21,17 +21,78 @@ interface PartnerSettingsProps {
 }
 
 export default function PartnerSettings({ partner, onUpdateSession }: PartnerSettingsProps) {
-  const [autoAccept, setAutoAccept] = useState(true);
-  const [smsAlerts, setSmsAlerts] = useState(true);
-  const [whatsappAlerts, setWhatsappAlerts] = useState(true);
-  const [emailDigest, setEmailDigest] = useState(false);
-  const [dailyCapacity, setDailyCapacity] = useState('15');
-  const [operatingHours, setOperatingHours] = useState('10:00 AM - 8:30 PM');
+  const [autoAccept, setAutoAccept] = useState(partner?.settings?.autoAccept ?? true);
+  const [smsAlerts, setSmsAlerts] = useState(partner?.settings?.smsAlerts ?? true);
+  const [whatsappAlerts, setWhatsappAlerts] = useState(partner?.settings?.whatsappAlerts ?? true);
+  const [emailDigest, setEmailDigest] = useState(partner?.settings?.emailDigest ?? false);
+  const [dailyCapacity, setDailyCapacity] = useState(partner?.settings?.dailyCapacity || '15');
+  const [operatingHours, setOperatingHours] = useState(partner?.settings?.operatingHours || '10:00 AM - 8:30 PM');
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+  React.useEffect(() => {
+    if (partner?.settings) {
+      if (partner.settings.autoAccept !== undefined) setAutoAccept(partner.settings.autoAccept);
+      if (partner.settings.smsAlerts !== undefined) setSmsAlerts(partner.settings.smsAlerts);
+      if (partner.settings.whatsappAlerts !== undefined) setWhatsappAlerts(partner.settings.whatsappAlerts);
+      if (partner.settings.emailDigest !== undefined) setEmailDigest(partner.settings.emailDigest);
+      if (partner.settings.dailyCapacity) setDailyCapacity(partner.settings.dailyCapacity);
+      if (partner.settings.operatingHours) setOperatingHours(partner.settings.operatingHours);
+    }
+  }, [partner]);
+
+  const handleSave = async () => {
+    if (!partner) return;
+    setIsSaving(true);
+    try {
+      const updatedSettings = {
+        autoAccept,
+        dailyCapacity,
+        operatingHours,
+        smsAlerts,
+        whatsappAlerts,
+        emailDigest,
+      };
+
+      const payload = {
+        id: partner.id,
+        partnerId: partner.id,
+        settings: updatedSettings,
+      };
+
+      const res = await fetch('/api/partners', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const updated: Partner = {
+        ...partner,
+        settings: updatedSettings,
+      };
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.partner) {
+          Object.assign(updated, json.partner);
+        }
+      }
+
+      if (onUpdateSession) {
+        onUpdateSession(updated);
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('casmik_partner_session', JSON.stringify(updated));
+        window.dispatchEvent(new Event('casmik_partners_updated'));
+      }
+
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } catch (err) {
+      console.error('Failed to save partner settings:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -49,9 +110,15 @@ export default function PartnerSettings({ partner, onUpdateSession }: PartnerSet
 
         <button
           onClick={handleSave}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs shadow-md shadow-primary/20 transition-all self-start sm:self-auto"
+          disabled={isSaving}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs shadow-md shadow-primary/20 transition-all self-start sm:self-auto disabled:opacity-60 cursor-pointer"
         >
-          <Save size={15} /> Save All Changes
+          {isSaving ? (
+            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Save size={15} />
+          )}
+          <span>{isSaving ? 'Saving to Database...' : 'Save All Changes'}</span>
         </button>
       </div>
 

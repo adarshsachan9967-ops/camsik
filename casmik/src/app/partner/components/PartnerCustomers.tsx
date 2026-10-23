@@ -1,6 +1,5 @@
 'use client';
-import React, { useState, useMemo } from 'react';
-import { orders } from '@/lib/casmikData';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Users, 
   Search, 
@@ -35,34 +34,68 @@ interface CustomerRecord {
   latestOrderType: 'sell' | 'buy' | 'exchange' | 'repair' | 'rent';
   latestOrderDate: string;
   status: 'active' | 'vip' | 'new';
-  orders: typeof orders;
+  orders: any[];
 }
 
-export default function PartnerCustomers({ onNavigate }: { onNavigate?: (section: any) => void }) {
+export default function PartnerCustomers({ onNavigate, partner }: { onNavigate?: (section: any) => void; partner?: any }) {
+  const [liveOrders, setLiveOrders] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'sell' | 'buy' | 'exchange'>('all');
   const [filterTier, setFilterTier] = useState<'all' | 'vip' | 'repeat'>('all');
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerRecord | null>(null);
 
-  // Derive partner customer list from real orders
+  useEffect(() => {
+    let isMounted = true;
+    const fetchOrders = async () => {
+      try {
+        const pId = partner?.id;
+        const res = await fetch(`/api/orders?partnerId=${pId || ''}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.orders) && isMounted) {
+            const matched = data.orders.filter((o: any) => 
+              !pId || o.partnerId === pId || o.assignedPartnerId === pId
+            );
+            setLiveOrders(matched);
+          }
+        }
+      } catch (err) {
+        console.warn('Customer orders fetch error:', err);
+      }
+    };
+
+    fetchOrders();
+
+    window.addEventListener('casmik_orders_updated', fetchOrders);
+    window.addEventListener('casmik_partner_orders_updated', fetchOrders);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('casmik_orders_updated', fetchOrders);
+      window.removeEventListener('casmik_partner_orders_updated', fetchOrders);
+    };
+  }, [partner?.id]);
+
+  // Derive partner customer list from real live orders
   const customerList: CustomerRecord[] = useMemo(() => {
     const customerMap = new Map<string, CustomerRecord>();
 
-    orders.forEach((ord) => {
+    liveOrders.forEach((ord) => {
       const key = ord.customerPhone || ord.customerName;
+      if (!key) return;
       if (!customerMap.has(key)) {
         customerMap.set(key, {
-          id: `cust-${Math.abs(key.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0)).toString(16).slice(0, 6)}`,
+          id: `cust-${Math.abs(key.split('').reduce((a: number, b: string) => ((a << 5) - a) + b.charCodeAt(0), 0)).toString(16).slice(0, 6)}`,
           name: ord.customerName || 'Customer',
           phone: ord.customerPhone || '+91 98000 00000',
           email: ord.customerEmail || `${ord.customerName?.toLowerCase().replace(/\s+/g, '') || 'user'}@gmail.com`,
-          city: ord.city || 'Mumbai',
-          address: ord.customerAddress || 'Near City Center',
+          city: ord.city || 'Store Area',
+          address: ord.customerAddress || 'Customer Address',
           orderCount: 1,
           totalSpent: ord.finalPrice || ord.quotedPrice || 0,
           latestDevice: ord.deviceName,
           latestOrderType: ord.type,
-          latestOrderDate: ord.createdAt,
+          latestOrderDate: ord.createdAt || new Date().toISOString(),
           status: 'new',
           orders: [ord],
         });
@@ -90,7 +123,7 @@ export default function PartnerCustomers({ onNavigate }: { onNavigate?: (section
       }
       return c;
     });
-  }, []);
+  }, [liveOrders]);
 
   const filteredCustomers = customerList.filter((c) => {
     const matchesSearch =

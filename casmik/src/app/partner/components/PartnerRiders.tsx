@@ -20,28 +20,13 @@ export default function PartnerRiders({ partner }: Props) {
   };
 
   const currentPartner = getPartner();
-  const currentPartnerId = currentPartner?.id || 'partner-002';
+  const currentPartnerId = currentPartner?.id || 'partner-001';
 
-  const loadMyRiders = (): DeliveryAgent[] => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('casmik_delivery_agents_v1');
-        if (saved) {
-          const list: DeliveryAgent[] = JSON.parse(saved);
-          if (Array.isArray(list)) {
-            // STRICTLY show only riders created by this specific partner!
-            // Admin riders and other partners' riders are NEVER visible in this panel!
-            return list.filter(a => a.partnerId === currentPartnerId);
-          }
-        }
-      } catch {}
-    }
-    return deliveryAgents.filter(a => a.partnerId === currentPartnerId);
-  };
-
-  const [riders, setRiders] = useState<DeliveryAgent[]>(loadMyRiders);
+  const [riders, setRiders] = useState<DeliveryAgent[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -55,14 +40,43 @@ export default function PartnerRiders({ partner }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [vehicle, setVehicle] = useState('Bike (Hero Splendor)');
-  const [vehicleNumber, setVehicleNumber] = useState('DL01AB9876');
-  const [pinCodes, setPinCodes] = useState('110001, 110016');
+  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [pinCodes, setPinCodes] = useState('');
   const [aadharNo, setAadharNo] = useState('');
   const [dlNo, setDlNo] = useState('');
 
+  const fetchRiders = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/delivery-agents?partnerId=${encodeURIComponent(currentPartnerId)}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.agents)) {
+          setRiders(data.agents);
+          return;
+        }
+      }
+      // Fallback to local storage if API call fails
+      const saved = localStorage.getItem('casmik_delivery_agents_v1');
+      if (saved) {
+        const list: DeliveryAgent[] = JSON.parse(saved);
+        if (Array.isArray(list)) {
+          setRiders(list.filter(a => a.partnerId === currentPartnerId));
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load riders from API:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
+    fetchRiders();
+
     const handleSync = () => {
-      setRiders(loadMyRiders());
+      fetchRiders();
     };
     window.addEventListener('casmik_delivery_agents_updated', handleSync);
     window.addEventListener('storage', handleSync);
@@ -72,35 +86,17 @@ export default function PartnerRiders({ partner }: Props) {
     };
   }, [currentPartnerId]);
 
-  const saveRidersToStorage = (updatedRiders: DeliveryAgent[]) => {
-    if (typeof window !== 'undefined') {
-      try {
-        const existingRaw = localStorage.getItem('casmik_delivery_agents_v1');
-        const allAgents: DeliveryAgent[] = existingRaw ? JSON.parse(existingRaw) : deliveryAgents;
-        // Keep non-partner and other partner agents intact in global db
-        const otherAgents = allAgents.filter(a => a.partnerId !== currentPartnerId);
-        const merged = [...updatedRiders, ...otherAgents];
-        localStorage.setItem('casmik_delivery_agents_v1', JSON.stringify(merged));
-        window.dispatchEvent(new Event('casmik_delivery_agents_updated'));
-        window.dispatchEvent(new Event('storage'));
-      } catch (err) {
-        console.error('Failed saving riders:', err);
-      }
-    }
-    setRiders(updatedRiders);
-  };
-
   const openAddModal = () => {
     setEditingRider(null);
     setName('');
     setPhone('');
     setEmail('');
     setPassword(`Rider@${Math.floor(1000 + Math.random() * 9000)}`);
-    setVehicle('Bike (Hero Splendor)');
-    setVehicleNumber('DL01AB' + Math.floor(1000 + Math.random() * 9000));
-    setPinCodes(currentPartner?.pinCodes?.join(', ') || '110001, 110016');
-    setAadharNo('XXXX-XXXX-8821');
-    setDlNo('DL04-2022-004412');
+    setVehicle('Bike');
+    setVehicleNumber('');
+    setPinCodes(currentPartner?.pinCodes?.join(', ') || '');
+    setAadharNo('');
+    setDlNo('');
     setShowPassword(false);
     setIsModalOpen(true);
   };
@@ -120,84 +116,113 @@ export default function PartnerRiders({ partner }: Props) {
     setIsModalOpen(true);
   };
 
-  const handleSaveRider = (e: React.FormEvent) => {
+  const handleSaveRider = async (e: React.FormEvent) => {
     e.preventDefault();
     const pinArray = pinCodes.split(',').map(s => s.trim()).filter(Boolean);
 
     const docPayload = {
-      aadhar: true,
+      aadhar: !!aadharNo,
       aadharNumber: aadharNo,
       pan: true,
-      drivingLicense: true,
+      drivingLicense: !!dlNo,
       dlNumber: dlNo,
       vehicleRC: true,
       insurance: true,
       verified: true,
     };
 
-    if (editingRider) {
-      const updated = riders.map(r => {
-        if (r.id === editingRider.id) {
-          return {
-            ...r,
-            name,
-            phone,
-            email,
-            password,
-            vehicle,
-            vehicleNumber,
-            pinCodes: pinArray.length > 0 ? pinArray : r.pinCodes,
-            documents: docPayload,
-          };
-        }
-        return r;
-      });
-      saveRidersToStorage(updated);
-    } else {
-      const newRider: DeliveryAgent = {
-        id: `rider-${currentPartnerId}-${Date.now()}`,
-        name,
-        phone,
-        email,
-        password,
-        city: currentPartner?.city || 'Delhi NCR',
-        pinCodes: pinArray.length > 0 ? pinArray : ['110001'],
-        status: 'online',
-        rating: 5.0,
-        todayPickups: 0,
-        todayDeliveries: 0,
-        totalDeliveries: 0,
-        earnings: 0,
-        vehicle,
-        vehicleNumber,
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80',
-        joinedAt: new Date().toISOString().split('T')[0],
-        partnerId: currentPartnerId,
-        partnerName: currentPartner?.storeName || 'My Store',
-        commission: 120,
-        commissionType: 'fixed',
-        approvalStatus: 'approved',
-        documents: docPayload,
-      };
-      saveRidersToStorage([newRider, ...riders]);
-    }
+    setIsSubmitting(true);
+    try {
+      if (editingRider) {
+        const updatePayload = {
+          id: editingRider.id,
+          name,
+          phone,
+          email,
+          password,
+          vehicle,
+          vehicleNumber,
+          pinCodes: pinArray.length > 0 ? pinArray : editingRider.pinCodes,
+          documents: docPayload,
+        };
 
-    setIsModalOpen(false);
+        const res = await fetch('/api/delivery-agents', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatePayload),
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.agent) {
+            setRiders(prev => prev.map(r => r.id === editingRider.id ? { ...r, ...json.agent } : r));
+          }
+        }
+      } else {
+        const newPayload = {
+          name,
+          phone,
+          email: email || `${phone}@camsik.in`,
+          password,
+          city: currentPartner?.city || 'Delhi NCR',
+          pinCodes: pinArray.length > 0 ? pinArray : (currentPartner?.pinCodes || ['110001']),
+          vehicle,
+          vehicleNumber,
+          partnerId: currentPartnerId,
+          partnerName: currentPartner?.storeName || 'Partner Store',
+          documents: docPayload,
+          status: 'online',
+          createdBy: 'partner',
+        };
+
+        const res = await fetch('/api/delivery-agents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newPayload),
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.agent) {
+            setRiders(prev => [json.agent, ...prev]);
+          }
+        }
+      }
+
+      window.dispatchEvent(new Event('casmik_delivery_agents_updated'));
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Error saving rider:', err);
+    } finally {
+      setIsSubmitting(false);
+      fetchRiders();
+    }
   };
 
-  const toggleRiderStatus = (id: string) => {
-    const updated = riders.map(r => {
-      if (r.id === id) {
-        const nextStatus: 'online' | 'offline' = r.status === 'online' ? 'offline' : 'online';
-        return { ...r, status: nextStatus };
-      }
-      return r;
-    });
-    saveRidersToStorage(updated);
+  const toggleRiderStatus = async (id: string) => {
+    const rider = riders.find(r => r.id === id);
+    if (!rider) return;
+    const nextStatus: 'online' | 'offline' = rider.status === 'online' ? 'offline' : 'online';
+
+    // Optimistic update
+    setRiders(prev => prev.map(r => r.id === id ? { ...r, status: nextStatus } : r));
+
+    try {
+      await fetch('/api/delivery-agents', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: nextStatus }),
+      });
+      window.dispatchEvent(new Event('casmik_delivery_agents_updated'));
+    } catch (e) {
+      console.warn('Failed to toggle rider status on API:', e);
+    }
   };
 
   const filteredRiders = riders.filter(r => {
-    const matchQuery = r.name.toLowerCase().includes(query.toLowerCase()) || r.phone.includes(query) || r.vehicleNumber.toLowerCase().includes(query.toLowerCase());
+    const matchQuery = (r.name || '').toLowerCase().includes(query.toLowerCase()) || 
+                       (r.phone || '').includes(query) || 
+                       (r.vehicleNumber || '').toLowerCase().includes(query.toLowerCase());
     const matchStatus = statusFilter === 'all' || r.status === statusFilter;
     return matchQuery && matchStatus;
   });
@@ -276,7 +301,12 @@ export default function PartnerRiders({ partner }: Props) {
       </div>
 
       {/* Riders List */}
-      {filteredRiders.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-3xl border border-gray-100 p-12 text-center">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm font-semibold text-gray-700">Loading store delivery fleet from MongoDB...</p>
+        </div>
+      ) : filteredRiders.length === 0 ? (
         <div className="bg-white rounded-3xl border border-gray-200 p-12 text-center space-y-4">
           <div className="w-16 h-16 bg-blue-50 text-primary rounded-2xl flex items-center justify-center mx-auto">
             <Bike size={32} />
@@ -526,10 +556,17 @@ export default function PartnerRiders({ partner }: Props) {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-bold shadow-md hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-bold shadow-md hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
                 >
-                  <Check size={16} />
-                  <span>{editingRider ? 'Update Rider' : 'Create Rider'}</span>
+                  {isSubmitting ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Check size={16} />
+                      <span>{editingRider ? 'Update Rider' : 'Create Rider'}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

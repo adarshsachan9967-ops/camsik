@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { PartnerSection } from '../page';
 import { LayoutDashboard, ShoppingBag, ClipboardCheck, DollarSign, Users, BarChart3, Settings, Bell, Menu, ChevronLeft, ChevronRight, Store, MessageSquare, UserCircle, LogOut, Bike } from 'lucide-react';
-import { Partner, partners, orders as defaultOrders } from '@/lib/casmikData';
+import { Partner, partners } from '@/lib/casmikData';
 import NotificationBell from '@/components/NotificationBell';
 import PartnerReferModal from './PartnerReferModal';
 
@@ -21,9 +21,9 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [showReferModal, setShowReferModal] = useState(false);
-  const [partnerOrderCount, setPartnerOrderCount] = useState<number>(21);
-  const [partnerInspectionCount, setPartnerInspectionCount] = useState<number>(3);
-  const [partnerSupportCount, setPartnerSupportCount] = useState<number>(2);
+  const [partnerOrderCount, setPartnerOrderCount] = useState<number>(0);
+  const [partnerInspectionCount, setPartnerInspectionCount] = useState<number>(0);
+  const [partnerSupportCount, setPartnerSupportCount] = useState<number>(0);
 
   const getPartner = (): Partner | null => {
     if (currentPartner) return currentPartner;
@@ -53,37 +53,42 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
     }
   }, []);
 
-  // Compute live real-time badge counts for partner portal
+  // Compute live real-time badge counts from API
   useEffect(() => {
-    const updatePartnerMetrics = () => {
-      if (typeof window === 'undefined') return;
+    let isMounted = true;
+    const updatePartnerMetrics = async () => {
+      const currentId = partner?.id;
+      if (!currentId) return;
+
       try {
-        const currentId = partner?.id || 'partner-001';
-        const rawPartner = localStorage.getItem('casmik_partner_orders_v1');
-        const rawGlobal = localStorage.getItem('casmik_orders_v1');
-
-        const pList = rawPartner ? JSON.parse(rawPartner) : [];
-        const gList = rawGlobal ? JSON.parse(rawGlobal) : [];
-
-        const orderMap = new Map();
-        [...gList, ...pList].forEach((o: any) => {
-          if (o && (o.partnerId === currentId || !o.partnerId || o.partnerId === 'partner-001' || o.partnerId === 'partner-002')) {
-            orderMap.set(o.orderNumber || o.id, o);
+        const res = await fetch(`/api/orders?partnerId=${encodeURIComponent(currentId)}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.orders)) {
+            if (!isMounted) return;
+            const orders = data.orders;
+            setPartnerOrderCount(orders.length);
+            const inspectionCount = orders.filter((o: any) =>
+              ['inspection', 'pickup_scheduled', 'picked_up', 'diagnostics_started', 'qc_in_progress'].includes(o.status)
+            ).length;
+            setPartnerInspectionCount(inspectionCount);
           }
-        });
+        }
+      } catch {
+        try {
+          const rawPartner = localStorage.getItem('casmik_partner_orders_v1');
+          const pList = rawPartner ? JSON.parse(rawPartner) : [];
+          if (Array.isArray(pList) && isMounted) {
+            setPartnerOrderCount(pList.length);
+          }
+        } catch {}
+      }
 
-        const activeList = Array.from(orderMap.values());
-        setPartnerOrderCount(activeList.length);
-
-        const inspectionList = activeList.filter((o: any) =>
-          ['inspection', 'pickup_scheduled', 'picked_up', 'diagnostics_started'].includes(o.status)
-        );
-        setPartnerInspectionCount(inspectionList.length);
-
+      try {
         const rawTickets = localStorage.getItem('casmik_tickets_v1');
         if (rawTickets) {
           const tList = JSON.parse(rawTickets);
-          if (Array.isArray(tList)) {
+          if (Array.isArray(tList) && isMounted) {
             const activeTickets = tList.filter((t: any) => t.status !== 'resolved' && t.status !== 'closed');
             setPartnerSupportCount(activeTickets.length);
           }
@@ -96,6 +101,7 @@ export default function PartnerLayout({ activeSection, onSectionChange, children
     window.addEventListener('casmik_partner_orders_updated', updatePartnerMetrics);
     window.addEventListener('storage', updatePartnerMetrics);
     return () => {
+      isMounted = false;
       window.removeEventListener('casmik_orders_updated', updatePartnerMetrics);
       window.removeEventListener('casmik_partner_orders_updated', updatePartnerMetrics);
       window.removeEventListener('storage', updatePartnerMetrics);

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   User, 
   Phone, 
@@ -43,27 +43,50 @@ interface PartnerProfileProps {
 
 export default function PartnerProfile({ partner, onUpdateSession }: PartnerProfileProps) {
   const [editing, setEditing] = useState(false);
-  const [storeName, setStoreName] = useState(partner?.storeName || 'MobileHub Store');
-  const [name, setName] = useState(partner?.name || 'Rajesh Kumar');
-  const [phone, setPhone] = useState(partner?.phone || '+91 98765 43210');
-  const [email, setEmail] = useState(partner?.email || 'rajesh@mobilehub.in');
-  const [address, setAddress] = useState(partner?.address || 'Shop 12, Sector 18, Noida, UP - 201301');
-  const [gstNumber, setGstNumber] = useState('07AABCU9603R1ZX');
-  const [panNumber, setPanNumber] = useState('AABCU9603R');
-  const [bankName, setBankName] = useState('HDFC Bank');
-  const [accountNumber, setAccountNumber] = useState('50200034918273');
-  const [ifscCode, setIfscCode] = useState('HDFC0000128');
-  const [upiId, setUpiId] = useState('mobilehub@okhdfcbank');
+  const [isSaving, setIsSaving] = useState(false);
+  const [storeName, setStoreName] = useState(partner?.storeName || '');
+  const [name, setName] = useState(partner?.name || '');
+  const [phone, setPhone] = useState(partner?.phone || '');
+  const [email, setEmail] = useState(partner?.email || '');
+  const [address, setAddress] = useState(partner?.address || '');
+  const [gstNumber, setGstNumber] = useState(partner?.documents?.gstNumber || '');
+  const [panNumber, setPanNumber] = useState(partner?.documents?.panNumber || '');
+  const [bankName, setBankName] = useState((partner as any)?.bankDetails?.bankName || (partner?.documents as any)?.bankName || 'State Bank of India');
+  const [accountNumber, setAccountNumber] = useState(partner?.documents?.accountNumber || (partner as any)?.bankDetails?.accountNumber || '');
+  const [ifscCode, setIfscCode] = useState(partner?.documents?.ifscCode || (partner as any)?.bankDetails?.ifscCode || '');
+  const [upiId, setUpiId] = useState((partner as any)?.bankDetails?.upiId || (partner?.phone ? `${partner.phone.replace(/[^0-9]/g, '')}@okaxis` : ''));
+
+  useEffect(() => {
+    if (partner) {
+      setStoreName(partner.storeName || '');
+      setName(partner.name || '');
+      setPhone(partner.phone || '');
+      setEmail(partner.email || '');
+      setAddress(partner.address || '');
+      setGstNumber(partner.documents?.gstNumber || '');
+      setPanNumber(partner.documents?.panNumber || '');
+      if ((partner as any)?.bankDetails?.bankName) setBankName((partner as any).bankDetails.bankName);
+      if (partner.documents?.accountNumber || (partner as any)?.bankDetails?.accountNumber) {
+        setAccountNumber(partner.documents?.accountNumber || (partner as any)?.bankDetails?.accountNumber);
+      }
+      if (partner.documents?.ifscCode || (partner as any)?.bankDetails?.ifscCode) {
+        setIfscCode(partner.documents?.ifscCode || (partner as any)?.bankDetails?.ifscCode);
+      }
+      if ((partner as any)?.bankDetails?.upiId) {
+        setUpiId((partner as any).bankDetails.upiId);
+      }
+    }
+  }, [partner]);
 
   const [previewDoc, setPreviewDoc] = useState<{ label: string; url: string } | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
   const [docs, setDocs] = useState<Record<string, DocState>>({
-    'Aadhaar Card': { status: 'verified' },
-    'PAN Card': { status: 'verified' },
-    'GST Certificate': { status: 'pending' },
+    'Aadhaar Card': { status: partner?.documents?.verified ? 'verified' : 'pending' },
+    'PAN Card': { status: partner?.documents?.pan ? 'verified' : 'pending' },
+    'GST Certificate': { status: partner?.documents?.gst ? 'verified' : 'pending' },
     'Shop License': { status: 'pending' },
-    'Bank Proof': { status: 'uploaded' },
+    'Bank Proof': { status: partner?.documents?.bankProof ? 'verified' : 'uploaded' },
   });
 
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -80,8 +103,46 @@ export default function PartnerProfile({ partner, onUpdateSession }: PartnerProf
     setTimeout(() => setUploadSuccess(null), 3000);
   };
 
-  const handleSaveProfile = () => {
-    if (onUpdateSession && partner) {
+  const handleSaveProfile = async () => {
+    if (!partner) return;
+    setIsSaving(true);
+    try {
+      const updatedDocs = {
+        ...(partner.documents || {}),
+        gst: !!gstNumber,
+        gstNumber,
+        pan: !!panNumber,
+        panNumber,
+        accountNumber,
+        ifscCode,
+      };
+
+      const updatedBank = {
+        bankName,
+        accountNumber,
+        ifscCode,
+        upiId,
+        holderName: name,
+      };
+
+      const payload = {
+        id: partner.id,
+        partnerId: partner.id,
+        storeName,
+        name,
+        phone,
+        email,
+        address,
+        documents: updatedDocs,
+        bankDetails: updatedBank,
+      };
+
+      const res = await fetch('/api/partners', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
       const updated: Partner = {
         ...partner,
         storeName,
@@ -89,14 +150,88 @@ export default function PartnerProfile({ partner, onUpdateSession }: PartnerProf
         phone,
         email,
         address,
+        documents: updatedDocs,
+        ...( { bankDetails: updatedBank } as any ),
       };
-      onUpdateSession(updated);
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.partner) {
+          Object.assign(updated, json.partner);
+        }
+      }
+
+      if (onUpdateSession) {
+        onUpdateSession(updated);
+      }
       if (typeof window !== 'undefined') {
         localStorage.setItem('casmik_partner_session', JSON.stringify(updated));
+        window.dispatchEvent(new Event('casmik_partners_updated'));
       }
+      setEditing(false);
+    } catch (err) {
+      console.error('Failed to update partner profile:', err);
+    } finally {
+      setIsSaving(false);
     }
-    setEditing(false);
   };
+
+  const [metrics, setMetrics] = useState({
+    totalOrders: partner?.totalOrders || 0,
+    totalEarnings: partner?.totalEarnings || 0,
+    completedOrders: partner?.completedOrders || 0,
+    completionRate: partner?.totalOrders ? `${(((partner.completedOrders || 0) / partner.totalOrders) * 100).toFixed(1)}%` : '100%',
+    dailyCapacity: partner?.settings?.dailyCapacity ? `${partner.settings.dailyCapacity} Orders/Day` : '15 Orders/Day',
+  });
+
+  useEffect(() => {
+    const fetchLiveMetrics = async () => {
+      if (!partner?.id) return;
+      try {
+        const [dashRes, ordersRes] = await Promise.all([
+          fetch(`/api/partners/dashboard?partnerId=${encodeURIComponent(partner.id)}`, { cache: 'no-store' }),
+          fetch(`/api/orders?partnerId=${encodeURIComponent(partner.id)}`, { cache: 'no-store' }),
+        ]);
+
+        let ordersCount = partner?.totalOrders || 0;
+        let earnings = partner?.totalEarnings || 0;
+        let completed = partner?.completedOrders || 0;
+
+        if (dashRes.ok) {
+          const dashData = await dashRes.json();
+          if (dashData.success && dashData.stats) {
+            ordersCount = dashData.stats.totalOrders ?? ordersCount;
+            earnings = dashData.stats.totalEarnings ?? earnings;
+            completed = dashData.stats.completedOrders ?? completed;
+          }
+        }
+
+        if (ordersRes.ok) {
+          const ordersData = await ordersRes.json();
+          if (ordersData.success && Array.isArray(ordersData.orders)) {
+            const list = ordersData.orders;
+            ordersCount = list.length;
+            completed = list.filter((o: any) => o.status === 'completed' || o.status === 'paid').length;
+          }
+        }
+
+        const rate = ordersCount > 0 ? `${(((completed || 0) / ordersCount) * 100).toFixed(1)}%` : '100%';
+        const capacity = partner?.settings?.dailyCapacity ? `${partner.settings.dailyCapacity} Orders/Day` : '15 Orders/Day';
+
+        setMetrics({
+          totalOrders: ordersCount,
+          totalEarnings: earnings,
+          completedOrders: completed,
+          completionRate: rate,
+          dailyCapacity: capacity,
+        });
+      } catch (e) {
+        console.warn('Failed to load live metrics in PartnerProfile:', e);
+      }
+    };
+
+    fetchLiveMetrics();
+  }, [partner?.id]);
 
   const docList = [
     { label: 'Aadhaar Card', icon: User, desc: 'Government Photo ID' },
@@ -121,8 +256,8 @@ export default function PartnerProfile({ partner, onUpdateSession }: PartnerProf
                 <Store size={38} className="text-white" />
               </div>
               <button
-                className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-                title="Change Store Avatar"
+                className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer"
+                title="Store Avatar"
               >
                 <Camera size={14} className="text-primary" />
               </button>
@@ -130,25 +265,25 @@ export default function PartnerProfile({ partner, onUpdateSession }: PartnerProf
 
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{storeName}</h1>
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{storeName || partner?.storeName}</h1>
                 <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-bold backdrop-blur-sm">
-                  Tier 1 Certified Studio
+                  {partner?.status === 'active' ? 'Certified Studio' : partner?.status === 'pending' ? 'Pending Approval' : 'Partner Studio'}
                 </span>
               </div>
               <p className="text-white/80 text-xs sm:text-sm mt-0.5 font-medium">
-                {name} &bull; Partner ID: <strong className="text-white">{partner?.id || 'CFN12345'}</strong>
+                {name || partner?.name} &bull; Partner ID: <strong className="text-white font-mono">{partner?.id}</strong>
               </p>
               
               <div className="flex flex-wrap items-center gap-3 mt-2.5 text-xs">
                 <div className="flex items-center gap-1 bg-black/20 px-2.5 py-1 rounded-lg">
                   <Star size={13} className="fill-yellow-300 text-yellow-300" />
-                  <span className="font-bold text-white">4.8 / 5.0</span>
+                  <span className="font-bold text-white">{(partner?.rating || 5.0).toFixed(1)} / 5.0</span>
                 </div>
                 <span className="text-white/60">&bull;</span>
-                <span className="text-white/90 font-medium">128 Orders Completed</span>
+                <span className="text-white/90 font-medium">{metrics.completedOrders} Orders Completed</span>
                 <span className="text-white/60">&bull;</span>
                 <span className="text-emerald-200 font-semibold flex items-center gap-1">
-                  <CheckCircle2 size={13} /> Active &amp; Verified
+                  <CheckCircle2 size={13} /> {partner?.status === 'active' ? 'Active & Verified' : partner?.status === 'pending' ? 'Application Under Review' : 'Verified Partner'}
                 </span>
               </div>
             </div>
@@ -157,7 +292,7 @@ export default function PartnerProfile({ partner, onUpdateSession }: PartnerProf
           <div className="flex sm:self-center gap-3">
             <button
               onClick={() => setEditing((prev) => !prev)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-gray-900 font-bold text-xs hover:bg-white/90 shadow-md transition-all hover:scale-105"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-gray-900 font-bold text-xs hover:bg-white/90 shadow-md transition-all hover:scale-105 cursor-pointer"
             >
               <Edit3 size={14} className="text-primary" />
               <span>{editing ? 'Cancel Editing' : 'Edit Profile'}</span>
@@ -169,19 +304,19 @@ export default function PartnerProfile({ partner, onUpdateSession }: PartnerProf
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/20 relative z-10">
           <div className="bg-black/20 backdrop-blur-md rounded-2xl p-3.5 border border-white/10">
             <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Total Orders</p>
-            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">128</p>
+            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{metrics.totalOrders}</p>
           </div>
           <div className="bg-black/20 backdrop-blur-md rounded-2xl p-3.5 border border-white/10">
             <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Total Earnings</p>
-            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">₹2,44,350</p>
+            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">₹{metrics.totalEarnings.toLocaleString('en-IN')}</p>
           </div>
           <div className="bg-black/20 backdrop-blur-md rounded-2xl p-3.5 border border-white/10">
             <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Order Completion</p>
-            <p className="text-xl sm:text-2xl font-black text-emerald-300 mt-0.5">96.2%</p>
+            <p className="text-xl sm:text-2xl font-black text-emerald-300 mt-0.5">{metrics.completionRate}</p>
           </div>
           <div className="bg-black/20 backdrop-blur-md rounded-2xl p-3.5 border border-white/10">
             <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Daily Capacity</p>
-            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">15 Orders/Day</p>
+            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{metrics.dailyCapacity}</p>
           </div>
         </div>
       </div>
@@ -193,15 +328,19 @@ export default function PartnerProfile({ partner, onUpdateSession }: PartnerProf
             <Shield size={20} />
           </div>
           <div>
-            <p className="text-sm font-bold text-emerald-900">Verified Camsik Partner Store</p>
+            <p className="text-sm font-bold text-emerald-900">
+              {partner?.status === 'active' ? 'Verified Camsik Partner Store' : 'Camsik Partner Store'}
+            </p>
             <p className="text-xs text-emerald-700 mt-0.5">
-              KYC documents verified &bull; Inspection clearance level: Tier 1 Authorized Studio &bull; Active since March 2023
+              KYC documents {partner?.documents?.verified ? 'verified' : 'in review'} &bull; Territory: {partner?.city || 'Delhi NCR'} ({partner?.pinCodes?.join(', ') || 'Service Pincodes'}) &bull; Active since {partner?.joinedAt ? new Date(partner.joinedAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : 'Recently Joined'}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-emerald-800 bg-emerald-200/60 px-3 py-1 rounded-lg">
-            Authorized
+          <span className={`text-xs font-bold px-3 py-1 rounded-lg ${
+            partner?.status === 'active' ? 'text-emerald-800 bg-emerald-200/60' : 'text-amber-800 bg-amber-100'
+          }`}>
+            {partner?.status === 'active' ? 'Authorized' : partner?.status === 'pending' ? 'Under Review' : 'Active'}
           </span>
         </div>
       </div>
@@ -302,9 +441,16 @@ export default function PartnerProfile({ partner, onUpdateSession }: PartnerProf
                   <div className="flex items-center gap-3 pt-3 border-t border-gray-100">
                     <button
                       onClick={handleSaveProfile}
-                      className="flex-1 py-3 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-md shadow-primary/20"
+                      disabled={isSaving}
+                      className="flex-1 py-3 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-md shadow-primary/20 disabled:opacity-60"
                     >
-                      <Save size={15} /> Save Changes
+                      {isSaving ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Save size={15} /> Save Changes
+                        </>
+                      )}
                     </button>
                     <button
                       onClick={() => setEditing(false)}
@@ -408,22 +554,22 @@ export default function PartnerProfile({ partner, onUpdateSession }: PartnerProf
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
               <div className="p-3.5 rounded-xl bg-gray-50/80 border border-gray-100">
                 <p className="text-xs text-gray-400 font-semibold">Bank Name</p>
-                <p className="text-sm font-bold text-gray-900 mt-0.5">{bankName}</p>
+                <p className="text-sm font-bold text-gray-900 mt-0.5">{bankName || 'Not Linked'}</p>
               </div>
 
               <div className="p-3.5 rounded-xl bg-gray-50/80 border border-gray-100">
                 <p className="text-xs text-gray-400 font-semibold">Account Number</p>
-                <p className="text-sm font-bold text-gray-900 mt-0.5">•••• •••• {accountNumber.slice(-4)}</p>
+                <p className="text-sm font-bold text-gray-900 mt-0.5">{accountNumber ? `•••• •••• ${accountNumber.slice(-4)}` : 'Not Linked'}</p>
               </div>
 
               <div className="p-3.5 rounded-xl bg-gray-50/80 border border-gray-100">
                 <p className="text-xs text-gray-400 font-semibold">IFSC Code</p>
-                <p className="text-sm font-bold text-gray-900 mt-0.5">{ifscCode}</p>
+                <p className="text-sm font-bold text-gray-900 mt-0.5">{ifscCode || 'Not Provided'}</p>
               </div>
 
               <div className="p-3.5 rounded-xl bg-gray-50/80 border border-gray-100">
                 <p className="text-xs text-gray-400 font-semibold">Instant UPI VPA</p>
-                <p className="text-sm font-bold text-gray-900 mt-0.5">{upiId}</p>
+                <p className="text-sm font-bold text-gray-900 mt-0.5">{upiId || 'Not Linked'}</p>
               </div>
             </div>
           </div>

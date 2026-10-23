@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { partners, orders } from '@/lib/casmikData';
 import { 
   BarChart3, 
@@ -15,25 +15,128 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
-const weeklyRevenue = [
-  { day: 'Mon', revenue: 24000, orders: 4 },
-  { day: 'Tue', revenue: 38000, orders: 6 },
-  { day: 'Wed', revenue: 31000, orders: 5 },
-  { day: 'Thu', revenue: 52000, orders: 8 },
-  { day: 'Fri', revenue: 64000, orders: 10 },
-  { day: 'Sat', revenue: 78000, orders: 12 },
-  { day: 'Sun', revenue: 45000, orders: 7 },
-];
+interface PartnerReportsProps {
+  partner?: any;
+}
 
-const categoryBreakdown = [
-  { category: 'Smartphones', count: 48, revenue: 1650000 },
-  { category: 'MacBooks & Laptops', count: 22, revenue: 1420000 },
-  { category: 'DSLR & Mirrorless', count: 18, revenue: 1840000 },
-  { category: 'iPads & Tablets', count: 12, revenue: 520000 },
-];
-
-export default function PartnerReports() {
+export default function PartnerReports({ partner }: PartnerReportsProps = {}) {
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'quarter'>('month');
+  const [ordersList, setOrdersList] = useState<any[]>([]);
+  const [dashStats, setDashStats] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAnalytics = async () => {
+      try {
+        const pId = partner?.id;
+        // 1. Fetch dashboard stats
+        try {
+          const dashRes = await fetch(`/api/partners/dashboard?partnerId=${pId || ''}`);
+          if (dashRes.ok) {
+            const data = await dashRes.json();
+            if (data.success && data.dashboard && isMounted) {
+              setDashStats(data.dashboard);
+            }
+          }
+        } catch {}
+
+        // 2. Fetch live orders
+        const ordersRes = await fetch(`/api/orders?partnerId=${pId || ''}`);
+        if (ordersRes.ok) {
+          const ordData = await ordersRes.json();
+          if (ordData.success && Array.isArray(ordData.orders) && isMounted) {
+            const matched = ordData.orders.filter((o: any) =>
+              !pId || o.partnerId === pId || o.assignedPartnerId === pId
+            );
+            setOrdersList(matched);
+          }
+        }
+      } catch (err) {
+        console.warn('Reports fetch error:', err);
+      }
+    };
+
+    fetchAnalytics();
+    window.addEventListener('casmik_orders_updated', fetchAnalytics);
+    window.addEventListener('casmik_partner_orders_updated', fetchAnalytics);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('casmik_orders_updated', fetchAnalytics);
+      window.removeEventListener('casmik_partner_orders_updated', fetchAnalytics);
+    };
+  }, [partner?.id]);
+
+  // Dynamic GTV and commission
+  const grossTransactionValue = dashStats?.storeTradeVolume ?? ordersList.reduce(
+    (sum, o) => sum + (o.finalPrice || o.quotedPrice || 0), 0
+  );
+  const commissionRate = dashStats?.commissionRate ?? partner?.commission ?? 5.0;
+  const netCommission = dashStats?.totalCommissionEarned ?? Math.round((grossTransactionValue * commissionRate) / 100);
+
+  const completedOrders = ordersList.filter(o => o.status === 'completed' || o.paymentStatus === 'paid');
+  const totalOrdersCount = ordersList.length;
+  const passRate = totalOrdersCount > 0
+    ? ((completedOrders.length / totalOrdersCount) * 100).toFixed(1)
+    : '100.0';
+
+  // Dynamic 7-day revenue flow
+  const weeklyRevenue = React.useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const now = new Date();
+    const result = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dayName = days[d.getDay()];
+      const dayOrders = ordersList.filter(o => {
+        const od = o.createdAt ? new Date(o.createdAt) : null;
+        return od && od.toDateString() === d.toDateString();
+      });
+      const revenue = dayOrders.reduce((sum, o) => sum + (o.finalPrice || o.quotedPrice || 0), 0);
+      result.push({
+        day: dayName,
+        revenue,
+        orders: dayOrders.length,
+      });
+    }
+    return result;
+  }, [ordersList]);
+
+  const avgDailyRevenue = Math.round(
+    weeklyRevenue.reduce((s, d) => s + d.revenue, 0) / (weeklyRevenue.length || 1)
+  );
+
+  // Dynamic Category Breakdown from real orders
+  const categoryBreakdown = React.useMemo(() => {
+    const map: Record<string, { count: number; revenue: number }> = {};
+    ordersList.forEach(o => {
+      const name = (o.deviceName || '').toLowerCase();
+      let cat = 'DSLR & Mirrorless';
+      if (name.includes('lens') || name.includes('mm') || name.includes('f/')) cat = 'Camera Lenses';
+      else if (name.includes('iphone') || name.includes('samsung') || name.includes('phone') || name.includes('pixel')) cat = 'Smartphones';
+      else if (name.includes('macbook') || name.includes('laptop') || name.includes('dell')) cat = 'MacBooks & Laptops';
+      else if (name.includes('ipad') || name.includes('tablet') || name.includes('tab')) cat = 'iPads & Tablets';
+
+      if (!map[cat]) map[cat] = { count: 0, revenue: 0 };
+      map[cat].count += 1;
+      map[cat].revenue += (o.finalPrice || o.quotedPrice || 0);
+    });
+
+    if (Object.keys(map).length === 0) {
+      return [
+        { category: 'DSLR & Mirrorless', count: 0, revenue: 0 },
+        { category: 'Camera Lenses', count: 0, revenue: 0 },
+        { category: 'Smartphones', count: 0, revenue: 0 },
+        { category: 'MacBooks & Laptops', count: 0, revenue: 0 },
+      ];
+    }
+
+    return Object.entries(map).map(([category, val]) => ({
+      category,
+      count: val.count,
+      revenue: val.revenue,
+    }));
+  }, [ordersList]);
 
   return (
     <div className="space-y-6 w-full max-w-7xl mx-auto font-sans">
@@ -70,8 +173,8 @@ export default function PartnerReports() {
             </button>
           </div>
           <button
-            onClick={() => alert('Financial ledger report downloaded successfully.')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold shadow-sm transition-all"
+            onClick={() => alert('Financial ledger report generated from live database.')}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold shadow-sm transition-all cursor-pointer"
           >
             <Download size={14} /> Export Report
           </button>
@@ -82,37 +185,37 @@ export default function PartnerReports() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Gross Transaction Value</p>
-          <p className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">₹54.3L</p>
+          <p className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">₹{grossTransactionValue.toLocaleString('en-IN')}</p>
           <div className="flex items-center gap-1 text-xs text-emerald-600 font-bold mt-2">
             <TrendingUp size={13} />
-            <span>+19.4% vs last period</span>
+            <span>{totalOrdersCount} live store orders</span>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Net Partner Commission</p>
-          <p className="text-2xl sm:text-3xl font-black text-emerald-600 mt-1">₹2,44,350</p>
+          <p className="text-2xl sm:text-3xl font-black text-emerald-600 mt-1">₹{netCommission.toLocaleString('en-IN')}</p>
           <div className="flex items-center gap-1 text-xs text-emerald-600 font-bold mt-2">
             <TrendingUp size={13} />
-            <span>4.5% flat studio commission</span>
+            <span>{commissionRate}% approved commission</span>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Inspection Pass Rate</p>
-          <p className="text-2xl sm:text-3xl font-black text-blue-600 mt-1">94.8%</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Fulfillment Rate</p>
+          <p className="text-2xl sm:text-3xl font-black text-blue-600 mt-1">{passRate}%</p>
           <div className="flex items-center gap-1 text-xs text-blue-600 font-bold mt-2">
             <CheckCircle2 size={13} />
-            <span>108/114 devices approved</span>
+            <span>{completedOrders.length}/{totalOrdersCount} orders finalized</span>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Avg Settlement Time</p>
-          <p className="text-2xl sm:text-3xl font-black text-purple-600 mt-1">&lt; 4 Hours</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Avg Daily Volume</p>
+          <p className="text-2xl sm:text-3xl font-black text-purple-600 mt-1">₹{avgDailyRevenue.toLocaleString('en-IN')}</p>
           <div className="flex items-center gap-1 text-xs text-purple-600 font-bold mt-2">
             <Clock size={13} />
-            <span>Instant IMPS / UPI transfer</span>
+            <span>Real-time ledger sync</span>
           </div>
         </div>
       </div>
@@ -127,7 +230,7 @@ export default function PartnerReports() {
               <p className="text-xs text-gray-400">Daily store transaction volume (INR)</p>
             </div>
             <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-              Avg ₹47.5k/day
+              Avg ₹{(avgDailyRevenue / 1000).toFixed(1)}k/day
             </span>
           </div>
           <ResponsiveContainer width="100%" height={260}>

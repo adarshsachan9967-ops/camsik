@@ -1,16 +1,14 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { orders as defaultOrders, deliveryAgents, getOrderStatusColor, getOrderStatusLabel, getTypeColor } from '@/lib/casmikData';
-import type { Order, OrderStatus, DeliveryAgent } from '@/lib/casmikData';
+import { getOrderStatusColor, getOrderStatusLabel, getTypeColor } from '@/lib/casmikData';
+import type { Order, OrderStatus, DeliveryAgent, Partner } from '@/lib/casmikData';
 import { Search, CheckCircle, XCircle, Eye, Phone, MapPin, X, Truck, Wifi, WifiOff, ChevronDown, SlidersHorizontal, ClipboardCheck, Sparkles, Lock, CreditCard, ArrowRight, ShieldAlert, CheckCircle2, ShieldCheck, Calendar, Clock, MessageSquare, PhoneCall } from 'lucide-react';
 import LiveOrderTracker from '@/components/LiveOrderTracker';
 import { triggerNotification, playNotificationBeep } from '@/lib/notifications';
 import { checkPartnerBalance, deductPartnerBalance } from '@/lib/partnerWallet';
 import OrderChatModal from '@/components/OrderChatModal';
 import OrderCallModal from '@/components/OrderCallModal';
-
-const PARTNER_ID = 'partner-002';
 
 const STATUS_PROGRESSION: Record<string, number> = {
   assigned: 1,
@@ -48,7 +46,8 @@ const getAllowedForwardStatuses = (currentStatus: OrderStatus) => {
   });
 };
 
-const getActivePartnerId = (): string => {
+const getActivePartnerId = (fallbackPartner?: Partner | null): string => {
+  if (fallbackPartner?.id) return fallbackPartner.id;
   if (typeof window !== 'undefined') {
     try {
       const saved = localStorage.getItem('casmik_partner_session');
@@ -58,7 +57,7 @@ const getActivePartnerId = (): string => {
       }
     } catch {}
   }
-  return 'partner-002';
+  return '';
 };
 
 const getStoredPartnerOrders = (activeId?: string): Order[] => {
@@ -73,8 +72,8 @@ const getStoredPartnerOrders = (activeId?: string): Order[] => {
 
       const orderMap = new Map<string, Order>();
       [...globalList, ...partnerList].forEach((o: Order) => {
-        if (o && o.id && (Boolean(o.partnerId) || o.status === 'assigned')) {
-          if (!o.partnerId || o.partnerId === currentId || o.partnerId === 'partner-001' || o.partnerId === 'partner-002') {
+        if (o && o.id) {
+          if (!currentId || o.partnerId === currentId || o.assignedPartnerId === currentId) {
             orderMap.set(o.id, o);
           }
         }
@@ -89,13 +88,7 @@ const getStoredPartnerOrders = (activeId?: string): Order[] => {
       }
     } catch (e) {}
   }
-  return defaultOrders
-    .filter(o => Boolean(o.partnerId) && (o.partnerId === currentId || o.partnerId === 'partner-001' || o.partnerId === 'partner-002'))
-    .sort((a, b) => {
-      const timeA = Math.max(new Date(a.createdAt || 0).getTime(), new Date(a.updatedAt || 0).getTime());
-      const timeB = Math.max(new Date(b.createdAt || 0).getTime(), new Date(b.updatedAt || 0).getTime());
-      return timeB - timeA;
-    });
+  return [];
 };
 
 const getAvailableDeliveryAgents = (activeId?: string): DeliveryAgent[] => {
@@ -108,12 +101,12 @@ const getAvailableDeliveryAgents = (activeId?: string): DeliveryAgent[] => {
         if (Array.isArray(parsed) && parsed.length > 0) {
           // Strictly filter only riders that belong to THIS partner.
           // Admin fleet riders and other partners' riders are NEVER visible to this partner!
-          return parsed.filter((a: DeliveryAgent) => a.partnerId === currentId);
+          return parsed.filter((a: DeliveryAgent) => !currentId || a.partnerId === currentId);
         }
       }
     } catch {}
   }
-  return deliveryAgents.filter(a => a.partnerId === currentId);
+  return [];
 };
 
 interface DBOrder {
@@ -172,10 +165,12 @@ function dbToOrder(o: DBOrder): Order {
 
 interface PartnerOrdersProps {
   onStartInspection?: (orderId: string) => void;
+  partner?: Partner | null;
 }
 
-export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps) {
-  const [orderList, setOrderList] = useState<Order[]>(getStoredPartnerOrders);
+export default function PartnerOrders({ onStartInspection, partner }: PartnerOrdersProps) {
+  const currentPartnerId = partner?.id || getActivePartnerId();
+  const [orderList, setOrderList] = useState<Order[]>(() => getStoredPartnerOrders(currentPartnerId));
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [query, setQuery] = useState('');
@@ -189,6 +184,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
   const [selectedDeliveryAgentId, setSelectedDeliveryAgentId] = useState('');
   const [deliveryPickupDate, setDeliveryPickupDate] = useState('');
   const [deliveryPickupSlot, setDeliveryPickupSlot] = useState('');
+  const [partnerRidersList, setPartnerRidersList] = useState<DeliveryAgent[]>(() => getAvailableDeliveryAgents(currentPartnerId));
 
   // Live Chat & Direct Calling Modals
   const [chatModalOrder, setChatModalOrder] = useState<Order | null>(null);
@@ -208,54 +204,62 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
   const supabase = createClient();
 
   useEffect(() => {
+    let isMounted = true;
     const fetchFreshOrders = async () => {
       try {
-        const currentId = getActivePartnerId();
-        const res = await fetch('/api/orders');
+        const currentId = partner?.id || getActivePartnerId();
+        // 1. Fetch live orders from MongoDB
+        const res = await fetch(`/api/orders?partnerId=${currentId}`);
         if (res.ok) {
           const data = await res.json();
-          if (data.success && Array.isArray(data.orders)) {
-            const localOrders = getStoredPartnerOrders(currentId);
-            const orderMap = new Map<string, Order>();
-
-            data.orders
-              .filter((o: Order) => Boolean(o.partnerId) && (o.partnerId === currentId || o.partnerId === 'partner-001' || o.partnerId === 'partner-002'))
-              .forEach((o: Order) => orderMap.set(o.id, o));
-            localOrders.forEach(o => orderMap.set(o.id, o));
-
-            const merged = Array.from(orderMap.values()).sort((a, b) => {
+          if (data.success && Array.isArray(data.orders) && isMounted) {
+            const matched = data.orders.filter((o: Order) => 
+              !currentId || o.partnerId === currentId || o.assignedPartnerId === currentId
+            );
+            const sorted = matched.sort((a: Order, b: Order) => {
               const timeA = Math.max(new Date(a.createdAt || 0).getTime(), new Date(a.updatedAt || 0).getTime());
               const timeB = Math.max(new Date(b.createdAt || 0).getTime(), new Date(b.updatedAt || 0).getTime());
               return timeB - timeA;
             });
-            if (merged.length > 0) {
-              setOrderList(merged);
-              setSelectedOrder(prev => prev ? (merged.find((o: Order) => o.id === prev.id) || prev) : null);
-            }
+            setOrderList(sorted);
+            setSelectedOrder(prev => prev ? (sorted.find((o: Order) => o.id === prev.id) || prev) : (sorted[0] || null));
           }
         }
-      } catch {}
+
+        // 2. Fetch live riders for this partner
+        try {
+          const agentsRes = await fetch(`/api/delivery-agents?partnerId=${currentId}`);
+          if (agentsRes.ok) {
+            const agentsData = await agentsRes.json();
+            if (agentsData.success && Array.isArray(agentsData.agents) && isMounted) {
+              setPartnerRidersList(agentsData.agents);
+            }
+          }
+        } catch {}
+      } catch (err) {
+        console.warn('Orders fetch error:', err);
+      }
     };
 
     fetchFreshOrders();
 
     const handleSync = () => {
-      const fresh = getStoredPartnerOrders();
-      setOrderList(fresh);
-      setSelectedOrder(prev => prev ? (fresh.find(o => o.id === prev.id) || prev) : null);
       fetchFreshOrders();
     };
 
     window.addEventListener('casmik_partner_orders_updated', handleSync);
     window.addEventListener('casmik_orders_updated', handleSync);
+    window.addEventListener('casmik_delivery_agents_updated', handleSync);
     window.addEventListener('storage', handleSync);
 
     return () => {
+      isMounted = false;
       window.removeEventListener('casmik_partner_orders_updated', handleSync);
       window.removeEventListener('casmik_orders_updated', handleSync);
+      window.removeEventListener('casmik_delivery_agents_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
-  }, []);
+  }, [partner?.id]);
 
   // Partner self-handling (in-store inspection / walk-in / self-pickup)
   const handlePartnerSelfFulfill = async (orderId: string) => {
@@ -320,7 +324,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
 
   const handleAssignDeliveryAgent = async () => {
     if (!assignDeliveryModal || !selectedDeliveryAgentId) return;
-    const allAgents = getAvailableDeliveryAgents();
+    const allAgents = partnerRidersList.length > 0 ? partnerRidersList : getAvailableDeliveryAgents(currentPartnerId);
     const agent = allAgents.find(a => a.id === selectedDeliveryAgentId);
     if (!agent) return;
 
@@ -329,9 +333,9 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
 
     const updatedOrder: Order = {
       ...assignDeliveryModal,
-      partnerId: PARTNER_ID,
-      partnerName: 'Pixel Pro Tech Hub',
-      partnerPhone: '9845067890',
+      partnerId: currentPartnerId || assignDeliveryModal.partnerId,
+      partnerName: partner?.storeName || partner?.name || assignDeliveryModal.partnerName || 'Store Partner',
+      partnerPhone: partner?.phone || assignDeliveryModal.partnerPhone || '',
       deliveryAgentId: agent.id,
       deliveryAgentName: agent.name,
       deliveryAgentPhone: agent.phone,
@@ -374,9 +378,9 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId: assignDeliveryModal.id,
-          partnerId: PARTNER_ID,
-          partnerName: 'Pixel Pro Tech Hub',
-          partnerPhone: '9845067890',
+          partnerId: currentPartnerId || assignDeliveryModal.partnerId,
+          partnerName: partner?.storeName || partner?.name || assignDeliveryModal.partnerName || 'Store Partner',
+          partnerPhone: partner?.phone || assignDeliveryModal.partnerPhone || '',
           deliveryAgentId: agent.id,
           deliveryAgentName: agent.name,
           deliveryAgentPhone: agent.phone,
@@ -391,7 +395,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
       await supabase
         .from('orders')
         .update({
-          partner_id: PARTNER_ID,
+          partner_id: currentPartnerId,
           delivery_agent_id: agent.id,
           delivery_agent_name: agent.name,
           status: 'pickup_scheduled',
@@ -434,7 +438,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .or(`partner_id.eq.${currentId},partner_id.eq.partner-001,partner_id.eq.partner-002`)
+        .eq('partner_id', currentId)
         .order('created_at', { ascending: false });
       if (!error && data && data.length > 0) {
         data.map(dbToOrder).forEach(o => orderMap.set(o.id, o));
@@ -461,7 +465,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
       .channel('partner-orders-realtime')
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'orders',
-        filter: `partner_id=eq.${PARTNER_ID}`
+        filter: currentPartnerId ? `partner_id=eq.${currentPartnerId}` : undefined
       }, (payload) => {
         if (payload.eventType === 'INSERT') {
           setOrderList(prev => [dbToOrder(payload.new as DBOrder), ...prev]);
@@ -796,7 +800,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
       </div>
 
       {activeTab === 'live' ? (
-        <LiveOrderTracker panel="partner" partnerId={PARTNER_ID} title="Partner Live Order Tracker" />
+        <LiveOrderTracker panel="partner" partnerId={currentPartnerId} title="Partner Live Order Tracker" />
       ) : (
         <>
           {/* Status Tabs */}
@@ -914,27 +918,43 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                     <Phone size={13} /> Call
                   </a>
 
-                  {/* Assign to Delivery Executive */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAssignDeliveryModal(order);
-                      setSelectedDeliveryAgentId(order.deliveryAgentId || '');
-                      setDeliveryPickupDate(order.pickupDate || '');
-                      setDeliveryPickupSlot(order.pickupSlot || '');
-                    }}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer ${
-                      order.deliveryAgentId
-                        ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-600 hover:text-white'
-                        : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-600 hover:text-white'
-                    }`}
-                    title={order.deliveryAgentId ? `Reassign Rider (${order.deliveryAgentName})` : 'Dispatch delivery executive for pickup'}
-                  >
-                    <Truck size={13} /> {order.deliveryAgentId ? 'Change Rider' : 'Assign Rider'}
-                  </button>
+                  {/* Assign / Change Delivery Executive - ONLY for active non-completed orders! */}
+                  {order.status !== 'completed' && order.status !== 'paid' && order.status !== 'cancelled' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAssignDeliveryModal(order);
+                        setSelectedDeliveryAgentId(order.deliveryAgentId || '');
+                        setDeliveryPickupDate(order.pickupDate || '');
+                        setDeliveryPickupSlot(order.pickupSlot || '');
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer ${
+                        order.deliveryAgentId
+                          ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-600 hover:text-white'
+                          : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-600 hover:text-white'
+                      }`}
+                      title={order.deliveryAgentId ? `Reassign Rider (${order.deliveryAgentName})` : 'Dispatch delivery executive for pickup'}
+                    >
+                      <Truck size={13} /> {order.deliveryAgentId ? 'Change Rider' : 'Assign Rider'}
+                    </button>
+                  )}
 
-                  {/* Action buttons: If assigned to delivery rider, partner CANNOT do diagnostics or change status */}
-                  {order.deliveryAgentId ? (
+                  {/* Terminal Completed State */}
+                  {order.status === 'completed' || order.status === 'paid' ? (
+                    <>
+                      {order.deliveryAgentName && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-700 text-xs font-bold rounded-xl border border-gray-200">
+                          <Truck size={13} className="text-gray-500" />
+                          <span>Fulfilled by: {order.deliveryAgentName}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5 ml-auto px-3.5 py-1.5 bg-emerald-50 text-emerald-800 text-xs font-black rounded-xl border border-emerald-200 shadow-sm">
+                        <Lock size={12} className="text-emerald-600" />
+                        <span>Completed &amp; Locked</span>
+                      </div>
+                    </>
+                  ) : order.deliveryAgentId ? (
+                    /* Active order assigned to delivery rider */
                     <div className="flex items-center gap-2 flex-wrap">
                       <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-800 text-xs font-bold rounded-xl border border-blue-200">
                         <Truck size={13} className="text-blue-600" />
@@ -965,10 +985,14 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                           <Phone size={13} /> Call Rider
                         </button>
                       )}
+                      <div className="flex items-center gap-1.5 ml-auto px-3 py-1.5 bg-blue-50 text-blue-800 text-xs font-bold rounded-xl border border-blue-200" title="Diagnostics & status progression managed by the delivery executive.">
+                        <Lock size={12} className="text-blue-600" />
+                        <span>Managed by Rider</span>
+                      </div>
                     </div>
                   ) : (
-                    /* Non-allocated orders: Partner can complete his own order directly! */
-                    order.status !== 'accepted' && order.status !== 'completed' && order.status !== 'picked_up' && order.status !== 'inspection' ? (
+                    /* Non-allocated active orders: Partner can complete his own order directly! */
+                    order.status !== 'accepted' && order.status !== 'picked_up' && order.status !== 'inspection' ? (
                       <button
                         type="button"
                         onClick={() => handleAccept(order.id)}
@@ -1022,18 +1046,6 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                       </button>
                     ) : null
                   )}
-
-                  {/* Status Indicator or Forward-Only Dropdown */}
-                  {order.deliveryAgentId ? (
-                    <div className="flex items-center gap-1.5 ml-auto px-3 py-1.5 bg-blue-50 text-blue-800 text-xs font-bold rounded-xl border border-blue-200" title="Diagnostics & status progression managed by the delivery executive.">
-                      <Lock size={12} className="text-blue-600" />
-                      <span>Managed by Rider</span>
-                    </div>
-                  ) : order.status === 'completed' ? (
-                    <div className="flex items-center gap-1.5 ml-auto px-3 py-1.5 bg-emerald-50 text-emerald-800 text-xs font-black rounded-xl border border-emerald-200 shadow-sm">
-                      <Lock size={12} className="text-emerald-600" />
-                      <span>Completed &amp; Locked</span>
-                    </div>
                   ) : (
                     <div className="flex items-center gap-1.5 ml-auto">
                       <span className="text-[11px] font-bold text-gray-500 hidden sm:inline">Advance:</span>
@@ -1052,7 +1064,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                         <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                       </div>
                     </div>
-                  )}
+                  )
                 </div>
               </div>
             ))}
@@ -1406,18 +1418,20 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                       <p className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
                         <Truck size={14} className="text-blue-600" /> Assigned Delivery Executive
                       </p>
-                      <button
-                        onClick={() => {
-                          setAssignDeliveryModal(selectedOrder);
-                          setSelectedDeliveryAgentId(selectedOrder.deliveryAgentId || '');
-                          setDeliveryPickupDate(selectedOrder.pickupDate || '');
-                          setDeliveryPickupSlot(selectedOrder.pickupSlot || '');
-                          setSelectedOrder(null);
-                        }}
-                        className="text-xs font-bold text-blue-700 hover:underline"
-                      >
-                        {selectedOrder.deliveryAgentId ? 'Change Rider →' : '+ Assign Rider'}
-                      </button>
+                      {selectedOrder.status !== 'completed' && selectedOrder.status !== 'paid' && selectedOrder.status !== 'cancelled' && (
+                        <button
+                          onClick={() => {
+                            setAssignDeliveryModal(selectedOrder);
+                            setSelectedDeliveryAgentId(selectedOrder.deliveryAgentId || '');
+                            setDeliveryPickupDate(selectedOrder.pickupDate || '');
+                            setDeliveryPickupSlot(selectedOrder.pickupSlot || '');
+                            setSelectedOrder(null);
+                          }}
+                          className="text-xs font-bold text-blue-700 hover:underline cursor-pointer"
+                        >
+                          {selectedOrder.deliveryAgentId ? 'Change Rider →' : '+ Assign Rider'}
+                        </button>
+                      )}
                     </div>
                     {selectedOrder.deliveryAgentName ? (
                       <div className="flex items-center justify-between text-xs pt-1">
@@ -1473,7 +1487,19 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
 
                   {/* Order Actions inside Modal */}
                   <div className="pt-2 border-t border-gray-100 flex flex-wrap gap-2">
-                    {selectedOrder.deliveryAgentId ? (
+                    {selectedOrder.status === 'completed' || selectedOrder.status === 'paid' ? (
+                      <div className="flex-1 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Lock size={15} className="text-emerald-600" />
+                          <span>Order Fulfilled &amp; Locked</span>
+                        </div>
+                        {selectedOrder.deliveryAgentName && (
+                          <span className="text-[11px] text-emerald-700 bg-white px-2.5 py-1 rounded-lg border border-emerald-200">
+                            Fulfilled by: {selectedOrder.deliveryAgentName}
+                          </span>
+                        )}
+                      </div>
+                    ) : selectedOrder.deliveryAgentId ? (
                       <div className="flex-1 flex items-center gap-2 flex-wrap">
                         <button
                           type="button"
@@ -1543,7 +1569,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                           <Truck size={14} /> Assign to Rider
                         </button>
 
-                        {selectedOrder.status !== 'accepted' && selectedOrder.status !== 'completed' && selectedOrder.status !== 'inspection' && selectedOrder.status !== 'picked_up' && (
+                        {selectedOrder.status !== 'accepted' && selectedOrder.status !== 'inspection' && selectedOrder.status !== 'picked_up' && (
                           <button
                             type="button"
                             onClick={() => handleAccept(selectedOrder.id)}
@@ -1829,7 +1855,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                     <label className="text-xs font-black text-gray-800 block">Select Store Rider:</label>
                     <span className="text-[11px] text-gray-500 font-semibold">Dedicated Store Fleet</span>
                   </div>
-                  {getAvailableDeliveryAgents().length === 0 ? (
+                  {partnerRidersList.length === 0 ? (
                     <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2">
                       <p className="text-xs font-bold text-amber-900">No riders created yet for your store</p>
                       <p className="text-[11px] text-amber-700">
@@ -1837,7 +1863,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
                       </p>
                     </div>
                   ) : (
-                    getAvailableDeliveryAgents().map(agent => {
+                    partnerRidersList.map(agent => {
                       const isPinMatch = agent.pinCodes?.includes(assignDeliveryModal.pinCode);
                       const isSelected = selectedDeliveryAgentId === agent.id;
                       return (

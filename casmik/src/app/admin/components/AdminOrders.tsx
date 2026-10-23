@@ -240,6 +240,29 @@ export default function AdminOrders({
     return () => window.removeEventListener('casmik_partners_updated', fetchLivePartners);
   }, []);
 
+  // Fetch live delivery agents for admin assignment
+  const [availableAgents, setAvailableAgents] = useState<DeliveryAgent[]>([]);
+
+  useEffect(() => {
+    const fetchDeliveryAgents = () => {
+      fetch('/api/delivery-agents')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && Array.isArray(data.agents)) {
+            setAvailableAgents(data.agents);
+          } else {
+            setAvailableAgents(getAvailableDeliveryAgents());
+          }
+        })
+        .catch(() => {
+          setAvailableAgents(getAvailableDeliveryAgents());
+        });
+    };
+    fetchDeliveryAgents();
+    window.addEventListener('casmik_delivery_agents_updated', fetchDeliveryAgents);
+    return () => window.removeEventListener('casmik_delivery_agents_updated', fetchDeliveryAgents);
+  }, []);
+
   useEffect(() => {
     if (initialFilterStatus) {
       setFilterStatus(initialFilterStatus);

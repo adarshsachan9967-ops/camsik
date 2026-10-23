@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { orders as defaultOrders, getOrderStatusLabel, getOrderStatusColor } from '@/lib/casmikData';
+import { getOrderStatusLabel, getOrderStatusColor } from '@/lib/casmikData';
 import type { Order } from '@/lib/casmikData';
 import { 
   Camera, 
@@ -57,40 +57,186 @@ const photoAngles = [
   { id: 'imei_label', label: 'IMEI / Serial Screen', desc: 'Settings > About screen' },
   { id: 'defect', label: 'Scratch / Defect Close-up', desc: 'Any cosmetic blemish' },
 ];
-const PARTNER_ID = 'partner-002';
+export type DeviceCategoryType = 'dslr' | 'lens' | 'laptop' | 'tablet' | 'action_cam' | 'smartphone';
 
-const getInspectionOrders = (): Order[] => {
+export function getInspectionCategory(order?: Order | null): {
+  type: DeviceCategoryType;
+  label: string;
+  badgeColor: string;
+  idLabel: string;
+  idPlaceholder: string;
+  items: InspectionCheckItem[];
+  photoAngles: { id: string; label: string; desc: string }[];
+} {
+  const name = `${order?.deviceName || ''} ${order?.deviceBrand || ''} ${order?.deviceModel || ''}`.toLowerCase();
+  
+  if (name.includes('lens') || name.includes('f/') || name.includes('mm') || name.includes('zoom') || name.includes('prime') || name.includes('telephoto')) {
+    return {
+      type: 'lens',
+      label: 'Camera Lens',
+      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      idLabel: 'Lens Serial Number (S/N)',
+      idPlaceholder: 'e.g. 21004892 (Check rear metal mount / barrel)',
+      items: [
+        { id: 'front_glass', label: 'Front Glass & Anti-Reflective Coating', subtext: 'Scratch-free, pristine front optical element with no fungus or haze', deductionPct: 20 },
+        { id: 'rear_element', label: 'Rear Element & Metal Bayonet Mount', subtext: 'Flawless rear optical glass and undamaged metal mount flange', deductionPct: 15 },
+        { id: 'internal_optics', label: 'Internal Elements (Zero Fungus/Haze)', subtext: 'No internal mold, haze, moisture condensation, or heavy dust', deductionPct: 20 },
+        { id: 'af_motor', label: 'AF Autofocus Motor (USM/STM/Linear)', subtext: 'Silent, instant auto-focus lock with zero grinding or hesitation', deductionPct: 15 },
+        { id: 'aperture_blades', label: 'Aperture Blades & Diaphragm Action', subtext: 'Clean oil-free blades with instant snappy opening & closing', deductionPct: 10 },
+        { id: 'zoom_focus_rings', label: 'Zoom & Manual Focus Rubber Rings', subtext: 'Smooth ring rotation without stickiness, slipping, or rubber swelling', deductionPct: 8 },
+        { id: 'ois', label: 'Optical Image Stabilization (IS/VR/OIS)', subtext: 'Smooth optical stabilizer engagement without vibration or rattling', deductionPct: 8 },
+        { id: 'weather_seal', label: 'Rubber Weather-Sealing Gasket', subtext: 'Intact rubber gasket seal on mount without tears or dry rot', deductionPct: 4 },
+      ],
+      photoAngles: [
+        { id: 'front_element', label: 'Front Glass Element', desc: 'Direct view into front glass under light' },
+        { id: 'rear_mount', label: 'Rear Mount & Contacts', desc: 'Metal bayonet flange & gold pins' },
+        { id: 'aperture', label: 'Aperture Blades Open', desc: 'Looking through internal barrel' },
+        { id: 'zoom_ring', label: 'Zoom & Focus Rings', desc: 'Rubber grip condition & markings' },
+        { id: 'side_barrel', label: 'Full Side Profile', desc: 'Switches (AF/MF, Stabilizer)' },
+        { id: 'serial_plate', label: 'Lens Serial Number S/N', desc: 'Base or barrel engraved S/N' },
+      ],
+    };
+  }
+
+  if (name.includes('dslr') || name.includes('eos') || name.includes('alpha') || name.includes('lumix') || name.includes('fujifilm') || name.includes('nikon z') || name.includes('mirrorless') || name.includes('camera') || name.includes('fx3') || name.includes('a7')) {
+    return {
+      type: 'dslr',
+      label: 'DSLR / Mirrorless Camera',
+      badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      idLabel: 'Camera Serial Number (S/N)',
+      idPlaceholder: 'e.g. 042021008741 (Check baseplate)',
+      items: [
+        { id: 'sensor', label: 'Full-Frame/APS-C CMOS Sensor', subtext: 'Clean sensor filter, zero scratch, no dead/stuck hot pixels', deductionPct: 25 },
+        { id: 'shutter', label: 'Mechanical & Electronic Shutter', subtext: 'Clean curtain, verified shutter count < 50k clicks, high-speed burst', deductionPct: 15 },
+        { id: 'mount_contacts', label: 'Lens Mount & Electronic Pins', subtext: 'Solid bayonet lock, gold electronic contacts communicating properly', deductionPct: 12 },
+        { id: 'evf_lcd', label: 'EVF Viewfinder & Swivel LCD Screen', subtext: 'Crisp OLED viewfinder, fully articulating touchscreen, no dead pixels', deductionPct: 12 },
+        { id: 'dials_buttons', label: 'Mode Dials, Joy-Stick & Shutter Button', subtext: 'Tactile clicks, scroll wheels, responsive two-stage shutter release', deductionPct: 8 },
+        { id: 'card_slots', label: 'Dual Card Slots (CFexpress / SD UHS-II)', subtext: 'Smooth spring ejection, fast continuous write speeds without read errors', deductionPct: 8 },
+        { id: 'battery_chamber', label: 'Battery Chamber & Weather-Sealed Door', subtext: 'Clean terminal pins, secure latch lock without corrosion', deductionPct: 6 },
+        { id: 'ports_hdmi', label: 'Full-Size HDMI, Type-C & Mic Ports', subtext: 'Clean unbent ports with rubber weather covers intact', deductionPct: 6 },
+        { id: 'ibis', label: 'In-Body Image Stabilization (IBIS 5-Axis)', subtext: 'Sensor floats smoothly with zero mechanical grinding on pan/tilt', deductionPct: 8 },
+      ],
+      photoAngles: [
+        { id: 'sensor_exposed', label: 'Sensor Exposed (Cap Off)', desc: 'Sensor filter showing zero dust/scratches' },
+        { id: 'rear_lcd', label: 'Rear LCD Lit Screen', desc: 'Display on showing menu & live-view' },
+        { id: 'evf_viewfinder', label: 'EVF & Top Mode Dials', desc: 'Top deck, shutter button, PASM dial' },
+        { id: 'battery_door', label: 'Battery Door & Chamber', desc: 'Open battery door & terminal pins' },
+        { id: 'ports_bay', label: 'Side Connectivity Ports', desc: 'HDMI, USB-C, Headphone & Mic jacks' },
+        { id: 'serial_plate', label: 'Bottom Serial Plate S/N', desc: 'Model name & serial number sticker' },
+      ],
+    };
+  }
+
+  if (name.includes('macbook') || name.includes('laptop') || name.includes('dell') || name.includes('thinkpad') || name.includes('hp ') || name.includes('lenovo') || name.includes('notebook')) {
+    return {
+      type: 'laptop',
+      label: 'Laptop / MacBook',
+      badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
+      idLabel: 'Laptop Serial Number (S/N)',
+      idPlaceholder: 'e.g. C02G41ABMD6M (Check bottom case / About Mac)',
+      items: [
+        { id: 'screen_hinge', label: 'Retina Screen & Hinge Tension', subtext: 'Zero anti-reflective delamination, no dead pixels, smooth hinge movement', deductionPct: 25 },
+        { id: 'keyboard_keys', label: 'Keyboard & Individual Key Travel', subtext: 'All keys click evenly with functional backlight & zero sticky keys', deductionPct: 15 },
+        { id: 'trackpad', label: 'Precision Force Touch Trackpad', subtext: 'Accurate haptic click, gesture tracking, no surface cracks', deductionPct: 10 },
+        { id: 'battery_cycles', label: 'Battery Health & Cycle Count', subtext: 'Battery health > 80%, low cycle count, no swollen chassis', deductionPct: 15 },
+        { id: 'cooling_thermals', label: 'Motherboard & Dual Cooling Fans', subtext: 'Silent fans under load, zero thermal throttling, fast boot', deductionPct: 12 },
+        { id: 'thunderbolt_ports', label: 'Thunderbolt / USB-C & MagSafe Ports', subtext: 'High-speed data transfer, video output & fast charging verified', deductionPct: 10 },
+        { id: 'speakers_webcam', label: 'Studio Speakers & HD Webcam', subtext: 'Deep stereo bass with no crackling, clear camera & mic pickup', deductionPct: 8 },
+        { id: 'chassis_shell', label: 'Aluminum Shell & Corner Edges', subtext: 'No corner drops, dents, bent chassis, rubber feet intact', deductionPct: 8 },
+      ],
+      photoAngles: [
+        { id: 'screen_on', label: 'Display Screen On', desc: 'White screen showing brightness & uniformity' },
+        { id: 'keyboard', label: 'Keyboard & Trackpad', desc: 'Keycaps, palm rests, and trackpad' },
+        { id: 'top_lid', label: 'Top Clamshell Lid', desc: 'Apple logo / brand lid surface' },
+        { id: 'bottom_base', label: 'Bottom Base Plate', desc: 'Serial number engraving & rubber feet' },
+        { id: 'ports_left_right', label: 'Left & Right Ports', desc: 'USB-C / MagSafe / HDMI ports' },
+        { id: 'power_brick', label: 'Charger & Original Cable', desc: 'Power adapter & braided cable' },
+      ],
+    };
+  }
+
+  if (name.includes('ipad') || name.includes('tablet') || name.includes('galaxy tab')) {
+    return {
+      type: 'tablet',
+      label: 'Tablet / iPad',
+      badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+      idLabel: 'Tablet Serial / IMEI Number',
+      idPlaceholder: 'e.g. DMQX429XNR (Settings > General > About)',
+      items: [
+        { id: 'touch_digitizer', label: 'Display Digitizer & Stylus Pressure', subtext: 'Smooth touch across entire screen with accurate stylus pressure tracking', deductionPct: 25 },
+        { id: 'frame_straightness', label: 'Frame Straightness (Zero Bend)', subtext: 'Body is 100% straight and flat when placed on a flat desk', deductionPct: 15 },
+        { id: 'battery_health', label: 'Battery Health & Standby Backup', subtext: 'Holds strong charge with no rapid battery drops', deductionPct: 12 },
+        { id: 'face_touch_id', label: 'Face ID / Touch ID Biometrics', subtext: 'Instant biometric unlocking in landscape and portrait orientation', deductionPct: 12 },
+        { id: 'quad_speakers', label: 'Quad Stereo Speakers & Microphones', subtext: 'Crisp audio from all speaker grills with no distortion', deductionPct: 8 },
+        { id: 'smart_connector', label: 'Smart Connector & Magnetic Rails', subtext: 'Keyboard connection pins and stylus magnetic charging work instantly', deductionPct: 8 },
+        { id: 'cameras_lidar', label: 'Front, Rear & LiDAR Depth Cameras', subtext: 'Center Stage front camera, flash, and rear camera focus', deductionPct: 8 },
+      ],
+      photoAngles: [
+        { id: 'front_screen', label: 'Front Display Lit', desc: 'Screen on showing home screen' },
+        { id: 'back_panel', label: 'Back Metal Panel', desc: 'Camera bump & magnetic rail' },
+        { id: 'edge_straight', label: 'Frame Flatness Edge', desc: 'Side edge showing zero bend' },
+        { id: 'charging_port', label: 'USB-C Charging Port', desc: 'Bottom port & speaker grills' },
+        { id: 'stylus_rail', label: 'Stylus Charging Strip', desc: 'Magnetic edge for Apple Pencil' },
+        { id: 'serial_about', label: 'Settings > About Screen', desc: 'Model name & serial number' },
+      ],
+    };
+  }
+
+  // Default: Smartphone
+  return {
+    type: 'smartphone',
+    label: 'Smartphone',
+    badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
+    idLabel: '15-Digit IMEI Number',
+    idPlaceholder: 'e.g. 354892091827402 (Dial *#06#)',
+    items: [
+      { id: 'display', label: 'OLED / Display & Touchscreen', subtext: 'Zero cracks, dead pixels, lines, or ghost touch', deductionPct: 25 },
+      { id: 'body', label: 'Body & Frame Condition', subtext: 'No dents, deep scratches, bent frame, or back glass crack', deductionPct: 12 },
+      { id: 'camera', label: 'Front & Multi Rear Cameras', subtext: 'Crisp autofocus, optical zoom, clean lens covers', deductionPct: 15 },
+      { id: 'battery', label: 'Battery Health & Fast Charging', subtext: 'Battery health percentage > 80%, fast charging detected', deductionPct: 10 },
+      { id: 'faceid', label: 'Biometrics (Face ID / Fingerprint)', subtext: 'Face ID or In-display fingerprint sensor responsiveness', deductionPct: 12 },
+      { id: 'charging', label: 'Charging & USB-C Port', subtext: 'Tight connector fit, data sync and OTG support', deductionPct: 8 },
+      { id: 'speaker', label: 'Stereo Speakers & Earpiece', subtext: 'Clear calling volume, noise cancellation mics', deductionPct: 6 },
+      { id: 'wireless', label: '5G Wi-Fi, Bluetooth & NFC', subtext: 'Instant pairing, contactless payment NFC antenna', deductionPct: 6 },
+      { id: 'network', label: 'Cellular SIM & Antennas', subtext: 'Strong 5G reception on both SIM slots', deductionPct: 10 },
+      { id: 'water', label: 'Liquid Damage Check (LDI)', subtext: 'White moisture sticker, no water ingress corrosion', deductionPct: 20 },
+    ],
+    photoAngles: [
+      { id: 'front', label: 'Front Display (Screen On)', desc: 'Display with white background' },
+      { id: 'back', label: 'Back Panel & Cameras', desc: 'Back glass & camera island' },
+      { id: 'left', label: 'Left Side & SIM Tray', desc: 'Left edge & volume buttons' },
+      { id: 'right', label: 'Right Side & Power', desc: 'Right edge & power button' },
+      { id: 'ports', label: 'Bottom Port & Speakers', desc: 'Charging port & speaker grilles' },
+      { id: 'imei_label', label: 'IMEI / Serial Screen', desc: 'Settings > About screen or *#06#' },
+    ],
+  };
+}
+
+const getInspectionOrders = (partnerId?: string): Order[] => {
   if (typeof window !== 'undefined') {
     try {
       const saved = localStorage.getItem('casmik_partner_orders_v1') || localStorage.getItem('casmik_orders_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.filter((o: Order) => Boolean(o.partnerId) && (o.partnerId === PARTNER_ID || o.partnerId === 'partner-001'));
+          return parsed.filter((o: Order) => !partnerId || o.partnerId === partnerId || o.assignedPartnerId === partnerId);
         }
       }
     } catch {}
   }
-  return defaultOrders.filter((o: Order) => Boolean(o.partnerId) && (o.partnerId === PARTNER_ID || o.partnerId === 'partner-001'));
+  return [];
 };
 
 interface PartnerInspectionProps {
   initialOrderId?: string | null;
   onBackToOrders?: () => void;
+  partner?: any;
 }
 
-export default function PartnerInspection({ initialOrderId, onBackToOrders }: PartnerInspectionProps) {
-  const [ordersList, setOrdersList] = useState<Order[]>(getInspectionOrders);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(() => {
-    const list = getInspectionOrders();
-    const targetId = initialOrderId || (typeof window !== 'undefined' ? localStorage.getItem('casmik_active_inspection_id') : null);
-    if (targetId) {
-      const match = list.find(o => o.id === targetId || o.orderNumber === targetId);
-      if (match) return match;
-    }
-    const readyOrder = list.find(o => ['inspection', 'accepted', 'picked_up'].includes(o.status));
-    return readyOrder || list[0] || null;
-  });
+export default function PartnerInspection({ initialOrderId, onBackToOrders, partner }: PartnerInspectionProps) {
+  const currentPartnerId = partner?.id || '';
+  const [ordersList, setOrdersList] = useState<Order[]>(() => getInspectionOrders(currentPartnerId));
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const [inspectionResults, setInspectionResults] = useState<Record<string, 'pass' | 'fail' | 'na'>>({});
   const [photos, setPhotos] = useState<Record<string, string>>({});
@@ -104,17 +250,52 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const multiFileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Active Category QA Config
+  const categoryConfig = React.useMemo(() => getInspectionCategory(selectedOrder), [selectedOrder]);
+
+  // Fetch real orders from API
   useEffect(() => {
-    const list = getInspectionOrders();
-    setOrdersList(list);
-    const targetId = initialOrderId || (typeof window !== 'undefined' ? localStorage.getItem('casmik_active_inspection_id') : null);
-    if (targetId) {
-      const match = list.find(o => o.id === targetId || o.orderNumber === targetId);
-      if (match) {
-        setSelectedOrder(match);
+    let isMounted = true;
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch(`/api/orders?partnerId=${currentPartnerId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.orders) && isMounted) {
+            const matched = data.orders.filter((o: Order) => 
+              !currentPartnerId || o.partnerId === currentPartnerId || o.assignedPartnerId === currentPartnerId
+            );
+            setOrdersList(matched);
+
+            const targetId = initialOrderId || (typeof window !== 'undefined' ? localStorage.getItem('casmik_active_inspection_id') : null);
+            if (targetId) {
+              const match = matched.find((o: Order) => o.id === targetId || o.orderNumber === targetId);
+              if (match) {
+                setSelectedOrder(match);
+                return;
+              }
+            }
+            if (!selectedOrder && matched.length > 0) {
+              setSelectedOrder(matched[0]);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Inspection orders fetch error:', err);
       }
-    }
-  }, [initialOrderId]);
+    };
+
+    fetchOrders();
+
+    window.addEventListener('casmik_orders_updated', fetchOrders);
+    window.addEventListener('casmik_partner_orders_updated', fetchOrders);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('casmik_orders_updated', fetchOrders);
+      window.removeEventListener('casmik_partner_orders_updated', fetchOrders);
+    };
+  }, [currentPartnerId, initialOrderId]);
 
   // Handle image capture / upload for a specific angle
   const handlePhotoCapture = (angleId: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,8 +318,9 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    const angles = categoryConfig.photoAngles;
     Array.from(files).forEach((file, idx) => {
-      const unassignedAngle = photoAngles.find(a => !photos[a.id]) || photoAngles[idx % photoAngles.length];
+      const unassignedAngle = angles.find(a => !photos[a.id]) || angles[idx % angles.length];
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
@@ -167,7 +349,7 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
   };
 
   // Scoring and dynamic price calculations
-  const total = inspectionItems.length;
+  const total = categoryConfig.items.length;
   const passedCount = Object.values(inspectionResults).filter(v => v === 'pass').length;
   const failedCount = Object.values(inspectionResults).filter(v => v === 'fail').length;
   const scorePercent = total > 0 ? Math.round((passedCount / total) * 100) : 100;
@@ -175,7 +357,7 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
   const quotedPrice = selectedOrder?.quotedPrice || 0;
 
   // Calculate deductions based on failed checklist items
-  const failedItems = inspectionItems.filter(item => inspectionResults[item.id] === 'fail');
+  const failedItems = categoryConfig.items.filter(item => inspectionResults[item.id] === 'fail');
   const totalDeductionPct = Math.min(
     failedItems.reduce((acc, item) => acc + item.deductionPct, 0),
     75 // Cap max deduction at 75% so scrap floor is 25%
@@ -540,6 +722,9 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <div className="flex items-center justify-between mb-3">
                 <div>
+                  <span className={`inline-block text-[11px] font-black px-2.5 py-0.5 rounded-lg border uppercase tracking-wider mb-1 ${categoryConfig.badgeColor}`}>
+                    {categoryConfig.label}
+                  </span>
                   <p className="text-base font-black text-gray-900">{selectedOrder.deviceName}</p>
                   <p className="text-xs text-gray-500 mt-0.5">Customer: <strong>{selectedOrder.customerName}</strong> ({selectedOrder.customerPhone})</p>
                 </div>
@@ -562,15 +747,15 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
               </div>
             </div>
 
-            {/* IMEI Verification Input */}
+            {/* Category Identification / IMEI / Serial Input */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <label className="text-xs font-bold text-gray-700 mb-1.5 block">
-                Physical IMEI / Device Serial Number *
+                {categoryConfig.idLabel} *
               </label>
               <input
                 value={imei}
                 onChange={e => setImei(e.target.value)}
-                placeholder="Dial *#06# or inspect SIM tray (e.g. 352948102938472)"
+                placeholder={categoryConfig.idPlaceholder}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono"
               />
             </div>
@@ -579,7 +764,7 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                 <div>
-                  <h3 className="font-bold text-gray-900 text-sm">Diagnostic Checklist</h3>
+                  <h3 className="font-bold text-gray-900 text-sm">{categoryConfig.label} QA Checklist</h3>
                   <p className="text-[11px] text-gray-400">Select Pass or Fail. Failed items automatically deduct value.</p>
                 </div>
                 <span className="text-xs font-bold text-gray-500">
@@ -588,7 +773,7 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
               </div>
 
               <div className="divide-y divide-gray-50">
-                {inspectionItems.map((item) => {
+                {categoryConfig.items.map((item) => {
                   const result = inspectionResults[item.id];
                   const isFailed = result === 'fail';
                   const deductionAmt = Math.round(quotedPrice * (item.deductionPct / 100));
@@ -756,7 +941,7 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
                   <p className="text-[11px] text-gray-400">Click any box to take a photo or upload from device</p>
                 </div>
                 <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                  {Object.keys(photos).length} / {photoAngles.length} Photos
+                  {Object.keys(photos).length} / {categoryConfig.photoAngles.length} Photos
                 </span>
               </div>
 
@@ -772,7 +957,7 @@ export default function PartnerInspection({ initialOrderId, onBackToOrders }: Pa
 
               {/* Photos Grid */}
               <div className="grid grid-cols-2 gap-2.5">
-                {photoAngles.map((angle) => {
+                {categoryConfig.photoAngles.map((angle) => {
                   const hasPhoto = !!photos[angle.id];
 
                   return (

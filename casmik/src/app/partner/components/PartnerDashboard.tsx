@@ -47,35 +47,69 @@ export default function PartnerDashboard({ onNavigate, partner }: PartnerDashboa
     };
   }, [partner]);
 
-  // Fetch real orders for this partner
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
+
+  // Fetch real orders and live MongoDB stats for this partner
   useEffect(() => {
-    fetch('/api/orders')
-      .then(r => r.json())
-      .then(d => {
-        if (d.success && Array.isArray(d.orders)) {
-          const pId = currentPartner.id;
-          const pName = currentPartner.storeName || currentPartner.name;
-          const matched = d.orders.filter((o: Order) => 
-            !pId || pId === 'partner-default' || o.partnerId === pId || o.partnerName === pName
-          );
-          setPartnerOrders(matched.length > 0 ? matched : d.orders.slice(0, 10));
+    let isMounted = true;
+
+    const fetchDashboardData = async () => {
+      try {
+        const pId = currentPartner.id;
+        // 1. Fetch live aggregated stats from backend
+        try {
+          const dashRes = await fetch(`/api/partners/dashboard?partnerId=${pId}`);
+          if (dashRes.ok) {
+            const dashData = await dashRes.json();
+            if (dashData.success && dashData.dashboard && isMounted) {
+              setDashboardStats(dashData.dashboard);
+            }
+          }
+        } catch {}
+
+        // 2. Fetch live partner orders
+        const ordersRes = await fetch(`/api/orders?partnerId=${pId}`);
+        if (ordersRes.ok) {
+          const ordData = await ordersRes.json();
+          if (ordData.success && Array.isArray(ordData.orders) && isMounted) {
+            const pName = currentPartner.storeName || currentPartner.name;
+            const matched = ordData.orders.filter((o: Order) => 
+              o.partnerId === pId || o.assignedPartnerId === pId || o.partnerName === pName
+            );
+            setPartnerOrders(matched);
+          }
         }
-      })
-      .catch(() => {});
+      } catch (err) {
+        console.warn('Dashboard fetch warning:', err);
+      }
+    };
+
+    fetchDashboardData();
+
+    window.addEventListener('casmik_orders_updated', fetchDashboardData);
+    window.addEventListener('casmik_partner_orders_updated', fetchDashboardData);
+    window.addEventListener('storage', fetchDashboardData);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('casmik_orders_updated', fetchDashboardData);
+      window.removeEventListener('casmik_partner_orders_updated', fetchDashboardData);
+      window.removeEventListener('storage', fetchDashboardData);
+    };
   }, [currentPartner]);
 
-  // Dynamic earnings and orders calculation
-  const totalEarnings = currentPartner.totalEarnings ?? partnerOrders
+  // Dynamic earnings and orders calculation from live database
+  const totalEarnings = dashboardStats?.storeTradeVolume ?? currentPartner.totalEarnings ?? partnerOrders
     .filter(o => o.status === 'completed' || o.paymentStatus === 'paid')
     .reduce((s, o) => s + (o.finalPrice || o.quotedPrice || 0), 0);
 
-  const totalOrdersCount = partnerOrders.length || currentPartner.totalOrders || 0;
-  const commissionRate = currentPartner.commission ?? 5;
-  const totalCommission = Math.round((totalEarnings * commissionRate) / 100);
-  const pendingPayout = currentPartner.pendingPayout ?? 0;
-  const availableBalance = currentPartner.availableBalance ?? Math.max(0, totalEarnings - pendingPayout);
+  const totalOrdersCount = dashboardStats?.totalOrdersCount ?? partnerOrders.length ?? currentPartner.totalOrders ?? 0;
+  const commissionRate = dashboardStats?.commissionRate ?? currentPartner.commission ?? 5;
+  const totalCommission = dashboardStats?.totalCommissionEarned ?? Math.round((totalEarnings * commissionRate) / 100);
+  const pendingPayout = dashboardStats?.pendingPayout ?? currentPartner.pendingPayout ?? 0;
+  const availableBalance = dashboardStats?.availableFloatBalance ?? currentPartner.availableBalance ?? Math.max(0, totalCommission - pendingPayout);
 
-  // Dynamic 7-day earnings chart
+  // Dynamic 7-day earnings chart from real orders
   const earningsData = useMemo(() => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const now = new Date();
@@ -93,26 +127,27 @@ export default function PartnerDashboard({ onNavigate, partner }: PartnerDashboa
     return result;
   }, [partnerOrders]);
 
-  // Dynamic category breakdown
+  // Dynamic category breakdown from real orders
   const topCategories = useMemo(() => {
     if (partnerOrders.length === 0) {
       return [
-        { name: 'Cameras & Lenses', pct: 60, count: 0, color: 'bg-emerald-500' },
-        { name: 'Smartphones', pct: 25, count: 0, color: 'bg-blue-500' },
-        { name: 'Laptops', pct: 15, count: 0, color: 'bg-purple-500' },
+        { name: 'Cameras & Lenses', pct: 0, count: 0, color: 'bg-emerald-500' },
+        { name: 'Smartphones', pct: 0, count: 0, color: 'bg-blue-500' },
+        { name: 'Laptops', pct: 0, count: 0, color: 'bg-purple-500' },
       ];
     }
     const map: Record<string, number> = {};
     partnerOrders.forEach(o => {
       const name = (o.deviceName || '').toLowerCase();
       let cat = 'Cameras & Lenses';
-      if (name.includes('iphone') || name.includes('samsung') || name.includes('phone')) cat = 'Smartphones';
-      else if (name.includes('macbook') || name.includes('laptop') || name.includes('dell')) cat = 'Laptops';
+      if (name.includes('iphone') || name.includes('samsung') || name.includes('phone') || name.includes('pixel')) cat = 'Smartphones';
+      else if (name.includes('macbook') || name.includes('laptop') || name.includes('dell') || name.includes('thinkpad')) cat = 'Laptops';
+      else if (name.includes('ipad') || name.includes('tablet') || name.includes('tab')) cat = 'Tablets';
       else if (o.type === 'rent') cat = 'Rental Fleet';
       map[cat] = (map[cat] || 0) + 1;
     });
     const total = partnerOrders.length || 1;
-    const colors = ['bg-emerald-500', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500'];
+    const colors = ['bg-emerald-500', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500', 'bg-cyan-500'];
     return Object.entries(map).map(([name, count], i) => ({
       name,
       count,
@@ -121,7 +156,7 @@ export default function PartnerDashboard({ onNavigate, partner }: PartnerDashboa
     }));
   }, [partnerOrders]);
 
-  const recentOrders = partnerOrders.slice(0, 4);
+  const recentOrders = partnerOrders.slice(0, 5);
 
   const kpis = [
     { 

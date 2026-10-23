@@ -87,6 +87,7 @@ export interface Order {
   partnerId: string | null;
   partnerName: string | null;
   partnerPhone?: string | null;
+  assignedPartnerId?: string | null;
   deliveryAgentId: string | null;
   deliveryAgentName: string | null;
   deliveryAgentPhone?: string | null;
@@ -165,6 +166,21 @@ export interface Partner {
     accountNumber?: string;
     ifscCode?: string;
     verified?: boolean;
+  };
+  settings?: {
+    autoAccept?: boolean;
+    dailyCapacity?: string;
+    operatingHours?: string;
+    smsAlerts?: boolean;
+    whatsappAlerts?: boolean;
+    emailDigest?: boolean;
+  };
+  bankDetails?: {
+    bankName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    upiId?: string;
+    holderName?: string;
   };
 }
 

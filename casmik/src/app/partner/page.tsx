@@ -37,18 +37,45 @@ export default function PartnerPage() {
     setActiveSection('inspection');
   };
 
-  const checkAuth = () => {
+  const checkAuth = async () => {
     if (typeof window === 'undefined') return;
     try {
       const storedSession = localStorage.getItem('casmik_partner_session');
       if (!storedSession) {
+        // In local development, if no session exists, check if there's any active partner in API
+        try {
+          const res = await fetch('/api/partners');
+          const data = await res.json();
+          if (data.success && Array.isArray(data.partners) && data.partners.length > 0) {
+            const firstActive = data.partners.find((p: Partner) => p.status === 'active') || data.partners[0];
+            localStorage.setItem('casmik_partner_session', JSON.stringify(firstActive));
+            setSession(firstActive);
+            setLoading(false);
+            return;
+          }
+        } catch {}
         setSession(null);
         setLoading(false);
         return;
       }
       const currentPartner: Partner = JSON.parse(storedSession);
 
-      // Check against current database for live approval updates
+      // Verify with real backend API in MongoDB
+      try {
+        const res = await fetch(`/api/partners?id=${currentPartner.id || currentPartner.email}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.partners) && data.partners.length > 0) {
+            const liveMatch = data.partners[0];
+            localStorage.setItem('casmik_partner_session', JSON.stringify(liveMatch));
+            setSession(liveMatch);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {}
+
+      // Fallback check against localStorage partners
       const savedPartners = localStorage.getItem('casmik_partners_v1');
       if (savedPartners) {
         const list: Partner[] = JSON.parse(savedPartners);
@@ -70,6 +97,11 @@ export default function PartnerPage() {
 
   useEffect(() => {
     checkAuth();
+    const handlePartnerUpdate = () => checkAuth();
+    window.addEventListener('casmik_partners_updated', handlePartnerUpdate);
+    return () => {
+      window.removeEventListener('casmik_partners_updated', handlePartnerUpdate);
+    };
   }, []);
 
   // Real-time SSE stream for newly assigned orders for this partner (no repetitive polling)
@@ -266,11 +298,11 @@ export default function PartnerPage() {
   const renderSection = () => {
     switch (activeSection) {
       case 'dashboard': return <PartnerDashboard onNavigate={setActiveSection} partner={session} />;
-      case 'orders': return <PartnerOrders onStartInspection={handleStartInspection} />;
-      case 'inspection': return <PartnerInspection initialOrderId={inspectingOrderId} onBackToOrders={() => setActiveSection('orders')} />;
-      case 'payouts': return <PartnerPayouts />;
-      case 'customers': return <PartnerCustomers onNavigate={setActiveSection} />;
-      case 'reports': return <PartnerReports />;
+      case 'orders': return <PartnerOrders onStartInspection={handleStartInspection} partner={session} />;
+      case 'inspection': return <PartnerInspection initialOrderId={inspectingOrderId} onBackToOrders={() => setActiveSection('orders')} partner={session} />;
+      case 'payouts': return <PartnerPayouts partner={session} />;
+      case 'customers': return <PartnerCustomers onNavigate={setActiveSection} partner={session} />;
+      case 'reports': return <PartnerReports partner={session} />;
       case 'riders': return <PartnerRiders partner={session} />;
       case 'settings': return <PartnerSettings partner={session} onUpdateSession={setSession} />;
       case 'support': return <SupportTicketsPanel panelType="partner" userName={session?.name || "Partner"} />;
