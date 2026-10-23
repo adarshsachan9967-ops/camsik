@@ -207,19 +207,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
 
   const supabase = createClient();
 
-  // Listen for storage and cross-role updates from Delivery Executive or Admin
-  useEffect(() => {
-    const handleSync = () => {
-      const fresh = getStoredPartnerOrders();
-      setOrderList(fresh);
-      setSelectedOrder(prev => prev ? (fresh.find(o => o.id === prev.id) || prev) : null);
-    };
-    window.addEventListener('casmik_partner_orders_updated', handleSync);
-    window.addEventListener('casmik_orders_updated', handleSync);
-    window.addEventListener('storage', handleSync);
-
-    // Also poll every 4 seconds to guarantee multi-tab & multi-device sync
-    const interval = setInterval(async () => {
+    const fetchFreshOrders = async () => {
       try {
         const currentId = getActivePartnerId();
         const res = await fetch('/api/orders');
@@ -229,11 +217,9 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
             const localOrders = getStoredPartnerOrders(currentId);
             const orderMap = new Map<string, Order>();
 
-            // API orders that are assigned to this partner or pending assignment
             data.orders
               .filter((o: Order) => Boolean(o.partnerId) && (o.partnerId === currentId || o.partnerId === 'partner-001' || o.partnerId === 'partner-002'))
               .forEach((o: Order) => orderMap.set(o.id, o));
-            // Local orders take precedence so newly assigned orders are NEVER wiped out
             localOrders.forEach(o => orderMap.set(o.id, o));
 
             const merged = Array.from(orderMap.values()).sort((a, b) => {
@@ -248,10 +234,22 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
           }
         }
       } catch {}
-    }, 4000);
+    };
+
+    fetchFreshOrders();
+
+    const handleSync = () => {
+      const fresh = getStoredPartnerOrders();
+      setOrderList(fresh);
+      setSelectedOrder(prev => prev ? (fresh.find(o => o.id === prev.id) || prev) : null);
+      fetchFreshOrders();
+    };
+
+    window.addEventListener('casmik_partner_orders_updated', handleSync);
+    window.addEventListener('casmik_orders_updated', handleSync);
+    window.addEventListener('storage', handleSync);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener('casmik_partner_orders_updated', handleSync);
       window.removeEventListener('casmik_orders_updated', handleSync);
       window.removeEventListener('storage', handleSync);

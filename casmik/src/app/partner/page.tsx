@@ -72,7 +72,7 @@ export default function PartnerPage() {
     checkAuth();
   }, []);
 
-  // Poll for newly assigned orders for this partner in real-time
+  // Real-time SSE stream for newly assigned orders for this partner (no repetitive polling)
   useEffect(() => {
     if (!session?.id) return;
 
@@ -97,12 +97,37 @@ export default function PartnerPage() {
     };
 
     checkAssignedOrders();
-    const interval = setInterval(checkAssignedOrders, 6000);
+
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource(`/api/partners/events?partnerId=${session.id}`);
+      eventSource.onmessage = (event) => {
+        try {
+          const parsed = JSON.parse(event.data);
+          if (parsed.type === 'new_order_assigned' && parsed.order) {
+            const order = parsed.order;
+            if (!acknowledgedOrderIds.has(order.id)) {
+              setNewAssignedOrder(order);
+            }
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new Event('casmik_partner_orders_updated'));
+            }
+          }
+        } catch {
+          // ignore
+        }
+      };
+    } catch {
+      // ignore
+    }
+
     window.addEventListener('casmik_orders_updated', checkAssignedOrders);
     window.addEventListener('casmik_partner_orders_updated', checkAssignedOrders);
 
     return () => {
-      clearInterval(interval);
+      if (eventSource) {
+        eventSource.close();
+      }
       window.removeEventListener('casmik_orders_updated', checkAssignedOrders);
       window.removeEventListener('casmik_partner_orders_updated', checkAssignedOrders);
     };

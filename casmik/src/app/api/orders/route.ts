@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { orders as defaultOrders } from '@/lib/casmikData';
+import { notifyPartnerOrder } from '@/app/api/partners/events/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -210,6 +211,10 @@ export async function POST(request: Request) {
       console.warn('MongoDB insert warning, saved in memory cache:', mongoErr);
     }
 
+    if (newOrder.partnerId) {
+      notifyPartnerOrder(newOrder.partnerId, newOrder);
+    }
+
     return NextResponse.json({
       success: true,
       order: newOrder,
@@ -313,6 +318,10 @@ export async function PATCH(request: Request) {
         { success: false, message: 'Order not found' },
         { status: 404 }
       );
+    }
+
+    if (updatedOrder.partnerId) {
+      notifyPartnerOrder(updatedOrder.partnerId, updatedOrder);
     }
 
     return NextResponse.json({

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sizer/sizer.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/partner_socket_service.dart';
 import '../../core/services/session_service.dart';
 import '../../models/partner_models.dart';
 import '../dashboard/partner_dashboard_screen.dart';
@@ -38,58 +39,67 @@ class _MainNavigationContent extends StatefulWidget {
 }
 
 class _MainNavigationContentState extends State<_MainNavigationContent> {
-  Timer? _pollingTimer;
+  StreamSubscription<PartnerOrder>? _socketSub;
   final Set<String> _shownOrderIds = <String>{};
   bool _isPopupShowing = false;
 
   @override
   void initState() {
     super.initState();
-    // Poll for new assigned orders every 8 seconds
-    _pollingTimer = Timer.periodic(const Duration(seconds: 8), (_) {
-      if (mounted) {
-        context.read<OrdersCubit>().loadOrders();
-      }
-    });
+    // Connect to real-time socket stream for instant order notifications
+    final partnerId = SessionService.currentUser?.id;
+    if (partnerId != null && partnerId.isNotEmpty) {
+      PartnerSocketService.instance.connect(partnerId);
+      _socketSub = PartnerSocketService.instance.onNewOrder.listen((order) {
+        if (mounted && order.status == 'assigned') {
+          _showPopupForOrder(order);
+          context.read<OrdersCubit>().loadOrders();
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
+    _socketSub?.cancel();
+    PartnerSocketService.instance.disconnect();
     super.dispose();
+  }
+
+  void _showPopupForOrder(PartnerOrder order) {
+    if (_isPopupShowing || _shownOrderIds.contains(order.id)) return;
+    _shownOrderIds.add(order.id);
+    _isPopupShowing = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      OrderRequestPopupDialog.show(
+        context: context,
+        order: order,
+        onAccept: () async {
+          final success = await context.read<OrdersCubit>().updateOrderStatus(
+            orderId: order.id,
+            status: 'accepted',
+          );
+          _isPopupShowing = false;
+          return success;
+        },
+        onDismiss: () {
+          _isPopupShowing = false;
+        },
+      );
+    });
   }
 
   void _checkAndShowNewOrderPopup(List<PartnerOrder> orders) {
     if (_isPopupShowing) return;
-
-    // Find any order that is assigned to this partner and needs acceptance
     final pendingOrders = orders.where((o) => o.status == 'assigned').toList();
     if (pendingOrders.isEmpty) return;
 
     for (final order in pendingOrders) {
       if (!_shownOrderIds.contains(order.id)) {
-        _shownOrderIds.add(order.id);
-        _isPopupShowing = true;
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          OrderRequestPopupDialog.show(
-            context: context,
-            order: order,
-            onAccept: () async {
-              final success = await context.read<OrdersCubit>().updateOrderStatus(
-                orderId: order.id,
-                status: 'accepted',
-              );
-              _isPopupShowing = false;
-              return success;
-            },
-            onDismiss: () {
-              _isPopupShowing = false;
-            },
-          );
-        });
-        break; // Show one at a time
+        _showPopupForOrder(order);
+        break;
       }
     }
   }
