@@ -1,8 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/services/network_exceptions.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../models/partner_models.dart';
 import '../data/models/requests/partner_login_request.dart';
+import '../data/models/requests/partner_register_request.dart';
 import '../data/repositories/auth_repository.dart';
 import 'auth_state.dart';
 
@@ -54,12 +56,69 @@ class AuthCubit extends Cubit<AuthState> {
         }
       }
 
-      final errMsg = data?['message']?.toString() ?? 'Login failed. Please verify partner credentials.';
+      if (data != null && data['status'] == 'pending') {
+        emit(AuthPendingApproval(
+          data['message']?.toString() ??
+              'Your partner application is pending Super Admin approval.',
+        ));
+        return;
+      }
+
+      final errMsg = data?['message']?.toString() ??
+          'Login failed. Please verify partner credentials.';
       emit(AuthFailure(errMsg));
     } catch (e) {
-      /*
-      // Fallback offline authentication for testing if needed
-      */
+      if (e is DioException && e.response?.data is Map) {
+        final resData = e.response?.data as Map;
+        if (resData['status'] == 'pending') {
+          emit(AuthPendingApproval(
+            resData['message']?.toString() ??
+                'Your partner application is currently PENDING approval from Super Admin.',
+          ));
+          return;
+        }
+        final msg = resData['message']?.toString();
+        if (msg != null && msg.isNotEmpty) {
+          emit(AuthFailure(msg));
+          return;
+        }
+      }
+      final errorMsg = NetworkExceptions.getErrorMessage(e);
+      emit(AuthFailure(errorMsg));
+    }
+  }
+
+  Future<void> register(PartnerRegisterRequest request) async {
+    emit(const AuthLoading());
+
+    try {
+      final response = await _authRepository.register(request);
+      final data = response.data;
+
+      if (data != null && data['success'] == true) {
+        final partnerJson = data['partner'] is Map
+            ? Map<String, dynamic>.from(data['partner'] as Map)
+            : <String, dynamic>{};
+        emit(AuthRegisterSuccess(
+          message: data['message']?.toString() ??
+              'Application submitted successfully. Super Admin verification pending.',
+          partnerData: partnerJson,
+        ));
+        return;
+      }
+
+      final errMsg = data?['message']?.toString() ??
+          'Registration failed. Please check submitted details.';
+      emit(AuthFailure(errMsg));
+    } catch (e) {
+      if (e is DioException && e.response?.data is Map) {
+        final resData = e.response?.data as Map;
+        final msg = resData['message']?.toString();
+        if (msg != null && msg.isNotEmpty) {
+          emit(AuthFailure(msg));
+          return;
+        }
+      }
       final errorMsg = NetworkExceptions.getErrorMessage(e);
       emit(AuthFailure(errorMsg));
     }

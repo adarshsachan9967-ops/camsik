@@ -126,8 +126,10 @@ export default function PartnerAuthPage() {
         storeName: suStoreName.trim() || `${suName.trim()}'s Electronics Store`,
         phone: suPhone.trim(),
         email: suEmail.trim(),
+        password: suPassword.trim(),
         city: suCity.trim() || 'Bengaluru',
         state: 'Karnataka',
+        address: suAddress.trim(),
         pinCodes: suPinCode.trim() ? [suPinCode.trim()] : ['560001'],
         categories: ['Smartphones', 'Laptops', 'Cameras'],
         status: 'pending', // Requires Super Admin approval!
@@ -140,6 +142,13 @@ export default function PartnerAuthPage() {
         joinedAt: new Date().toISOString().split('T')[0],
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&q=80',
         commission: 6,
+        documents: {
+          pan: !!suPAN,
+          panNumber: suPAN.trim(),
+          gst: !!suGST,
+          gstNumber: suGST.trim(),
+          verified: false,
+        },
       };
 
       const current = getPartnersList();
@@ -147,6 +156,14 @@ export default function PartnerAuthPage() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('casmik_partners_v1', JSON.stringify(updated));
       }
+
+      // Also register via API
+      fetch('/api/partners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPartner),
+      }).catch((err) => console.warn('Could not post partner registration to API:', err));
+
       setSubmitted(true);
     }
   };

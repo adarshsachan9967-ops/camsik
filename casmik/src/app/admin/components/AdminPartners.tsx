@@ -94,19 +94,46 @@ export default function AdminPartners() {
     }
   };
 
-  const handleApprove = (id: string) => {
+  const handleApprove = async (id: string) => {
     const updated = partnerList.map(p => p.id === id ? { ...p, status: 'active' as const } : p);
     savePartnersToStorage(updated);
+    try {
+      await fetch('/api/partners', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: 'active' }),
+      });
+    } catch (err) {
+      console.warn('Could not sync approval to API:', err);
+    }
   };
 
-  const handleSuspend = (id: string) => {
+  const handleSuspend = async (id: string) => {
     const updated = partnerList.map(p => p.id === id ? { ...p, status: 'suspended' as const } : p);
     savePartnersToStorage(updated);
+    try {
+      await fetch('/api/partners', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: 'suspended' }),
+      });
+    } catch (err) {
+      console.warn('Could not sync suspend to API:', err);
+    }
   };
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string) => {
     const updated = partnerList.map(p => p.id === id ? { ...p, status: 'suspended' as const } : p);
     savePartnersToStorage(updated);
+    try {
+      await fetch('/api/partners', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: 'suspended' }),
+      });
+    } catch (err) {
+      console.warn('Could not sync reject to API:', err);
+    }
   };
 
   const openAddModal = () => {
@@ -205,6 +232,13 @@ export default function AdminPartners() {
         return p;
       });
       savePartnersToStorage(updated);
+      try {
+        fetch('/api/partners', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingPartner.id, ...updated.find(p => p.id === editingPartner.id) }),
+        }).catch(() => {});
+      } catch {}
     } else {
       // Create new partner
       const newPartner: Partner = {
@@ -232,6 +266,13 @@ export default function AdminPartners() {
         documents: docPayload,
       };
       savePartnersToStorage([newPartner, ...partnerList]);
+      try {
+        fetch('/api/partners', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newPartner),
+        }).catch(() => {});
+      } catch {}
     }
 
     setIsFormOpen(false);

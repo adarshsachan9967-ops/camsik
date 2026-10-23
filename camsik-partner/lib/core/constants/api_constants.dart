@@ -15,6 +15,7 @@ class ApiConstants {
 
   // ── Authentication Endpoints ──
   static const String login = "$baseUrl/auth/login";
+  static const String registerPartner = "$baseUrl/partners";
   static const String refreshToken = "$baseUrl/auth/refresh-token";
 
 

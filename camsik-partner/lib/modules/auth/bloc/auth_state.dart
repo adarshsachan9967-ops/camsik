@@ -19,6 +19,22 @@ class AuthSuccess extends AuthState {
   const AuthSuccess({required this.partner, this.message = 'Logged in successfully'});
 }
 
+class AuthRegisterSuccess extends AuthState {
+  final String message;
+  final Map<String, dynamic> partnerData;
+
+  const AuthRegisterSuccess({
+    required this.message,
+    required this.partnerData,
+  });
+}
+
+class AuthPendingApproval extends AuthState {
+  final String message;
+
+  const AuthPendingApproval(this.message);
+}
+
 class AuthFailure extends AuthState {
   final String error;
 

@@ -3088,7 +3088,6 @@ export const orders: Order[] = [
 ];
 
 export const partners: Partner[] = [
-  /*
   {
     id: 'partner-001',
     name: 'Camera Hub Store',
@@ -3152,7 +3151,6 @@ export const partners: Partner[] = [
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80',
     commission: 4.0,
   },
-  */
 ];
 
 export const deliveryAgents: DeliveryAgent[] = [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/services/session_service.dart';
 import '../../modules/auth/partner_login_screen.dart';
+import '../../modules/auth/partner_register_screen.dart';
 import '../../modules/navigation/partner_main_navigation_screen.dart';
 
 class AppRoutes {
@@ -9,6 +10,7 @@ class AppRoutes {
   // Route Name Constants
   static const String initial = '/';
   static const String login = '/login';
+  static const String register = '/register';
   static const String mainNav = '/main';
 
   // Central Route Generator
@@ -18,6 +20,12 @@ class AppRoutes {
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => const PartnerLoginScreen(),
+        );
+
+      case register:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const PartnerRegisterScreen(),
         );
 
       case mainNav:

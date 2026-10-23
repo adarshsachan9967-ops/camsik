@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { findUserByIdentifier } from '@/lib/userStore';
+import { findPartnerByIdentifier } from '@/lib/partnerStore';
 import { partners, deliveryAgents } from '@/lib/casmikData';
 
 export const dynamic = 'force-dynamic';
@@ -70,34 +71,63 @@ export async function POST(request: Request) {
     }
 
     // 2. PARTNER CHECK
-    if (
-      requestedRole === 'partner' ||
+    let partner = await findPartnerByIdentifier(identifier);
+    const isExplicitPartnerEmail =
       cleanEmail === 'partner@camsik.com' ||
       cleanEmail === 'partner@casmik.com' ||
-      cleanEmail === 'contact@camerahub.in'
-    ) {
-      const partner = partners.find(
-        (p) =>
-          p.email.toLowerCase() === cleanEmail ||
-          p.phone.replace(/\D/g, '').slice(-10) === cleanPhone
-      );
+      cleanEmail === 'contact@camerahub.in';
 
-      if (partner || cleanEmail === 'partner@camsik.com' || cleanEmail === 'partner@casmik.com') {
-        const activePartner = partner || partners[0];
+    if (requestedRole === 'partner' || partner || isExplicitPartnerEmail) {
+      if (!partner && isExplicitPartnerEmail) {
+        partner = partners.find((p) => p.email.toLowerCase() === cleanEmail) || partners[0];
+      }
+
+      if (partner) {
+        // Password verification (if set on partner)
+        if (partner.password && partner.password !== password) {
+          return NextResponse.json(
+            { success: false, message: 'Incorrect password. Please enter the correct partner password.' },
+            { status: 401 }
+          );
+        }
+
+        // Status check: must be approved/active by Admin
+        if (partner.status === 'pending') {
+          return NextResponse.json(
+            {
+              success: false,
+              status: 'pending',
+              message: 'Your partner application is pending Super Admin approval. You will be able to access the portal once verified.',
+            },
+            { status: 403 }
+          );
+        }
+
+        if (partner.status === 'suspended' || partner.status === 'inactive') {
+          return NextResponse.json(
+            {
+              success: false,
+              status: partner.status,
+              message: 'Your partner account has been suspended or rejected. Please contact support@camsik.com.',
+            },
+            { status: 403 }
+          );
+        }
+
         return NextResponse.json({
           success: true,
           role: 'partner',
           message: 'Partner authenticated successfully',
-          partner: activePartner,
+          partner,
           user: {
-            id: activePartner.id,
-            name: activePartner.name,
-            storeName: activePartner.storeName,
-            phone: activePartner.phone,
-            email: activePartner.email,
+            id: partner.id,
+            name: partner.name,
+            storeName: partner.storeName,
+            phone: partner.phone,
+            email: partner.email,
             role: 'partner',
-            city: activePartner.city,
-            joinedAt: activePartner.joinedAt,
+            city: partner.city,
+            joinedAt: partner.joinedAt,
           },
         });
       }

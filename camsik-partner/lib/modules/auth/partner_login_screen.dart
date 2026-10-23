@@ -87,6 +87,8 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
                       listener: (context, state) {
                         if (state is AuthSuccess) {
                           Navigator.of(context).pushReplacementNamed(AppRoutes.mainNav);
+                        } else if (state is AuthPendingApproval) {
+                          _showPendingApprovalDialog(context, state.message);
                         } else if (state is AuthFailure) {
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -458,6 +460,85 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
                                 ],
                               ),
                             ),
+
+                            SizedBox(height: 2.2.h),
+
+                            // Register Partner Section
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 4.w,
+                                vertical: 1.8.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(alpha: 0.22),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(7),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(alpha: 0.2),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.storefront_rounded,
+                                          color: AppColors.primary,
+                                          size: 18,
+                                        ),
+                                      ),
+                                      SizedBox(width: 3.w),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Want to become a Partner?',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14.5.sp,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Register your store & earn liquidation margins',
+                                              style: TextStyle(
+                                                color: const Color(0xFF94A3B8),
+                                                fontSize: 14.sp,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 1.5.h),
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      Navigator.of(context).pushNamed(AppRoutes.register);
+                                    },
+                                    icon: const Icon(Icons.app_registration_rounded, size: 18),
+                                    label: Text(
+                                      'Register as Partner Store',
+                                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.primary,
+                                      side: const BorderSide(color: AppColors.primary, width: 1.2),
+                                      minimumSize: const Size.fromHeight(44),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         );
                       },
@@ -468,6 +549,86 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showPendingApprovalDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF131A29),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.hourglass_top_rounded, color: Color(0xFFF59E0B), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Approval Pending',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              message,
+              style: TextStyle(
+                color: const Color(0xFFCBD5E1),
+                fontSize: 14.sp,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 1.5.h),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified_user_outlined, color: Color(0xFF60A5FA), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Super Admin verifies store KYC & documents within 24-48 hours.',
+                      style: TextStyle(color: const Color(0xFF94A3B8), fontSize: 14.sp),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Understood'),
+          ),
+        ],
       ),
     );
   }
