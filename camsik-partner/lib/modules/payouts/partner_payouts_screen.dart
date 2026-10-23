@@ -605,32 +605,39 @@ class _PayoutsViewState extends State<_PayoutsView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF48CAE4).withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(10),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF48CAE4).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Icons.account_balance_wallet_rounded,
+                                    color: Color(0xFF48CAE4),
+                                    size: 16,
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.account_balance_wallet_rounded,
-                                  color: Color(0xFF48CAE4),
-                                  size: 18,
+                                SizedBox(width: 2.w),
+                                Flexible(
+                                  child: Text(
+                                    'STORE FLOAT',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: const Color(0xFF94A3B8),
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              SizedBox(width: 2.5.w),
-                              Text(
-                                'STORE FLOAT BALANCE',
-                                style: TextStyle(
-                                  color: const Color(0xFF94A3B8),
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          SizedBox(width: 2.w),
                           InkWell(
                             onTap: () => _showWithdrawModal(
                               context,
@@ -640,8 +647,8 @@ class _PayoutsViewState extends State<_PayoutsView> {
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
                               padding: EdgeInsets.symmetric(
-                                horizontal: 3.5.w,
-                                vertical: 0.8.h,
+                                horizontal: 3.w,
+                                vertical: 0.7.h,
                               ),
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
@@ -664,9 +671,9 @@ class _PayoutsViewState extends State<_PayoutsView> {
                                     color: Colors.white,
                                     size: 14,
                                   ),
-                                  SizedBox(width: 1.5.w),
+                                  SizedBox(width: 1.2.w),
                                   Text(
-                                    'Withdraw Float',
+                                    'Withdraw',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 14.sp,
@@ -709,50 +716,63 @@ class _PayoutsViewState extends State<_PayoutsView> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Total Disbursed',
-                                  style: TextStyle(
-                                    color: const Color(0xFF94A3B8),
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Total Disbursed',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: const Color(0xFF94A3B8),
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 0.2.h),
-                                Text(
-                                  CurrencyFormatter.format(state.totalDisbursed),
-                                  style: TextStyle(
-                                    color: const Color(0xFF34D399),
-                                    fontSize: 15.sp,
-                                    fontWeight: FontWeight.w800,
+                                  SizedBox(height: 0.2.h),
+                                  Text(
+                                    CurrencyFormatter.format(state.totalDisbursed),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: const Color(0xFF34D399),
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                             Container(width: 1, height: 26, color: Colors.white.withValues(alpha: 0.15)),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Earned Margin (5%)',
-                                  style: TextStyle(
-                                    color: const Color(0xFF94A3B8),
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w600,
+                            SizedBox(width: 3.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Earned Margin (5%)',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: const Color(0xFF94A3B8),
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 0.2.h),
-                                Text(
-                                  CurrencyFormatter.format(commissionEarned),
-                                  style: TextStyle(
-                                    color: const Color(0xFF60A5FA),
-                                    fontSize: 15.sp,
-                                    fontWeight: FontWeight.w800,
+                                  SizedBox(height: 0.2.h),
+                                  Text(
+                                    CurrencyFormatter.format(commissionEarned),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: const Color(0xFF60A5FA),
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -1152,53 +1172,60 @@ class _PayoutsViewState extends State<_PayoutsView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isWithdrawal
-                          ? AppColors.primary.withValues(alpha: 0.1)
-                          : AppColors.successLight,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      isWithdrawal
-                          ? Icons.arrow_downward_rounded
-                          : Icons.arrow_upward_rounded,
-                      color: isWithdrawal ? AppColors.primary : AppColors.success,
-                      size: 20,
-                    ),
-                  ),
-                  SizedBox(width: 3.w),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        CurrencyFormatter.format(txn.amount),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 17.sp,
-                          color: const Color(0xFF0F172A),
-                        ),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isWithdrawal
+                            ? AppColors.primary.withValues(alpha: 0.1)
+                            : AppColors.successLight,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      SizedBox(height: 0.2.h),
-                      Text(
+                      child: Icon(
                         isWithdrawal
-                            ? 'Float Withdrawal to Bank'
-                            : (hasOrder
-                                ? '${txn.orderNumber} • ${txn.customerName ?? "Customer"}'
-                                : (txn.notes.isNotEmpty ? txn.notes : 'Spot Disbursal')),
-                        style: TextStyle(
-                          color: const Color(0xFF475569),
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
+                            ? Icons.arrow_downward_rounded
+                            : Icons.arrow_upward_rounded,
+                        color: isWithdrawal ? AppColors.primary : AppColors.success,
+                        size: 20,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    SizedBox(width: 3.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            CurrencyFormatter.format(txn.amount),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 17.sp,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          SizedBox(height: 0.2.h),
+                          Text(
+                            isWithdrawal
+                                ? 'Float Withdrawal to Bank'
+                                : (hasOrder
+                                    ? '${txn.orderNumber} • ${txn.customerName ?? "Customer"}'
+                                    : (txn.notes.isNotEmpty ? txn.notes : 'Spot Disbursal')),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: const Color(0xFF475569),
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              SizedBox(width: 2.w),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 2.5.w, vertical: 0.5.h),
                 decoration: BoxDecoration(

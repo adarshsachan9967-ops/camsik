@@ -18,10 +18,10 @@ class _AddRiderScreenState extends State<AddRiderScreen> {
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _vehicleCtrl = TextEditingController(text: 'Bike (Hero Splendor)');
-  final _vehicleNoCtrl = TextEditingController(text: 'MH02AB1234');
-  final _cityCtrl = TextEditingController(text: 'Mumbai');
-  final _pinCodesCtrl = TextEditingController(text: '400001, 400050');
+  final _vehicleCtrl = TextEditingController();
+  final _vehicleNoCtrl = TextEditingController();
+  final _cityCtrl = TextEditingController();
+  final _pinCodesCtrl = TextEditingController();
 
   bool _isSubmitting = false;
 
@@ -29,8 +29,13 @@ class _AddRiderScreenState extends State<AddRiderScreen> {
   void initState() {
     super.initState();
     final partner = SessionService.currentUser;
-    if (partner != null && partner.city.isNotEmpty) {
-      _cityCtrl.text = partner.city;
+    if (partner != null) {
+      if (partner.city.isNotEmpty) {
+        _cityCtrl.text = partner.city;
+      }
+      if (partner.pinCodes.isNotEmpty) {
+        _pinCodesCtrl.text = partner.pinCodes.join(', ');
+      }
     }
   }
 

@@ -12,117 +12,7 @@ import '../orders/bloc/orders_state.dart';
 import 'data/models/device_verification_report_model.dart';
 import 'data/repositories/inspection_repository.dart';
 
-class InspectionCheckItem {
-  final String id;
-  final String label;
-  final String subtext;
-  final int deductionPct;
-
-  const InspectionCheckItem({
-    required this.id,
-    required this.label,
-    required this.subtext,
-    required this.deductionPct,
-  });
-}
-
-const List<InspectionCheckItem> kInspectionItems = [
-  InspectionCheckItem(
-    id: 'display',
-    label: 'Display & Touchscreen',
-    subtext: 'Cracks, dead pixels, lines, touch responsiveness',
-    deductionPct: 25,
-  ),
-  InspectionCheckItem(
-    id: 'body',
-    label: 'Body & Frame Condition',
-    subtext: 'Dents, heavy scratches, bent frame, discoloration',
-    deductionPct: 12,
-  ),
-  InspectionCheckItem(
-    id: 'camera',
-    label: 'Camera & Optics',
-    subtext: 'Front & rear camera focus, lens glass, sensor dust',
-    deductionPct: 15,
-  ),
-  InspectionCheckItem(
-    id: 'battery',
-    label: 'Battery Health & Endurance',
-    subtext: 'Battery health degradation, rapid discharge, swelling',
-    deductionPct: 10,
-  ),
-  InspectionCheckItem(
-    id: 'faceid',
-    label: 'Biometrics (Face ID / Fingerprint)',
-    subtext: 'Face ID, Touch ID, or fingerprint sensor failure',
-    deductionPct: 12,
-  ),
-  InspectionCheckItem(
-    id: 'charging',
-    label: 'Charging & USB Port',
-    subtext: 'Loose port, slow charging, or no PC data sync',
-    deductionPct: 8,
-  ),
-  InspectionCheckItem(
-    id: 'speaker',
-    label: 'Speakers & Microphones',
-    subtext: 'Cracking sound, low earpiece volume, mic distortion',
-    deductionPct: 6,
-  ),
-  InspectionCheckItem(
-    id: 'wifi',
-    label: 'Wireless (Wi-Fi, Bluetooth, NFC)',
-    subtext: 'Wi-Fi drop, Bluetooth pairing failure, GPS glitch',
-    deductionPct: 6,
-  ),
-  InspectionCheckItem(
-    id: 'network',
-    label: 'Cellular SIM & Antennas',
-    subtext: 'No service, baseband issue, damaged SIM slot',
-    deductionPct: 10,
-  ),
-  InspectionCheckItem(
-    id: 'buttons',
-    label: 'Physical Buttons & Haptics',
-    subtext: 'Stuck volume rocker, power key, faulty vibration',
-    deductionPct: 5,
-  ),
-  InspectionCheckItem(
-    id: 'water',
-    label: 'Liquid Damage Check (LDI)',
-    subtext: 'Internal moisture indicator triggered or corrosion',
-    deductionPct: 20,
-  ),
-  InspectionCheckItem(
-    id: 'accessories',
-    label: 'Original Box & Accessories',
-    subtext: 'Missing original box, authentic cable, or adapter',
-    deductionPct: 5,
-  ),
-];
-
-class PhotoAngle {
-  final String id;
-  final String label;
-  final String desc;
-
-  const PhotoAngle({
-    required this.id,
-    required this.label,
-    required this.desc,
-  });
-}
-
-const List<PhotoAngle> kPhotoAngles = [
-  PhotoAngle(id: 'front', label: 'Front Display (Screen On)', desc: 'Display with white background'),
-  PhotoAngle(id: 'back', label: 'Back Panel & Housing', desc: 'Back glass or aluminum body'),
-  PhotoAngle(id: 'left', label: 'Left Side & Frame', desc: 'Left edge & volume buttons'),
-  PhotoAngle(id: 'right', label: 'Right Side & Frame', desc: 'Right edge & power button'),
-  PhotoAngle(id: 'ports', label: 'Top / Bottom Ports', desc: 'Charging port & speaker grilles'),
-  PhotoAngle(id: 'camera_lens', label: 'Camera Lens & Optics', desc: 'Close-up of camera cluster'),
-  PhotoAngle(id: 'imei_label', label: 'IMEI / Serial Screen', desc: 'Settings > About screen'),
-  PhotoAngle(id: 'defect', label: 'Scratch / Defect Close-up', desc: 'Any cosmetic blemish'),
-];
+import 'data/models/inspection_category_config.dart';
 
 class PartnerInspectionScreen extends StatefulWidget {
   final List<PartnerOrder>? orders;
@@ -339,8 +229,12 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
     super.dispose();
   }
 
-  // --- Dynamic Scoring & Price Calculations ---
-  int get _totalItems => kInspectionItems.length;
+  // --- Dynamic Scoring & Price Calculations (Category Aware) ---
+  CategoryInspectionConfig get _categoryConfig => getInspectionConfigForOrder(_selectedOrder);
+  List<InspectionCheckItem> get _currentItems => _categoryConfig.items;
+  List<PhotoAngle> get _currentPhotoAngles => _categoryConfig.photoAngles;
+
+  int get _totalItems => _currentItems.length;
   int get _answeredCount => _results.length;
   int get _passedCount => _results.values.where((v) => v == 'pass').length;
   int get _failedCount => _results.values.where((v) => v == 'fail').length;
@@ -353,7 +247,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
   double get _quotedPrice => _selectedOrder.quotedPrice;
 
   List<InspectionCheckItem> get _failedItems =>
-      kInspectionItems.where((item) => _results[item.id] == 'fail').toList();
+      _currentItems.where((item) => _results[item.id] == 'fail').toList();
 
   int get _totalDeductionPct {
     final sum = _failedItems.fold<int>(0, (acc, item) => acc + item.deductionPct);
@@ -420,7 +314,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
               report.blacklisted
                   ? '⚠️ Warning: IMEI flagged on GSMA Blacklist!'
                   : '✅ GSMA Verified Clean: ${report.brand} ${report.model}',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5.sp),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp),
             ),
           ),
         );
@@ -448,14 +342,14 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
 
   void _uploadAllPhotos() {
     setState(() {
-      for (final a in kPhotoAngles) {
+      for (final a in _currentPhotoAngles) {
         _photos[a.id] = 'captured_${DateTime.now().millisecondsSinceEpoch}';
       }
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✅ All 8 mandatory device angle photos attached!'),
-        backgroundColor: Color(0xFF059669),
+      SnackBar(
+        content: Text('✅ All ${_currentPhotoAngles.length} mandatory ${_categoryConfig.categoryName} photos attached!'),
+        backgroundColor: const Color(0xFF059669),
       ),
     );
   }
@@ -484,7 +378,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
       deviceImei: _imeiController.text.trim(),
       notes: _notesController.text.trim().isNotEmpty
           ? _notesController.text.trim()
-          : '12-Point Hardware Inspection Certified ($_scorePercent% score). Payout: ₹${_finalPayoutToUser.toStringAsFixed(0)}',
+          : '${_categoryConfig.categoryBadge}: ${_currentItems.length}-Point QA Inspection Certified ($_scorePercent% score). Payout: ₹${_finalPayoutToUser.toStringAsFixed(0)}',
     );
 
     if (mounted) {
@@ -585,7 +479,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
               backgroundColor: const Color(0xFF059669),
               content: Text(
                 '💳 Payout Disbursed! Order #${_selectedOrder.orderNumber} successfully completed.',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5.sp),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp),
               ),
             ),
           );
@@ -712,7 +606,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 13.sp,
+                                fontSize: 14.sp,
                               ),
                             ),
                     ),
@@ -725,7 +619,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                         Text(
                           'STEP 1',
                           style: TextStyle(
-                            fontSize: 10.sp,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.8,
                             color: widget.currentStep == 1
@@ -736,7 +630,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                         Text(
                           'Diagnostics & QA',
                           style: TextStyle(
-                            fontSize: 12.5.sp,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
                             color: widget.currentStep == 1
                                 ? const Color(0xFF0F172A)
@@ -780,7 +674,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                               ? Colors.white
                               : const Color(0xFF64748B),
                           fontWeight: FontWeight.bold,
-                          fontSize: 13.sp,
+                          fontSize: 14.sp,
                         ),
                       ),
                     ),
@@ -793,7 +687,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                         Text(
                           'STEP 2',
                           style: TextStyle(
-                            fontSize: 10.sp,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.8,
                             color: widget.currentStep == 2
@@ -804,7 +698,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                         Text(
                           'Photos & Lock',
                           style: TextStyle(
-                            fontSize: 12.5.sp,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
                             color: widget.currentStep == 2
                                 ? const Color(0xFF0F172A)
@@ -835,7 +729,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
             Text(
               'SELECT QUEUE DEVICE',
               style: TextStyle(
-                fontSize: 12.sp,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.8,
                 color: const Color(0xFF64748B),
@@ -844,7 +738,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
             Text(
               '${widget.orders.length} available',
               style: TextStyle(
-                fontSize: 12.sp,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF94A3B8),
               ),
@@ -857,10 +751,11 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
           child: Row(
             children: widget.orders.map((o) {
               final isSelected = o.id == _selectedOrder.id;
+              final catConfig = getInspectionConfigForOrder(o);
               return GestureDetector(
                 onTap: () => _selectOrder(o),
                 child: Container(
-                  width: 58.w,
+                  width: 62.w,
                   margin: EdgeInsets.only(right: 2.5.w),
                   padding: EdgeInsets.all(3.w),
                   decoration: BoxDecoration(
@@ -884,27 +779,34 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.2.h),
+                            decoration: BoxDecoration(
+                              color: catConfig.badgeColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(catConfig.icon, size: 13, color: catConfig.badgeColor),
+                                SizedBox(width: 1.w),
+                                Text(
+                                  catConfig.categoryName.split(' ').first,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: catConfig.badgeColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                           Text(
                             o.orderNumber,
                             style: TextStyle(
-                              fontSize: 12.sp,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF64748B),
-                            ),
-                          ),
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 1.8.w, vertical: 0.2.h),
-                            decoration: BoxDecoration(
-                              color: o.statusColor.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              o.statusDisplay.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 10.5.sp,
-                                fontWeight: FontWeight.bold,
-                                color: o.statusColor,
-                              ),
                             ),
                           ),
                         ],
@@ -913,7 +815,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                       Text(
                         o.deviceName,
                         style: TextStyle(
-                          fontSize: 14.sp,
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF0F172A),
                         ),
@@ -924,7 +826,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                       Text(
                         'Quote: ${CurrencyFormatter.format(o.quotedPrice)}',
                         style: TextStyle(
-                          fontSize: 12.sp,
+                          fontSize: 14.sp,
                           color: const Color(0xFF64748B),
                         ),
                       ),
@@ -977,7 +879,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
           Text(
             'Order allocated to Executive ${_selectedOrder.deliveryAgentName ?? "Rider"}. Per company policy, diagnostic intake checklist is carried out by the delivery personnel at the doorstep.',
             style: TextStyle(
-              fontSize: 12.5.sp,
+              fontSize: 14.sp,
               color: const Color(0xFF92400E),
               height: 1.3,
             ),
@@ -1013,6 +915,51 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 2.5.w, vertical: 0.4.h),
+                decoration: BoxDecoration(
+                  color: _categoryConfig.badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _categoryConfig.badgeColor.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_categoryConfig.icon, size: 14, color: _categoryConfig.badgeColor),
+                    SizedBox(width: 1.5.w),
+                    Text(
+                      _categoryConfig.categoryBadge.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                        color: _categoryConfig.badgeColor,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 2.5.w, vertical: 0.4.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${_currentItems.length} Checkpoints',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF475569),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 1.2.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1031,7 +978,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                     Text(
                       'Cust: ${_selectedOrder.customerName} (${_selectedOrder.customerPhone})',
                       style: TextStyle(
-                        fontSize: 12.5.sp,
+                        fontSize: 14.sp,
                         color: const Color(0xFF64748B),
                       ),
                     ),
@@ -1044,7 +991,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                   Text(
                     'CONDITION SCORE',
                     style: TextStyle(
-                      fontSize: 11.sp,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.8,
                       color: const Color(0xFF94A3B8),
@@ -1054,7 +1001,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                   Text(
                     _answeredCount == 0 ? '--' : '$score%',
                     style: TextStyle(
-                      fontSize: 20.sp,
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.w900,
                       color: _answeredCount == 0 ? const Color(0xFF94A3B8) : color,
                     ),
@@ -1079,7 +1026,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
             SizedBox(height: 0.8.h),
             Text(
               'Select Pass or Fail on checkpoints below to calculate live grade.',
-              style: TextStyle(fontSize: 11.5.sp, color: const Color(0xFF94A3B8)),
+              style: TextStyle(fontSize: 14.sp, color: const Color(0xFF94A3B8)),
             ),
           ],
         ],
@@ -1108,13 +1055,17 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'PHYSICAL IMEI / SERIAL NUMBER',
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.8,
-                  color: const Color(0xFF64748B),
+              Expanded(
+                child: Text(
+                  _categoryConfig.identifierLabel,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8,
+                    color: const Color(0xFF64748B),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (_verificationReport != null)
@@ -1127,9 +1078,9 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    _verificationReport!.blacklisted ? 'BLACKLISTED' : 'GSMA CLEAN',
+                    _verificationReport!.blacklisted ? 'FLAGGED' : 'VERIFIED CLEAN',
                     style: TextStyle(
-                      fontSize: 11.sp,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.bold,
                       color: _verificationReport!.blacklisted
                           ? const Color(0xFF991B1B)
@@ -1145,13 +1096,13 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
               Expanded(
                 child: TextField(
                   controller: _imeiController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 15,
-                  style: TextStyle(fontSize: 14.5.sp, fontFamily: 'monospace', fontWeight: FontWeight.w600),
+                  keyboardType: _categoryConfig.isImei ? TextInputType.number : TextInputType.text,
+                  maxLength: _categoryConfig.isImei ? 15 : 24,
+                  style: TextStyle(fontSize: 14.sp, fontFamily: 'monospace', fontWeight: FontWeight.w600),
                   decoration: InputDecoration(
                     counterText: '',
-                    hintText: 'Dial *#06# or inspect SIM tray',
-                    hintStyle: TextStyle(fontSize: 13.sp, color: const Color(0xFF94A3B8)),
+                    hintText: _categoryConfig.identifierHint,
+                    hintStyle: TextStyle(fontSize: 14.sp, color: const Color(0xFF94A3B8)),
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
                     contentPadding: EdgeInsets.symmetric(horizontal: 3.5.w, vertical: 1.2.h),
@@ -1182,8 +1133,8 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : Text(
-                        'Verify GSMA',
-                        style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold),
+                        _categoryConfig.isImei ? 'Verify GSMA' : 'Verify S/N',
+                        style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
                       ),
               ),
             ],
@@ -1218,30 +1169,35 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Diagnostic Checklist',
-                      style: TextStyle(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF0F172A),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${_categoryConfig.categoryName} QA Checklist',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF0F172A),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    SizedBox(height: 0.3.h),
-                    Text(
-                      'Tap Pass, Fail, or N/A on each item',
-                      style: TextStyle(fontSize: 12.sp, color: const Color(0xFF64748B)),
-                    ),
-                  ],
+                      SizedBox(height: 0.3.h),
+                      Text(
+                        'Tap Pass, Fail, or N/A on each item',
+                        style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
                 ),
+                SizedBox(width: 2.w),
                 Text(
                   pendingCount > 0
-                      ? '$_passedCount Passed • $_failedCount Failed • $pendingCount Pending'
-                      : '$_passedCount Passed • $_failedCount Failed',
+                      ? '$_passedCount Pass • $_failedCount Fail • $pendingCount Left'
+                      : '$_passedCount Pass • $_failedCount Fail',
                   style: TextStyle(
-                    fontSize: 11.5.sp,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
                     color: pendingCount > 0 ? const Color(0xFFD97706) : const Color(0xFF059669),
                   ),
@@ -1250,7 +1206,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
             ),
           ),
           const Divider(height: 1, color: Color(0xFFE2E8F0)),
-          ...kInspectionItems.map((item) {
+          ..._currentItems.map((item) {
             final result = _results[item.id]; // null if not chosen yet!
             final isFail = result == 'fail';
             final isPass = result == 'pass';
@@ -1278,7 +1234,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                                 item.label,
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 13.5.sp,
+                                  fontSize: 15.sp,
                                   color: const Color(0xFF0F172A),
                                 ),
                               ),
@@ -1294,7 +1250,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                                 child: Text(
                                   '-${item.deductionPct}% (-₹$deductionAmt)',
                                   style: TextStyle(
-                                    fontSize: 10.5.sp,
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFFB91C1C),
                                   ),
@@ -1305,7 +1261,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                         SizedBox(height: 0.3.h),
                         Text(
                           item.subtext,
-                          style: TextStyle(fontSize: 11.5.sp, color: const Color(0xFF64748B)),
+                          style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1366,7 +1322,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
           label,
           style: TextStyle(
             color: selected ? Colors.white : const Color(0xFF64748B),
-            fontSize: 12.sp,
+            fontSize: 14.sp,
             fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
           ),
         ),
@@ -1407,7 +1363,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                     'LIVE VALUATION PAYOUT',
                     style: TextStyle(
                       color: const Color(0xFF34D399),
-                      fontSize: 12.5.sp,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.1,
                     ),
@@ -1424,7 +1380,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                   _failedCount == 0 ? 'Pristine 100%' : '$_failedCount Deductions',
                   style: TextStyle(
                     color: const Color(0xFFCBD5E1),
-                    fontSize: 11.5.sp,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1436,7 +1392,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
             'Exact Payout to User:',
             style: TextStyle(
               color: const Color(0xFF94A3B8),
-              fontSize: 13.sp,
+              fontSize: 14.sp,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -1465,7 +1421,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                   'Live Calculated',
                   style: TextStyle(
                     color: const Color(0xFF6EE7B7),
-                    fontSize: 11.sp,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1488,8 +1444,8 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Initial Estimated Quote:', style: TextStyle(color: const Color(0xFFCBD5E1), fontSize: 13.sp)),
-                    Text(CurrencyFormatter.format(_quotedPrice), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5.sp)),
+                    Text('Initial Estimated Quote:', style: TextStyle(color: const Color(0xFFCBD5E1), fontSize: 14.sp)),
+                    Text(CurrencyFormatter.format(_quotedPrice), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.sp)),
                   ],
                 ),
                 if (_failedItems.isNotEmpty) ...[
@@ -1498,7 +1454,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                   SizedBox(height: 1.h),
                   Text(
                     'Condition Deductions ($_totalDeductionPct%):',
-                    style: TextStyle(color: const Color(0xFFF87171), fontWeight: FontWeight.bold, fontSize: 12.sp),
+                    style: TextStyle(color: const Color(0xFFF87171), fontWeight: FontWeight.bold, fontSize: 14.sp),
                   ),
                   SizedBox(height: 0.6.h),
                   ..._failedItems.map((item) {
@@ -1511,14 +1467,14 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                           Expanded(
                             child: Text(
                               '• ${item.label}:',
-                              style: TextStyle(color: const Color(0xFF94A3B8), fontSize: 12.sp),
+                              style: TextStyle(color: const Color(0xFF94A3B8), fontSize: 14.sp),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Text(
                             '-₹$amt (${item.deductionPct}%)',
-                            style: TextStyle(color: const Color(0xFFF87171), fontWeight: FontWeight.bold, fontSize: 12.sp),
+                            style: TextStyle(color: const Color(0xFFF87171), fontWeight: FontWeight.bold, fontSize: 14.sp),
                           ),
                         ],
                       ),
@@ -1528,15 +1484,15 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Total Deduction Amount:', style: TextStyle(color: const Color(0xFFFCA5A5), fontWeight: FontWeight.bold, fontSize: 13.sp)),
-                      Text('-₹$_totalDeductionAmount', style: TextStyle(color: const Color(0xFFFCA5A5), fontWeight: FontWeight.bold, fontSize: 13.sp)),
+                      Text('Total Deduction Amount:', style: TextStyle(color: const Color(0xFFFCA5A5), fontWeight: FontWeight.bold, fontSize: 14.sp)),
+                      Text('-₹$_totalDeductionAmount', style: TextStyle(color: const Color(0xFFFCA5A5), fontWeight: FontWeight.bold, fontSize: 14.sp)),
                     ],
                   ),
                 ] else ...[
                   SizedBox(height: 0.6.h),
                   Text(
                     '✓ Zero deductions! Customer receives full 100% quoted payout.',
-                    style: TextStyle(color: const Color(0xFF34D399), fontWeight: FontWeight.bold, fontSize: 12.sp),
+                    style: TextStyle(color: const Color(0xFF34D399), fontWeight: FontWeight.bold, fontSize: 14.sp),
                   ),
                 ],
               ],
@@ -1558,7 +1514,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                   _isCustomPrice ? 'Use Algorithm Calculated Price' : 'Override with Custom Negotiated Payout',
                   style: TextStyle(
                     color: AppColors.primary,
-                    fontSize: 12.5.sp,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1610,7 +1566,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
           Text(
             'TECHNICIAN / INSPECTION NOTES',
             style: TextStyle(
-              fontSize: 12.sp,
+              fontSize: 14.sp,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.8,
               color: const Color(0xFF64748B),
@@ -1620,10 +1576,10 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
           TextField(
             controller: _notesController,
             maxLines: 2,
-            style: TextStyle(fontSize: 13.5.sp),
+            style: TextStyle(fontSize: 14.sp),
             decoration: InputDecoration(
               hintText: 'Mention screen scratches, battery health %, customer conversation...',
-              hintStyle: TextStyle(fontSize: 12.5.sp, color: const Color(0xFF94A3B8)),
+              hintStyle: TextStyle(fontSize: 14.sp, color: const Color(0xFF94A3B8)),
               filled: true,
               fillColor: const Color(0xFFF8FAFC),
               contentPadding: EdgeInsets.all(3.w),
@@ -1696,7 +1652,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
               Text(
                 'FINAL SETTLEMENT PAYOUT',
                 style: TextStyle(
-                  fontSize: 11.sp,
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.8,
                   color: const Color(0xFF64748B),
@@ -1722,7 +1678,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
             child: Text(
               'Score: $_scorePercent%',
               style: TextStyle(
-                fontSize: 12.sp,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF059669),
               ),
@@ -1754,26 +1710,31 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Device Inspection Photos',
-                    style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
-                  ),
-                  SizedBox(height: 0.3.h),
-                  Text('Tap any box to attach angle photo', style: TextStyle(fontSize: 12.sp, color: const Color(0xFF64748B))),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${_categoryConfig.categoryName} Photos',
+                      style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 0.3.h),
+                    Text('Tap any box to attach angle photo', style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B))),
+                  ],
+                ),
               ),
+              SizedBox(width: 2.w),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 2.2.w, vertical: 0.4.h),
+                padding: EdgeInsets.symmetric(horizontal: 2.5.w, vertical: 0.4.h),
                 decoration: BoxDecoration(
                   color: const Color(0xFFECFDF5),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '${_photos.length} / ${kPhotoAngles.length} Photos',
-                  style: TextStyle(fontSize: 11.5.sp, fontWeight: FontWeight.bold, color: const Color(0xFF059669)),
+                  '${_photos.length} / ${_currentPhotoAngles.length} Photos',
+                  style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: const Color(0xFF059669)),
                 ),
               ),
             ],
@@ -1788,9 +1749,9 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
               mainAxisSpacing: 10,
               childAspectRatio: 1.35,
             ),
-            itemCount: kPhotoAngles.length,
+            itemCount: _currentPhotoAngles.length,
             itemBuilder: (ctx, idx) {
-              final angle = kPhotoAngles[idx];
+              final angle = _currentPhotoAngles[idx];
               final hasPhoto = _photos.containsKey(angle.id);
 
               return GestureDetector(
@@ -1817,7 +1778,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                       Text(
                         angle.label,
                         style: TextStyle(
-                          fontSize: 11.5.sp,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
                           color: hasPhoto ? const Color(0xFF065F46) : const Color(0xFF0F172A),
                         ),
@@ -1829,7 +1790,8 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                       Text(
                         hasPhoto ? 'Captured' : 'Tap to Attach',
                         style: TextStyle(
-                          fontSize: 10.sp,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
                           color: hasPhoto ? const Color(0xFF059669) : const Color(0xFF94A3B8),
                         ),
                       ),
@@ -1852,8 +1814,8 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
               onPressed: _uploadAllPhotos,
               icon: const Icon(Icons.cloud_upload_outlined, size: 18),
               label: Text(
-                'Upload All 8 Angle Photos at Once',
-                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold),
+                'Upload All ${_currentPhotoAngles.length} Angle Photos at Once',
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -1883,7 +1845,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                 children: [
                   const Icon(Icons.arrow_back_rounded, size: 18),
                   SizedBox(width: 1.5.w),
-                  Text('Step 1', style: TextStyle(fontSize: 13.5.sp, fontWeight: FontWeight.bold)),
+                  Text('Step 1', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -1917,7 +1879,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                           _isAllocatedToRider
                               ? 'Locked by Rider'
                               : 'Lock Payout (${CurrencyFormatter.format(_finalPayoutToUser)})',
-                          style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -1972,7 +1934,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                 child: Text(
                   _payoutDisbursed ? 'ORDER COMPLETED & LOCKED' : 'INSPECTION COMPLETED · PRICE LOCKED',
                   style: TextStyle(
-                    fontSize: 11.5.sp,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.8,
                     color: _payoutDisbursed ? const Color(0xFF166534) : const Color(0xFF1E40AF),
@@ -1992,7 +1954,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
               SizedBox(height: 0.6.h),
               Text(
                 'Device: ${_selectedOrder.deviceName} (${_selectedOrder.orderNumber})',
-                style: TextStyle(fontSize: 13.5.sp, color: const Color(0xFF64748B)),
+                style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 2.5.h),
@@ -2024,7 +1986,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                         Text(
                           _payoutDisbursed ? 'DISBURSED PAYOUT' : 'EXACT PAYOUT TO CUSTOMER',
                           style: TextStyle(
-                            fontSize: 11.5.sp,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.8,
                             color: const Color(0xFFA7F3D0),
@@ -2038,7 +2000,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                           ),
                           child: Text(
                             'Score: $_scorePercent%',
-                            style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                            style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                         ),
                       ],
@@ -2047,7 +2009,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                     Text(
                       CurrencyFormatter.format(_finalPayoutToUser),
                       style: TextStyle(
-                        fontSize: 26.sp,
+                        fontSize: 24.sp,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                       ),
@@ -2058,8 +2020,8 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Original Quote: ${CurrencyFormatter.format(_quotedPrice)}', style: TextStyle(fontSize: 11.5.sp, color: const Color(0xFFD1FAE5))),
-                        Text('Deductions: -₹$_totalDeductionAmount ($_totalDeductionPct%)', style: TextStyle(fontSize: 11.5.sp, color: const Color(0xFFD1FAE5))),
+                        Text('Original Quote: ${CurrencyFormatter.format(_quotedPrice)}', style: TextStyle(fontSize: 14.sp, color: const Color(0xFFD1FAE5))),
+                        Text('Deductions: -₹$_totalDeductionAmount ($_totalDeductionPct%)', style: TextStyle(fontSize: 14.sp, color: const Color(0xFFD1FAE5))),
                       ],
                     ),
                   ],
@@ -2085,7 +2047,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                           'Order shifted to Completed (Permanently Locked). The payout of ${CurrencyFormatter.format(_finalPayoutToUser)} has been disbursed.',
                           style: TextStyle(
                             color: const Color(0xFF065F46),
-                            fontSize: 12.5.sp,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -2121,7 +2083,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                 SizedBox(height: 1.h),
                 Text(
                   'Or return to Orders to disburse payout later. The updated price is now active on the order card.',
-                  style: TextStyle(fontSize: 12.sp, color: const Color(0xFF94A3B8)),
+                  style: TextStyle(fontSize: 14.sp, color: const Color(0xFF94A3B8)),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -2152,7 +2114,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                       },
                       child: Text(
                         'Back to Orders',
-                        style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -2181,7 +2143,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
                       },
                       child: Text(
                         'Inspect Next Device',
-                        style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
