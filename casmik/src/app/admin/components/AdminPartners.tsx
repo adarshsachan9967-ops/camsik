@@ -467,13 +467,23 @@ export default function AdminPartners() {
                   <FileText size={12} /> Docs
                 </button>
                 {partner.status === 'pending' && (
-                  <button onClick={() => handleApprove(partner.id)} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green-500 text-white text-xs font-semibold hover:bg-green-600 mt-1">
-                    <CheckCircle size={12} /> Approve Partner
-                  </button>
+                  <div className="w-full flex gap-1.5 mt-1">
+                    <button onClick={() => handleApprove(partner.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green-500 text-white text-xs font-semibold hover:bg-green-600">
+                      <CheckCircle size={12} /> Approve Partner
+                    </button>
+                    <button onClick={() => handleSuspend(partner.id)} className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-red-200 bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100">
+                      <XCircle size={12} /> Reject
+                    </button>
+                  </div>
                 )}
                 {partner.status === 'active' && (
-                  <button onClick={() => handleSuspend(partner.id)} className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100">
-                    <XCircle size={12} />
+                  <button onClick={() => handleSuspend(partner.id)} className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-red-200 bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-colors mt-1">
+                    <XCircle size={13} /> Suspend Partner
+                  </button>
+                )}
+                {partner.status === 'suspended' && (
+                  <button onClick={() => handleApprove(partner.id)} className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-green-600 text-white text-xs font-bold hover:bg-green-700 transition-colors mt-1">
+                    <CheckCircle size={13} /> Re-activate Partner
                   </button>
                 )}
               </div>
