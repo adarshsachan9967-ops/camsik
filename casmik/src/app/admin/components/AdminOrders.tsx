@@ -193,6 +193,8 @@ export default function AdminOrders({
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [assignModal, setAssignModal] = useState<Order | null>(null);
   const [selectedPartner, setSelectedPartner] = useState('');
+  const [livePartners, setLivePartners] = useState<Partner[]>([]);
+  const [showAllPartners, setShowAllPartners] = useState(false);
 
   // Delivery Person Assignment Modal State
   const [assignDeliveryModal, setAssignDeliveryModal] = useState<Order | null>(null);
@@ -219,6 +221,23 @@ export default function AdminOrders({
       window.removeEventListener('casmik_partner_orders_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
+  }, []);
+
+  // Fetch live active partners from API and listen for partner updates
+  useEffect(() => {
+    const fetchLivePartners = () => {
+      fetch('/api/partners')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && Array.isArray(data.partners)) {
+            setLivePartners(data.partners.filter((p: Partner) => p.status === 'active'));
+          }
+        })
+        .catch(() => {});
+    };
+    fetchLivePartners();
+    window.addEventListener('casmik_partners_updated', fetchLivePartners);
+    return () => window.removeEventListener('casmik_partners_updated', fetchLivePartners);
   }, []);
 
   useEffect(() => {
@@ -323,9 +342,115 @@ export default function AdminOrders({
       return timeB - timeA;
     });
 
+  // Calculate partner proximity to the order address PIN code
+  const getPartnerProximity = useCallback((partner: Partner, orderPin: string, orderCity?: string) => {
+    const cleanOrder = (orderPin || '').trim().replace(/\D/g, '');
+    const orderNum = parseInt(cleanOrder, 10) || 0;
+    const partnerPins = (partner.pinCodes || []).map(p => (p || '').trim().replace(/\D/g, '')).filter(Boolean);
+
+    let isExact = false;
+    let bestPin = partnerPins[0] || '';
+    let minDiff = 999999;
+    let rank = 5;
+    let label = 'Other Area';
+
+    for (const p of partnerPins) {
+      const pNum = parseInt(p, 10) || 0;
+      if (cleanOrder && p === cleanOrder) {
+        isExact = true;
+        bestPin = p;
+        minDiff = 0;
+        rank = 0;
+        label = 'Exact PIN Match ✓';
+        break;
+      }
+      if (cleanOrder.length >= 4 && p.slice(0, 4) === cleanOrder.slice(0, 4)) {
+        const diff = Math.abs(pNum - orderNum);
+        if (diff < minDiff) {
+          minDiff = diff;
+          bestPin = p;
+          rank = 1;
+          label = `Same Local Area (PIN: ${p})`;
+        }
+      } else if (cleanOrder.length >= 3 && p.slice(0, 3) === cleanOrder.slice(0, 3)) {
+        const diff = Math.abs(pNum - orderNum);
+        if (diff < minDiff) {
+          minDiff = diff;
+          bestPin = p;
+          rank = 2;
+          label = `Same District (PIN: ${p})`;
+        }
+      } else if (cleanOrder.length >= 2 && p.slice(0, 2) === cleanOrder.slice(0, 2)) {
+        const diff = Math.abs(pNum - orderNum);
+        if (diff < minDiff) {
+          minDiff = diff;
+          bestPin = p;
+          rank = 3;
+          label = `Same Region (PIN: ${p})`;
+        }
+      } else if (orderNum && pNum) {
+        const diff = Math.abs(pNum - orderNum);
+        if (diff < minDiff) {
+          minDiff = diff;
+          bestPin = p;
+        }
+      }
+    }
+
+    const sameCity = !!(orderCity && partner.city && partner.city.toLowerCase() === orderCity.toLowerCase());
+    if (sameCity && rank > 3) {
+      rank = 3;
+      label = `Same City (${partner.city})`;
+    }
+
+    return { isExact, bestPin, minDiff, rank, label, sameCity };
+  }, []);
+
+  const rankedPartners = React.useMemo(() => {
+    if (!assignModal) return [];
+    const pool = livePartners.length > 0 ? livePartners : partners.filter(p => p.status === 'active');
+    
+    const withProx = pool.map(partner => {
+      const prox = getPartnerProximity(partner, assignModal.pinCode, assignModal.city);
+      return { partner, ...prox };
+    });
+
+    withProx.sort((a, b) => {
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      return a.minDiff - b.minDiff;
+    });
+
+    return withProx;
+  }, [assignModal, livePartners, getPartnerProximity]);
+
+  const displayedPartners = React.useMemo(() => {
+    if (!assignModal) return [];
+    if (showAllPartners) return rankedPartners;
+    // Show only nearest partners (matching exact PIN, area, district, or region/city)
+    const near = rankedPartners.filter(p => p.rank <= 3);
+    if (near.length > 0) return near;
+    // If no partner is in the same region, show the closest 1 available
+    return rankedPartners.slice(0, 1);
+  }, [rankedPartners, showAllPartners, assignModal]);
+
+  // Pre-select the nearest partner when modal opens
+  useEffect(() => {
+    if (assignModal) {
+      setShowAllPartners(false);
+      if (assignModal.partnerId) {
+        setSelectedPartner(assignModal.partnerId);
+      } else if (displayedPartners.length > 0) {
+        setSelectedPartner(displayedPartners[0].partner.id);
+      } else {
+        setSelectedPartner('');
+      }
+    }
+  }, [assignModal]);
+
   const handleAssign = async () => {
     if (!assignModal || !selectedPartner) return;
-    const partner = partners.find(p => p.id === selectedPartner);
+    const pool = livePartners.length > 0 ? livePartners : partners;
+    const partner = pool.find(p => p.id === selectedPartner) || partners.find(p => p.id === selectedPartner);
     const updatedOrder: Order = {
       ...assignModal,
       partnerId: selectedPartner,
@@ -1299,28 +1424,121 @@ export default function AdminOrders({
       {assignModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setAssignModal(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 z-10">
-            <h3 className="text-lg font-black text-gray-900 mb-2">Assign Partner Store</h3>
-            <p className="text-sm text-gray-500 mb-5">Order: {assignModal.orderNumber} · PIN: {assignModal.pinCode}</p>
-            <div className="space-y-3 mb-5 max-h-60 overflow-y-auto">
-              {partners.filter(p => p.status === 'active').map(partner => (
-                <button key={partner.id} onClick={() => setSelectedPartner(partner.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${selectedPartner === partner.id ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
-                  <img src={partner.avatar} alt={partner.name} className="w-10 h-10 rounded-full object-cover" />
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-gray-900">{partner.storeName}</p>
-                    <p className="text-xs text-gray-500">{partner.city} · ⭐ {partner.rating} · {partner.completedOrders} orders</p>
-                    <p className="text-xs text-gray-400">PINs: {partner.pinCodes.slice(0, 3).join(', ')}</p>
-                  </div>
-                  {partner.pinCodes.includes(assignModal.pinCode) && (
-                    <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-lg">PIN Match ✓</span>
-                  )}
-                </button>
-              ))}
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 sm:p-7 z-10 max-h-[90vh] overflow-y-auto border border-gray-100">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+              <div>
+                <span className="text-[11px] font-black text-primary uppercase tracking-wider flex items-center gap-1">
+                  <Sparkles size={13} /> Location Matching
+                </span>
+                <h3 className="text-lg font-black text-gray-900">Assign Partner Store</h3>
+                <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
+                  <span>Order: <strong>{assignModal.orderNumber}</strong></span>
+                  <span>•</span>
+                  <span className="flex items-center gap-0.5 font-bold text-primary">
+                    <MapPin size={11} /> PIN: {assignModal.pinCode}
+                  </span>
+                  {assignModal.city && <span className="text-gray-400 font-medium">({assignModal.city})</span>}
+                </p>
+              </div>
+              <button onClick={() => setAssignModal(null)} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 cursor-pointer">
+                <X size={18} />
+              </button>
             </div>
+
+            {/* Header info & toggle */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-gray-700 flex items-center gap-1">
+                📍 Nearest Partners for PIN {assignModal.pinCode}
+              </span>
+              {rankedPartners.some(p => p.rank > 3) && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllPartners(!showAllPartners)}
+                  className="text-xs font-bold text-primary hover:underline cursor-pointer"
+                >
+                  {showAllPartners ? 'Show Nearest Only' : `Show All (${rankedPartners.length})`}
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-2.5 mb-5 max-h-72 overflow-y-auto pr-1">
+              {displayedPartners.length === 0 ? (
+                <div className="text-center py-8 px-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                  <MapPin size={24} className="mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm font-bold text-gray-700">No Nearest Partner Found</p>
+                  <p className="text-xs text-gray-500 mt-1">No active partner found matching PIN {assignModal.pinCode}.</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllPartners(true)}
+                    className="mt-3 text-xs font-bold text-primary hover:underline cursor-pointer"
+                  >
+                    View All Active Partners
+                  </button>
+                </div>
+              ) : (
+                displayedPartners.map(({ partner, isExact, label, rank, bestPin }) => (
+                  <button
+                    key={partner.id}
+                    type="button"
+                    onClick={() => setSelectedPartner(partner.id)}
+                    className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                      selectedPartner === partner.id
+                        ? 'border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm'
+                        : 'border-gray-100 hover:border-gray-200 bg-white'
+                    }`}
+                  >
+                    <img
+                      src={partner.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80'}
+                      alt={partner.name}
+                      className="w-11 h-11 rounded-xl object-cover border border-gray-100 flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-sm font-bold text-gray-900 truncate">{partner.storeName}</p>
+                        {isExact ? (
+                          <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg flex items-center gap-1 flex-shrink-0">
+                            <CheckCircle size={11} /> Exact PIN Match
+                          </span>
+                        ) : rank <= 2 ? (
+                          <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-lg flex-shrink-0">
+                            {label}
+                          </span>
+                        ) : rank <= 3 ? (
+                          <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-lg flex-shrink-0">
+                            {label}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-gray-500 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-lg flex-shrink-0">
+                            Closest Available
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {partner.city} · ⭐ {partner.rating} · {partner.completedOrders} orders
+                      </p>
+                      <p className="text-[11px] text-gray-400 font-mono mt-0.5 truncate">
+                        Serving PINs: {(partner.pinCodes || []).slice(0, 4).join(', ')}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+
             <div className="flex gap-3">
-              <button onClick={() => setAssignModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
-              <button onClick={handleAssign} disabled={!selectedPartner} className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 disabled:opacity-50">
+              <button
+                type="button"
+                onClick={() => setAssignModal(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAssign}
+                disabled={!selectedPartner}
+                className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 cursor-pointer shadow-md"
+              >
                 Confirm Partner
               </button>
             </div>
