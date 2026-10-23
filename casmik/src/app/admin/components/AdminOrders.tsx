@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { orders as defaultOrders, partners, deliveryAgents, getOrderStatusLabel, getOrderStatusColor, getTypeColor } from '@/lib/casmikData';
-import type { Order, OrderStatus, DeliveryAgent } from '@/lib/casmikData';
+import type { Order, OrderStatus, DeliveryAgent, Partner } from '@/lib/casmikData';
 import { 
   Search, 
   Eye, 

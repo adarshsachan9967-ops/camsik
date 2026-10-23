@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sizer/sizer.dart';
@@ -9,6 +10,7 @@ import '../inspection/partner_inspection_screen.dart';
 import '../orders/bloc/orders_cubit.dart';
 import '../orders/bloc/orders_state.dart';
 import '../orders/partner_orders_screen.dart';
+import '../orders/widgets/order_request_popup_dialog.dart';
 import '../payouts/partner_payouts_screen.dart';
 import '../profile/partner_profile_screen.dart';
 import 'bloc/navigation_cubit.dart';
@@ -28,14 +30,81 @@ class PartnerMainNavigationScreen extends StatelessWidget {
   }
 }
 
-class _MainNavigationContent extends StatelessWidget {
+class _MainNavigationContent extends StatefulWidget {
   const _MainNavigationContent();
+
+  @override
+  State<_MainNavigationContent> createState() => _MainNavigationContentState();
+}
+
+class _MainNavigationContentState extends State<_MainNavigationContent> {
+  Timer? _pollingTimer;
+  final Set<String> _shownOrderIds = <String>{};
+  bool _isPopupShowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Poll for new assigned orders every 8 seconds
+    _pollingTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (mounted) {
+        context.read<OrdersCubit>().loadOrders();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _checkAndShowNewOrderPopup(List<PartnerOrder> orders) {
+    if (_isPopupShowing) return;
+
+    // Find any order that is assigned to this partner and needs acceptance
+    final pendingOrders = orders.where((o) => o.status == 'assigned').toList();
+    if (pendingOrders.isEmpty) return;
+
+    for (final order in pendingOrders) {
+      if (!_shownOrderIds.contains(order.id)) {
+        _shownOrderIds.add(order.id);
+        _isPopupShowing = true;
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          OrderRequestPopupDialog.show(
+            context: context,
+            order: order,
+            onAccept: () async {
+              final success = await context.read<OrdersCubit>().updateOrderStatus(
+                orderId: order.id,
+                status: 'accepted',
+              );
+              _isPopupShowing = false;
+              return success;
+            },
+            onDismiss: () {
+              _isPopupShowing = false;
+            },
+          );
+        });
+        break; // Show one at a time
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final user = SessionService.currentUser;
 
-    return Scaffold(
+    return BlocListener<OrdersCubit, OrdersState>(
+      listener: (context, state) {
+        if (state is OrdersLoaded) {
+          _checkAndShowNewOrderPopup(state.allOrders);
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         titleSpacing: 4.w,
         title: Row(
@@ -223,6 +292,8 @@ class _MainNavigationContent extends StatelessWidget {
           );
         },
       ),
-    );
-  }
+    ),
+  );
 }
+}
+
