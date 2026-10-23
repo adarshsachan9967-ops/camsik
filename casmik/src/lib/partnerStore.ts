@@ -47,7 +47,7 @@ export function saveLocalPartner(partner: Partner): void {
 
 export async function getAllPartners(): Promise<Partner[]> {
   const localList = getLocalPartners();
-  let mongoList: Partner[] = [];
+  let mongoList: Partner[] | null = null;
 
   try {
     const fetchMongo = async () => {
@@ -58,7 +58,7 @@ export async function getAllPartners(): Promise<Partner[]> {
       fetchMongo(),
       new Promise<any[]>((_, reject) => setTimeout(() => reject(new Error('Mongo timeout')), 2000)),
     ]);
-    if (docs && docs.length > 0) {
+    if (docs) {
       mongoList = docs.map((doc: any) => ({
         id: doc.id || doc._id?.toString(),
         name: doc.name,
@@ -89,19 +89,13 @@ export async function getAllPartners(): Promise<Partner[]> {
     // MongoDB optional/fallback
   }
 
-  // Merge map: local + mongo takes precedence, fallback to defaultPartners
-  const map = new Map<string, Partner>();
+  // If MongoDB is connected and responded, MongoDB is the single source of truth
+  if (mongoList !== null) {
+    return mongoList;
+  }
 
-  // 1. Seed defaults
-  defaultPartners.forEach((p) => map.set(p.id, { ...p }));
-
-  // 2. Overlay mongo list
-  mongoList.forEach((p) => map.set(p.id, { ...map.get(p.id), ...p }));
-
-  // 3. Overlay local list
-  localList.forEach((p) => map.set(p.id, { ...map.get(p.id), ...p }));
-
-  return Array.from(map.values());
+  // Fallback only if MongoDB is unreachable
+  return localList;
 }
 
 export async function savePartner(partner: Partner): Promise<Partner> {
