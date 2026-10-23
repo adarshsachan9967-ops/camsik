@@ -88,7 +88,10 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
                         if (state is AuthSuccess) {
                           Navigator.of(context).pushReplacementNamed(AppRoutes.mainNav);
                         } else if (state is AuthPendingApproval) {
-                          _showPendingApprovalDialog(context, state.message);
+                          Navigator.of(context).pushNamed(
+                            AppRoutes.pendingApproval,
+                            arguments: state.partnerData,
+                          );
                         } else if (state is AuthFailure) {
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -549,86 +552,6 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showPendingApprovalDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF131A29),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.hourglass_top_rounded, color: Color(0xFFF59E0B), size: 24),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Approval Pending',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              message,
-              style: TextStyle(
-                color: const Color(0xFFCBD5E1),
-                fontSize: 14.sp,
-                height: 1.4,
-              ),
-            ),
-            SizedBox(height: 1.5.h),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.verified_user_outlined, color: Color(0xFF60A5FA), size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Super Admin verifies store KYC & documents within 24-48 hours.',
-                      style: TextStyle(color: const Color(0xFF94A3B8), fontSize: 14.sp),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Understood'),
-          ),
-        ],
       ),
     );
   }

@@ -40,10 +40,6 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
   final _ifscController = TextEditingController();
   bool _agreeTerms = true;
 
-  // Success view state
-  bool _isSubmitted = false;
-  Map<String, dynamic> _registeredData = {};
-
   @override
   void dispose() {
     _nameController.dispose();
@@ -212,20 +208,16 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
               BlocConsumer<AuthCubit, AuthState>(
                 listener: (context, state) {
                   if (state is AuthRegisterSuccess) {
-                    setState(() {
-                      _isSubmitted = true;
-                      _registeredData = state.partnerData;
-                    });
+                    Navigator.of(context).pushReplacementNamed(
+                      AppRoutes.pendingApproval,
+                      arguments: state.partnerData,
+                    );
                   } else if (state is AuthFailure) {
                     _showErrorSnackBar(context, state.error);
                   }
                 },
                 builder: (context, state) {
                   final isLoading = state is AuthLoading;
-
-                  if (_isSubmitted) {
-                    return _buildSuccessView(context);
-                  }
 
                   return Center(
                     child: SingleChildScrollView(
@@ -704,181 +696,5 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
       ],
     );
   }
-
-  Widget _buildSuccessView(BuildContext context) {
-    final partnerId = _registeredData['id']?.toString() ?? 'partner-pending';
-    final store = _registeredData['storeName']?.toString() ?? _storeNameController.text.trim();
-    final name = _registeredData['name']?.toString() ?? _nameController.text.trim();
-    final phone = _registeredData['phone']?.toString() ?? _phoneController.text.trim();
-
-    return Center(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
-          child: Column(
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.5.h),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF131A29),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
-                      blurRadius: 28,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Amber pulse clock badge
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
-                      ),
-                      child: const Icon(
-                        Icons.hourglass_top_rounded,
-                        color: Color(0xFFF59E0B),
-                        size: 38,
-                      ),
-                    ),
-                    SizedBox(height: 2.h),
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
-                      ),
-                      child: Text(
-                        'PENDING ADMIN APPROVAL',
-                        style: TextStyle(
-                          color: const Color(0xFFFBBF24),
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 1.6.h),
-
-                    Text(
-                      'Application Submitted!',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 1.h),
-
-                    Text(
-                      'Hello $name, your partner registration for "$store" has been received successfully.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: const Color(0xFF94A3B8),
-                        fontSize: 14.sp,
-                        height: 1.4,
-                      ),
-                    ),
-                    SizedBox(height: 2.5.h),
-
-                    // Partner details summary card
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.8.h),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.03),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildDetailRow('Partner ID', partnerId),
-                          const Divider(color: Colors.white12, height: 16),
-                          _buildDetailRow('Store Name', store),
-                          const Divider(color: Colors.white12, height: 16),
-                          _buildDetailRow('Registered Phone', phone),
-                          const Divider(color: Colors.white12, height: 16),
-                          _buildDetailRow('City', _cityController.text.trim()),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 2.h),
-
-                    // Next steps guidance
-                    Container(
-                      padding: EdgeInsets.all(3.w),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.info_outline_rounded, color: Color(0xFF60A5FA), size: 18),
-                          SizedBox(width: 2.5.w),
-                          Expanded(
-                            child: Text(
-                              'Super Admin will verify your store documents. Once approved, you can immediately log in with your phone and password.',
-                              style: TextStyle(
-                                color: const Color(0xFF93C5FD),
-                                fontSize: 14.sp,
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 3.h),
-
-                    // Return to Login Button
-                    FilledButton(
-                      onPressed: () {
-                        Navigator.of(context).pushReplacementNamed(AppRoutes.login);
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: Text(
-                        'Back to Partner Sign In',
-                        style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(color: const Color(0xFF64748B), fontSize: 14.sp),
-        ),
-        Text(
-          value,
-          style: TextStyle(color: Colors.white, fontSize: 14.5.sp, fontWeight: FontWeight.w600),
-        ),
-      ],
-    );
-  }
 }
+

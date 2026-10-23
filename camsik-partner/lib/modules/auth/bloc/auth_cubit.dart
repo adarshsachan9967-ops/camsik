@@ -57,9 +57,13 @@ class AuthCubit extends Cubit<AuthState> {
       }
 
       if (data != null && data['status'] == 'pending') {
+        final partnerJson = data['partner'] is Map
+            ? Map<String, dynamic>.from(data['partner'] as Map)
+            : <String, dynamic>{'phone': cleanId};
         emit(AuthPendingApproval(
           data['message']?.toString() ??
               'Your partner application is pending Super Admin approval.',
+          partnerData: partnerJson,
         ));
         return;
       }
@@ -71,9 +75,13 @@ class AuthCubit extends Cubit<AuthState> {
       if (e is DioException && e.response?.data is Map) {
         final resData = e.response?.data as Map;
         if (resData['status'] == 'pending') {
+          final partnerJson = resData['partner'] is Map
+              ? Map<String, dynamic>.from(resData['partner'] as Map)
+              : <String, dynamic>{'phone': cleanId};
           emit(AuthPendingApproval(
             resData['message']?.toString() ??
                 'Your partner application is currently PENDING approval from Super Admin.',
+            partnerData: partnerJson,
           ));
           return;
         }

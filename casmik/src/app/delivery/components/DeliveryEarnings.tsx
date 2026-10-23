@@ -22,7 +22,24 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const agent = deliveryAgents[0];
+const agent = deliveryAgents[0] || {
+  id: 'agent-101',
+  name: 'Raghu Sharma',
+  phone: '9876543210',
+  email: 'raghu@camsik.com',
+  city: 'Bengaluru',
+  pinCodes: ['560034', '560038', '560095'],
+  status: 'online',
+  rating: 4.9,
+  todayPickups: 3,
+  todayDeliveries: 1,
+  totalDeliveries: 840,
+  earnings: 3200,
+  vehicle: 'Bike (Hero Splendor)',
+  vehicleNumber: 'KA01AB5566',
+  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80',
+  joinedAt: '2023-01-15',
+};
 
 const weeklyData = [
   { day: 'Mon', deliveries: 8, earnings: 640 },

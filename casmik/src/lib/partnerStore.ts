@@ -3,7 +3,8 @@ import path from 'path';
 import { getDatabase } from '@/lib/mongodb';
 import { partners as defaultPartners, Partner } from '@/lib/casmikData';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+const isVercel = process.env.VERCEL === '1';
+const DATA_DIR = isVercel ? '/tmp' : path.join(process.cwd(), 'data');
 const PARTNERS_FILE = path.join(DATA_DIR, 'registered_partners.json');
 
 function ensureDataFile(): void {
@@ -15,7 +16,7 @@ function ensureDataFile(): void {
       fs.writeFileSync(PARTNERS_FILE, JSON.stringify([], null, 2), 'utf-8');
     }
   } catch (err) {
-    console.warn('Could not initialize registered_partners file:', err);
+    // Silent catch on read-only environments
   }
 }
 
@@ -108,9 +109,11 @@ export async function savePartner(partner: Partner): Promise<Partner> {
 
   try {
     const db = await getDatabase();
+    const toSave = { ...partner };
+    delete (toSave as any)._id;
     await db.collection('partners').updateOne(
       { $or: [{ id: partner.id }, { email: partner.email }, { phone: partner.phone }] },
-      { $set: partner },
+      { $set: toSave },
       { upsert: true }
     );
   } catch (err) {
@@ -149,9 +152,11 @@ export async function updatePartner(
   // Update in MongoDB
   try {
     const db = await getDatabase();
+    const toUpdate = { ...updates };
+    delete (toUpdate as any)._id;
     await db.collection('partners').updateOne(
       { $or: [{ id: partnerId }, { email: target.email }, { phone: target.phone }] },
-      { $set: updates },
+      { $set: toUpdate },
       { upsert: true }
     );
   } catch (err) {

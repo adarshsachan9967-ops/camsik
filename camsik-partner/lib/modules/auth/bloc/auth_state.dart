@@ -31,8 +31,12 @@ class AuthRegisterSuccess extends AuthState {
 
 class AuthPendingApproval extends AuthState {
   final String message;
+  final Map<String, dynamic> partnerData;
 
-  const AuthPendingApproval(this.message);
+  const AuthPendingApproval(
+    this.message, {
+    this.partnerData = const {},
+  });
 }
 
 class AuthFailure extends AuthState {

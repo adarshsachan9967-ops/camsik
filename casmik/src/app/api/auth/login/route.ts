@@ -98,6 +98,7 @@ export async function POST(request: Request) {
               success: false,
               status: 'pending',
               message: 'Your partner application is pending Super Admin approval. You will be able to access the portal once verified.',
+              partner,
             },
             { status: 403 }
           );
