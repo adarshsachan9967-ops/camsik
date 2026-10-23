@@ -11,7 +11,7 @@ export interface PayoutTransaction {
   orderId?: string;
   orderNumber?: string;
   amount: number;
-  type: 'withdrawal' | 'commission' | 'spot_credit' | 'spot_payout' | 'float_topup';
+  type: 'withdrawal' | 'commission' | 'spot_credit' | 'spot_payout' | 'float_topup' | 'add_funds';
   status: 'completed' | 'processing' | 'pending';
   method: 'bank_transfer' | 'instant_upi' | 'cash';
   referenceId: string;
@@ -104,6 +104,10 @@ export async function GET(request: Request) {
 
     const commissionRate = Number(partner?.commission ?? 5.0);
     const earnedCommission = Math.round((totalLiquidated * commissionRate) / 100);
+    const totalTopups = mergedPayouts
+      .filter((p) => (p.type === 'float_topup' || p.type === 'add_funds') && p.status === 'completed')
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
     const completedWithdrawals = mergedPayouts
       .filter((p) => p.type === 'withdrawal' && p.status === 'completed')
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
@@ -113,9 +117,9 @@ export async function GET(request: Request) {
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
     const computedAvailableBalance =
-      typeof partner?.availableBalance === 'number' && partner.availableBalance > 0
+      typeof partner?.availableBalance === 'number'
         ? partner.availableBalance
-        : Math.max(0, earnedCommission - completedWithdrawals);
+        : Math.max(0, (partner?.floatBalance ?? 0) + totalTopups - completedWithdrawals);
 
     // Build combined transaction history: explicitly logged payouts + completed order disbursements
     const orderPayouts: PayoutTransaction[] = completedOrders
@@ -206,11 +210,39 @@ export async function POST(request: Request) {
     const orderId = body.orderId?.toString().trim();
     const orderNumber = body.orderNumber?.toString().trim();
     const amount = Number(body.amount);
-    const isSpotPayout = Boolean(orderId || body.type === 'spot_payout' || body.type === 'spot_credit');
+    const isTopUp =
+      body.type === 'float_topup' ||
+      body.type === 'add_funds' ||
+      body.type === 'topup' ||
+      body.type === 'credit' ||
+      body.action === 'topup' ||
+      body.action === 'add_funds' ||
+      body.action === 'add_float' ||
+      body.action === 'credit';
+    const isSpotPayout =
+      !isTopUp &&
+      Boolean(
+        orderId ||
+        body.type === 'spot_payout' ||
+        body.type === 'spot_credit' ||
+        body.action === 'spot_payout'
+      );
+    const isWithdrawal =
+      !isTopUp &&
+      !isSpotPayout &&
+      (body.type === 'withdrawal' ||
+        body.action === 'withdraw' ||
+        body.action === 'withdrawal' ||
+        body.type === 'debit' ||
+        (!body.type && !body.action));
     const method = body.method === 'instant_upi'
       ? 'instant_upi'
       : (body.method === 'cash' ? 'cash' : 'bank_transfer');
-    const notes = body.notes || (isSpotPayout ? `Spot payout for Order #${orderNumber || orderId}` : 'Float withdrawal to verified bank');
+    const notes = body.notes || (isTopUp
+      ? `Float top-up added to payout wallet`
+      : isSpotPayout
+      ? `Spot payout for Order #${orderNumber || orderId}`
+      : 'Float withdrawal to verified bank');
 
     if (!amount || isNaN(amount) || amount <= 0) {
       return NextResponse.json(
@@ -236,6 +268,55 @@ export async function POST(request: Request) {
       partner = defaultPartners.find((p) => p.id === partnerId) || defaultPartners[0];
     }
 
+    const currentBal = Number(partner.availableBalance ?? 0);
+
+    // ── WALLET BALANCE CHECK BEFORE SPOT PAYOUT OR WITHDRAWAL ──
+    if (isSpotPayout && currentBal < amount) {
+      return NextResponse.json(
+        {
+          success: false,
+          insufficientBalance: true,
+          message: `Insufficient payout wallet balance (₹${currentBal.toLocaleString('en-IN')}). Required: ₹${amount.toLocaleString('en-IN')}. Please add funds to wallet first.`,
+          deficit: amount - currentBal,
+          currentBalance: currentBal,
+          requiredAmount: amount,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (isWithdrawal && currentBal < amount) {
+      return NextResponse.json(
+        { success: false, message: 'Insufficient balance to withdraw' },
+        { status: 400 }
+      );
+    }
+
+    // ── UPDATE PARTNER BALANCE IN MONGODB ──
+    let newBal = currentBal;
+    if (isTopUp) {
+      newBal = currentBal + amount;
+    } else if (isSpotPayout || isWithdrawal) {
+      newBal = Math.max(0, currentBal - amount);
+    }
+    partner.availableBalance = newBal;
+
+    const inMemPartner = defaultPartners.find((p) => p.id === (partner.id || partnerId));
+    if (inMemPartner) {
+      inMemPartner.availableBalance = newBal;
+    }
+
+    if (db && partner?.id) {
+      try {
+        await db.collection('partners').updateOne(
+          { $or: [{ id: partner.id }, { _id: partner._id }] },
+          { $set: { availableBalance: newBal, updatedAt: new Date().toISOString() } }
+        );
+      } catch (err) {
+        console.warn('Error updating partner availableBalance in MongoDB:', err);
+      }
+    }
+
     const refId = body.referenceId || `TXN-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
 
     const newTxn: PayoutTransaction = {
@@ -244,7 +325,7 @@ export async function POST(request: Request) {
       orderId,
       orderNumber,
       amount,
-      type: isSpotPayout ? 'spot_payout' : 'withdrawal',
+      type: isTopUp ? 'float_topup' : isSpotPayout ? 'spot_payout' : 'withdrawal',
       status: 'completed',
       method,
       referenceId: refId,
@@ -303,12 +384,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: isSpotPayout
+      message: isTopUp
+        ? `₹${amount.toLocaleString('en-IN')} added to payout wallet successfully!`
+        : isSpotPayout
         ? `Spot payout of ₹${amount.toLocaleString('en-IN')} disbursed successfully! Order moved to Completed.`
         : `Withdrawal request for ₹${amount.toLocaleString('en-IN')} confirmed!`,
       payout: newTxn,
       wallet: {
-        availableBalance: partner.availableBalance ?? 0,
+        availableBalance: newBal,
         totalEarnings: (partner.totalEarnings ?? 0) + (isSpotPayout ? amount : 0),
         pendingPayout: partner.pendingPayout ?? 0,
       },

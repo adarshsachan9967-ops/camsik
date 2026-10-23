@@ -78,6 +78,7 @@ export default function PartnerPayouts({ partner: propPartner }: PartnerPayoutsP
           body: JSON.stringify({
             partnerId: partner.id,
             action: 'topup',
+            type: 'float_topup',
             amount,
             method: paymentMethod === 'gateway' ? 'instant_upi' : 'bank_transfer',
             referenceId: txnId || `REF-${Date.now().toString().slice(-6)}`,

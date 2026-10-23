@@ -17,7 +17,7 @@ class PartnerUser {
   final int completedOrders;
   final double totalEarnings;
   final double pendingPayout;
-  final double availableBalance;
+  double availableBalance;
   final double commission;
   final String joinedAt;
   final String bankName;

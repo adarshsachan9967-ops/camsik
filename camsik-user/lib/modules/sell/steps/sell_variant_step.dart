@@ -194,6 +194,7 @@ class _SellVariantStepState extends State<SellVariantStep> {
                 caseSensitive: false)
             .hasMatch(modelName);
 
+    // ignore: unused_local_variable
     final isMobileOrSmartphone = !isCamera && (
         catId == 'cat-smartphone' ||
         catId == 'cat-mobile' ||
@@ -785,29 +786,25 @@ class _SellVariantStepState extends State<SellVariantStep> {
               ),
             ),
 
-          // ── 4B. DEVICE IMEI VERIFICATION SECTION (ONLY FOR SMARTPHONES & MOBILES) ──
+          // ── 4B. DEVICE IMEI VERIFICATION SECTION (COMMENTED OUT AS REQUESTED) ──
+          /*
           if (isMobileOrSmartphone) ...[
             const SizedBox(height: 18),
             _buildImeiVerificationCard(context, modelName),
             const SizedBox(height: 14),
           ],
+          */
 
           // ── 5. PROCEED BUTTON ──
           Container(
             width: double.infinity,
             height: 50,
             decoration: BoxDecoration(
-              gradient: (isMobileOrSmartphone && (_currentVerifiedImei == null || _currentVerifiedImei!.trim().isEmpty))
-                  ? const LinearGradient(
-                      colors: [Color(0xFF0F766E), Color(0xFF059669)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : const LinearGradient(
-                      colors: [Color(0xFF059669), Color(0xFF10B981)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF059669), Color(0xFF10B981)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -821,6 +818,8 @@ class _SellVariantStepState extends State<SellVariantStep> {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () {
+                  // IMEI verification commented out:
+                  /*
                   if (isMobileOrSmartphone && (_currentVerifiedImei == null || _currentVerifiedImei!.trim().isEmpty)) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -832,6 +831,7 @@ class _SellVariantStepState extends State<SellVariantStep> {
                     _openImeiVerificationSheet();
                     return;
                   }
+                  */
                   widget.onProceed();
                 },
                 borderRadius: BorderRadius.circular(16),
@@ -839,11 +839,9 @@ class _SellVariantStepState extends State<SellVariantStep> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      (isMobileOrSmartphone && (_currentVerifiedImei == null || _currentVerifiedImei!.trim().isEmpty))
-                          ? 'Verify Device IMEI to Proceed'
-                          : widget.selectedLenses.isNotEmpty
-                              ? 'Proceed with ${widget.selectedLenses.length} Lenses'
-                              : 'Proceed to Device Condition',
+                      widget.selectedLenses.isNotEmpty
+                          ? 'Proceed with ${widget.selectedLenses.length} Lenses'
+                          : 'Proceed to Device Condition',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14.5,
@@ -852,10 +850,8 @@ class _SellVariantStepState extends State<SellVariantStep> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Icon(
-                      (isMobileOrSmartphone && (_currentVerifiedImei == null || _currentVerifiedImei!.trim().isEmpty))
-                          ? Icons.shield_rounded
-                          : Icons.arrow_forward_rounded,
+                    const Icon(
+                      Icons.arrow_forward_rounded,
                       color: Colors.white,
                       size: 17,
                     ),
@@ -890,6 +886,7 @@ class _SellVariantStepState extends State<SellVariantStep> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildImeiVerificationCard(BuildContext context, String modelName) {
     final isVerified = _currentVerifiedImei != null && _currentVerifiedImei!.trim().isNotEmpty;
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../widgets/camsik_smart_image.dart';
 import '../data/models/responses/device_verification_report_model.dart';
-import '../widgets/device_imei_verification_sheet.dart';
+// import '../widgets/device_imei_verification_sheet.dart';
 
 class SellSummaryStep extends StatefulWidget {
   final Map<String, dynamic>? selectedModel;
@@ -330,7 +330,8 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
             ),
           ),
 
-          // ── 2. INSTANT IMEI / SERIAL VERIFICATION CARD (ONLY FOR MOBILES & SMARTPHONES) ──
+          // ── 2. INSTANT IMEI / SERIAL VERIFICATION CARD (COMMENTED OUT AS REQUESTED) ──
+          /*
           if (isMobileOrSmartphone) ...[
             const SizedBox(height: 14),
             Container(
@@ -417,6 +418,7 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
               ),
             ),
           ],
+          */
 
           const SizedBox(height: 16),
 
@@ -717,6 +719,8 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () async {
+                  // IMEI verification commented out:
+                  /*
                   if (isMobileOrSmartphone && _verificationReport == null) {
                     final messenger = ScaffoldMessenger.of(context);
                     messenger.showSnackBar(
@@ -746,33 +750,30 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
                     }
                     return;
                   }
+                  */
                   widget.onProceed(_verificationReport?.imei);
                 },
                 borderRadius: BorderRadius.circular(16),
-                child: Row(
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      (isMobileOrSmartphone && _verificationReport == null)
-                          ? Icons.phonelink_lock_rounded
-                          : Icons.verified_user_rounded,
+                      Icons.verified_user_rounded,
                       color: Colors.white,
                       size: 19,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Text(
-                      (isMobileOrSmartphone && _verificationReport == null)
-                          ? 'Verify Phone IMEI to Schedule Pickup'
-                          : 'Schedule Doorstep Handover',
-                      style: const TextStyle(
+                      'Schedule Doorstep Handover',
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 14.5,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.2,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 17),
+                    SizedBox(width: 8),
+                    Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 17),
                   ],
                 ),
               ),

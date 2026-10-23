@@ -207,6 +207,7 @@ export interface DeliveryAgent {
   commission?: number;
   commissionType?: 'fixed' | 'percentage';
   approvalStatus?: 'approved' | 'pending' | 'rejected';
+  createdBy?: 'admin' | 'partner' | string;
   documents?: {
     aadhar?: boolean;
     aadharNumber?: string;

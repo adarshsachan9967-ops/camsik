@@ -13,6 +13,11 @@ abstract class PayoutsRepository {
     String? accountNumber,
     String? ifscCode,
   });
+  Future<Map<String, dynamic>> addFunds({
+    required String partnerId,
+    required double amount,
+    String? method,
+  });
 }
 
 class PayoutsRepositoryImpl implements PayoutsRepository {
@@ -47,6 +52,8 @@ class PayoutsRepositoryImpl implements PayoutsRepository {
       final payload = <String, dynamic>{
         'partnerId': partnerId,
         'amount': amount,
+        'type': 'withdrawal',
+        'action': 'withdraw',
         'notes': notes ?? 'Float withdrawal to verified merchant account',
         'method': 'bank_transfer',
       };
@@ -75,6 +82,47 @@ class PayoutsRepositoryImpl implements PayoutsRepository {
       return {
         'success': false,
         'message': 'Failed to process withdrawal. Please try again.',
+      };
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> addFunds({
+    required String partnerId,
+    required double amount,
+    String? method,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'partnerId': partnerId,
+        'amount': amount,
+        'type': 'float_topup',
+        'action': 'topup',
+        'method': method ?? 'instant_upi',
+        'notes': 'Wallet float top-up via ${method ?? "Instant UPI"}',
+      };
+
+      final res = await _dio.post(
+        ApiConstants.partnerPayouts,
+        data: payload,
+      );
+
+      if (res.data != null && res.data['success'] == true) {
+        return {
+          'success': true,
+          'message': res.data['message'] ?? 'Funds added successfully',
+          'payout': res.data['payout'],
+          'wallet': res.data['wallet'],
+        };
+      }
+      return {
+        'success': false,
+        'message': res.data?['message'] ?? 'Failed to add funds',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to add funds. Please check connection.',
       };
     }
   }

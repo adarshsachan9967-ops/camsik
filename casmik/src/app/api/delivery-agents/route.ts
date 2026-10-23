@@ -40,6 +40,7 @@ export async function GET(request: Request) {
         vehicle: doc.vehicle || 'Bike',
         vehicleNumber: doc.vehicleNumber || '',
         approvalStatus: doc.approvalStatus || 'approved',
+        createdBy: doc.createdBy || (doc.partnerId && doc.partnerId !== 'admin' ? 'partner' : 'admin'),
       }));
     } catch (dbErr) {
       console.warn('MongoDB query warning in delivery-agents GET:', dbErr);
@@ -47,7 +48,12 @@ export async function GET(request: Request) {
 
     // Combine dbAgents and in-memory agentsStore (avoiding duplicate IDs)
     const combinedMap = new Map<string, DeliveryAgent>();
-    agentsStore.forEach((a) => combinedMap.set(a.id, a));
+    agentsStore.forEach((a) => {
+      combinedMap.set(a.id, {
+        ...a,
+        createdBy: a.createdBy || (a.partnerId && a.partnerId !== 'admin' ? 'partner' : 'admin'),
+      });
+    });
     dbAgents.forEach((a) => combinedMap.set(a.id, a));
 
     let filtered = Array.from(combinedMap.values());
@@ -58,16 +64,10 @@ export async function GET(request: Request) {
 
     // Strict Partner vs Admin isolation:
     // A partner ONLY sees riders created for that specific partnerId.
-    // Admin ONLY sees riders created by Admin (or riders where partnerId === 'admin' or !partnerId).
-    if (partnerId && partnerId !== 'all') {
-      if (partnerId === 'admin') {
-        filtered = filtered.filter(
-          (a) => a.partnerId === 'admin' || !a.partnerId || (a as any).createdBy === 'admin'
-        );
-      } else {
-        // STRICTLY show only riders created by this specific partner!
-        filtered = filtered.filter((a) => a.partnerId === partnerId);
-      }
+    // Admin can see ALL delivery agents (both Admin Fleet and Partner Dedicated Fleet).
+    if (partnerId && partnerId !== 'all' && partnerId !== 'admin') {
+      // STRICTLY show only riders created by this specific partner!
+      filtered = filtered.filter((a) => a.partnerId === partnerId);
     }
 
     if (status && status !== 'all') {

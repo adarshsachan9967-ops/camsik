@@ -270,6 +270,84 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> addWalletFunds({
+    required String partnerId,
+    required double amount,
+    String? method,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'partnerId': partnerId,
+        'amount': amount,
+        'type': 'float_topup',
+        'action': 'topup',
+        'method': method ?? 'instant_upi',
+        'notes': 'Wallet top-up via ${method ?? "Instant UPI"}',
+      };
+      final res = await dio.post(ApiConstants.partnerPayouts, data: payload);
+      if (res.data != null && res.data['success'] == true) {
+        return {
+          'success': true,
+          'message': res.data['message'],
+          'wallet': res.data['wallet'],
+        };
+      }
+      return {
+        'success': false,
+        'message': res.data?['message'] ?? 'Failed to add funds',
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Network error while adding funds'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createPayoutWithResult({
+    required String partnerId,
+    required String orderId,
+    required String orderNumber,
+    required double amount,
+    required String method,
+    String? referenceId,
+    String? notes,
+    String? customerName,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'partnerId': partnerId,
+        'orderId': orderId,
+        'orderNumber': orderNumber,
+        'amount': amount,
+        'method': method,
+        'type': 'spot_payout',
+        'referenceId': referenceId ?? 'TXN-${DateTime.now().millisecondsSinceEpoch}',
+        'notes': notes ?? 'Spot payout for Order #$orderNumber',
+      };
+      if (customerName != null) payload['customerName'] = customerName;
+
+      final res = await dio.post(ApiConstants.partnerPayouts, data: payload);
+      if (res.data != null && res.data['success'] == true) {
+        return {'success': true, 'message': res.data['message'], 'wallet': res.data['wallet']};
+      }
+      return {
+        'success': false,
+        'message': res.data?['message'] ?? 'Failed to disburse payout',
+        'insufficientBalance': res.data?['insufficientBalance'] == true,
+        'deficit': (res.data?['deficit'] as num?)?.toDouble() ?? 0.0,
+      };
+    } catch (e) {
+      if (e is DioException && e.response?.data != null) {
+        final d = e.response!.data;
+        return {
+          'success': false,
+          'message': d['message'] ?? 'Payout failed',
+          'insufficientBalance': d['insufficientBalance'] == true,
+          'deficit': (d['deficit'] as num?)?.toDouble() ?? 0.0,
+        };
+      }
+      return {'success': false, 'message': 'Failed to process payout'};
+    }
+  }
+
   // ── PARTNER PROFILE ──
   static Future<bool> updatePartnerProfile(String partnerId, Map<String, dynamic> updates) async {
     try {

@@ -544,10 +544,16 @@ export default function AdminDelivery() {
                     <Shield size={12} /> Approve Rider
                   </button>
                 ) : (
-                  <button onClick={() => setAssignModal(agent)}
-                    className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 mt-1">
-                    <Package size={12} /> Assign Task
-                  </button>
+                  (agent.createdBy === 'admin' || agent.partnerId === 'admin' || !agent.partnerId) ? (
+                    <button onClick={() => setAssignModal(agent)}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 mt-1 cursor-pointer">
+                      <Package size={12} /> Assign Task
+                    </button>
+                  ) : (
+                    <div className="w-full text-center py-2 px-1 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold mt-1 select-none">
+                      🔒 Partner Rider ({agent.partnerName || 'Dedicated'}) · Cannot Assign
+                    </div>
+                  )
                 )}
               </div>
             </div>
@@ -954,6 +960,10 @@ export default function AdminDelivery() {
                 type="button"
                 onClick={async () => {
                   if (!selectedOrderId || !assignModal) return;
+                  if (!(assignModal.createdBy === 'admin' || assignModal.partnerId === 'admin' || !assignModal.partnerId)) {
+                    alert('Admin can only assign riders created by Admin.');
+                    return;
+                  }
                   const targetOrder = ordersList.find(o => o.id === selectedOrderId || o.orderNumber === selectedOrderId);
                   if (!targetOrder) return;
 

@@ -8,6 +8,7 @@ import '../../../../core/services/session_service.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../models/partner_models.dart';
 import '../../inspection/partner_inspection_screen.dart';
+import '../../payouts/widgets/payout_wallet_guard_dialog.dart';
 import '../../riders/data/models/delivery_agent_model.dart';
 import '../../riders/data/repositories/riders_repository.dart';
 import '../bloc/orders_cubit.dart';
@@ -501,6 +502,14 @@ class _PartnerOrderDetailScreenState extends State<PartnerOrderDetailScreen> {
     final activeUser = SessionService.currentUser;
     final partnerId = activeUser?.id ?? _order.partnerId ?? 'partner-001';
     final amount = _order.finalPrice > 0 ? _order.finalPrice : _order.quotedPrice;
+
+    // Payout Wallet Guard: partner must have sufficient wallet float before order completion
+    final hasFunds = await PayoutWalletGuard.ensureSufficientBalance(
+      context,
+      requiredAmount: amount,
+      partnerId: partnerId,
+    );
+    if (!hasFunds || !mounted) return;
 
     String selectedMethod = 'instant_upi';
     final upiController = TextEditingController(text: '${_order.customerPhone}@upi');

@@ -11,6 +11,7 @@ import '../orders/bloc/orders_cubit.dart';
 import '../orders/bloc/orders_state.dart';
 import 'data/models/device_verification_report_model.dart';
 import 'data/repositories/inspection_repository.dart';
+import '../payouts/widgets/payout_wallet_guard_dialog.dart';
 
 import 'data/models/inspection_category_config.dart';
 
@@ -437,10 +438,18 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
 
     if (confirm != true || !mounted) return;
 
-    setState(() => _isSubmitting = true);
-
     final partner = SessionService.currentUser;
     final partnerId = partner?.id ?? 'partner-001';
+
+    // Payout Wallet Guard: partner must have sufficient wallet float before order completion
+    final hasFunds = await PayoutWalletGuard.ensureSufficientBalance(
+      context,
+      requiredAmount: _finalPayoutToUser,
+      partnerId: partnerId,
+    );
+    if (!hasFunds || !mounted) return;
+
+    setState(() => _isSubmitting = true);
 
     // 1. Create payout record
     await ApiService.createPayout(

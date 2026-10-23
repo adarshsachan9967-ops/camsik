@@ -171,6 +171,16 @@ const getAvailableDeliveryAgents = (): DeliveryAgent[] => {
   return [];
 };
 
+export const isAdminCreatedRider = (agent: DeliveryAgent): boolean => {
+  if (!agent) return false;
+  if (agent.createdBy === 'partner') return false;
+  if (agent.createdBy === 'admin') return true;
+  if (agent.partnerId && agent.partnerId !== 'admin') return false;
+  if (agent.partnerName && agent.partnerName !== 'Admin Fleet' && agent.partnerName !== 'Admin') return false;
+  return true;
+};
+
+
 interface AdminOrdersProps {
   initialFilterStatus?: string;
   initialFilterType?: string;
@@ -262,6 +272,21 @@ export default function AdminOrders({
     window.addEventListener('casmik_delivery_agents_updated', fetchDeliveryAgents);
     return () => window.removeEventListener('casmik_delivery_agents_updated', fetchDeliveryAgents);
   }, []);
+
+  const allAvailableDeliveryAgents = availableAgents.length > 0 ? availableAgents : getAvailableDeliveryAgents();
+  const adminEligibleRiders = allAvailableDeliveryAgents.filter(isAdminCreatedRider);
+
+  const openAssignDeliveryModal = (order: Order) => {
+    setAssignDeliveryModal(order);
+    const currentAgent = allAvailableDeliveryAgents.find(a => a.id === order.deliveryAgentId);
+    if (currentAgent && isAdminCreatedRider(currentAgent)) {
+      setSelectedDeliveryAgentId(order.deliveryAgentId || '');
+    } else {
+      setSelectedDeliveryAgentId('');
+    }
+    setScheduledPickupDate(order.pickupDate || '');
+    setScheduledPickupSlot(order.pickupSlot || '');
+  };
 
   useEffect(() => {
     if (initialFilterStatus) {
@@ -609,9 +634,14 @@ export default function AdminOrders({
 
   const handleAssignDelivery = async () => {
     if (!assignDeliveryModal || !selectedDeliveryAgentId) return;
-    const allAgents = getAvailableDeliveryAgents();
+    const allAgents = allAvailableDeliveryAgents;
     const agent = allAgents.find(a => a.id === selectedDeliveryAgentId);
     if (!agent) return;
+
+    if (!isAdminCreatedRider(agent)) {
+      alert(`Cannot assign "${agent.name}". Admin can only assign riders created by Admin.`);
+      return;
+    }
 
     const pickupDate = scheduledPickupDate || assignDeliveryModal.pickupDate || 'Today';
     const pickupSlot = scheduledPickupSlot || assignDeliveryModal.pickupSlot || '10:00 AM - 1:00 PM';
@@ -1002,12 +1032,7 @@ export default function AdminOrders({
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
-                              setAssignDeliveryModal(order);
-                              setSelectedDeliveryAgentId(order.deliveryAgentId || '');
-                              setScheduledPickupDate(order.pickupDate || '');
-                              setScheduledPickupSlot(order.pickupSlot || '');
-                            }}
+                            onClick={() => openAssignDeliveryModal(order)}
                             className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                               order.deliveryAgentId
                                 ? 'bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-300'
@@ -1373,12 +1398,7 @@ export default function AdminOrders({
                     )}
                     <button
                       type="button"
-                      onClick={() => {
-                        setAssignDeliveryModal(selectedOrder);
-                        setSelectedDeliveryAgentId(selectedOrder.deliveryAgentId || '');
-                        setScheduledPickupDate(selectedOrder.pickupDate || '');
-                        setScheduledPickupSlot(selectedOrder.pickupSlot || '');
-                      }}
+                      onClick={() => openAssignDeliveryModal(selectedOrder)}
                       className="text-xs font-bold text-blue-800 hover:text-blue-900 bg-white px-2.5 py-1 rounded-lg border border-blue-300 shadow-xs cursor-pointer"
                     >
                       {selectedOrder.deliveryAgentId ? 'Change Rider →' : '+ Assign Rider'}
@@ -1427,12 +1447,7 @@ export default function AdminOrders({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setAssignDeliveryModal(selectedOrder);
-                  setSelectedDeliveryAgentId(selectedOrder.deliveryAgentId || '');
-                  setScheduledPickupDate(selectedOrder.pickupDate || '');
-                  setScheduledPickupSlot(selectedOrder.pickupSlot || '');
-                }}
+                onClick={() => openAssignDeliveryModal(selectedOrder)}
                 className="py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Truck size={14} />
@@ -1626,48 +1641,60 @@ export default function AdminOrders({
               </div>
             </div>
 
-            {/* List of Delivery Agents */}
+            {/* List of Delivery Agents - Admin Created Only */}
             <div className="space-y-2.5 mb-5 max-h-64 overflow-y-auto pr-1">
-              <label className="text-xs font-black text-gray-800 block">Select Active Executive:</label>
-              {getAvailableDeliveryAgents().map(agent => {
-                const isPinMatch = agent.pinCodes?.includes(assignDeliveryModal.pinCode);
-                const isSelected = selectedDeliveryAgentId === agent.id;
-                return (
-                  <button
-                    key={agent.id}
-                    type="button"
-                    onClick={() => setSelectedDeliveryAgentId(agent.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-all cursor-pointer ${
-                      isSelected
-                        ? 'border-blue-600 bg-blue-50/70 shadow-sm'
-                        : 'border-gray-100 hover:border-gray-200 bg-white'
-                    }`}
-                  >
-                    <img src={agent.avatar} alt={agent.name} className="w-11 h-11 rounded-2xl object-cover border border-gray-200 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs font-black text-gray-900 truncate">{agent.name}</p>
-                        <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
-                          agent.status === 'online' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {agent.status}
-                        </span>
-                        {isPinMatch && (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.2 rounded-full">
-                            PIN Match ✓
+              <label className="text-xs font-black text-gray-800 block">Select Active Executive (Admin Fleet):</label>
+              {adminEligibleRiders.length === 0 ? (
+                <div className="text-center py-8 px-4 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
+                  <p className="text-xs font-bold text-gray-600">No Admin Delivery Executives found</p>
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Partner riders cannot be dispatched directly by Admin. Please add Admin riders in Delivery Management.
+                  </p>
+                </div>
+              ) : (
+                adminEligibleRiders.map(agent => {
+                  const isPinMatch = agent.pinCodes?.includes(assignDeliveryModal.pinCode);
+                  const isSelected = selectedDeliveryAgentId === agent.id;
+
+                  return (
+                    <div
+                      key={agent.id}
+                      onClick={() => setSelectedDeliveryAgentId(agent.id)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-blue-600 bg-blue-50/70 shadow-sm'
+                          : 'border-gray-100 hover:border-gray-200 bg-white'
+                      }`}
+                    >
+                      <img src={agent.avatar} alt={agent.name} className="w-11 h-11 rounded-2xl object-cover border border-gray-200 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-xs font-black text-gray-900 truncate">{agent.name}</p>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                            agent.status === 'online' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {agent.status}
                           </span>
-                        )}
+                          {isPinMatch && (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.2 rounded-full">
+                              PIN Match ✓
+                            </span>
+                          )}
+                          <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.2 rounded">
+                            Admin Fleet
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                          {agent.vehicle} ({agent.vehicleNumber}) · 📞 {agent.phone}
+                        </p>
+                        <p className="text-[10px] text-gray-400">
+                          {agent.city} · ⭐ {agent.rating} · {agent.todayPickups || 0} pickups today
+                        </p>
                       </div>
-                      <p className="text-[11px] text-gray-500 mt-0.5 truncate">
-                        {agent.vehicle} ({agent.vehicleNumber}) · 📞 {agent.phone}
-                      </p>
-                      <p className="text-[10px] text-gray-400">
-                        {agent.city} · ⭐ {agent.rating} · {agent.todayPickups || 0} pickups today
-                      </p>
                     </div>
-                  </button>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
 
             <div className="flex gap-3">

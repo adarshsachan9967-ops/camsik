@@ -117,6 +117,54 @@ class PayoutsCubit extends Cubit<PayoutsState> {
     }
   }
 
+  Future<bool> addFunds(double amount, {String? method}) async {
+    final current = state;
+    if (current is! PayoutsLoaded) return false;
+
+    emit(current.copyWith(isSubmittingWithdrawal: true, clearMessages: true));
+    try {
+      final user = SessionService.currentUser;
+      final partnerId = user?.id.isNotEmpty == true ? user!.id : 'partner-001';
+
+      final res = await _payoutsRepository.addFunds(
+        partnerId: partnerId,
+        amount: amount,
+        method: method,
+      );
+
+      if (res['success'] == true) {
+        final refreshedWallet = await _payoutsRepository.fetchWalletData(partnerId);
+        final newFloat = refreshedWallet?.availableBalance ?? (current.floatBalance + amount);
+
+        if (user != null) {
+          user.availableBalance = newFloat;
+          await SessionService.saveSession(user);
+        }
+
+        emit(current.copyWith(
+          isSubmittingWithdrawal: false,
+          floatBalance: newFloat,
+          wallet: refreshedWallet ?? current.wallet,
+          transactions: refreshedWallet?.transactions ?? current.transactions,
+          actionMessage: res['message']?.toString() ?? 'Funds added to payout wallet successfully!',
+        ));
+        return true;
+      } else {
+        emit(current.copyWith(
+          isSubmittingWithdrawal: false,
+          actionError: res['message']?.toString() ?? 'Failed to add funds.',
+        ));
+        return false;
+      }
+    } catch (e) {
+      emit(current.copyWith(
+        isSubmittingWithdrawal: false,
+        actionError: e.toString(),
+      ));
+      return false;
+    }
+  }
+
   void updateWithOrders(List<PartnerOrder> allOrders) {
     final current = state;
     final user = SessionService.currentUser;
