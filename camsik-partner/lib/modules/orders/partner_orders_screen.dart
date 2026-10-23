@@ -5,7 +5,7 @@ import '../../core/constants/app_colors.dart';
 import 'bloc/orders_cubit.dart';
 import 'bloc/orders_state.dart';
 import 'widgets/order_card_widget.dart';
-import 'widgets/order_detail_sheet.dart';
+import 'screens/partner_order_detail_screen.dart';
 
 class PartnerOrdersScreen extends StatefulWidget {
   final Future<void> Function()? onRefresh;
@@ -260,16 +260,25 @@ class _PartnerOrdersScreenState extends State<PartnerOrdersScreen> {
                             final order = filtered[idx];
                             return OrderCardWidget(
                               order: order,
-                              onTap: () => OrderDetailSheet.show(
-                                context: ctx,
-                                order: order,
-                                onUpdateStatus: (newStatus) {
-                                  context.read<OrdersCubit>().updateOrderStatus(
-                                        orderId: order.id,
-                                        status: newStatus,
-                                      );
-                                },
-                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  ctx,
+                                  MaterialPageRoute(
+                                    builder: (_) => PartnerOrderDetailScreen(
+                                      order: order,
+                                      onUpdateStatus: (newStatus) {
+                                        context.read<OrdersCubit>().updateOrderStatus(
+                                              orderId: order.id,
+                                              status: newStatus,
+                                            );
+                                      },
+                                      onOrderUpdated: () async {
+                                        context.read<OrdersCubit>().loadOrders();
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
                             );
                           },
                         ),

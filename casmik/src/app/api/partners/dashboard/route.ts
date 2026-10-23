@@ -1,52 +1,82 @@
 import { NextResponse } from 'next/server';
-import { partners as defaultPartners, orders as defaultOrders, Partner } from '@/lib/casmikData';
+import { getDatabase } from '@/lib/mongodb';
+import { partners as defaultPartners, Partner } from '@/lib/casmikData';
 
 export const dynamic = 'force-dynamic';
-
-const partnersStore: Partner[] = [...defaultPartners];
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const partnerId = searchParams.get('partnerId')?.trim() || 'partner-001';
 
-    let partner = partnersStore.find((p) => p.id === partnerId);
-    if (!partner) {
-      partner = partnersStore[0];
+    let partner: any = null;
+    let partnerOrders: any[] = [];
+
+    try {
+      const db = await getDatabase();
+      const partnersCol = db.collection('partners');
+      partner = await partnersCol.findOne({
+        $or: [{ id: partnerId }, { email: partnerId }, { phone: partnerId }],
+      });
+
+      const ordersCol = db.collection('orders');
+      partnerOrders = await ordersCol
+        .find({
+          $or: [
+            { partnerId: partnerId },
+            { assignedPartnerId: partnerId },
+            ...(partner?.id ? [{ partnerId: partner.id }, { assignedPartnerId: partner.id }] : []),
+          ],
+        })
+        .sort({ createdAt: -1 })
+        .toArray();
+    } catch (dbErr) {
+      console.warn('MongoDB query warning in dashboard route:', dbErr);
     }
 
-    // Filter partner orders
-    const partnerOrders = defaultOrders.filter((o) => o.partnerId === partner?.id || !o.partnerId);
-    const completedOrders = partnerOrders.filter((o) => o.status === 'completed' || o.status === 'paid');
-    const activePipelineOrders = partnerOrders.filter((o) => o.status !== 'completed' && o.status !== 'paid' && o.status !== 'cancelled' && o.status !== 'rejected');
+    if (!partner) {
+      partner = defaultPartners.find((p) => p.id === partnerId) || defaultPartners[0];
+    }
+
+    const completedOrders = partnerOrders.filter(
+      (o) => o.status === 'completed' || o.status === 'paid'
+    );
+    const activePipelineOrders = partnerOrders.filter(
+      (o) =>
+        o.status !== 'completed' &&
+        o.status !== 'paid' &&
+        o.status !== 'cancelled' &&
+        o.status !== 'rejected'
+    );
 
     const storeTradeVolume = partnerOrders.reduce(
-      (sum, o) => sum + (o.finalPrice || o.amount || o.quotedPrice || 0),
+      (sum, o) => sum + Number(o.finalPrice || o.amount || o.quotedPrice || 0),
       0
     );
 
-    const commissionRate = partner?.commission ?? 5.0;
+    const commissionRate = Number(partner?.commission ?? 5.0);
     const totalCommissionEarned = (storeTradeVolume * commissionRate) / 100;
 
-    // Monthly growth calculation
-    const momGrowthPercent = 14.2;
+    const momGrowth = partnerOrders.length > 0
+      ? `+${((completedOrders.length / partnerOrders.length) * 100).toFixed(1)}% MoM`
+      : '+0.0% MoM';
 
     return NextResponse.json({
       success: true,
       dashboard: {
-        partnerId: partner?.id,
-        partnerName: partner?.name,
-        storeName: partner?.storeName,
+        partnerId: partner?.id || partnerId,
+        partnerName: partner?.name || 'Partner',
+        storeName: partner?.storeName || 'Camsik Store Hub',
         rating: partner?.rating ?? 4.9,
         storeTradeVolume,
-        momGrowth: `+${momGrowthPercent}% MoM`,
+        momGrowth,
         totalOrdersCount: partnerOrders.length,
         completedOrdersCount: completedOrders.length,
         activePipelineCount: activePipelineOrders.length,
         commissionRate,
         totalCommissionEarned,
-        availableFloatBalance: partner?.availableBalance ?? 42000,
-        pendingPayout: partner?.pendingPayout ?? 18500,
+        availableFloatBalance: partner?.availableBalance ?? 0,
+        pendingPayout: partner?.pendingPayout ?? 0,
         recentOrders: partnerOrders.slice(0, 5),
       },
       timestamp: new Date().toISOString(),

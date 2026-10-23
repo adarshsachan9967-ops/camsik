@@ -6,6 +6,7 @@ import '../data/repositories/sell_repository.dart';
 
 class DeviceImeiVerificationSheet extends StatefulWidget {
   final Map<String, dynamic>? selectedModel;
+  final String? selectedBrand;
   final String selectedVariant;
   final SellRepository sellRepository;
   final ValueChanged<DeviceVerificationReportModel>? onVerified;
@@ -13,6 +14,7 @@ class DeviceImeiVerificationSheet extends StatefulWidget {
   const DeviceImeiVerificationSheet({
     super.key,
     required this.selectedModel,
+    this.selectedBrand,
     required this.selectedVariant,
     required this.sellRepository,
     this.onVerified,
@@ -21,6 +23,7 @@ class DeviceImeiVerificationSheet extends StatefulWidget {
   static Future<DeviceVerificationReportModel?> show(
     BuildContext context, {
     required Map<String, dynamic>? selectedModel,
+    String? selectedBrand,
     required String selectedVariant,
     SellRepository? sellRepository,
     ValueChanged<DeviceVerificationReportModel>? onVerified,
@@ -31,6 +34,7 @@ class DeviceImeiVerificationSheet extends StatefulWidget {
       backgroundColor: Colors.transparent,
       builder: (ctx) => DeviceImeiVerificationSheet(
         selectedModel: selectedModel,
+        selectedBrand: selectedBrand,
         selectedVariant: selectedVariant,
         sellRepository: sellRepository ?? SellRepositoryImpl(),
         onVerified: onVerified,
@@ -59,7 +63,12 @@ class _DeviceImeiVerificationSheetState extends State<DeviceImeiVerificationShee
     if (!_formKey.currentState!.validate()) return;
 
     final imei = _imeiController.text.trim();
-    final brand = widget.selectedModel?['brand']?.toString() ?? 'Device';
+    final brand = (widget.selectedBrand != null && widget.selectedBrand!.trim().isNotEmpty)
+        ? widget.selectedBrand!
+        : (widget.selectedModel?['brand']?.toString() ??
+            widget.selectedModel?['brandName']?.toString() ??
+            widget.selectedModel?['brandId']?.toString().replaceAll('brand-', '') ??
+            'Device');
     final model = widget.selectedModel?['name']?.toString() ?? 'Model';
 
     setState(() {
@@ -81,6 +90,21 @@ class _DeviceImeiVerificationSheetState extends State<DeviceImeiVerificationShee
         final rep = DeviceVerificationReportModel.fromJson(
           res.data as Map<String, dynamic>,
         );
+
+        if (!rep.verified) {
+          final errorMsg = rep.mismatchReason ??
+              (rep.blacklisted
+                  ? 'Device is flagged in national blacklist/stolen registry.'
+                  : 'Device verification failed: Invalid IMEI or specification mismatch.');
+          if (mounted) {
+            setState(() {
+              _isVerifying = false;
+              _errorMessage = errorMsg;
+            });
+          }
+          return;
+        }
+
         if (mounted) {
           setState(() {
             _report = rep;

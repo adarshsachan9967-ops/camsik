@@ -2,30 +2,40 @@ import 'package:flutter/material.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../widgets/camsik_smart_image.dart';
+import '../data/models/responses/device_verification_report_model.dart';
+import '../widgets/device_imei_verification_sheet.dart';
 
 class SellVariantStep extends StatefulWidget {
   final Map<String, dynamic>? selectedModel;
+  final String? selectedBrand;
   final String? categoryId;
+  final String? categoryName;
   final int basePrice;
   final String selectedStorage;
   final String selectedColor;
   final List<Map<String, dynamic>> selectedLenses;
+  final String? verifiedImei;
   final Function(String storage) onStorageChanged;
   final Function(String color) onColorChanged;
   final Function(List<Map<String, dynamic>> lenses) onLensesChanged;
+  final Function(String? imei)? onImeiVerified;
   final VoidCallback onProceed;
 
   const SellVariantStep({
     super.key,
     required this.selectedModel,
+    this.selectedBrand,
     this.categoryId,
+    this.categoryName,
     required this.basePrice,
     required this.selectedStorage,
     required this.selectedColor,
     required this.selectedLenses,
+    this.verifiedImei,
     required this.onStorageChanged,
     required this.onColorChanged,
     required this.onLensesChanged,
+    this.onImeiVerified,
     required this.onProceed,
   });
 
@@ -38,11 +48,45 @@ class _SellVariantStepState extends State<SellVariantStep> {
   bool _isLoadingLenses = false;
   bool _showCustomLensInput = false;
   final TextEditingController _customLensController = TextEditingController();
+  String? _currentVerifiedImei;
+  DeviceVerificationReportModel? _verificationReport;
 
   @override
   void initState() {
     super.initState();
+    _currentVerifiedImei = widget.verifiedImei;
     _loadLenses();
+  }
+
+  @override
+  void didUpdateWidget(covariant SellVariantStep oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.verifiedImei != oldWidget.verifiedImei) {
+      _currentVerifiedImei = widget.verifiedImei;
+    }
+  }
+
+  Future<void> _openImeiVerificationSheet() async {
+    final report = await DeviceImeiVerificationSheet.show(
+      context,
+      selectedModel: widget.selectedModel,
+      selectedBrand: widget.selectedBrand,
+      selectedVariant: widget.selectedStorage,
+    );
+    if (report != null && mounted) {
+      setState(() {
+        _verificationReport = report;
+        _currentVerifiedImei = report.imei;
+      });
+      widget.onImeiVerified?.call(report.imei);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ Device IMEI ${report.imei} verified successfully!'),
+          backgroundColor: const Color(0xFF059669),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -137,16 +181,47 @@ class _SellVariantStepState extends State<SellVariantStep> {
     final modelName = widget.selectedModel?['name'] as String? ?? 'Selected Device';
     final image = widget.selectedModel?['image'] as String? ?? 'assets/images/categories/dslr.png';
 
-    // Camera detection logic matching the web app
-    final catId = widget.categoryId;
-    final isCamera = (catId != null &&
-            (catId == 'cat-dslr' ||
-                catId == 'cat-video-camera' ||
-                catId == 'cat-action-camera' ||
-                catId == 'cat-lens')) ||
+    // Category & device detection logic matching the web app
+    final catId = (widget.categoryId ?? widget.selectedModel?['categoryId'] ?? '').toString().toLowerCase();
+    final catName = (widget.categoryName ?? '').toString().toLowerCase();
+    final modelNameLower = modelName.toLowerCase();
+
+    final isCamera = (catId == 'cat-dslr' ||
+            catId == 'cat-video-camera' ||
+            catId == 'cat-action-camera' ||
+            catId == 'cat-lens') ||
         RegExp(r'camera|dslr|mirrorless|eos|alpha|lumix|nikon|fuji|camcorder|cinema',
                 caseSensitive: false)
             .hasMatch(modelName);
+
+    final isMobileOrSmartphone = !isCamera && (
+        catId == 'cat-smartphone' ||
+        catId == 'cat-mobile' ||
+        catId == 'cat-tablet' ||
+        catId == 'cat-tablets' ||
+        catId == 'cat-ipad' ||
+        catId.contains('phone') ||
+        catId.contains('mobile') ||
+        catId.contains('tablet') ||
+        catId.contains('ipad') ||
+        catName.contains('phone') ||
+        catName.contains('mobile') ||
+        catName.contains('tablet') ||
+        catName.contains('ipad') ||
+        modelNameLower.contains('iphone') ||
+        modelNameLower.contains('galaxy') ||
+        modelNameLower.contains('pixel') ||
+        modelNameLower.contains('ipad') ||
+        modelNameLower.contains('tab') ||
+        modelNameLower.contains('lenovo tab') ||
+        modelNameLower.contains('pro max') ||
+        modelNameLower.contains('redmi') ||
+        modelNameLower.contains('oneplus') ||
+        modelNameLower.contains('xiaomi') ||
+        modelNameLower.contains('vivo') ||
+        modelNameLower.contains('oppo') ||
+        modelNameLower.contains('realme')
+    );
 
     // Calculate total lens bonus
     final totalLensBonus = widget.selectedLenses.fold<int>(
@@ -710,16 +785,29 @@ class _SellVariantStepState extends State<SellVariantStep> {
               ),
             ),
 
+          // ── 4B. DEVICE IMEI VERIFICATION SECTION (ONLY FOR SMARTPHONES & MOBILES) ──
+          if (isMobileOrSmartphone) ...[
+            const SizedBox(height: 18),
+            _buildImeiVerificationCard(context, modelName),
+            const SizedBox(height: 14),
+          ],
+
           // ── 5. PROCEED BUTTON ──
           Container(
             width: double.infinity,
             height: 50,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF059669), Color(0xFF10B981)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: (isMobileOrSmartphone && (_currentVerifiedImei == null || _currentVerifiedImei!.trim().isEmpty))
+                  ? const LinearGradient(
+                      colors: [Color(0xFF0F766E), Color(0xFF059669)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : const LinearGradient(
+                      colors: [Color(0xFF059669), Color(0xFF10B981)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -732,15 +820,30 @@ class _SellVariantStepState extends State<SellVariantStep> {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: widget.onProceed,
+                onTap: () {
+                  if (isMobileOrSmartphone && (_currentVerifiedImei == null || _currentVerifiedImei!.trim().isEmpty)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('⚠️ Device IMEI verification is required before proceeding to device condition.'),
+                        backgroundColor: Color(0xFFDC2626),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    _openImeiVerificationSheet();
+                    return;
+                  }
+                  widget.onProceed();
+                },
                 borderRadius: BorderRadius.circular(16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      widget.selectedLenses.isNotEmpty
-                          ? 'Proceed with ${widget.selectedLenses.length} Lenses'
-                          : 'Proceed to Device Condition',
+                      (isMobileOrSmartphone && (_currentVerifiedImei == null || _currentVerifiedImei!.trim().isEmpty))
+                          ? 'Verify Device IMEI to Proceed'
+                          : widget.selectedLenses.isNotEmpty
+                              ? 'Proceed with ${widget.selectedLenses.length} Lenses'
+                              : 'Proceed to Device Condition',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14.5,
@@ -749,7 +852,13 @@ class _SellVariantStepState extends State<SellVariantStep> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 17),
+                    Icon(
+                      (isMobileOrSmartphone && (_currentVerifiedImei == null || _currentVerifiedImei!.trim().isEmpty))
+                          ? Icons.shield_rounded
+                          : Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 17,
+                    ),
                   ],
                 ),
               ),
@@ -778,6 +887,344 @@ class _SellVariantStepState extends State<SellVariantStep> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildImeiVerificationCard(BuildContext context, String modelName) {
+    final isVerified = _currentVerifiedImei != null && _currentVerifiedImei!.trim().isNotEmpty;
+
+    if (isVerified) {
+      final maskedImei = _currentVerifiedImei!.length >= 10
+          ? '${_currentVerifiedImei!.substring(0, 4)}••••${_currentVerifiedImei!.substring(_currentVerifiedImei!.length - 4)}'
+          : _currentVerifiedImei!;
+
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFF10B981), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF10B981).withValues(alpha: 0.12),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Row
+            Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFF86EFAC), width: 1),
+                  ),
+                  child: const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'DEVICE VERIFIED',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF047857),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFDCFCE7),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'AUTHENTIC',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF15803D),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        modelName,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF86EFAC), width: 0.8),
+                  ),
+                  child: Text(
+                    widget.selectedStorage,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF166534),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: Color(0xFFBBF7D0)),
+            const SizedBox(height: 12),
+
+            // IMEI Info Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Verified Device IMEI:',
+                  style: TextStyle(fontSize: 11.5, color: Color(0xFF475569), fontWeight: FontWeight.w600),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                  ),
+                  child: Text(
+                    maskedImei,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            // Checklist verification badges
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                _buildVerificationBadge('Brand Matched'),
+                _buildVerificationBadge('Model Confirmed'),
+                _buildVerificationBadge('Storage Verified'),
+                _buildVerificationBadge('15-Digit Luhn Valid'),
+                _buildVerificationBadge('CEIR Clean Status'),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Recheck Action
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _verificationReport?.verificationId != null
+                      ? 'ID: ${_verificationReport!.verificationId}'
+                      : 'Camsik Certified Handover',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF15803D),
+                  ),
+                ),
+                InkWell(
+                  onTap: _openImeiVerificationSheet,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.refresh_rounded, size: 13, color: Color(0xFF047857)),
+                        SizedBox(width: 4),
+                        Text(
+                          'Recheck IMEI',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF047857),
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    // UNVERIFIED STATE (Matching casmik DeviceVerificationSection)
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.35), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF059669).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.shield_rounded, color: Color(0xFF059669), size: 18),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'VERIFY YOUR DEVICE',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF059669),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'REQUIRED',
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFFB45309),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Before proceeding to device condition, verify that your phone specifications and IMEI match.',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1E293B),
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'We securely cross-reference with national equipment registers (CEIR):',
+            style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              _buildBulletItem('Device brand & model'),
+              _buildBulletItem('Variant & storage size'),
+              _buildBulletItem('15-digit Luhn check'),
+              _buildBulletItem('Anti-theft verification'),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF059669),
+                foregroundColor: Colors.white,
+                elevation: 1,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: _openImeiVerificationSheet,
+              icon: const Icon(Icons.smartphone_rounded, size: 17),
+              label: const Text(
+                '📱 Verify Device via IMEI (*#06#)',
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerificationBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFDCFCE7),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.check_rounded, size: 11, color: Color(0xFF15803D)),
+          const SizedBox(width: 3),
+          Text(
+            text,
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF15803D)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBulletItem(String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.check_circle_outline_rounded, size: 13, color: Color(0xFF059669)),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+        ),
+      ],
     );
   }
 }

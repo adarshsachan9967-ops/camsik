@@ -17,6 +17,7 @@ class UserProfileWidget extends StatelessWidget {
   final VoidCallback onLogout;
   final VoidCallback onNavigateToSell;
   final VoidCallback onNavigateToBuy;
+  final Future<void> Function()? onRefreshOrders;
 
   const UserProfileWidget({
     super.key,
@@ -26,133 +27,162 @@ class UserProfileWidget extends StatelessWidget {
     required this.onLogout,
     required this.onNavigateToSell,
     required this.onNavigateToBuy,
+    this.onRefreshOrders,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Profile Header
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+    return RefreshIndicator(
+      onRefresh: onRefreshOrders ?? () async {},
+      color: const Color(0xFF059669),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Profile Header
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
               ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: const Color(0xFF059669),
-                  child: Text(
-                    profile.name.isNotEmpty
-                        ? profile.name.substring(0, 1).toUpperCase()
-                        : 'C',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: const Color(0xFF059669),
+                    child: Text(
+                      profile.name.isNotEmpty
+                          ? profile.name.substring(0, 1).toUpperCase()
+                          : 'C',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          profile.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          profile.phone,
+                          style: const TextStyle(
+                            color: Color(0xFF34D399),
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          profile.email,
+                          style: const TextStyle(
+                            color: Colors.white60,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // MY ORDERS SECTION
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'My Orders',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${orders.length} Active',
+                      style: const TextStyle(
+                        color: Color(0xFF059669),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    if (onRefreshOrders != null) ...[
+                      const SizedBox(width: 6),
+                      InkWell(
+                        onTap: onRefreshOrders,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF059669).withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.refresh_rounded,
+                            size: 14,
+                            color: Color(0xFF059669),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (orders.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: const Center(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Icon(Icons.shopping_bag_outlined,
+                          size: 40, color: Color(0xFF94A3B8)),
+                      SizedBox(height: 8),
                       Text(
-                        profile.name,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        'No orders yet',
+                        style: TextStyle(
+                          color: Color(0xFF64748B),
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 13,
                         ),
                       ),
                       Text(
-                        profile.phone,
-                        style: const TextStyle(
-                          color: Color(0xFF34D399),
-                          fontSize: 12,
-                        ),
-                      ),
-                      Text(
-                        profile.email,
-                        style: const TextStyle(
-                          color: Colors.white60,
-                          fontSize: 11,
-                        ),
+                        'Sell, buy, or exchange devices to see your orders here.',
+                        style:
+                            TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // MY ORDERS SECTION
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'My Orders & Handover Status',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              Text(
-                '${orders.length} Active',
-                style: const TextStyle(
-                  color: Color(0xFF059669),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (orders.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: const Center(
-                child: Column(
-                  children: [
-                    Icon(Icons.shopping_bag_outlined,
-                        size: 40, color: Color(0xFF94A3B8)),
-                    SizedBox(height: 8),
-                    Text(
-                      'No orders yet',
-                      style: TextStyle(
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    Text(
-                      'Sell, buy, or exchange devices to see your orders here.',
-                      style:
-                          TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            ...orders.map((o) => OrderCardWidget(order: o)),
+              )
+            else
+              ...orders.map((o) => OrderCardWidget(order: o, onOrderUpdated: onRefreshOrders)),
 
           const SizedBox(height: 24),
           const Text(
@@ -310,6 +340,7 @@ class UserProfileWidget extends StatelessWidget {
           ),
         ],
       ),
+      )
     );
   }
 

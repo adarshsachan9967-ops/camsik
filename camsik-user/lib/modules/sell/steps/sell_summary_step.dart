@@ -15,7 +15,8 @@ class SellSummaryStep extends StatefulWidget {
   final int calculatedPrice;
   final List<Map<String, dynamic>> questions;
   final Map<int, int> selectedAnswers;
-  final VoidCallback onProceed;
+  final String? verifiedImei;
+  final Function(String? verifiedImei) onProceed;
 
   const SellSummaryStep({
     super.key,
@@ -29,6 +30,7 @@ class SellSummaryStep extends StatefulWidget {
     required this.calculatedPrice,
     required this.questions,
     required this.selectedAnswers,
+    this.verifiedImei,
     required this.onProceed,
   });
 
@@ -40,6 +42,23 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
   DeviceVerificationReportModel? _verificationReport;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.verifiedImei != null && widget.verifiedImei!.trim().isNotEmpty) {
+      _verificationReport = DeviceVerificationReportModel(
+        verified: true,
+        imei: widget.verifiedImei!,
+        modelMatch: true,
+        brand: widget.selectedModel?['brand']?.toString() ?? '',
+        model: widget.selectedModel?['name']?.toString() ?? '',
+        status: 'CLEAN',
+        blacklisted: false,
+        warrantyStatus: 'Active / Verified',
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final modelName = widget.selectedModel?['name'] as String? ?? 'Selected Device';
     final modelImage = widget.selectedModel?['image'] as String? ?? 'assets/images/categories/dslr.png';
@@ -47,15 +66,42 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
     final catId = (widget.categoryId ?? widget.selectedModel?['categoryId'] ?? '').toString().toLowerCase();
     final catName = (widget.categoryName ?? '').toString().toLowerCase();
     final modelNameLower = modelName.toLowerCase();
-    final isMobileOrSmartphone = catId == 'cat-smartphone' ||
+    final isCamera = (catId == 'cat-dslr' ||
+            catId == 'cat-video-camera' ||
+            catId == 'cat-action-camera' ||
+            catId == 'cat-lens') ||
+        RegExp(r'camera|dslr|mirrorless|eos|alpha|lumix|nikon|fuji|camcorder|cinema|lens',
+                caseSensitive: false)
+            .hasMatch(modelName);
+
+    final isMobileOrSmartphone = !isCamera && (
+        catId == 'cat-smartphone' ||
         catId == 'cat-mobile' ||
+        catId == 'cat-tablet' ||
+        catId == 'cat-tablets' ||
+        catId == 'cat-ipad' ||
         catId.contains('phone') ||
         catId.contains('mobile') ||
+        catId.contains('tablet') ||
+        catId.contains('ipad') ||
         catName.contains('phone') ||
         catName.contains('mobile') ||
+        catName.contains('tablet') ||
+        catName.contains('ipad') ||
         modelNameLower.contains('iphone') ||
         modelNameLower.contains('galaxy') ||
-        modelNameLower.contains('pixel');
+        modelNameLower.contains('pixel') ||
+        modelNameLower.contains('ipad') ||
+        modelNameLower.contains('tab') ||
+        modelNameLower.contains('lenovo tab') ||
+        modelNameLower.contains('pro max') ||
+        modelNameLower.contains('redmi') ||
+        modelNameLower.contains('oneplus') ||
+        modelNameLower.contains('xiaomi') ||
+        modelNameLower.contains('vivo') ||
+        modelNameLower.contains('oppo') ||
+        modelNameLower.contains('realme')
+    );
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -642,17 +688,26 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
           // ── 5. PROCEED BUTTON ──
           Container(
             width: double.infinity,
-            height: 50,
+            height: 52,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF059669), Color(0xFF10B981)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: (isMobileOrSmartphone && _verificationReport == null)
+                  ? const LinearGradient(
+                      colors: [Color(0xFFD97706), Color(0xFFF59E0B)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : const LinearGradient(
+                      colors: [Color(0xFF059669), Color(0xFF10B981)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF059669).withValues(alpha: 0.35),
+                  color: (isMobileOrSmartphone && _verificationReport == null
+                          ? const Color(0xFFD97706)
+                          : const Color(0xFF059669))
+                      .withValues(alpha: 0.35),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -661,22 +716,63 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: widget.onProceed,
+                onTap: () async {
+                  if (isMobileOrSmartphone && _verificationReport == null) {
+                    final messenger = ScaffoldMessenger.of(context);
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          '⚠️ Phone IMEI verification is required before scheduling pickup. Dial *#06# to find your 15-digit IMEI.',
+                        ),
+                        backgroundColor: Color(0xFFD97706),
+                        duration: Duration(seconds: 4),
+                      ),
+                    );
+                    final report = await DeviceImeiVerificationSheet.show(
+                      context,
+                      selectedModel: widget.selectedModel,
+                      selectedVariant: widget.selectedStorage,
+                    );
+                    if (report != null && mounted) {
+                      setState(() => _verificationReport = report);
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '✅ IMEI ${report.imei} verified successfully! You can now schedule pickup.',
+                          ),
+                          backgroundColor: const Color(0xFF059669),
+                        ),
+                      );
+                    }
+                    return;
+                  }
+                  widget.onProceed(_verificationReport?.imei);
+                },
                 borderRadius: BorderRadius.circular(16),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    Icon(
+                      (isMobileOrSmartphone && _verificationReport == null)
+                          ? Icons.phonelink_lock_rounded
+                          : Icons.verified_user_rounded,
+                      color: Colors.white,
+                      size: 19,
+                    ),
+                    const SizedBox(width: 8),
                     Text(
-                      'Schedule Doorstep Handover',
-                      style: TextStyle(
+                      (isMobileOrSmartphone && _verificationReport == null)
+                          ? 'Verify Phone IMEI to Schedule Pickup'
+                          : 'Schedule Doorstep Handover',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14.5,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.2,
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 17),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 17),
                   ],
                 ),
               ),

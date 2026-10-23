@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../core/services/api_service.dart';
 import '../core/services/notification_service.dart';
@@ -41,6 +42,7 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
       ApiService.cachedRefurbished;
   List<Map<String, dynamic>> _rentalCameras = ApiService.cachedRentalCameras;
   final List<UserOrder> _orders = [];
+  Timer? _orderPollingTimer;
 
   // Selected category for Sell workflow
   String? _preselectedSellCategory;
@@ -49,6 +51,36 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
   void initState() {
     super.initState();
     _loadInitialData();
+
+    // Real-time Order Sync: Poll every 6 seconds so user immediately sees status updates from partner & rider
+    _orderPollingTimer = Timer.periodic(const Duration(seconds: 6), (_) {
+      if (mounted && widget.userProfile.phone.isNotEmpty) {
+        _refreshOrders();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _orderPollingTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshOrders() async {
+    if (widget.userProfile.phone.isNotEmpty) {
+      try {
+        final fetchedOrders =
+            await ApiService.fetchOrders(phone: widget.userProfile.phone);
+        if (mounted && fetchedOrders.isNotEmpty) {
+          setState(() {
+            _orders.clear();
+            for (final o in fetchedOrders) {
+              _orders.add(UserOrder.fromJson(o));
+            }
+          });
+        }
+      } catch (_) {}
+    }
   }
 
   Future<void> _refreshAllData() async {
@@ -70,20 +102,7 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
       }
     } catch (_) {}
 
-    if (widget.userProfile.phone.isNotEmpty) {
-      try {
-        final fetchedOrders =
-            await ApiService.fetchOrders(phone: widget.userProfile.phone);
-        if (mounted && fetchedOrders.isNotEmpty) {
-          setState(() {
-            _orders.clear();
-            for (final o in fetchedOrders) {
-              _orders.add(UserOrder.fromJson(o));
-            }
-          });
-        }
-      } catch (_) {}
-    }
+    await _refreshOrders();
 
     // Refresh notifications count
     NotificationService.checkUnreadCount(phone: widget.userProfile.phone);
@@ -384,6 +403,7 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
             orders: _orders,
             onProfileUpdate: widget.onProfileUpdate,
             onLogout: widget.onLogout,
+            onRefreshOrders: _refreshOrders,
             onNavigateToSell: () => setState(() => _currentIndex = 1),
             onNavigateToBuy: () => setState(() => _currentIndex = 2),
           ),
@@ -391,7 +411,12 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
       ),
       bottomNavigationBar: CamsikBottomBar(
         selectedIndex: _currentIndex,
-        onItemSelected: (idx) => setState(() => _currentIndex = idx),
+        onItemSelected: (idx) {
+          setState(() => _currentIndex = idx);
+          if (idx == 4) {
+            _refreshOrders();
+          }
+        },
       ),
     );
   }

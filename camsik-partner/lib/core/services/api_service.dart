@@ -212,6 +212,8 @@ class ApiService {
     double? finalPrice,
     int? inspectionScore,
     String? notes,
+    String? deviceImei,
+    String? paymentStatus,
     String? deliveryAgentId,
     String? deliveryAgentName,
     String? deliveryAgentPhone,
@@ -224,11 +226,44 @@ class ApiService {
       if (finalPrice != null) payload['finalPrice'] = finalPrice;
       if (inspectionScore != null) payload['inspectionScore'] = inspectionScore;
       if (notes != null) payload['notes'] = notes;
+      if (deviceImei != null && deviceImei.isNotEmpty) payload['deviceImei'] = deviceImei;
+      if (paymentStatus != null && paymentStatus.isNotEmpty) payload['paymentStatus'] = paymentStatus;
       if (deliveryAgentId != null) payload['deliveryAgentId'] = deliveryAgentId;
       if (deliveryAgentName != null) payload['deliveryAgentName'] = deliveryAgentName;
       if (deliveryAgentPhone != null) payload['deliveryAgentPhone'] = deliveryAgentPhone;
 
       final res = await dio.patch(ApiConstants.orders, data: payload);
+      return res.data != null && res.data['success'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ── PAYOUTS ──
+  static Future<bool> createPayout({
+    required String partnerId,
+    required String orderId,
+    required String orderNumber,
+    required double amount,
+    required String method,
+    String? referenceId,
+    String? notes,
+    String? customerName,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'partnerId': partnerId,
+        'orderId': orderId,
+        'orderNumber': orderNumber,
+        'amount': amount,
+        'method': method,
+        'type': 'spot_payout',
+        'referenceId': referenceId ?? 'TXN-${DateTime.now().millisecondsSinceEpoch}',
+        'notes': notes ?? 'Spot payout for Order #$orderNumber',
+      };
+      if (customerName != null) payload['customerName'] = customerName;
+
+      final res = await dio.post(ApiConstants.partnerPayouts, data: payload);
       return res.data != null && res.data['success'] == true;
     } catch (_) {
       return false;

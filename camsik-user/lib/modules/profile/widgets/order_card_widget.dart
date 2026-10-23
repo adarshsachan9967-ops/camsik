@@ -86,8 +86,37 @@ class OrderCardWidget extends StatelessWidget {
   }
 
   void _showRescheduleDialog(BuildContext context) {
-    String selectedDate = 'Tomorrow';
-    String selectedSlot = '11:00 AM – 1:00 PM';
+    final availableDates = <String>[
+      'Tomorrow',
+      'Day After Tomorrow',
+      'Coming Weekend',
+    ];
+    final orderDate = order.pickupDate?.trim() ?? '';
+    if (orderDate.isNotEmpty && !availableDates.contains(orderDate)) {
+      availableDates.insert(0, orderDate);
+    }
+
+    final availableSlots = <String>[
+      '9:00 AM – 11:00 AM',
+      '11:00 AM – 1:00 PM',
+      '1:00 PM – 3:00 PM',
+      '3:00 PM – 5:00 PM',
+      '5:00 PM – 7:00 PM',
+      '10:00 AM – 1:00 PM',
+      '1:00 PM – 4:00 PM',
+      '4:00 PM – 7:00 PM',
+    ];
+    final orderSlot = order.pickupSlot?.trim() ?? '';
+    if (orderSlot.isNotEmpty && !availableSlots.contains(orderSlot)) {
+      availableSlots.insert(0, orderSlot);
+    }
+
+    String selectedDate = availableDates.contains(orderDate)
+        ? orderDate
+        : availableDates.first;
+    String selectedSlot = availableSlots.contains(orderSlot)
+        ? orderSlot
+        : availableSlots.first;
 
     showDialog(
       context: context,
@@ -110,11 +139,12 @@ class OrderCardWidget extends StatelessWidget {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'Tomorrow', child: Text('Tomorrow', style: TextStyle(fontSize: 12))),
-                  DropdownMenuItem(value: 'Day After Tomorrow', child: Text('Day After Tomorrow', style: TextStyle(fontSize: 12))),
-                  DropdownMenuItem(value: 'Coming Weekend', child: Text('Coming Weekend', style: TextStyle(fontSize: 12))),
-                ],
+                items: availableDates.map((date) {
+                  return DropdownMenuItem<String>(
+                    value: date,
+                    child: Text(date, style: const TextStyle(fontSize: 12)),
+                  );
+                }).toList(),
                 onChanged: (val) {
                   if (val != null) setState(() => selectedDate = val);
                 },
@@ -128,11 +158,12 @@ class OrderCardWidget extends StatelessWidget {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                items: const [
-                  DropdownMenuItem(value: '10:00 AM – 1:00 PM', child: Text('Morning (10:00 AM – 1:00 PM)', style: TextStyle(fontSize: 12))),
-                  DropdownMenuItem(value: '1:00 PM – 4:00 PM', child: Text('Afternoon (1:00 PM – 4:00 PM)', style: TextStyle(fontSize: 12))),
-                  DropdownMenuItem(value: '4:00 PM – 7:00 PM', child: Text('Evening (4:00 PM – 7:00 PM)', style: TextStyle(fontSize: 12))),
-                ],
+                items: availableSlots.map((slot) {
+                  return DropdownMenuItem<String>(
+                    value: slot,
+                    child: Text(slot, style: const TextStyle(fontSize: 12)),
+                  );
+                }).toList(),
                 onChanged: (val) {
                   if (val != null) setState(() => selectedSlot = val);
                 },
@@ -317,6 +348,55 @@ class OrderCardWidget extends StatelessWidget {
                 ),
             ],
           ),
+          if (order.deliveryAgentName != null && order.deliveryAgentName!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.delivery_dining_rounded, size: 14, color: Color(0xFF2563EB)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Rider: ${order.deliveryAgentName}${order.deliveryAgentPhone != null && order.deliveryAgentPhone!.isNotEmpty ? " • 📞 ${order.deliveryAgentPhone}" : ""}',
+                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF1D4ED8)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (order.partnerName != null && order.partnerName!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFBBF7D0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.storefront_rounded, size: 14, color: Color(0xFF16A34A)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Store Partner: ${order.partnerName}',
+                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF15803D)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           const Divider(height: 12),
           Row(

@@ -59,6 +59,7 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
   final TextEditingController _upiController = TextEditingController();
   String _selectedSlot = '11:00 AM – 1:00 PM';
   String _selectedDate = 'Tomorrow';
+  String? _verifiedImei;
 
   @override
   void initState() {
@@ -176,6 +177,7 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
       'amount': _calculatedPrice,
       'deviceName': '${_selectedModel?['name'] ?? 'Device'} ($_selectedStorage)$lensSummary',
       'status': 'Order Placed',
+      if (_verifiedImei != null && _verifiedImei!.isNotEmpty) 'deviceImei': _verifiedImei,
     };
 
     final created = await ApiService.createOrder(orderData);
@@ -316,11 +318,15 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
       case 3:
         return SellVariantStep(
           selectedModel: _selectedModel,
+          selectedBrand: _selectedBrand?['name'] as String?,
           categoryId: _selectedCategory['id'] as String?,
+          categoryName: _selectedCategory['name'] as String?,
           basePrice: _basePrice,
           selectedStorage: _selectedStorage,
           selectedColor: _selectedColor,
           selectedLenses: _selectedLenses,
+          verifiedImei: _verifiedImei,
+          onImeiVerified: (imei) => setState(() => _verifiedImei = imei),
           onStorageChanged: (s) => setState(() => _selectedStorage = s),
           onColorChanged: (c) => setState(() => _selectedColor = c),
           onLensesChanged: (lenses) {
@@ -358,7 +364,13 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
           calculatedPrice: _calculatedPrice,
           questions: _questions,
           selectedAnswers: _selectedAnswers,
-          onProceed: () => setState(() => _step = 6),
+          verifiedImei: _verifiedImei,
+          onProceed: (imei) {
+            setState(() {
+              _verifiedImei = imei ?? _verifiedImei;
+              _step = 6;
+            });
+          },
         );
       case 6:
         return SellPickupStep(

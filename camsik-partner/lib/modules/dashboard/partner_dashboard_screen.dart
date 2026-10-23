@@ -5,7 +5,7 @@ import '../../core/services/session_service.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../models/partner_models.dart';
 import '../customers/partner_customers_screen.dart';
-import '../orders/widgets/order_detail_sheet.dart';
+import '../orders/screens/partner_order_detail_screen.dart';
 import '../riders/partner_riders_screen.dart';
 import 'data/models/dashboard_stats_model.dart';
 import 'data/repositories/dashboard_repository.dart';
@@ -77,7 +77,7 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
     final totalVolume =
         (_stats?.storeTradeVolume != null && _stats!.storeTradeVolume > 0)
             ? _stats!.storeTradeVolume
-            : (calculatedVolume > 0 ? calculatedVolume : 42600.0);
+            : calculatedVolume;
 
     final completedOrders = widget.orders.filterCompleted();
     final completedCount =
@@ -115,7 +115,7 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
                 totalVolume: totalVolume,
                 completedCount: completedCount,
                 totalUnitsCount: totalUnitsCount,
-                growthText: _stats?.momGrowth ?? '+14.2% MoM',
+                growthText: _stats?.momGrowth ?? (completedCount > 0 ? '+${((completedCount / (totalUnitsCount > 0 ? totalUnitsCount : 1)) * 100).toStringAsFixed(1)}% MoM' : '+0.0% MoM'),
               ),
               SizedBox(height: 1.8.h),
 
@@ -762,29 +762,95 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
 
   // 5. Active Queue & Tasks Section
   Widget _buildActiveQueueSection(List<PartnerOrder> orders) {
-    // If there are orders, pick the first one or active one to show in this spot
-    final sampleOrder = orders.isNotEmpty
-        ? orders.first
-        : PartnerOrder(
-            id: 'ord-1792744250415',
-            orderNumber: 'CSM-SELL-931271',
-            type: 'sell',
-            status: 'Order Placed',
-            createdAt: DateTime.now().toIso8601String(),
-            customerName: 'aman',
-            customerPhone: '9850946809',
-            customerAddress: 'wrweqrewr, Mumbai',
-            city: 'Mumbai',
-            pinCode: '401107',
-            quotedPrice: 42600,
-            finalPrice: 42600,
-            deviceName: 'iPhone 14 (128GB)',
-            deviceBrand: 'Apple',
-            deviceModel: 'iPhone 14',
-            deviceStorage: '128GB',
-            pickupDate: 'Tomorrow',
-            pickupSlot: '1:00 PM – 3:00 PM',
-          );
+    // Only orders that are NOT completed and NOT cancelled belong in the active queue!
+    final activeOrders = orders
+        .where((o) => o.status != 'completed' && o.status != 'cancelled')
+        .toList();
+
+    if (activeOrders.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E5BF8),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(width: 2.w),
+              Text(
+                'Active Queue & Tasks',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 1.2.h),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.5.h),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF1F5F9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.task_alt_rounded,
+                    size: 26,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+                SizedBox(width: 3.5.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'All Tasks Complete',
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                      SizedBox(height: 0.3.h),
+                      Text(
+                        'No pending orders in active queue. New customer requests will appear here.',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -825,7 +891,7 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'View All (${orders.isNotEmpty ? orders.length : 1})',
+                    'Active (${activeOrders.length})',
                     style: TextStyle(
                       fontSize: 14.sp,
                       fontWeight: FontWeight.bold,
@@ -845,173 +911,175 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
         ),
         SizedBox(height: 1.2.h),
 
-        // Order Card
-        Material(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          child: InkWell(
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => OrderDetailSheet(
-                  order: sampleOrder,
-                  onOrderUpdated: widget.onRefresh,
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: EdgeInsets.all(3.8.w),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // Phone Thumbnail Illustration
-                  Container(
-                    width: 54,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFCBD5E1)),
+        // Active Order Cards
+        ...activeOrders.take(3).map((activeOrder) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: 1.2.h),
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PartnerOrderDetailScreen(
+                        order: activeOrder,
+                        onOrderUpdated: widget.onRefresh,
+                      ),
                     ),
-                    child: Center(
-                      child: Container(
-                        width: 44,
-                        height: 62,
+                  );
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: EdgeInsets.all(3.8.w),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // Phone Thumbnail Illustration
+                      Container(
+                        width: 54,
+                        height: 72,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFF472B6), Color(0xFFC084FC)],
-                            begin: Alignment.topRight,
-                            end: Alignment.bottomLeft,
-                          ),
-                          border: Border.all(
-                            color: const Color(0xFF0F172A),
-                            width: 1.5,
-                          ),
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFCBD5E1)),
                         ),
-                        child: Align(
-                          alignment: Alignment.topCenter,
+                        child: Center(
                           child: Container(
-                            margin: const EdgeInsets.only(top: 2),
-                            width: 14,
-                            height: 3,
+                            width: 44,
+                            height: 62,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0F172A),
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: BorderRadius.circular(8),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFF472B6), Color(0xFFC084FC)],
+                                begin: Alignment.topRight,
+                                end: Alignment.bottomLeft,
+                              ),
+                              border: Border.all(
+                                color: const Color(0xFF0F172A),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Align(
+                              alignment: Alignment.topCenter,
+                              child: Container(
+                                margin: const EdgeInsets.only(top: 2),
+                                width: 14,
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0F172A),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                  SizedBox(width: 3.5.w),
+                      SizedBox(width: 3.5.w),
 
-                  // Order Details
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                      // Order Details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Text(
-                                sampleOrder.deviceName,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15.sp,
-                                  color: const Color(0xFF0F172A),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    activeOrder.deviceName,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15.sp,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 2.2.w,
+                                    vertical: 0.4.h,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEF2FF),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    activeOrder.statusDisplay.toUpperCase(),
+                                    style: TextStyle(
+                                      color: const Color(0xFF6366F1),
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 2.2.w,
-                                vertical: 0.4.h,
+                            SizedBox(height: 0.4.h),
+                            Text(
+                              'Cust: ${activeOrder.customerName} • ${activeOrder.orderNumber.length > 14 ? "${activeOrder.orderNumber.substring(0, 14)}..." : activeOrder.orderNumber}',
+                              style: TextStyle(
+                                color: const Color(0xFF64748B),
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
                               ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEEF2FF),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                (sampleOrder.status.isNotEmpty
-                                        ? sampleOrder.status
-                                        : 'ORDER PLACED')
-                                    .toUpperCase(),
-                                style: TextStyle(
-                                  color: const Color(0xFF6366F1),
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(height: 0.6.h),
+                            RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: 'Valuation: ',
+                                    style: TextStyle(
+                                      color: const Color(0xFF1E5BF8),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15.sp,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: CurrencyFormatter.format(
+                                      activeOrder.finalPrice > 0 ? activeOrder.finalPrice : activeOrder.quotedPrice,
+                                    ),
+                                    style: TextStyle(
+                                      color: const Color(0xFF1E5BF8),
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 15.sp,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                        SizedBox(height: 0.4.h),
-                        Text(
-                          'Cust: ${sampleOrder.customerName} • ${sampleOrder.orderNumber.length > 14 ? "${sampleOrder.orderNumber.substring(0, 14)}..." : sampleOrder.orderNumber}',
-                          style: TextStyle(
-                            color: const Color(0xFF64748B),
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: 0.6.h),
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: 'Valuation: ',
-                                style: TextStyle(
-                                  color: const Color(0xFF1E5BF8),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15.sp,
-                                ),
-                              ),
-                              TextSpan(
-                                text: CurrencyFormatter.format(
-                                  sampleOrder.finalPrice,
-                                ),
-                                style: TextStyle(
-                                  color: const Color(0xFF1E5BF8),
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 15.sp,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
 
-                  // Right Chevron
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: Color(0xFF94A3B8),
-                    size: 20,
+                      // Right Chevron
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Color(0xFF94A3B8),
+                        size: 20,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        }),
       ],
     );
   }

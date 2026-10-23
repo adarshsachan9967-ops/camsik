@@ -6,6 +6,7 @@ import type { SellState } from './SellDeviceWorkflow';
 import { triggerNotification } from '@/lib/notifications';
 import { createClient } from '@/lib/supabase/client';
 import FullVerificationReportModal from './FullVerificationReportModal';
+import DeviceVerificationModal from './DeviceVerificationModal';
 import { getCurrentUser } from '@/lib/auth';
 import CustomerAuthModal from '@/components/CustomerAuthModal';
 
@@ -13,6 +14,7 @@ interface Props {
   sellState: SellState;
   onSchedulePickup: () => void;
   onBack: () => void;
+  onUpdateState?: (updates: Partial<SellState>) => void;
 }
 
 const sellBenefits = [
@@ -27,9 +29,10 @@ const timeSlots = ['9:00 AM - 11:00 AM', '11:00 AM - 1:00 PM', '1:00 PM - 3:00 P
 
 type QuoteView = 'quote' | 'schedule' | 'confirmed';
 
-export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }: Props) {
+export default function StepQuoteResult({ sellState, onSchedulePickup, onBack, onUpdateState }: Props) {
   const [view, setView] = useState<QuoteView>('quote');
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showImeiModal, setShowImeiModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -51,10 +54,22 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
 
   const price = sellState.currentPrice;
 
+  const isPhone = (sellState.category || '').toLowerCase().includes('phone') ||
+                  (sellState.categoryName || '').toLowerCase().includes('phone') ||
+                  (sellState.category || '').toLowerCase().includes('mobile') ||
+                  (sellState.categoryName || '').toLowerCase().includes('mobile') ||
+                  (sellState.modelName || '').toLowerCase().includes('iphone') ||
+                  (sellState.modelName || '').toLowerCase().includes('galaxy') ||
+                  (sellState.modelName || '').toLowerCase().includes('pixel');
+
   const handleProceedToSchedule = () => {
     const user = getCurrentUser();
     if (!user) {
       setShowAuthModal(true);
+      return;
+    }
+    if (isPhone && !sellState.deviceVerification) {
+      setShowImeiModal(true);
       return;
     }
     setView('schedule');
@@ -449,14 +464,32 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
 
       {/* Action cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <button onClick={handleProceedToSchedule}
-          className="gradient-green text-white rounded-2xl p-5 flex items-center gap-4 hover:opacity-95 btn-press shadow-green text-left">
+        <button
+          onClick={handleProceedToSchedule}
+          className={`${
+            isPhone && !sellState.deviceVerification
+              ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/20'
+              : 'gradient-green hover:opacity-95 shadow-green'
+          } text-white rounded-2xl p-5 flex items-center gap-4 btn-press text-left transition-all`}
+        >
           <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-            <Truck size={22} className="text-white" />
+            {isPhone && !sellState.deviceVerification ? (
+              <ShieldCheck size={22} className="text-white" />
+            ) : (
+              <Truck size={22} className="text-white" />
+            )}
           </div>
           <div>
-            <p className="font-bold text-base">Schedule Free Pickup</p>
-            <p className="text-white/80 text-sm mt-0.5">We&apos;ll pickup your device from your location</p>
+            <p className="font-bold text-base">
+              {isPhone && !sellState.deviceVerification
+                ? 'Verify Phone IMEI to Schedule Pickup'
+                : 'Schedule Free Pickup'}
+            </p>
+            <p className="text-white/80 text-sm mt-0.5">
+              {isPhone && !sellState.deviceVerification
+                ? 'IMEI verification is required (*#06#) before pickup'
+                : "We'll pickup your device from your location"}
+            </p>
           </div>
         </button>
         <div className="bg-white border border-border rounded-2xl p-5 flex items-start gap-3">
@@ -474,6 +507,21 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack }:
         <Shield size={14} className="text-primary flex-shrink-0" />
         This quote is valid for <strong className="text-foreground">24 hours from now.</strong>
       </div>
+
+      {showImeiModal && (
+        <DeviceVerificationModal
+          selectedBrand={sellState.brandName || 'Device'}
+          selectedModel={sellState.modelName || 'Smartphone'}
+          selectedVariant={sellState.storage || 'Standard'}
+          onClose={() => setShowImeiModal(false)}
+          onSuccess={(report) => {
+            onUpdateState?.({ deviceVerification: report });
+            setShowImeiModal(false);
+            setView('schedule');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      )}
 
       {showReportModal && (
         <FullVerificationReportModal

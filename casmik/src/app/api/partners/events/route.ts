@@ -1,32 +1,7 @@
 import { NextResponse } from 'next/server';
+import { partnerSubscribers } from '@/lib/partnerEvents';
 
 export const dynamic = 'force-dynamic';
-
-// Global subscriber map: partnerId -> Set of controller callbacks across serverless lifecycle
-declare global {
-  // eslint-disable-next-line no-var
-  var __partnerEventSubscribers: Map<string, Set<(data: string) => void>> | undefined;
-}
-
-if (!globalThis.__partnerEventSubscribers) {
-  globalThis.__partnerEventSubscribers = new Map();
-}
-
-const subscribers = globalThis.__partnerEventSubscribers;
-
-export function notifyPartnerOrder(partnerId: string, order: any) {
-  const cbs = subscribers.get(partnerId);
-  if (cbs && cbs.size > 0) {
-    const payload = JSON.stringify({ type: 'new_order_assigned', order });
-    cbs.forEach((cb) => {
-      try {
-        cb(payload);
-      } catch {
-        // ignore dead subscriber
-      }
-    });
-  }
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -48,10 +23,10 @@ export async function GET(request: Request) {
         }
       };
 
-      if (!subscribers.has(partnerId)) {
-        subscribers.set(partnerId, new Set());
+      if (!partnerSubscribers.has(partnerId)) {
+        partnerSubscribers.set(partnerId, new Set());
       }
-      subscribers.get(partnerId)!.add(sendData);
+      partnerSubscribers.get(partnerId)!.add(sendData);
 
       // Send initial ACK
       controller.enqueue(
@@ -71,14 +46,14 @@ export async function GET(request: Request) {
 
       request.signal.addEventListener('abort', () => {
         clearInterval(pingInterval);
-        if (sendData && subscribers.has(partnerId)) {
-          subscribers.get(partnerId)!.delete(sendData);
+        if (sendData && partnerSubscribers.has(partnerId)) {
+          partnerSubscribers.get(partnerId)!.delete(sendData);
         }
       });
     },
     cancel() {
-      if (sendData && subscribers.has(partnerId)) {
-        subscribers.get(partnerId)!.delete(sendData);
+      if (sendData && partnerSubscribers.has(partnerId)) {
+        partnerSubscribers.get(partnerId)!.delete(sendData);
       }
     },
   });

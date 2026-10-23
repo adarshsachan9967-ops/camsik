@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { orders as defaultOrders } from '@/lib/casmikData';
-import { notifyPartnerOrder } from '@/app/api/partners/events/route';
+import { notifyPartnerOrder } from '@/lib/partnerEvents';
 
 export const dynamic = 'force-dynamic';
 
@@ -275,6 +275,34 @@ export async function PATCH(request: Request) {
     }
     if (body.deliveryAgentName && !body.assignedRiderName) {
       body.assignedRiderName = body.deliveryAgentName;
+    }
+
+    // Reject reassignment if order is already completed or paid
+    const existingCached = ordersCache.find((o) => o.id === orderId || o.orderNumber === orderId);
+    let existingStatus = existingCached?.status;
+    let existingAgentId = existingCached?.deliveryAgentId;
+
+    try {
+      const db = await getDatabase();
+      const existingDoc = await db.collection('orders').findOne({
+        $or: [{ id: orderId }, { orderNumber: orderId }],
+      });
+      if (existingDoc) {
+        existingStatus = existingDoc.status || existingStatus;
+        existingAgentId = existingDoc.deliveryAgentId || existingAgentId;
+      }
+    } catch (_) {}
+
+    if (existingStatus === 'completed' || existingStatus === 'paid') {
+      if (
+        (body.deliveryAgentId && body.deliveryAgentId !== existingAgentId) ||
+        (body.status && body.status !== 'completed' && body.status !== 'paid')
+      ) {
+        return NextResponse.json(
+          { success: false, message: 'Order is already completed and cannot be reassigned.' },
+          { status: 400 }
+        );
+      }
     }
 
     // Find in memory cache

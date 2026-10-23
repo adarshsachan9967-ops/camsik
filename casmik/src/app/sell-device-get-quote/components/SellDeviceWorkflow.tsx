@@ -268,7 +268,7 @@ export default function SellDeviceWorkflow() {
             />
           )}
           {currentStep >= 4 && (
-            <StepQuoteResult sellState={sellState} onSchedulePickup={() => {}} onBack={goBack} />
+            <StepQuoteResult sellState={sellState} onSchedulePickup={() => {}} onBack={goBack} onUpdateState={updateState} />
           )}
         </div>
         <div className="xl:col-span-1">

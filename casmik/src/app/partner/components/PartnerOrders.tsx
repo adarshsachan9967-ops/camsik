@@ -207,6 +207,7 @@ export default function PartnerOrders({ onStartInspection }: PartnerOrdersProps)
 
   const supabase = createClient();
 
+  useEffect(() => {
     const fetchFreshOrders = async () => {
       try {
         const currentId = getActivePartnerId();
