@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sizer/sizer.dart';
 import '../../core/constants/app_colors.dart';
@@ -6,6 +7,19 @@ import '../../core/routes/app_routes.dart';
 import 'bloc/auth_cubit.dart';
 import 'bloc/auth_state.dart';
 import 'data/models/requests/partner_register_request.dart';
+
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    return TextEditingValue(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
+    );
+  }
+}
 
 class PartnerRegisterScreen extends StatefulWidget {
   const PartnerRegisterScreen({super.key});
@@ -63,71 +77,149 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
     FocusScope.of(context).unfocus();
 
     if (_currentStep == 1) {
-      if (_nameController.text.trim().isEmpty) {
+      final name = _nameController.text.trim();
+      if (name.isEmpty) {
         _showErrorSnackBar(context, 'Please enter your full name');
         return;
       }
-      final phone = _phoneController.text.trim().replaceAll(RegExp(r'\D'), '');
-      if (phone.length < 10) {
-        _showErrorSnackBar(context, 'Please enter a valid 10-digit mobile number');
+      if (name.length < 3) {
+        _showErrorSnackBar(context, 'Full name must be at least 3 characters long');
         return;
       }
-      final email = _emailController.text.trim();
-      if (email.isEmpty || !email.contains('@')) {
-        _showErrorSnackBar(context, 'Please enter a valid email address');
+
+      final phone = _phoneController.text.trim();
+      if (phone.isEmpty) {
+        _showErrorSnackBar(context, 'Please enter mobile number');
         return;
       }
-      if (_passwordController.text.length < 6) {
+      if (phone.length != 10 || !RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) {
+        _showErrorSnackBar(context, 'Mobile number must be exactly 10 digits starting with 6, 7, 8 or 9');
+        return;
+      }
+
+      final email = _emailController.text.trim().toLowerCase();
+      final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+      if (email.isEmpty) {
+        _showErrorSnackBar(context, 'Please enter email address');
+        return;
+      }
+      if (!emailRegex.hasMatch(email)) {
+        _showErrorSnackBar(context, 'Please enter a valid email address (e.g. partner@gmail.com)');
+        return;
+      }
+
+      final password = _passwordController.text;
+      if (password.isEmpty) {
+        _showErrorSnackBar(context, 'Please enter account password');
+        return;
+      }
+      if (password.length < 6) {
         _showErrorSnackBar(context, 'Password must be at least 6 characters long');
         return;
       }
-      if (_passwordController.text != _confirmPasswordController.text) {
+      if (password != _confirmPasswordController.text) {
         _showErrorSnackBar(context, 'Passwords do not match');
         return;
       }
       setState(() => _currentStep = 2);
     } else if (_currentStep == 2) {
-      if (_storeNameController.text.trim().isEmpty) {
-        _showErrorSnackBar(context, 'Please enter your store or business name');
+      final storeName = _storeNameController.text.trim();
+      if (storeName.isEmpty) {
+        _showErrorSnackBar(context, 'Please enter store or business name');
         return;
       }
-      if (_cityController.text.trim().isEmpty) {
+      if (storeName.length < 3) {
+        _showErrorSnackBar(context, 'Store name must be at least 3 characters long');
+        return;
+      }
+
+      final city = _cityController.text.trim();
+      if (city.isEmpty) {
         _showErrorSnackBar(context, 'Please enter city');
         return;
       }
-      final pin = _pinCodeController.text.trim();
-      if (pin.length < 6) {
-        _showErrorSnackBar(context, 'Please enter a valid 6-digit PIN code');
+      if (city.length < 2) {
+        _showErrorSnackBar(context, 'Please enter a valid city name');
         return;
       }
-      if (_addressController.text.trim().isEmpty) {
-        _showErrorSnackBar(context, 'Please enter full store address');
+
+      final state = _stateController.text.trim();
+      if (state.isEmpty) {
+        _showErrorSnackBar(context, 'Please enter state');
+        return;
+      }
+
+      final pin = _pinCodeController.text.trim();
+      if (pin.isEmpty) {
+        _showErrorSnackBar(context, 'Please enter 6-digit PIN code');
+        return;
+      }
+      if (pin.length != 6 || !RegExp(r'^[1-9]\d{5}$').hasMatch(pin)) {
+        _showErrorSnackBar(context, 'PIN Code must be exactly 6 digits');
+        return;
+      }
+
+      final address = _addressController.text.trim();
+      if (address.isEmpty) {
+        _showErrorSnackBar(context, 'Please enter complete store address');
+        return;
+      }
+      if (address.length < 5) {
+        _showErrorSnackBar(context, 'Store address must be at least 5 characters long');
         return;
       }
       setState(() => _currentStep = 3);
     } else if (_currentStep == 3) {
-      final pan = _panController.text.trim();
-      if (pan.length < 10) {
-        _showErrorSnackBar(context, 'Please enter a valid 10-digit PAN number');
+      final pan = _panController.text.trim().toUpperCase();
+      final panRegex = RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$');
+      if (pan.isEmpty) {
+        _showErrorSnackBar(context, 'Please enter Business PAN number');
         return;
       }
-      if (_bankAccountController.text.trim().length < 9) {
-        _showErrorSnackBar(context, 'Please enter a valid bank account number');
+      if (pan.length != 10 || !panRegex.hasMatch(pan)) {
+        _showErrorSnackBar(context, 'Invalid PAN format. Must be 10 characters (e.g. ABCDE1234F)');
         return;
       }
-      if (_ifscController.text.trim().length < 11) {
-        _showErrorSnackBar(context, 'Please enter a valid 11-character IFSC code');
+
+      final gst = _gstController.text.trim().toUpperCase();
+      if (gst.isNotEmpty) {
+        final gstRegex = RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$');
+        if (gst.length != 15 || !gstRegex.hasMatch(gst)) {
+          _showErrorSnackBar(context, 'Invalid GSTIN format. Must be 15 characters (e.g. 29ABCDE1234F1Z5)');
+          return;
+        }
+      }
+
+      final accountNo = _bankAccountController.text.trim();
+      if (accountNo.isEmpty) {
+        _showErrorSnackBar(context, 'Please enter settlement bank account number');
         return;
       }
+      if (accountNo.length < 9 || accountNo.length > 18 || !RegExp(r'^\d{9,18}$').hasMatch(accountNo)) {
+        _showErrorSnackBar(context, 'Bank account number must be between 9 and 18 digits');
+        return;
+      }
+
+      final ifsc = _ifscController.text.trim().toUpperCase();
+      final ifscRegex = RegExp(r'^[A-Z]{4}0[A-Z0-9]{6}$');
+      if (ifsc.isEmpty) {
+        _showErrorSnackBar(context, 'Please enter bank IFSC code');
+        return;
+      }
+      if (ifsc.length != 11 || !ifscRegex.hasMatch(ifsc)) {
+        _showErrorSnackBar(context, 'Invalid IFSC format. Must be 11 characters (e.g. HDFC0001234)');
+        return;
+      }
+
       if (!_agreeTerms) {
-        _showErrorSnackBar(context, 'Please accept Partner Terms & Conditions');
+        _showErrorSnackBar(context, 'Please accept Partner Terms & Conditions to proceed');
         return;
       }
 
       // Submit registration
       final request = PartnerRegisterRequest(
         name: _nameController.text.trim(),
-        phone: _phoneController.text.trim().replaceAll(RegExp(r'\D'), '').substring(_phoneController.text.trim().replaceAll(RegExp(r'\D'), '').length - 10),
+        phone: _phoneController.text.trim(),
         email: _emailController.text.trim().toLowerCase(),
         password: _passwordController.text.trim(),
         storeName: _storeNameController.text.trim(),
@@ -420,15 +512,24 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
           label: 'Partner Full Name',
           hint: 'e.g. Aman Sharma',
           icon: Icons.person_outline_rounded,
+          textCapitalization: TextCapitalization.words,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s\.\-']")),
+            LengthLimitingTextInputFormatter(50),
+          ],
         ),
         SizedBox(height: 1.8.h),
 
         _buildTextField(
           controller: _phoneController,
-          label: 'Mobile Number (10 Digits)',
+          label: 'Mobile Number (Exactly 10 Digits)',
           hint: '9876543210',
           icon: Icons.phone_outlined,
           keyboardType: TextInputType.phone,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(10),
+          ],
         ),
         SizedBox(height: 1.8.h),
 
@@ -438,6 +539,10 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
           hint: 'partner@camsikstore.in',
           icon: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
+          inputFormatters: [
+            FilteringTextInputFormatter.deny(RegExp(r'\s')),
+            LengthLimitingTextInputFormatter(60),
+          ],
         ),
         SizedBox(height: 1.8.h),
 
@@ -447,6 +552,9 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
           hint: 'Min. 6 characters',
           icon: Icons.lock_outline_rounded,
           obscureText: _obscurePassword,
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(32),
+          ],
           suffixIcon: IconButton(
             icon: Icon(
               _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -464,6 +572,9 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
           hint: 'Re-enter password',
           icon: Icons.lock_outline_rounded,
           obscureText: _obscureConfirmPassword,
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(32),
+          ],
           suffixIcon: IconButton(
             icon: Icon(
               _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -489,6 +600,10 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
           label: 'Store / Business Name',
           hint: 'e.g. Camsik Certified Hub - MG Road',
           icon: Icons.storefront_outlined,
+          textCapitalization: TextCapitalization.words,
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(60),
+          ],
         ),
         SizedBox(height: 1.8.h),
 
@@ -500,6 +615,11 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
                 label: 'City',
                 hint: 'e.g. Bengaluru',
                 icon: Icons.location_city_rounded,
+                textCapitalization: TextCapitalization.words,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s\.\-']")),
+                  LengthLimitingTextInputFormatter(35),
+                ],
               ),
             ),
             SizedBox(width: 3.w),
@@ -509,6 +629,11 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
                 label: 'State',
                 hint: 'e.g. Karnataka',
                 icon: Icons.map_outlined,
+                textCapitalization: TextCapitalization.words,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s\.\-']")),
+                  LengthLimitingTextInputFormatter(35),
+                ],
               ),
             ),
           ],
@@ -517,10 +642,14 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
 
         _buildTextField(
           controller: _pinCodeController,
-          label: 'Service PIN Code',
+          label: 'Service PIN Code (6 Digits)',
           hint: 'e.g. 560001',
           icon: Icons.pin_drop_outlined,
           keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(6),
+          ],
         ),
         SizedBox(height: 1.8.h),
 
@@ -530,6 +659,9 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
           hint: 'Shop #, Street, Commercial complex, Landmark...',
           icon: Icons.home_work_outlined,
           maxLines: 2,
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(150),
+          ],
         ),
       ],
     );
@@ -544,37 +676,56 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
 
         _buildTextField(
           controller: _panController,
-          label: 'Business PAN Number',
+          label: 'Business PAN Number (10 Digits)',
           hint: 'ABCDE1234F',
           icon: Icons.credit_card_rounded,
           textCapitalization: TextCapitalization.characters,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
+            LengthLimitingTextInputFormatter(10),
+            UpperCaseTextFormatter(),
+          ],
         ),
         SizedBox(height: 1.8.h),
 
         _buildTextField(
           controller: _gstController,
-          label: 'GST Number (Optional)',
+          label: 'GST Number (Optional, 15 Digits)',
           hint: '29ABCDE1234F1Z5',
           icon: Icons.receipt_long_outlined,
           textCapitalization: TextCapitalization.characters,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
+            LengthLimitingTextInputFormatter(15),
+            UpperCaseTextFormatter(),
+          ],
         ),
         SizedBox(height: 1.8.h),
 
         _buildTextField(
           controller: _bankAccountController,
           label: 'Settlement Bank Account Number',
-          hint: 'e.g. 50100234567890',
+          hint: 'e.g. 50100234567890 (9 to 18 digits)',
           icon: Icons.account_balance_outlined,
           keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(18),
+          ],
         ),
         SizedBox(height: 1.8.h),
 
         _buildTextField(
           controller: _ifscController,
-          label: 'Bank IFSC Code',
+          label: 'Bank IFSC Code (11 Characters)',
           hint: 'HDFC0001234',
           icon: Icons.domain_rounded,
           textCapitalization: TextCapitalization.characters,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
+            LengthLimitingTextInputFormatter(11),
+            UpperCaseTextFormatter(),
+          ],
         ),
         SizedBox(height: 2.2.h),
 
@@ -644,6 +795,7 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
     Widget? suffixIcon,
     TextInputType keyboardType = TextInputType.text,
     TextCapitalization textCapitalization = TextCapitalization.none,
+    List<TextInputFormatter>? inputFormatters,
     int maxLines = 1,
   }) {
     return Column(
@@ -663,6 +815,7 @@ class _PartnerRegisterScreenState extends State<PartnerRegisterScreen> {
           obscureText: obscureText,
           keyboardType: keyboardType,
           textCapitalization: textCapitalization,
+          inputFormatters: inputFormatters,
           maxLines: maxLines,
           style: TextStyle(
             color: Colors.white,
