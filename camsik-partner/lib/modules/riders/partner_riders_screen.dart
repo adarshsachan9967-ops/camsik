@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/services/session_service.dart';
 import 'data/models/delivery_agent_model.dart';
 import 'data/repositories/riders_repository.dart';
+import 'screens/add_rider_screen.dart';
 
 class PartnerRidersScreen extends StatefulWidget {
   const PartnerRidersScreen({super.key});
@@ -27,7 +28,8 @@ class _PartnerRidersScreenState extends State<PartnerRidersScreen> {
 
   Future<void> _loadRiders() async {
     setState(() => _loading = true);
-    final partnerId = SessionService.currentUser?.id ?? 'partner-001';
+    final partner = SessionService.currentUser;
+    final partnerId = partner?.id.isNotEmpty == true ? partner!.id : 'partner-001';
     final list = await _ridersRepo.fetchRiders(partnerId: partnerId);
     if (mounted) {
       setState(() {
@@ -45,161 +47,14 @@ class _PartnerRidersScreenState extends State<PartnerRidersScreen> {
     }
   }
 
-  void _showAddRiderSheet() {
-    final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    final vehicleCtrl = TextEditingController(text: 'Bike (Hero Splendor)');
-    final vehicleNoCtrl = TextEditingController(text: 'MH02AB1234');
-    final pinCodesCtrl = TextEditingController(text: '400001, 400050');
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(5.w, 2.h, 5.w, MediaQuery.of(ctx).viewInsets.bottom + 3.h),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFCBD5E1),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  'Onboard New Store Rider',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF0F172A),
-                  ),
-                ),
-                SizedBox(height: 0.5.h),
-                Text(
-                  'Riders are assigned to doorstep pick up and diagnostic intake',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: const Color(0xFF64748B),
-                  ),
-                ),
-                SizedBox(height: 2.h),
-                TextField(
-                  controller: nameCtrl,
-                  style: TextStyle(fontSize: 15.sp),
-                  decoration: InputDecoration(
-                    labelText: 'Rider Full Name',
-                    labelStyle: TextStyle(fontSize: 14.sp),
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                SizedBox(height: 1.5.h),
-                TextField(
-                  controller: phoneCtrl,
-                  keyboardType: TextInputType.phone,
-                  style: TextStyle(fontSize: 15.sp),
-                  decoration: InputDecoration(
-                    labelText: 'Phone Number (+91)',
-                    labelStyle: TextStyle(fontSize: 14.sp),
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                SizedBox(height: 1.5.h),
-                TextField(
-                  controller: vehicleCtrl,
-                  style: TextStyle(fontSize: 15.sp),
-                  decoration: InputDecoration(
-                    labelText: 'Vehicle Model',
-                    labelStyle: TextStyle(fontSize: 14.sp),
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                SizedBox(height: 1.5.h),
-                TextField(
-                  controller: vehicleNoCtrl,
-                  style: TextStyle(fontSize: 15.sp),
-                  decoration: InputDecoration(
-                    labelText: 'Vehicle Plate Number',
-                    labelStyle: TextStyle(fontSize: 14.sp),
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                SizedBox(height: 1.5.h),
-                TextField(
-                  controller: pinCodesCtrl,
-                  style: TextStyle(fontSize: 15.sp),
-                  decoration: InputDecoration(
-                    labelText: 'Operational Pin Codes',
-                    labelStyle: TextStyle(fontSize: 14.sp),
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                SizedBox(height: 2.5.h),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: () async {
-                      if (nameCtrl.text.trim().isEmpty || phoneCtrl.text.trim().isEmpty) return;
-                      Navigator.pop(ctx);
-                      final partnerId = SessionService.currentUser?.id ?? 'partner-001';
-                      final ok = await _ridersRepo.addRider(
-                        name: nameCtrl.text.trim(),
-                        phone: phoneCtrl.text.trim(),
-                        email: '${phoneCtrl.text.trim()}@camsik.in',
-                        partnerId: partnerId,
-                        vehicle: vehicleCtrl.text.trim(),
-                        vehicleNumber: vehicleNoCtrl.text.trim(),
-                        pinCodes: pinCodesCtrl.text.trim(),
-                      );
-                      if (mounted && ok) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: AppColors.success,
-                            content: Text('Rider added successfully!', style: TextStyle(fontSize: 14.sp)),
-                          ),
-                        );
-                        _loadRiders();
-                      }
-                    },
-                    child: Text(
-                      'Save & Authorize Rider',
-                      style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+  Future<void> _openAddRiderScreen() async {
+    final added = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const AddRiderScreen()),
     );
+    if (added == true) {
+      _loadRiders();
+    }
   }
 
   @override
@@ -212,28 +67,44 @@ class _PartnerRidersScreenState extends State<PartnerRidersScreen> {
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
-          'Store Delivery Riders',
+          'Store Delivery Fleet',
           style: TextStyle(
             fontSize: 17.sp,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w900,
             color: const Color(0xFF0F172A),
           ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.person_add_alt_1_rounded, color: AppColors.primary),
-            onPressed: _showAddRiderSheet,
+          Padding(
+            padding: EdgeInsets.only(right: 3.w),
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: Text(
+                'Add Rider',
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 0.8.h),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: _openAddRiderScreen,
+            ),
           ),
         ],
       ),
       body: RefreshIndicator(
+        color: AppColors.primary,
         onRefresh: _loadRiders,
         child: _loading
             ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
             : ListView(
                 padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+                physics: const AlwaysScrollableScrollPhysics(),
                 children: [
                   // Filter Chips
                   SingleChildScrollView(
@@ -251,20 +122,49 @@ class _PartnerRidersScreenState extends State<PartnerRidersScreen> {
 
                   if (filtered.isEmpty)
                     Container(
-                      padding: EdgeInsets.all(6.w),
+                      padding: EdgeInsets.symmetric(vertical: 4.h, horizontal: 4.w),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
                       child: Center(
                         child: Column(
                           children: [
-                            const Icon(Icons.two_wheeler_rounded, size: 40, color: Color(0xFF94A3B8)),
-                            SizedBox(height: 1.h),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF1F5F9),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.two_wheeler_rounded, size: 38, color: Color(0xFF94A3B8)),
+                            ),
+                            SizedBox(height: 1.5.h),
                             Text(
-                              'No delivery riders found.',
+                              'No store riders in this category',
+                              style: TextStyle(
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                            SizedBox(height: 0.5.h),
+                            Text(
+                              'Add your delivery executives to assign them doorstep inspections & device pick-up tasks.',
+                              textAlign: TextAlign.center,
                               style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
+                            ),
+                            SizedBox(height: 2.h),
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.person_add_rounded, size: 18),
+                              label: Text('Onboard New Rider', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.2.h),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              ),
+                              onPressed: _openAddRiderScreen,
                             ),
                           ],
                         ),
@@ -287,13 +187,13 @@ class _PartnerRidersScreenState extends State<PartnerRidersScreen> {
         label: Text(label),
         labelStyle: TextStyle(
           fontSize: 14.sp,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
           color: isSelected ? Colors.white : const Color(0xFF475569),
         ),
         selectedColor: AppColors.primary,
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           side: BorderSide(
             color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
           ),
@@ -309,11 +209,18 @@ class _PartnerRidersScreenState extends State<PartnerRidersScreen> {
 
     return Container(
       margin: EdgeInsets.only(bottom: 1.5.h),
-      padding: EdgeInsets.all(3.5.w),
+      padding: EdgeInsets.all(4.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,11 +231,11 @@ class _PartnerRidersScreenState extends State<PartnerRidersScreen> {
               Row(
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 46,
+                    height: 46,
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: const Icon(Icons.two_wheeler_rounded, color: AppColors.primary, size: 24),
                   ),
@@ -339,11 +246,12 @@ class _PartnerRidersScreenState extends State<PartnerRidersScreen> {
                       Text(
                         rider.name,
                         style: TextStyle(
-                          fontSize: 15.sp,
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF0F172A),
                         ),
                       ),
+                      SizedBox(height: 0.2.h),
                       Text(
                         '★ ${rider.rating} Rating • ${rider.vehicle} (${rider.vehicleNumber})',
                         style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
@@ -353,7 +261,7 @@ class _PartnerRidersScreenState extends State<PartnerRidersScreen> {
                 ],
               ),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 2.5.w, vertical: 0.4.h),
+                padding: EdgeInsets.symmetric(horizontal: 2.8.w, vertical: 0.5.h),
                 decoration: BoxDecoration(
                   color: isOnline
                       ? const Color(0xFFECFDF5)
@@ -379,25 +287,28 @@ class _PartnerRidersScreenState extends State<PartnerRidersScreen> {
             ],
           ),
           SizedBox(height: 1.5.h),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          SizedBox(height: 1.2.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Today Pickups: ${rider.todayPickups} | Completed: ${rider.todayDeliveries}',
-                style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
+                style: TextStyle(fontSize: 14.sp, color: const Color(0xFF475569), fontWeight: FontWeight.w500),
               ),
               InkWell(
                 onTap: () => _makeCall(rider.phone),
+                borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 0.6.h),
+                  padding: EdgeInsets.symmetric(horizontal: 3.5.w, vertical: 0.8.h),
                   decoration: BoxDecoration(
                     color: const Color(0xFF059669),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.phone_in_talk_rounded, color: Colors.white, size: 14),
-                      SizedBox(width: 1.w),
+                      const Icon(Icons.phone_in_talk_rounded, color: Colors.white, size: 15),
+                      SizedBox(width: 1.5.w),
                       Text(
                         'Call Rider',
                         style: TextStyle(fontSize: 14.sp, color: Colors.white, fontWeight: FontWeight.bold),
