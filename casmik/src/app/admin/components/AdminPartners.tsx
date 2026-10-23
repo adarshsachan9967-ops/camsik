@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { partners, Partner } from '@/lib/casmikData';
-import { Search, Eye, CheckCircle, XCircle, Star, FileText, Shield, Clock, AlertTriangle, Plus, Edit2, Key, Percent, DollarSign, Building, Phone, Mail, MapPin, Check, EyeOff } from 'lucide-react';
+import { Search, Eye, CheckCircle, XCircle, Star, FileText, Shield, Clock, AlertTriangle, Plus, Edit2, Key, Percent, DollarSign, Building, Phone, Mail, MapPin, Check, EyeOff, Copy, Layers, CreditCard } from 'lucide-react';
 
 const docLabels = [
   { key: 'aadhar', label: 'Aadhaar Card', icon: '🪪' },
@@ -48,6 +48,17 @@ export default function AdminPartners() {
   const [selected, setSelected] = useState<Partner | null>(null);
   const [docModal, setDocModal] = useState<Partner | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'unapproved'>('all');
+  const [showSelectedPassword, setShowSelectedPassword] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, key: string) => {
+    if (!text) return;
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(null), 2000);
+    }
+  };
 
   // Add / Edit Modal state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -97,6 +108,12 @@ export default function AdminPartners() {
   const handleApprove = async (id: string) => {
     const updated = partnerList.map(p => p.id === id ? { ...p, status: 'active' as const } : p);
     savePartnersToStorage(updated);
+    if (selected && selected.id === id) {
+      setSelected({ ...selected, status: 'active' });
+    }
+    if (docModal && docModal.id === id) {
+      setDocModal({ ...docModal, status: 'active' });
+    }
     try {
       await fetch('/api/partners', {
         method: 'PATCH',
@@ -111,6 +128,12 @@ export default function AdminPartners() {
   const handleSuspend = async (id: string) => {
     const updated = partnerList.map(p => p.id === id ? { ...p, status: 'suspended' as const } : p);
     savePartnersToStorage(updated);
+    if (selected && selected.id === id) {
+      setSelected({ ...selected, status: 'suspended' });
+    }
+    if (docModal && docModal.id === id) {
+      setDocModal({ ...docModal, status: 'suspended' });
+    }
     try {
       await fetch('/api/partners', {
         method: 'PATCH',
@@ -125,6 +148,12 @@ export default function AdminPartners() {
   const handleReject = async (id: string) => {
     const updated = partnerList.map(p => p.id === id ? { ...p, status: 'suspended' as const } : p);
     savePartnersToStorage(updated);
+    if (selected && selected.id === id) {
+      setSelected({ ...selected, status: 'suspended' });
+    }
+    if (docModal && docModal.id === id) {
+      setDocModal({ ...docModal, status: 'suspended' });
+    }
     try {
       await fetch('/api/partners', {
         method: 'PATCH',
@@ -760,53 +789,347 @@ export default function AdminPartners() {
         </div>
       )}
 
-      {/* Partner Detail View Modal */}
+      {/* Partner Comprehensive Detail View Modal */}
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelected(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 z-10 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center gap-4 mb-5">
-              <img src={selected.avatar} alt={selected.name} className="w-16 h-16 rounded-2xl object-cover" />
-              <div>
-                <h3 className="text-lg font-black text-gray-900">{selected.storeName}</h3>
-                <p className="text-sm text-gray-500">{selected.name} · {selected.phone}</p>
-                <p className="text-xs text-gray-400">{selected.email}</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {[
-                { label: 'Total Orders', value: selected.totalOrders },
-                { label: 'Completed', value: selected.completedOrders },
-                { label: 'Total Earnings', value: `₹${((selected.totalEarnings || 0) / 1000).toFixed(0)}K` },
-                { label: 'Pending Payout', value: `₹${((selected.pendingPayout || 0) / 1000).toFixed(1)}K` },
-                { label: 'Available Balance', value: `₹${((selected.availableBalance || 0) / 1000).toFixed(0)}K` },
-                { label: 'Admin Commission', value: selected.commissionType === 'fixed' ? `₹${selected.commission}` : `${selected.commission}%` },
-              ].map(item => (
-                <div key={item.label} className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-500">{item.label}</p>
-                  <p className="text-sm font-black text-gray-900">{item.value}</p>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelected(null)} />
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-6 z-10 max-h-[92vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-start justify-between pb-4 border-b border-gray-100 mb-5">
+              <div className="flex items-center gap-4">
+                <img src={selected.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80'} alt={selected.name} className="w-16 h-16 rounded-2xl object-cover border border-gray-100 shadow-sm" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-black text-gray-900">{selected.storeName}</h3>
+                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                      selected.status === 'active' ? 'bg-green-100 text-green-700 border border-green-200' :
+                      selected.status === 'pending' ? 'bg-amber-100 text-amber-700 border border-amber-200 animate-pulse' :
+                      'bg-red-100 text-red-700 border border-red-200'
+                    }`}>
+                      {selected.status === 'pending' ? '⏳ Pending Approval' : selected.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-600 mt-0.5">{selected.name} · <span className="font-mono text-xs text-gray-400">ID: {selected.id}</span></p>
+                  <p className="text-xs text-gray-400 mt-0.5">Partner since: {selected.joinedAt || 'Recently'}</p>
                 </div>
-              ))}
+              </div>
+              <button onClick={() => setSelected(null)} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700">✕</button>
             </div>
-            <div className="bg-gray-50 rounded-xl p-3 mb-4">
-              <p className="text-xs font-bold text-gray-500 mb-1">Service PIN Codes</p>
-              <div className="flex flex-wrap gap-1.5">
-                {selected.pinCodes?.map(pin => (
-                  <span key={pin} className="text-xs font-bold px-2 py-0.5 bg-primary/10 text-primary rounded-lg">{pin}</span>
+
+            <div className="space-y-4">
+              {/* 1. Contact & Location Information */}
+              <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-3">
+                <h4 className="text-xs font-extrabold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Building size={14} className="text-primary" />
+                  <span>Store Contact & Physical Address</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="bg-white p-2.5 rounded-xl border border-gray-200/70 flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] text-gray-400 font-medium">Primary Mobile Phone</p>
+                      <p className="font-bold text-gray-900 text-sm mt-0.5">{selected.phone}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(selected.phone, 'phone')}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
+                      title="Copy Phone"
+                    >
+                      {copiedKey === 'phone' ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                    </button>
+                  </div>
+
+                  <div className="bg-white p-2.5 rounded-xl border border-gray-200/70 flex items-center justify-between">
+                    <div className="min-w-0 pr-2">
+                      <p className="text-[11px] text-gray-400 font-medium">Email Address</p>
+                      <p className="font-bold text-gray-900 text-sm mt-0.5 truncate">{selected.email}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(selected.email, 'email')}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors flex-shrink-0"
+                      title="Copy Email"
+                    >
+                      {copiedKey === 'email' ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-white p-2.5 rounded-xl border border-gray-200/70 text-xs">
+                  <p className="text-[11px] text-gray-400 font-medium">Store Physical Address</p>
+                  <p className="font-semibold text-gray-800 mt-0.5">
+                    {selected.address || 'Address not entered'}
+                  </p>
+                  <p className="text-gray-500 text-xs mt-0.5">
+                    City: <span className="font-bold text-gray-800">{selected.city || 'N/A'}</span> · State: <span className="font-bold text-gray-800">{selected.state || 'N/A'}</span>
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-[11px] font-bold text-gray-500 mb-1.5">Service PIN Codes Handled</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selected.pinCodes && selected.pinCodes.length > 0 ? (
+                      selected.pinCodes.map(pin => (
+                        <span key={pin} className="text-xs font-bold px-2.5 py-0.5 bg-primary/10 text-primary rounded-lg border border-primary/20">
+                          📍 {pin}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-gray-400">None specified</span>
+                    )}
+                  </div>
+                </div>
+
+                {selected.categories && selected.categories.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-bold text-gray-500 mb-1.5">Allowed Equipment Categories</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selected.categories.map(cat => (
+                        <span key={cat} className="text-xs font-semibold px-2 py-0.5 bg-gray-200 text-gray-700 rounded-lg">
+                          🏷️ {cat.replace('cat-', '').toUpperCase()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. KYC & Business Tax Identifiers */}
+              <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-3">
+                <h4 className="text-xs font-extrabold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Shield size={14} className="text-primary" />
+                  <span>Business Tax & Identification (KYC)</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  {/* PAN Card */}
+                  <div className="bg-white p-3 rounded-xl border border-gray-200/70">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-bold text-gray-500">📋 Business PAN Number</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                        selected.documents?.panNumber ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {selected.documents?.panNumber ? 'Provided' : 'Pending'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-black text-sm text-gray-900 tracking-wider">
+                        {selected.documents?.panNumber || 'NOT SUBMITTED'}
+                      </span>
+                      {selected.documents?.panNumber && (
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(selected.documents?.panNumber || '', 'pan')}
+                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                          title="Copy PAN"
+                        >
+                          {copiedKey === 'pan' ? <Check size={13} className="text-green-600" /> : <Copy size={13} />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* GSTIN */}
+                  <div className="bg-white p-3 rounded-xl border border-gray-200/70">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-bold text-gray-500">📄 GST Number (GSTIN)</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                        selected.documents?.gstNumber ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'
+                      }`}>
+                        {selected.documents?.gstNumber ? 'Provided' : 'Optional'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-black text-sm text-gray-900 tracking-wider truncate">
+                        {selected.documents?.gstNumber || 'NOT REGISTERED'}
+                      </span>
+                      {selected.documents?.gstNumber && (
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(selected.documents?.gstNumber || '', 'gst')}
+                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 flex-shrink-0"
+                          title="Copy GST"
+                        >
+                          {copiedKey === 'gst' ? <Check size={13} className="text-green-600" /> : <Copy size={13} />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Settlement Bank Account Details */}
+              <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-3">
+                <h4 className="text-xs font-extrabold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <CreditCard size={14} className="text-primary" />
+                  <span>Settlement Bank Account (For Wallet Payouts)</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="bg-white p-3 rounded-xl border border-gray-200/70">
+                    <p className="text-[11px] text-gray-400 font-medium">Bank Account Number</p>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="font-mono font-black text-sm text-gray-900 tracking-wider">
+                        {selected.documents?.accountNumber || 'NOT PROVIDED'}
+                      </span>
+                      {selected.documents?.accountNumber && (
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(selected.documents?.accountNumber || '', 'acc')}
+                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                          title="Copy Account No"
+                        >
+                          {copiedKey === 'acc' ? <Check size={13} className="text-green-600" /> : <Copy size={13} />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-gray-200/70">
+                    <p className="text-[11px] text-gray-400 font-medium">Bank IFSC Code</p>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="font-mono font-black text-sm text-gray-900 tracking-wider">
+                        {selected.documents?.ifscCode || 'NOT PROVIDED'}
+                      </span>
+                      {selected.documents?.ifscCode && (
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(selected.documents?.ifscCode || '', 'ifsc')}
+                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                          title="Copy IFSC Code"
+                        >
+                          {copiedKey === 'ifsc' ? <Check size={13} className="text-green-600" /> : <Copy size={13} />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Login Credentials for Partner Access */}
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <Key size={14} className="text-primary" />
+                    <span>Partner App & Web Login Credentials</span>
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setShowSelectedPassword(!showSelectedPassword)}
+                    className="flex items-center gap-1 text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                  >
+                    {showSelectedPassword ? <EyeOff size={12} /> : <Eye size={12} />}
+                    {showSelectedPassword ? 'Hide Password' : 'Show Password'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="bg-white p-2.5 rounded-xl border border-primary/20">
+                    <p className="text-[11px] text-gray-500 font-semibold">Login Identifier</p>
+                    <p className="font-mono font-bold text-gray-900 mt-0.5">{selected.phone || selected.email}</p>
+                  </div>
+
+                  <div className="bg-white p-2.5 rounded-xl border border-primary/20 flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] text-gray-500 font-semibold">Account Password</p>
+                      <p className="font-mono font-bold text-gray-900 mt-0.5">
+                        {selected.password ? (showSelectedPassword ? selected.password : '••••••••') : 'No password set'}
+                      </p>
+                    </div>
+                    {selected.password && (
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(selected.password || '', 'pwd')}
+                        className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-primary cursor-pointer"
+                        title="Copy Password"
+                      >
+                        {copiedKey === 'pwd' ? <Check size={13} className="text-green-600" /> : <Copy size={13} />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Orders & Financial Performance */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                {[
+                  { label: 'Total Orders', value: selected.totalOrders || 0 },
+                  { label: 'Completed Orders', value: selected.completedOrders || 0 },
+                  { label: 'Total Earnings', value: `₹${((selected.totalEarnings || 0) / 1000).toFixed(0)}K` },
+                  { label: 'Pending Payout', value: `₹${((selected.pendingPayout || 0) / 1000).toFixed(1)}K` },
+                  { label: 'Available Balance', value: `₹${((selected.availableBalance || 0) / 1000).toFixed(0)}K` },
+                  { label: 'Admin Commission', value: selected.commissionType === 'fixed' ? `₹${selected.commission}` : `${selected.commission}%` },
+                ].map(item => (
+                  <div key={item.label} className="bg-gray-50 rounded-xl p-2.5 border border-gray-100">
+                    <p className="text-[11px] text-gray-400 font-medium">{item.label}</p>
+                    <p className="text-sm font-black text-gray-900 mt-0.5">{item.value}</p>
+                  </div>
                 ))}
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
+
+            {/* Footer Action Buttons */}
+            <div className="flex flex-wrap gap-2.5 pt-5 mt-5 border-t border-gray-100">
+              {selected.status === 'pending' && (
+                <>
+                  <button
+                    onClick={() => {
+                      handleApprove(selected.id);
+                    }}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-green-500 text-white text-sm font-bold shadow-md hover:bg-green-600 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <CheckCircle size={16} /> Approve Partner
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleReject(selected.id);
+                    }}
+                    className="py-2.5 px-4 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <XCircle size={16} /> Reject
+                  </button>
+                </>
+              )}
+
+              {selected.status === 'active' && (
+                <button
+                  onClick={() => {
+                    handleSuspend(selected.id);
+                  }}
+                  className="py-2.5 px-4 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <XCircle size={15} /> Suspend Partner
+                </button>
+              )}
+
+              {selected.status === 'suspended' && (
+                <button
+                  onClick={() => {
+                    handleApprove(selected.id);
+                  }}
+                  className="py-2.5 px-4 rounded-xl bg-green-500 text-white text-sm font-bold hover:bg-green-600 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <CheckCircle size={15} /> Re-activate Partner
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   openEditModal(selected);
                   setSelected(null);
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 flex items-center justify-center gap-1.5"
+                className="py-2.5 px-4 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-bold hover:bg-primary/10 flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Edit2 size={14} /> Edit & Commission
               </button>
-              <button onClick={() => setSelected(null)} className="py-2.5 px-4 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50">Close</button>
+
+              <button
+                onClick={() => setSelected(null)}
+                className="py-2.5 px-4 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
@@ -816,33 +1139,53 @@ export default function AdminPartners() {
       {docModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDocModal(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 z-10">
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 z-10 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-lg font-black text-gray-900">Document Verification</h3>
                 <p className="text-sm text-gray-500">{docModal.storeName} · {docModal.name}</p>
               </div>
-              <button onClick={() => setDocModal(null)} className="p-2 rounded-xl hover:bg-gray-100">✕</button>
+              <button onClick={() => setDocModal(null)} className="p-2 rounded-xl hover:bg-gray-100 cursor-pointer">✕</button>
             </div>
 
             <div className="space-y-3 mb-5">
               {docLabels.map(doc => {
                 const docs = docModal.documents || { aadhar: true, pan: true, gst: true, shopLicense: true, bankProof: true };
                 const submitted = docs[doc.key as keyof typeof docs];
+
+                let detailValue = '';
+                if (doc.key === 'pan') {
+                  detailValue = docs.panNumber ? `PAN: ${docs.panNumber}` : '';
+                } else if (doc.key === 'gst') {
+                  detailValue = docs.gstNumber ? `GSTIN: ${docs.gstNumber}` : '';
+                } else if (doc.key === 'bankProof') {
+                  detailValue = docs.accountNumber ? `A/C: ${docs.accountNumber} · IFSC: ${docs.ifscCode || 'N/A'}` : '';
+                } else if (doc.key === 'aadhar') {
+                  detailValue = docs.aadharNumber ? `Aadhaar: ${docs.aadharNumber}` : '';
+                }
+
                 return (
-                  <div key={doc.key} className={`flex items-center justify-between p-3 rounded-xl border ${submitted ? 'border-green-100 bg-green-50' : 'border-red-100 bg-red-50'}`}>
+                  <div key={doc.key} className={`flex items-center justify-between p-3.5 rounded-2xl border ${submitted ? 'border-green-100 bg-green-50/60' : 'border-red-100 bg-red-50/60'}`}>
                     <div className="flex items-center gap-3">
-                      <span className="text-xl">{doc.icon}</span>
+                      <span className="text-2xl">{doc.icon}</span>
                       <div>
                         <p className="text-sm font-bold text-gray-900">{doc.label}</p>
-                        <p className="text-xs text-gray-500">{submitted ? 'Document verified & on file' : 'Not submitted yet'}</p>
+                        {detailValue ? (
+                          <p className="text-xs font-mono font-bold text-primary">{detailValue}</p>
+                        ) : (
+                          <p className="text-xs text-gray-500">{submitted ? 'Document verified & on file' : 'Not submitted yet'}</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {submitted ? (
-                        <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-lg flex items-center gap-1"><CheckCircle size={11} /> Verified</span>
+                        <span className="text-xs font-bold text-green-700 bg-green-100 px-2.5 py-1 rounded-xl flex items-center gap-1 border border-green-200">
+                          <CheckCircle size={12} /> Verified
+                        </span>
                       ) : (
-                        <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded-lg flex items-center gap-1"><Clock size={11} /> Pending</span>
+                        <span className="text-xs font-bold text-red-600 bg-red-100 px-2.5 py-1 rounded-xl flex items-center gap-1 border border-red-200">
+                          <Clock size={12} /> Pending
+                        </span>
                       )}
                     </div>
                   </div>
@@ -850,10 +1193,10 @@ export default function AdminPartners() {
               })}
             </div>
 
-            <div className="bg-yellow-50 rounded-xl p-3 mb-5 border border-yellow-100">
+            <div className="bg-yellow-50 rounded-2xl p-3.5 mb-5 border border-yellow-100">
               <p className="text-xs font-bold text-yellow-800 mb-1">⚠️ Verification & Commission Status</p>
               <p className="text-xs text-yellow-700">
-                Partner commission is configured at <span className="font-bold text-gray-900">{docModal.commissionType === 'fixed' ? `₹${docModal.commission}` : `${docModal.commission}%`}</span>. Credentials can be managed in Edit.
+                Partner commission is configured at <span className="font-bold text-gray-900">{docModal.commissionType === 'fixed' ? `₹${docModal.commission}` : `${docModal.commission}%`}</span>. Partner password and profile can be inspected in the Detail View.
               </p>
             </div>
 
@@ -861,17 +1204,17 @@ export default function AdminPartners() {
               {docModal.status === 'pending' && (
                 <>
                   <button onClick={() => { handleReject(docModal.id); setDocModal(null); }}
-                    className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 flex items-center justify-center gap-2">
+                    className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 flex items-center justify-center gap-2 cursor-pointer">
                     <XCircle size={14} /> Reject
                   </button>
                   <button onClick={() => { handleApprove(docModal.id); setDocModal(null); }}
-                    className="flex-1 py-2.5 rounded-xl bg-green-500 text-white text-sm font-bold hover:bg-green-600 flex items-center justify-center gap-2">
+                    className="flex-1 py-2.5 rounded-xl bg-green-500 text-white text-sm font-bold hover:bg-green-600 flex items-center justify-center gap-2 cursor-pointer shadow-md">
                     <Shield size={14} /> Verify & Approve
                   </button>
                 </>
               )}
               {docModal.status !== 'pending' && (
-                <button onClick={() => setDocModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600">Close</button>
+                <button onClick={() => setDocModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-50">Close</button>
               )}
             </div>
           </div>
