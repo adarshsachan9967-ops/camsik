@@ -160,11 +160,21 @@ export default function AdminDelivery() {
   const handleApprove = (id: string) => {
     const updated = agents.map(a => a.id === id ? { ...a, approvalStatus: 'approved' as const } : a);
     saveAgentsToStorage(updated);
+    fetch('/api/delivery-agents', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, approvalStatus: 'approved' }),
+    }).catch(() => {});
   };
 
   const handleReject = (id: string) => {
     const updated = agents.map(a => a.id === id ? { ...a, approvalStatus: 'rejected' as const } : a);
     saveAgentsToStorage(updated);
+    fetch('/api/delivery-agents', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, approvalStatus: 'rejected' }),
+    }).catch(() => {});
   };
 
   const openAddModal = () => {
@@ -261,7 +271,26 @@ export default function AdminDelivery() {
         return a;
       });
       saveAgentsToStorage(updated);
+
+      fetch('/api/delivery-agents', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingAgent.id,
+          name: formName,
+          phone: formPhone,
+          email: formEmail,
+          city: formCity,
+          pinCodes: pinArray.length > 0 ? pinArray : editingAgent.pinCodes,
+          vehicle: formVehicle,
+          vehicleNumber: formVehicleNumber,
+          partnerId: formPartnerId || 'admin',
+          partnerName: selectedPartner ? selectedPartner.storeName : 'Admin Direct Fleet',
+          approvalStatus: formApprovalStatus,
+        }),
+      }).catch(err => console.warn('Sync admin rider update warning:', err));
     } else {
+      const targetPartner = formPartnerId || 'admin';
       const newAgent: DeliveryAgent = {
         id: `delivery-${Date.now()}`,
         name: formName,
@@ -288,6 +317,24 @@ export default function AdminDelivery() {
         documents: docPayload,
       };
       saveAgentsToStorage([newAgent, ...agents]);
+
+      fetch('/api/delivery-agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formName,
+          phone: formPhone,
+          email: formEmail,
+          city: formCity,
+          pinCodes: pinArray.length > 0 ? pinArray : ['110001'],
+          vehicle: formVehicle,
+          vehicleNumber: formVehicleNumber,
+          partnerId: targetPartner,
+          partnerName: selectedPartner ? selectedPartner.storeName : 'Admin Direct Fleet',
+          createdBy: 'admin',
+          approvalStatus: formApprovalStatus,
+        }),
+      }).catch(err => console.warn('Sync admin rider insert warning:', err));
     }
 
     setIsFormOpen(false);

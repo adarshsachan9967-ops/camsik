@@ -6,13 +6,15 @@ class CustomerModel {
   final String phone;
   final String email;
   final String city;
+  final String pinCode;
   final String address;
   final int orderCount;
   final double totalSpent;
   final String latestDevice;
   final String latestOrderType;
   final String latestOrderDate;
-  final String status; // vip, active, new
+  final String status; // vip, repeat, active
+  final List<PartnerOrder> orders;
 
   CustomerModel({
     required this.id,
@@ -20,6 +22,7 @@ class CustomerModel {
     required this.phone,
     required this.email,
     required this.city,
+    required this.pinCode,
     required this.address,
     required this.orderCount,
     required this.totalSpent,
@@ -27,27 +30,43 @@ class CustomerModel {
     required this.latestOrderType,
     required this.latestOrderDate,
     required this.status,
+    required this.orders,
   });
 
-  factory CustomerModel.fromOrders(String phone, List<PartnerOrder> userOrders) {
-    final first = userOrders.first;
-    final totalSpent = userOrders.fold<double>(0.0, (s, o) => s + (o.finalPrice > 0 ? o.finalPrice : o.quotedPrice));
-    final count = userOrders.length;
-    final status = count >= 3 ? 'vip' : (count >= 2 ? 'active' : 'new');
+  factory CustomerModel.fromOrders(String key, List<PartnerOrder> userOrders) {
+    final sortedOrders = List<PartnerOrder>.from(userOrders)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final first = sortedOrders.first;
+    final totalSpent = sortedOrders.fold<double>(
+      0.0,
+      (s, o) => s + (o.finalPrice > 0 ? o.finalPrice : o.quotedPrice),
+    );
+    final count = sortedOrders.length;
+    final isVip = totalSpent >= 50000 || count >= 3;
+    final isRepeat = count >= 2;
+    final status = isVip ? 'vip' : (isRepeat ? 'repeat' : 'active');
+
+    final cleanPhone = first.customerPhone.isNotEmpty ? first.customerPhone : key;
 
     return CustomerModel(
-      id: 'cust-${phone.replaceAll(RegExp(r'\D'), '').padLeft(6, '0').substring(phone.replaceAll(RegExp(r'\D'), '').length - 6)}',
-      name: first.customerName.isNotEmpty ? first.customerName : 'Customer',
-      phone: phone,
-      email: '${first.customerName.toLowerCase().replaceAll(' ', '')}@gmail.com',
-      city: first.city.isNotEmpty ? first.city : 'Mumbai',
-      address: first.customerAddress.isNotEmpty ? first.customerAddress : 'Verified Address',
+      id: 'cust-${first.id}',
+      name: first.customerName.trim().isNotEmpty ? first.customerName.trim() : 'Store Client',
+      phone: cleanPhone,
+      email: '',
+      city: first.city.trim().isNotEmpty
+          ? first.city.trim()
+          : (first.pinCode.trim().isNotEmpty ? 'PIN: ${first.pinCode.trim()}' : 'Client Region'),
+      pinCode: first.pinCode.trim(),
+      address: first.customerAddress.trim().isNotEmpty ? first.customerAddress.trim() : '',
       orderCount: count,
       totalSpent: totalSpent,
-      latestDevice: first.deviceName,
+      latestDevice: first.deviceName.isNotEmpty
+          ? first.deviceName
+          : (first.deviceModel.isNotEmpty ? first.deviceModel : 'Traded Device'),
       latestOrderType: first.type,
-      latestOrderDate: first.pickupDate,
+      latestOrderDate: first.pickupDate.isNotEmpty ? first.pickupDate : first.createdAt,
       status: status,
+      orders: sortedOrders,
     );
   }
 }
