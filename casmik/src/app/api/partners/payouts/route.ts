@@ -102,6 +102,52 @@ export async function GET(request: Request) {
 
     const mergedPayouts = [...dbPayouts, ...payoutsStore.filter((p) => p.partnerId === partner?.id)];
 
+    const commissionRate = Number(partner?.commission ?? 5.0);
+    const earnedCommission = Math.round((totalLiquidated * commissionRate) / 100);
+    const completedWithdrawals = mergedPayouts
+      .filter((p) => p.type === 'withdrawal' && p.status === 'completed')
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+    const pendingWithdrawals = mergedPayouts
+      .filter((p) => p.type === 'withdrawal' && p.status === 'pending')
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+    const computedAvailableBalance =
+      typeof partner?.availableBalance === 'number' && partner.availableBalance > 0
+        ? partner.availableBalance
+        : Math.max(0, earnedCommission - completedWithdrawals);
+
+    // Build combined transaction history: explicitly logged payouts + completed order disbursements
+    const orderPayouts: PayoutTransaction[] = completedOrders
+      .filter((o) => !mergedPayouts.some((p) => p.orderId === o.id || p.orderNumber === o.orderNumber))
+      .map((o) => {
+        const orderNum = o.orderNumber || o.id || 'ORDER';
+        const amount = Number(o.finalPrice || o.amount || o.quotedPrice || 0);
+        return {
+          id: `pay-ord-${o.id || orderNum}`,
+          partnerId: partner?.id || partnerId,
+          orderId: o.id,
+          orderNumber: orderNum,
+          amount,
+          type: 'spot_payout',
+          status: 'completed',
+          method: (o.payoutMethod || 'instant_upi') as any,
+          referenceId: o.payoutReferenceId || `IMPS${(orderNum.replace(/\D/g, '') || '961448').padStart(8, '0')}`,
+          accountDetails: {
+            bankName: o.bankName || 'Verified Customer Account',
+            accountNumber: o.accountNumber || (o.upiId ? o.upiId : '•••• 9468'),
+            ifscCode: o.ifscCode || 'PUNB0001234',
+            holderName: o.customerName || 'Customer',
+          },
+          notes: `Instant spot payout disbursed to ${o.customerName || 'customer'} for ${o.modelName || 'device'}`,
+          createdAt: o.paidAt || o.updatedAt || o.createdAt || new Date().toISOString(),
+        };
+      });
+
+    const allTransactions = [...mergedPayouts, ...orderPayouts].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
     const bankDetails = {
       bankName: partner?.documents?.bankName || partner?.bankName || 'Verified Bank Account',
       accountNumber: partner?.documents?.accountNumber
@@ -118,16 +164,19 @@ export async function GET(request: Request) {
         partnerId: partner?.id || partnerId,
         partnerName: partner?.name,
         storeName: partner?.storeName,
-        availableBalance: partner?.availableBalance ?? 0,
+        availableBalance: computedAvailableBalance,
         totalEarnings: totalLiquidated,
-        pendingPayout: partner?.pendingPayout ?? 0,
+        totalCommissionEarned: earnedCommission,
+        commissionRate,
+        pendingPayout: pendingWithdrawals,
         bankDetails,
       },
-      payouts: mergedPayouts,
+      payouts: allTransactions,
       stats: {
         totalLiquidated,
+        commissionEarned: earnedCommission,
         spotPayoutsCount: completedOrders.length,
-        pendingApprovalCount: mergedPayouts.filter((p) => p.status === 'pending').length,
+        pendingApprovalCount: allTransactions.filter((p) => p.status === 'pending').length,
       },
       timestamp: new Date().toISOString(),
     });

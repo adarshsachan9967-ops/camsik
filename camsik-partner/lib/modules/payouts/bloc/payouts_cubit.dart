@@ -45,7 +45,7 @@ class PayoutsCubit extends Cubit<PayoutsState> {
       double floatBalance = walletData?.availableBalance ??
           (user?.availableBalance != null && user!.availableBalance > 0
               ? user.availableBalance
-              : 42000.0);
+              : 0.0);
 
       // Refresh user profile if available
       final fresh = await _partnerRepository.fetchPartnerProfile(partnerId);
@@ -122,7 +122,7 @@ class PayoutsCubit extends Cubit<PayoutsState> {
     final user = SessionService.currentUser;
     final floatBalance = current is PayoutsLoaded
         ? current.floatBalance
-        : (user?.availableBalance ?? 42000.0);
+        : (user?.availableBalance ?? 0.0);
     final completedOrders = allOrders.filterCompleted();
     final totalDisbursed =
         completedOrders.fold<double>(0.0, (s, o) => s + o.finalPrice);

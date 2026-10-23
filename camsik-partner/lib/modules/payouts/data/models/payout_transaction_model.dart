@@ -1,10 +1,14 @@
 class PayoutTransactionModel {
   final String id;
   final String partnerId;
+  final String? orderId;
+  final String? orderNumber;
+  final String? customerName;
+  final String? modelName;
   final double amount;
-  final String type; // withdrawal, spot_credit, commission
+  final String type; // withdrawal, spot_payout, spot_credit, commission
   final String status; // completed, processing, pending
-  final String method; // bank_transfer, instant_upi
+  final String method; // bank_transfer, instant_upi, cash
   final String referenceId;
   final String bankName;
   final String accountNumber;
@@ -16,6 +20,10 @@ class PayoutTransactionModel {
   PayoutTransactionModel({
     required this.id,
     required this.partnerId,
+    this.orderId,
+    this.orderNumber,
+    this.customerName,
+    this.modelName,
     required this.amount,
     required this.type,
     required this.status,
@@ -34,6 +42,10 @@ class PayoutTransactionModel {
     return PayoutTransactionModel(
       id: json['id']?.toString() ?? '',
       partnerId: json['partnerId']?.toString() ?? '',
+      orderId: json['orderId']?.toString(),
+      orderNumber: json['orderNumber']?.toString(),
+      customerName: json['customerName']?.toString() ?? acc?['holderName']?.toString(),
+      modelName: json['modelName']?.toString(),
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       type: json['type']?.toString() ?? 'withdrawal',
       status: json['status']?.toString() ?? 'completed',
@@ -51,6 +63,10 @@ class PayoutTransactionModel {
   Map<String, dynamic> toJson() => {
     'id': id,
     'partnerId': partnerId,
+    'orderId': orderId,
+    'orderNumber': orderNumber,
+    'customerName': customerName,
+    'modelName': modelName,
     'amount': amount,
     'type': type,
     'status': status,
@@ -71,6 +87,8 @@ class PartnerWalletData {
   final String storeName;
   final double availableBalance;
   final double totalEarnings;
+  final double totalCommissionEarned;
+  final double commissionRate;
   final double pendingPayout;
   final String bankName;
   final String accountNumber;
@@ -85,6 +103,8 @@ class PartnerWalletData {
     required this.storeName,
     required this.availableBalance,
     required this.totalEarnings,
+    this.totalCommissionEarned = 0.0,
+    this.commissionRate = 5.0,
     required this.pendingPayout,
     required this.bankName,
     required this.accountNumber,
@@ -99,12 +119,19 @@ class PartnerWalletData {
     final bank = wallet['bankDetails'] is Map ? wallet['bankDetails'] as Map : null;
     final payoutsList = json['payouts'] is List ? json['payouts'] as List : [];
 
+    final totalEarnings = (wallet['totalEarnings'] as num?)?.toDouble() ?? 0.0;
+    final commissionRate = (wallet['commissionRate'] as num?)?.toDouble() ?? 5.0;
+    final totalCommissionEarned = (wallet['totalCommissionEarned'] as num?)?.toDouble() ??
+        ((totalEarnings * commissionRate) / 100);
+
     return PartnerWalletData(
       partnerId: wallet['partnerId']?.toString() ?? '',
       partnerName: wallet['partnerName']?.toString() ?? 'Store Partner',
       storeName: wallet['storeName']?.toString() ?? 'Camsik Certified Store',
       availableBalance: (wallet['availableBalance'] as num?)?.toDouble() ?? 0.0,
-      totalEarnings: (wallet['totalEarnings'] as num?)?.toDouble() ?? 0.0,
+      totalEarnings: totalEarnings,
+      totalCommissionEarned: totalCommissionEarned,
+      commissionRate: commissionRate,
       pendingPayout: (wallet['pendingPayout'] as num?)?.toDouble() ?? 0.0,
       bankName: bank?['bankName']?.toString() ?? 'HDFC Bank',
       accountNumber: bank?['accountNumber']?.toString() ?? '•••• 4892',
