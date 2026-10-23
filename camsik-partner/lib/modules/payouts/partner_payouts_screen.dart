@@ -622,7 +622,7 @@ class _PayoutsViewState extends State<_PayoutsView> {
           final commissionEarned = wallet?.totalCommissionEarned ??
               (state.totalDisbursed * ((wallet?.commissionRate ?? 5.0) / 100));
 
-          final List<PayoutTransactionModel> allTxns = state.transactions.isNotEmpty
+          final List<PayoutTransactionModel> rawTxns = state.transactions.isNotEmpty
               ? state.transactions
               : completedOrders.map((o) {
                   return PayoutTransactionModel(
@@ -645,6 +645,15 @@ class _PayoutsViewState extends State<_PayoutsView> {
                     createdAt: o.pickupDate,
                   );
                 }).toList();
+
+          final seenKeys = <String>{};
+          final List<PayoutTransactionModel> allTxns = [];
+          for (final t in rawTxns) {
+            final key = t.referenceId.isNotEmpty ? t.referenceId : t.id;
+            if (key.isNotEmpty && seenKeys.contains(key)) continue;
+            if (key.isNotEmpty) seenKeys.add(key);
+            allTxns.add(t);
+          }
 
           final filteredTxns = allTxns.where((t) {
             if (_selectedFilterIndex == 1) return t.type == 'spot_payout' || t.orderNumber != null;

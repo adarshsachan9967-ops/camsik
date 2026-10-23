@@ -47,7 +47,14 @@ export default function PartnerPayouts({ partner: propPartner }: PartnerPayoutsP
           setTotalEarnings(data.totalLiquidated ?? activePartner.totalEarnings ?? 0);
           setPendingPayout(data.pendingPayout ?? activePartner.pendingPayout ?? 0);
           if (Array.isArray(data.payouts)) {
-            setTransactions(data.payouts);
+            const seen = new Set<string>();
+            const deduped = data.payouts.filter((p: any) => {
+              const key = (p.referenceId || p.id || '').trim();
+              if (key && seen.has(key)) return false;
+              if (key) seen.add(key);
+              return true;
+            });
+            setTransactions(deduped);
           }
         }
       }

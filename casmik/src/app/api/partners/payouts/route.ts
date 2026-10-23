@@ -100,19 +100,43 @@ export async function GET(request: Request) {
       0
     );
 
-    const mergedPayouts = [...dbPayouts, ...payoutsStore.filter((p) => p.partnerId === partner?.id)];
+    // Deduplicate merged payouts by id, referenceId, and orderNumber/orderId
+    const seenTxnIds = new Set<string>();
+    const seenRefIds = new Set<string>();
+    const seenOrderKeys = new Set<string>();
+    const deduplicatedPayouts: PayoutTransaction[] = [];
+
+    // Prioritize DB payouts first, then in-memory store
+    const candidatePayouts = [...dbPayouts, ...payoutsStore.filter((p) => p.partnerId === partner?.id)];
+
+    for (const p of candidatePayouts) {
+      const idKey = (p.id || '').trim();
+      const refKey = (p.referenceId || '').trim();
+      const ordKey = (p.orderNumber || p.orderId || '').trim();
+
+      if (idKey && seenTxnIds.has(idKey)) continue;
+      if (refKey && seenRefIds.has(refKey)) continue;
+      // If it's a spot payout for an order, don't duplicate spot payouts for the same order
+      if (p.type === 'spot_payout' && ordKey && seenOrderKeys.has(ordKey)) continue;
+
+      if (idKey) seenTxnIds.add(idKey);
+      if (refKey) seenRefIds.add(refKey);
+      if (ordKey && p.type === 'spot_payout') seenOrderKeys.add(ordKey);
+
+      deduplicatedPayouts.push(p);
+    }
 
     const commissionRate = Number(partner?.commission ?? 5.0);
     const earnedCommission = Math.round((totalLiquidated * commissionRate) / 100);
-    const totalTopups = mergedPayouts
+    const totalTopups = deduplicatedPayouts
       .filter((p) => (p.type === 'float_topup' || p.type === 'add_funds') && p.status === 'completed')
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-    const completedWithdrawals = mergedPayouts
+    const completedWithdrawals = deduplicatedPayouts
       .filter((p) => p.type === 'withdrawal' && p.status === 'completed')
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-    const pendingWithdrawals = mergedPayouts
+    const pendingWithdrawals = deduplicatedPayouts
       .filter((p) => p.type === 'withdrawal' && p.status === 'pending')
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
@@ -122,33 +146,59 @@ export async function GET(request: Request) {
         : Math.max(0, (partner?.floatBalance ?? 0) + totalTopups - completedWithdrawals);
 
     // Build combined transaction history: explicitly logged payouts + completed order disbursements
-    const orderPayouts: PayoutTransaction[] = completedOrders
-      .filter((o) => !mergedPayouts.some((p) => p.orderId === o.id || p.orderNumber === o.orderNumber))
-      .map((o) => {
-        const orderNum = o.orderNumber || o.id || 'ORDER';
-        const amount = Number(o.finalPrice || o.amount || o.quotedPrice || 0);
-        return {
-          id: `pay-ord-${o.id || orderNum}`,
-          partnerId: partner?.id || partnerId,
-          orderId: o.id,
-          orderNumber: orderNum,
-          amount,
-          type: 'spot_payout',
-          status: 'completed',
-          method: (o.payoutMethod || 'instant_upi') as any,
-          referenceId: o.payoutReferenceId || `IMPS${(orderNum.replace(/\D/g, '') || '961448').padStart(8, '0')}`,
-          accountDetails: {
-            bankName: o.bankName || 'Verified Customer Account',
-            accountNumber: o.accountNumber || (o.upiId ? o.upiId : '•••• 9468'),
-            ifscCode: o.ifscCode || 'PUNB0001234',
-            holderName: o.customerName || 'Customer',
-          },
-          notes: `Instant spot payout disbursed to ${o.customerName || 'customer'} for ${o.modelName || 'device'}`,
-          createdAt: o.paidAt || o.updatedAt || o.createdAt || new Date().toISOString(),
-        };
+    const orderPayouts: PayoutTransaction[] = [];
+    for (const o of completedOrders) {
+      const oId = (o.id || o._id?.toString() || '').trim();
+      const oNum = (o.orderNumber || '').trim();
+
+      // Check if this order already has a spot payout in deduplicatedPayouts
+      const alreadyHasPayout = deduplicatedPayouts.some((p) => {
+        const pOrdId = (p.orderId || '').trim();
+        const pOrdNum = (p.orderNumber || '').trim();
+        return (
+          (oNum && (pOrdNum === oNum || pOrdId === oNum)) ||
+          (oId && (pOrdId === oId || pOrdNum === oId))
+        );
       });
 
-    const allTransactions = [...mergedPayouts, ...orderPayouts].sort(
+      if (alreadyHasPayout) continue;
+      if (oNum && seenOrderKeys.has(oNum)) continue;
+      if (oId && seenOrderKeys.has(oId)) continue;
+
+      const orderNum = oNum || oId || 'ORDER';
+      const amount = Number(o.finalPrice || o.amount || o.quotedPrice || 0);
+      const refId = o.payoutReferenceId || `IMPS${(orderNum.replace(/\D/g, '') || '961448').padStart(8, '0')}`;
+      const txnId = `pay-ord-${oId || orderNum}`;
+
+      if (seenTxnIds.has(txnId) || seenRefIds.has(refId)) continue;
+
+      seenTxnIds.add(txnId);
+      seenRefIds.add(refId);
+      if (oNum) seenOrderKeys.add(oNum);
+      if (oId) seenOrderKeys.add(oId);
+
+      orderPayouts.push({
+        id: txnId,
+        partnerId: partner?.id || partnerId,
+        orderId: oId,
+        orderNumber: orderNum,
+        amount,
+        type: 'spot_payout',
+        status: 'completed',
+        method: (o.payoutMethod || 'instant_upi') as any,
+        referenceId: refId,
+        accountDetails: {
+          bankName: o.bankName || 'Verified Customer Account',
+          accountNumber: o.accountNumber || (o.upiId ? o.upiId : '•••• 9468'),
+          ifscCode: o.ifscCode || 'PUNB0001234',
+          holderName: o.customerName || 'Customer',
+        },
+        notes: `Instant spot payout disbursed to ${o.customerName || 'customer'} for ${o.modelName || 'device'}`,
+        createdAt: o.paidAt || o.updatedAt || o.createdAt || new Date().toISOString(),
+      });
+    }
+
+    const allTransactions = [...deduplicatedPayouts, ...orderPayouts].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
@@ -339,7 +389,14 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     };
 
-    payoutsStore.unshift(newTxn);
+    const existingIdx = payoutsStore.findIndex(
+      (p) => (p.id && p.id === newTxn.id) || (p.referenceId && p.referenceId === refId)
+    );
+    if (existingIdx >= 0) {
+      payoutsStore[existingIdx] = newTxn;
+    } else {
+      payoutsStore.unshift(newTxn);
+    }
 
     // If orderId is provided, mark order as completed & paid in MongoDB
     if (orderId && db) {
