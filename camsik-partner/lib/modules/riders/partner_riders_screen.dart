@@ -34,7 +34,11 @@ class _PartnerRidersScreenState extends State<PartnerRidersScreen> {
   Future<void> _loadData() async {
     setState(() => _loading = true);
     final partner = SessionService.currentUser;
-    final partnerId = partner?.id.isNotEmpty == true ? partner!.id : 'partner-001';
+    final partnerId = partner?.id ?? '';
+    if (partnerId.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
 
     try {
       final results = await Future.wait([

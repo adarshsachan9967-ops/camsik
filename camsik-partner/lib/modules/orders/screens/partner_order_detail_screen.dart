@@ -74,7 +74,7 @@ class _PartnerOrderDetailScreenState extends State<PartnerOrderDetailScreen> {
     }
 
     final partner = SessionService.currentUser;
-    final partnerId = partner?.id ?? 'partner-001';
+    final partnerId = partner?.id ?? '';
     final storeName = partner?.storeName ?? 'Store Partner Direct';
     final partnerPhone = partner?.phone ?? '';
 
@@ -500,7 +500,7 @@ class _PartnerOrderDetailScreenState extends State<PartnerOrderDetailScreen> {
 
   Future<void> _showDisbursePayoutModal() async {
     final activeUser = SessionService.currentUser;
-    final partnerId = activeUser?.id ?? _order.partnerId ?? 'partner-001';
+    final partnerId = activeUser?.id ?? _order.partnerId ?? '';
     final amount = _order.finalPrice > 0 ? _order.finalPrice : _order.quotedPrice;
 
     // Payout Wallet Guard: partner must have sufficient wallet float before order completion
@@ -1710,8 +1710,10 @@ class _AssignRiderModalState extends State<_AssignRiderModal> {
   }
 
   Future<void> _fetch() async {
-    final partnerId = SessionService.currentUser?.id ?? 'partner-001';
-    final list = await _ridersRepo.fetchRiders(partnerId: partnerId);
+    final partnerId = SessionService.currentUser?.id ?? '';
+    final list = partnerId.isNotEmpty
+        ? await _ridersRepo.fetchRiders(partnerId: partnerId)
+        : <DeliveryAgentModel>[];
     if (mounted) {
       setState(() {
         _riders = list;

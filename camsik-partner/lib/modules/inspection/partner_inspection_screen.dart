@@ -439,7 +439,7 @@ class _WebInspectionFormState extends State<_WebInspectionForm> {
     if (confirm != true || !mounted) return;
 
     final partner = SessionService.currentUser;
-    final partnerId = partner?.id ?? 'partner-001';
+    final partnerId = partner?.id ?? '';
 
     // Payout Wallet Guard: partner must have sufficient wallet float before order completion
     final hasFunds = await PayoutWalletGuard.ensureSufficientBalance(

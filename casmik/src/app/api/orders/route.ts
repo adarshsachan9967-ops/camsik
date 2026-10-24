@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { orders as defaultOrders } from '@/lib/casmikData';
 import { notifyPartnerOrder } from '@/lib/partnerEvents';
+import { notifyDeliveryOrder } from '@/lib/deliveryEvents';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,25 +57,23 @@ export async function GET(request: Request) {
       const query = conditions.length > 0 ? { $and: conditions } : {};
 
       const dbOrders = await collection.find(query).sort({ createdAt: -1 }).limit(100).toArray();
-      if (dbOrders && dbOrders.length > 0) {
-        let results = dbOrders;
-        if (search) {
-          results = results.filter(
-            (o: any) =>
-              (o.orderNumber && o.orderNumber.toLowerCase().includes(search)) ||
-              (o.customerName && o.customerName.toLowerCase().includes(search)) ||
-              (o.customerPhone && o.customerPhone.includes(search)) ||
-              (o.deviceName && o.deviceName.toLowerCase().includes(search))
-          );
-        }
-
-        return NextResponse.json({
-          success: true,
-          orders: results,
-          source: 'mongodb',
-          total: results.length,
-        });
+      let results = dbOrders || [];
+      if (search) {
+        results = results.filter(
+          (o: any) =>
+            (o.orderNumber && o.orderNumber.toLowerCase().includes(search)) ||
+            (o.customerName && o.customerName.toLowerCase().includes(search)) ||
+            (o.customerPhone && o.customerPhone.includes(search)) ||
+            (o.deviceName && o.deviceName.toLowerCase().includes(search))
+        );
       }
+
+      return NextResponse.json({
+        success: true,
+        orders: results,
+        source: 'mongodb',
+        total: results.length,
+      });
     } catch (dbErr) {
       console.warn('MongoDB query warning, using seeded memory store:', dbErr);
     }
@@ -214,6 +213,10 @@ export async function POST(request: Request) {
     if (newOrder.partnerId) {
       notifyPartnerOrder(newOrder.partnerId, newOrder);
     }
+    const newRiderId = newOrder.deliveryAgentId || newOrder.assignedRiderId;
+    if (newRiderId) {
+      notifyDeliveryOrder(newRiderId, newOrder);
+    }
 
     return NextResponse.json({
       success: true,
@@ -350,6 +353,10 @@ export async function PATCH(request: Request) {
 
     if (updatedOrder.partnerId) {
       notifyPartnerOrder(updatedOrder.partnerId, updatedOrder);
+    }
+    const updatedRiderId = updatedOrder.deliveryAgentId || updatedOrder.assignedRiderId;
+    if (updatedRiderId) {
+      notifyDeliveryOrder(updatedRiderId, updatedOrder);
     }
 
     return NextResponse.json({

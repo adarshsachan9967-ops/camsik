@@ -38,7 +38,11 @@ class _PartnerCustomersScreenState extends State<PartnerCustomersScreen> {
   Future<void> _loadLiveOrders() async {
     setState(() => _isLoading = true);
     final partner = SessionService.currentUser;
-    final partnerId = partner?.id.isNotEmpty == true ? partner!.id : 'partner-001';
+    final partnerId = partner?.id ?? '';
+    if (partnerId.isEmpty) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
     final fetched = await _ordersRepo.fetchOrders(partnerId: partnerId);
     if (mounted) {
       setState(() {

@@ -57,7 +57,7 @@ class _AddRiderScreenState extends State<AddRiderScreen> {
     setState(() => _isSubmitting = true);
 
     final partner = SessionService.currentUser;
-    final partnerId = partner?.id.isNotEmpty == true ? partner!.id : 'partner-001';
+    final partnerId = partner?.id ?? '';
     final phone = _phoneCtrl.text.trim();
     final email = _emailCtrl.text.trim().isNotEmpty
         ? _emailCtrl.text.trim()

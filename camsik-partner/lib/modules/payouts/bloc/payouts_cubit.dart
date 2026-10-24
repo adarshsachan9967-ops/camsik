@@ -25,7 +25,17 @@ class PayoutsCubit extends Cubit<PayoutsState> {
     emit(PayoutsLoading());
     try {
       final user = SessionService.currentUser;
-      final partnerId = user?.id.isNotEmpty == true ? user!.id : 'partner-001';
+      final partnerId = user?.id ?? '';
+      if (partnerId.isEmpty) {
+        emit(PayoutsLoaded(
+          floatBalance: 0.0,
+          completedOrders: [],
+          totalDisbursed: 0.0,
+          wallet: null,
+          transactions: [],
+        ));
+        return;
+      }
 
       // 1. Fetch live wallet & payouts data from API
       final walletData = await _payoutsRepository.fetchWalletData(partnerId);
@@ -77,7 +87,8 @@ class PayoutsCubit extends Cubit<PayoutsState> {
     emit(current.copyWith(isSubmittingWithdrawal: true, clearMessages: true));
     try {
       final user = SessionService.currentUser;
-      final partnerId = user?.id.isNotEmpty == true ? user!.id : 'partner-001';
+      final partnerId = user?.id ?? '';
+      if (partnerId.isEmpty) return false;
 
       final res = await _payoutsRepository.requestWithdrawal(
         partnerId: partnerId,
@@ -124,7 +135,8 @@ class PayoutsCubit extends Cubit<PayoutsState> {
     emit(current.copyWith(isSubmittingWithdrawal: true, clearMessages: true));
     try {
       final user = SessionService.currentUser;
-      final partnerId = user?.id.isNotEmpty == true ? user!.id : 'partner-001';
+      final partnerId = user?.id ?? '';
+      if (partnerId.isEmpty) return false;
 
       final res = await _payoutsRepository.addFunds(
         partnerId: partnerId,

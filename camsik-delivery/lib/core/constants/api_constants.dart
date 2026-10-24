@@ -19,6 +19,7 @@ class ApiConstants {
 
   // ── Delivery Agent Endpoints ──
   static const String deliveryAgents = "$baseUrl/delivery-agents";
+  static const String deliveryEvents = "$baseUrl/delivery/events";
 
   // ── Orders / Tasks & Operations ──
   static const String orders = "$baseUrl/orders";

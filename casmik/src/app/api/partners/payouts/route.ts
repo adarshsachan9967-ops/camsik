@@ -30,7 +30,14 @@ const payoutsStore: PayoutTransaction[] = [];
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const partnerId = searchParams.get('partnerId')?.trim() || 'partner-001';
+    const partnerId = searchParams.get('partnerId')?.trim();
+
+    if (!partnerId) {
+      return NextResponse.json(
+        { success: false, message: 'partnerId is required' },
+        { status: 400 }
+      );
+    }
 
     let partner: any = null;
     let partnerOrders: any[] = [];
@@ -89,7 +96,7 @@ export async function GET(request: Request) {
     }
 
     if (!partner) {
-      partner = defaultPartners.find((p) => p.id === partnerId) || defaultPartners[0];
+      partner = defaultPartners.find((p) => p.id === partnerId) || null;
     }
 
     const completedOrders = partnerOrders.filter(
@@ -256,7 +263,13 @@ export async function POST(request: Request) {
       }
     }
 
-    const partnerId = (body.partnerId || 'partner-001').trim();
+    const partnerId = (body.partnerId || '').trim();
+    if (!partnerId) {
+      return NextResponse.json(
+        { success: false, message: 'partnerId is required' },
+        { status: 400 }
+      );
+    }
     const orderId = body.orderId?.toString().trim();
     const orderNumber = body.orderNumber?.toString().trim();
     const amount = Number(body.amount);
@@ -315,7 +328,14 @@ export async function POST(request: Request) {
     }
 
     if (!partner) {
-      partner = defaultPartners.find((p) => p.id === partnerId) || defaultPartners[0];
+      partner = defaultPartners.find((p) => p.id === partnerId) || null;
+    }
+
+    if (!partner) {
+      return NextResponse.json(
+        { success: false, message: 'Partner not found' },
+        { status: 404 }
+      );
     }
 
     const currentBal = Number(partner.availableBalance ?? 0);

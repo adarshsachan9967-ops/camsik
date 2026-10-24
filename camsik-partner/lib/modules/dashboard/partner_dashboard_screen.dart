@@ -43,8 +43,9 @@ class _PartnerDashboardScreenState extends State<PartnerDashboardScreen> {
 
   Future<void> _loadStats() async {
     final activeUser = widget.user ?? SessionService.currentUser;
-    final partnerId =
-        activeUser?.id.isNotEmpty == true ? activeUser!.id : 'partner-001';
+    final partnerId = activeUser?.id ?? '';
+    if (partnerId.isEmpty) return;
+
     setState(() => _fetchingStats = true);
     final data = await _dashboardRepo.fetchDashboardStats(partnerId);
     if (mounted) {

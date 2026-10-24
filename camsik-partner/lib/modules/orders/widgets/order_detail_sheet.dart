@@ -730,8 +730,10 @@ class _AssignRiderModalState extends State<_AssignRiderModal> {
   }
 
   Future<void> _fetch() async {
-    final partnerId = SessionService.currentUser?.id ?? 'partner-001';
-    final list = await _ridersRepo.fetchRiders(partnerId: partnerId);
+    final partnerId = SessionService.currentUser?.id ?? '';
+    final list = partnerId.isNotEmpty
+        ? await _ridersRepo.fetchRiders(partnerId: partnerId)
+        : <DeliveryAgentModel>[];
     if (mounted) {
       setState(() {
         _riders = list;

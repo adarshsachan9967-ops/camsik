@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/delivery_socket_service.dart';
 import '../../core/services/session_service.dart';
+import '../../models/delivery_models.dart';
 import '../dashboard/delivery_dashboard_screen.dart';
 import '../earnings/bloc/earnings_cubit.dart';
 import '../earnings/delivery_earnings_screen.dart';
@@ -10,6 +13,7 @@ import '../profile/bloc/profile_state.dart';
 import '../profile/delivery_profile_screen.dart';
 import '../tasks/bloc/tasks_cubit.dart';
 import '../tasks/delivery_tasks_screen.dart';
+import '../tasks/widgets/delivery_task_popup_dialog.dart';
 import 'bloc/navigation_cubit.dart';
 
 class DeliveryMainNavigationScreen extends StatelessWidget {
@@ -29,8 +33,66 @@ class DeliveryMainNavigationScreen extends StatelessWidget {
   }
 }
 
-class _DeliveryMainNavigationView extends StatelessWidget {
+class _DeliveryMainNavigationView extends StatefulWidget {
   const _DeliveryMainNavigationView();
+
+  @override
+  State<_DeliveryMainNavigationView> createState() => _DeliveryMainNavigationViewState();
+}
+
+class _DeliveryMainNavigationViewState extends State<_DeliveryMainNavigationView> {
+  StreamSubscription<DeliveryTask>? _socketSub;
+  final Set<String> _shownTaskIds = <String>{};
+  bool _isPopupShowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Connect to real-time socket stream for instant new pickup assignment alerts
+    final agentId = SessionService.currentUser?.id;
+    if (agentId != null && agentId.isNotEmpty) {
+      DeliverySocketService.instance.connect(agentId);
+      _socketSub = DeliverySocketService.instance.onNewTask.listen((task) {
+        if (mounted) {
+          _showPopupForTask(task);
+          context.read<TasksCubit>().loadTasks();
+          context.read<EarningsCubit>().loadEarnings();
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _socketSub?.cancel();
+    DeliverySocketService.instance.disconnect();
+    super.dispose();
+  }
+
+  void _showPopupForTask(DeliveryTask task) {
+    if (_isPopupShowing || _shownTaskIds.contains(task.id)) return;
+    _shownTaskIds.add(task.id);
+    _isPopupShowing = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      DeliveryTaskPopupDialog.show(
+        context: context,
+        task: task,
+        onAccept: () async {
+          final success = await context.read<TasksCubit>().updateTaskStatus(
+            orderId: task.id,
+            status: 'accepted',
+          );
+          _isPopupShowing = false;
+          return success;
+        },
+        onDismiss: () {
+          _isPopupShowing = false;
+        },
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
