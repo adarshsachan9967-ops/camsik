@@ -29,16 +29,31 @@ class Helpers {
       showErrorSnackbar('Navigation Error', 'No destination address specified');
       return;
     }
-    final encoded = Uri.encodeComponent(destination);
-    final Uri mapUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$encoded');
+    final cleanDest = destination.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final encoded = Uri.encodeComponent(cleanDest);
+    final Uri googleMapsWebUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$encoded');
+    final Uri googleMapsAppUri = Uri.parse('google.navigation:q=$encoded');
+
     try {
-      if (await canLaunchUrl(mapUri)) {
-        await launchUrl(mapUri, mode: LaunchMode.externalApplication);
-      } else {
-        showErrorSnackbar('Maps Error', 'Could not open maps navigation');
+      // 1. Try native Google Maps turn-by-turn navigation intent (Android/iOS)
+      if (await canLaunchUrl(googleMapsAppUri)) {
+        await launchUrl(googleMapsAppUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+
+    try {
+      // 2. Open Google Maps Search URL (exact same as web app)
+      final launched = await launchUrl(googleMapsWebUri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(googleMapsWebUri, mode: LaunchMode.platformDefault);
       }
     } catch (_) {
-      showErrorSnackbar('Maps Error', 'Could not open maps navigation');
+      try {
+        await launchUrl(googleMapsWebUri, mode: LaunchMode.platformDefault);
+      } catch (e) {
+        showErrorSnackbar('Maps Error', 'Could not open Google Maps navigation');
+      }
     }
   }
 

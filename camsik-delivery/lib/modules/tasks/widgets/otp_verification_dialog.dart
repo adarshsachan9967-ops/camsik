@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sizer/sizer.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/helpers.dart';
 import '../../../../models/delivery_models.dart';
@@ -17,16 +18,16 @@ class OtpVerificationDialog {
       builder: (ctx) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: const Text(
+          title: Text(
             'Enter 4-Digit Customer OTP',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'Ask customer for the handover OTP sent to ${task.customerPhone}.',
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
+                style: TextStyle(fontSize: 14.sp, color: Colors.black54),
               ),
               const SizedBox(height: 14),
               TextField(
@@ -34,8 +35,8 @@ class OtpVerificationDialog {
                 keyboardType: TextInputType.number,
                 maxLength: 4,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 22,
+                style: TextStyle(
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 8,
                 ),
@@ -52,14 +53,14 @@ class OtpVerificationDialog {
               const SizedBox(height: 6),
               Text(
                 '(Customer Order OTP: ${task.otp})',
-                style: const TextStyle(fontSize: 11, color: Colors.black38),
+                style: TextStyle(fontSize: 14.sp, color: Colors.black45),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text('Cancel', style: TextStyle(fontSize: 15.sp)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -94,7 +95,7 @@ class OtpVerificationDialog {
                   }
                 }
               },
-              child: const Text('Verify & Complete'),
+              child: Text('Verify & Complete', style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold)),
             ),
           ],
         );

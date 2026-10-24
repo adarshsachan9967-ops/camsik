@@ -15,9 +15,31 @@ class TasksCubit extends Cubit<TasksState> {
   Future<void> loadTasks({String? deliveryAgentId}) async {
     emit(const TasksLoading());
     try {
-      final agentId = deliveryAgentId ?? SessionService.currentUser?.id;
+      final user = SessionService.currentUser;
+      final agentId = deliveryAgentId ?? user?.id;
+      if (agentId == null || agentId.isEmpty) {
+        emit(const TasksLoaded(allTasks: []));
+        return;
+      }
+
       final tasks = await _tasksRepository.getTasks(deliveryAgentId: agentId);
-      emit(TasksLoaded(allTasks: tasks));
+      // Strictly verify that only tasks assigned to this rider are displayed (no dummy or unassigned orders)
+      final userPhone = user?.phone != null ? user!.phone.replaceAll(RegExp(r'\D'), '') : null;
+      final userName = user?.name != null ? user!.name.trim().toLowerCase() : null;
+
+      final strictlyAssigned = tasks.where((t) {
+        final matchesId = t.deliveryAgentId == agentId || t.assignedRiderId == agentId;
+        final matchesPhone = userPhone != null && userPhone.isNotEmpty &&
+            t.deliveryAgentPhone != null &&
+            t.deliveryAgentPhone!.replaceAll(RegExp(r'\D'), '').endsWith(userPhone);
+        final matchesName = userName != null && userName.isNotEmpty &&
+            t.deliveryAgentName != null &&
+            t.deliveryAgentName!.trim().toLowerCase() == userName;
+
+        return matchesId || matchesPhone || matchesName;
+      }).toList();
+
+      emit(TasksLoaded(allTasks: strictlyAssigned));
     } catch (e) {
       emit(TasksFailure(NetworkExceptions.getErrorMessage(e)));
     }
@@ -42,7 +64,14 @@ class TasksCubit extends Cubit<TasksState> {
     required String status,
     String? otp,
     double? finalPrice,
+    int? inspectionScore,
+    String? deviceImei,
+    bool? deviceCollected,
+    String? paymentStatus,
+    String? payoutMethod,
+    String? payoutReferenceId,
     String? notes,
+    String? pickupDate,
   }) async {
     try {
       final success = await _tasksRepository.updateStatus(
@@ -50,7 +79,14 @@ class TasksCubit extends Cubit<TasksState> {
         status: status,
         otp: otp,
         finalPrice: finalPrice,
+        inspectionScore: inspectionScore,
+        deviceImei: deviceImei,
+        deviceCollected: deviceCollected,
+        paymentStatus: paymentStatus,
+        payoutMethod: payoutMethod,
+        payoutReferenceId: payoutReferenceId,
         notes: notes,
+        pickupDate: pickupDate,
       );
 
       if (success && state is TasksLoaded) {
@@ -59,6 +95,10 @@ class TasksCubit extends Cubit<TasksState> {
           if (t.id == orderId) {
             t.status = status;
             if (finalPrice != null) t.finalPrice = finalPrice;
+            if (inspectionScore != null) t.inspectionScore = inspectionScore;
+            if (deviceImei != null) t.deviceImei = deviceImei;
+            if (deviceCollected != null) t.deviceCollected = deviceCollected;
+            if (paymentStatus != null) t.paymentStatus = paymentStatus;
             if (notes != null) t.notes = notes;
           }
           return t;

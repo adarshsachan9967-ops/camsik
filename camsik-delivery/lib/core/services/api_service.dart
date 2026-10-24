@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import '../../models/delivery_models.dart';
+import '../../modules/tasks/models/diagnostic_check_registry.dart';
 import '../constants/api_constants.dart';
 import '../constants/app_keys.dart';
 import '../utils/logger.dart';
@@ -228,7 +229,14 @@ class ApiService {
     required String status,
     String? otp,
     double? finalPrice,
+    int? inspectionScore,
+    String? deviceImei,
+    bool? deviceCollected,
+    String? paymentStatus,
+    String? payoutMethod,
+    String? payoutReferenceId,
     String? notes,
+    String? pickupDate,
   }) async {
     try {
       final payload = <String, dynamic>{
@@ -237,7 +245,16 @@ class ApiService {
       };
       if (otp != null && otp.isNotEmpty) payload['otp'] = otp;
       if (finalPrice != null) payload['finalPrice'] = finalPrice;
+      if (inspectionScore != null) payload['inspectionScore'] = inspectionScore;
+      if (deviceImei != null && deviceImei.isNotEmpty) payload['deviceImei'] = deviceImei;
+      if (deviceCollected != null) payload['deviceCollected'] = deviceCollected;
+      if (paymentStatus != null && paymentStatus.isNotEmpty) payload['paymentStatus'] = paymentStatus;
+      if (payoutMethod != null && payoutMethod.isNotEmpty) payload['payoutMethod'] = payoutMethod;
+      if (payoutReferenceId != null && payoutReferenceId.isNotEmpty) {
+        payload['payoutReferenceId'] = payoutReferenceId;
+      }
       if (notes != null && notes.isNotEmpty) payload['notes'] = notes;
+      if (pickupDate != null && pickupDate.isNotEmpty) payload['pickupDate'] = pickupDate;
 
       final res = await dio.patch(ApiConstants.orders, data: payload);
       return res.data != null && res.data['success'] == true;
@@ -320,5 +337,43 @@ class ApiService {
     } catch (e) {
       return {'success': false, 'message': NetworkExceptions.getErrorMessage(e)};
     }
+  }
+
+  // ── DIAGNOSTIC QUESTIONS (ADMIN SYNC) ──
+  static Future<List<DiagnosticCheckItem>> fetchDiagnosticQuestions(String categoryId, {double? quotedPrice}) async {
+    try {
+      final res = await dio.get(
+        ApiConstants.questions,
+        queryParameters: {'categoryId': categoryId},
+      );
+      if (res.data != null && res.data['success'] == true && res.data['questions'] is List) {
+        final List rawList = res.data['questions'];
+        if (rawList.isNotEmpty) {
+          return rawList.map((item) {
+            final options = item['options'] as List? ?? [];
+            int deductionPct = 15;
+            if (options.isNotEmpty) {
+              int minAdj = 0;
+              for (final opt in options) {
+                final adj = (opt['adj'] as num?)?.toInt() ?? 0;
+                if (adj < minAdj) minAdj = adj;
+              }
+              if (minAdj < 0 && quotedPrice != null && quotedPrice > 0) {
+                deductionPct = ((minAdj.abs() / quotedPrice) * 100).round().clamp(5, 35);
+              }
+            }
+            return DiagnosticCheckItem(
+              id: item['id']?.toString() ?? '',
+              label: item['question']?.toString() ?? '',
+              subtext: item['subtext']?.toString() ?? '',
+              deductionPct: deductionPct,
+            );
+          }).toList();
+        }
+      }
+    } catch (e) {
+      appLog("Error fetching diagnostic questions from admin: $e");
+    }
+    return [];
   }
 }

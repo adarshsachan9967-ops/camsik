@@ -13,7 +13,14 @@ abstract class TasksRepository {
     required String status,
     String? otp,
     double? finalPrice,
+    int? inspectionScore,
+    String? deviceImei,
+    bool? deviceCollected,
+    String? paymentStatus,
+    String? payoutMethod,
+    String? payoutReferenceId,
     String? notes,
+    String? pickupDate,
   });
 
   Future<List<dynamic>> getMessages(String orderId);
@@ -41,14 +48,28 @@ class TasksRepositoryImpl implements TasksRepository {
     required String status,
     String? otp,
     double? finalPrice,
+    int? inspectionScore,
+    String? deviceImei,
+    bool? deviceCollected,
+    String? paymentStatus,
+    String? payoutMethod,
+    String? payoutReferenceId,
     String? notes,
+    String? pickupDate,
   }) {
     return ApiService.updateTaskStatus(
       orderId: orderId,
       status: status,
       otp: otp,
       finalPrice: finalPrice,
+      inspectionScore: inspectionScore,
+      deviceImei: deviceImei,
+      deviceCollected: deviceCollected,
+      paymentStatus: paymentStatus,
+      payoutMethod: payoutMethod,
+      payoutReferenceId: payoutReferenceId,
       notes: notes,
+      pickupDate: pickupDate,
     );
   }
 

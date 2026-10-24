@@ -26,7 +26,7 @@ class TasksLoaded extends TasksState {
   List<DeliveryTask> get tasks => allTasks;
 
   List<DeliveryTask> get filteredTasks {
-    return allTasks.where((t) {
+    final list = allTasks.where((t) {
       if (selectedFilter == 'pickup' && !t.isPickup) {
         return false;
       }
@@ -46,6 +46,29 @@ class TasksLoaded extends TasksState {
           t.deviceName.toLowerCase().contains(q) ||
           t.customerAddress.toLowerCase().contains(q);
     }).toList();
+
+    // 1. Current day Morning (sabse upar)
+    // 2. Current day Afternoon (dopahar)
+    // 3. Current day Evening (sham)
+    // 4. Tomorrow Morning
+    // 5. Tomorrow Afternoon
+    // 6. Tomorrow Evening
+    list.sort((a, b) {
+      final rankComp = a.sortRank.compareTo(b.sortRank);
+      if (rankComp != 0) return rankComp;
+      return b.createdAt.compareTo(a.createdAt);
+    });
+
+    return list;
+  }
+
+  Map<String, List<DeliveryTask>> get groupedByTimeSection {
+    final map = <String, List<DeliveryTask>>{};
+    for (final task in filteredTasks) {
+      final section = task.timeSectionLabel;
+      map.putIfAbsent(section, () => []).add(task);
+    }
+    return map;
   }
 
   TasksLoaded copyWith({
