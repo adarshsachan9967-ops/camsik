@@ -73,40 +73,49 @@ export default function DeliveryAuthPage() {
   const [suVehicle, setSuVehicle] = useState('Bike');
   const [suVehicleNo, setSuVehicleNo] = useState('');
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const query = siPhone.trim().toLowerCase();
-    const cleanPhone = query.replace(/[^0-9]/g, '');
-    const allAgents = getDeliveryAgentsList();
+    const identifier = siPhone.trim();
+    const password = siPassword.trim();
 
-    const agent = allAgents.find(
-      a => (a.email && a.email.toLowerCase() === query) || (cleanPhone.length >= 10 && a.phone.replace(/[^0-9]/g, '') === cleanPhone)
-    );
+    if (!identifier) {
+      setError('Please enter your registered phone number or email.');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your account password.');
+      return;
+    }
 
-    if (!agent) {
-      if (query === '9876543210' || query === 'delivery@casmik.com' || query === 'delivery@camsik.com') {
-        const demo = allAgents[0];
-        localStorage.setItem('casmik_delivery_session', JSON.stringify(demo));
-        window.location.href = '/delivery';
+    try {
+      setLoading(true);
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier,
+          password,
+          role: 'delivery',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.message || 'Login failed. Please verify credentials.');
+        setLoading(false);
         return;
       }
-      setError('No delivery agent account found with these credentials. Please check your phone number or register as a new agent.');
-      return;
-    }
 
-    if (agent.approvalStatus === 'pending') {
-      setError('Your delivery agent application is currently PENDING approval from the Super Admin. You will be able to log in once your background documents are verified.');
-      return;
+      if (data.agent) {
+        localStorage.setItem('casmik_delivery_session', JSON.stringify(data.agent));
+      }
+      window.location.href = '/delivery';
+    } catch (err: any) {
+      setError(err?.message || 'Network error occurred. Please try again.');
+      setLoading(false);
     }
-
-    if (agent.approvalStatus === 'rejected') {
-      setError('Your delivery agent application was rejected or deactivated. Please contact support@camsik.com.');
-      return;
-    }
-
-    localStorage.setItem('casmik_delivery_session', JSON.stringify(agent));
-    window.location.href = '/delivery';
   };
 
   const handleSignupNext = (e: React.FormEvent) => {
@@ -155,11 +164,6 @@ export default function DeliveryAuthPage() {
     }
   };
 
-  const fillDemo = (phone: string, pass: string) => {
-    setSiPhone(phone);
-    setSiPassword(pass);
-    setError(null);
-  };
 
   if (submitted) {
     return (
@@ -217,30 +221,6 @@ export default function DeliveryAuthPage() {
           <p className="text-gray-500 text-xs font-medium">Delivery Agent & Executive Portal</p>
         </div>
 
-        {/* Demo Fast Login Pills */}
-        <div className="mb-4 bg-white/80 backdrop-blur border border-primary/20 rounded-2xl p-3 shadow-sm">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-primary mb-2">
-            <KeyRound size={13} /> Demo Credentials (Click to Auto-Fill):
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <button
-              type="button"
-              onClick={() => fillDemo('9876543210', 'delivery123')}
-              className="text-left text-xs bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl px-2.5 py-1.5 transition-colors flex items-center justify-between"
-            >
-              <span className="font-semibold text-gray-800">Raghu Sharma (Approved Agent)</span>
-              <span className="text-primary font-mono text-[11px]">9876543210</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => fillDemo('9876501234', 'delivery123')}
-              className="text-left text-xs bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl px-2.5 py-1.5 transition-colors flex items-center justify-between"
-            >
-              <span className="font-semibold text-amber-900">Priya Sharma (Pending Approval Demo)</span>
-              <span className="text-amber-700 font-mono text-[11px]">9876501234</span>
-            </button>
-          </div>
-        </div>
 
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl p-3.5 flex items-start gap-2.5 text-red-700 text-xs">

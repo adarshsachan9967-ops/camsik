@@ -25,6 +25,7 @@ export async function GET(request: Request) {
         name: doc.name,
         phone: doc.phone,
         email: doc.email || '',
+        password: doc.password || '',
         city: doc.city || 'Mumbai',
         pinCodes: Array.isArray(doc.pinCodes) ? doc.pinCodes : (doc.pinCodes || '').split(',').map((p: string) => p.trim()),
         status: doc.status || 'online',
@@ -41,6 +42,9 @@ export async function GET(request: Request) {
         vehicleNumber: doc.vehicleNumber || '',
         approvalStatus: doc.approvalStatus || 'approved',
         createdBy: doc.createdBy || (doc.partnerId && doc.partnerId !== 'admin' ? 'partner' : 'admin'),
+        commission: doc.commission,
+        commissionType: doc.commissionType,
+        documents: doc.documents || {},
       }));
     } catch (dbErr) {
       console.warn('MongoDB query warning in delivery-agents GET:', dbErr);
@@ -63,10 +67,7 @@ export async function GET(request: Request) {
     }
 
     // Strict Partner vs Admin isolation:
-    // A partner ONLY sees riders created for that specific partnerId.
-    // Admin can see ALL delivery agents (both Admin Fleet and Partner Dedicated Fleet).
     if (partnerId && partnerId !== 'all' && partnerId !== 'admin') {
-      // STRICTLY show only riders created by this specific partner!
       filtered = filtered.filter((a) => a.partnerId === partnerId);
     }
 
@@ -132,9 +133,14 @@ export async function PATCH(request: Request) {
 
     try {
       const db = await getDatabase();
+      const updateFields: any = { ...body, updatedAt: new Date().toISOString() };
+      delete updateFields._id;
+      delete updateFields.id;
+      delete updateFields.agentId;
+
       await db.collection('delivery_agents').updateOne(
         { $or: [{ id: agentId }, { _id: agentId }] },
-        { $set: { ...body, updatedAt: new Date().toISOString() } }
+        { $set: updateFields }
       );
     } catch (e) {
       console.warn('MongoDB update warning for delivery agent:', e);
@@ -170,9 +176,17 @@ export async function POST(request: Request) {
 
     const name = (body.name || '').trim();
     const phone = (body.phone || '').trim();
+    const password = (body.password || '').trim();
     if (!name || !phone) {
       return NextResponse.json(
         { success: false, message: 'Rider name and phone are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!password) {
+      return NextResponse.json(
+        { success: false, message: 'Rider login password is required' },
         { status: 400 }
       );
     }
@@ -184,11 +198,12 @@ export async function POST(request: Request) {
       id: `agent-${Date.now().toString().slice(-6)}`,
       name,
       phone,
-      email: body.email || `${phone}@camsik.in`,
-      city: body.city || 'Mumbai',
+      email: body.email || `${phone.replace(/\D/g, '').slice(-10)}@camsik.in`,
+      password,
+      city: body.city || 'Delhi NCR',
       pinCodes: Array.isArray(body.pinCodes)
         ? body.pinCodes
-        : (body.pinCodes || '400001, 400050').split(',').map((p: string) => p.trim()),
+        : (body.pinCodes || '110001, 110016').split(',').map((p: string) => p.trim()),
       status: body.status || 'online',
       rating: 5.0,
       todayPickups: 0,
@@ -200,8 +215,12 @@ export async function POST(request: Request) {
       partnerId: targetPartnerId,
       partnerName: body.partnerName,
       vehicle: body.vehicle || 'Bike',
-      vehicleNumber: body.vehicleNumber || 'MH02AB1234',
+      vehicleNumber: body.vehicleNumber || 'DL01AB1234',
       approvalStatus: body.approvalStatus || 'approved',
+      createdBy,
+      commission: body.commission,
+      commissionType: body.commissionType,
+      documents: body.documents || {},
     };
 
     agentsStore.unshift(newAgent);
@@ -210,8 +229,10 @@ export async function POST(request: Request) {
       const db = await getDatabase();
       await db.collection('delivery_agents').insertOne({
         ...newAgent,
+        password,
         createdBy,
         createdAt: new Date(),
+        updatedAt: new Date(),
       });
     } catch (e) {
       console.warn('MongoDB insert warning for delivery agent:', e);

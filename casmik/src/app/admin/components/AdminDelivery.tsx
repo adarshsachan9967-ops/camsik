@@ -280,13 +280,17 @@ export default function AdminDelivery() {
           name: formName,
           phone: formPhone,
           email: formEmail,
+          password: formPassword,
           city: formCity,
           pinCodes: pinArray.length > 0 ? pinArray : editingAgent.pinCodes,
           vehicle: formVehicle,
           vehicleNumber: formVehicleNumber,
+          commission: commVal,
+          commissionType: formCommissionType,
           partnerId: formPartnerId || 'admin',
           partnerName: selectedPartner ? selectedPartner.storeName : 'Admin Direct Fleet',
           approvalStatus: formApprovalStatus,
+          documents: docPayload,
         }),
       }).catch(err => console.warn('Sync admin rider update warning:', err));
     } else {
@@ -325,14 +329,18 @@ export default function AdminDelivery() {
           name: formName,
           phone: formPhone,
           email: formEmail,
+          password: formPassword,
           city: formCity,
           pinCodes: pinArray.length > 0 ? pinArray : ['110001'],
           vehicle: formVehicle,
           vehicleNumber: formVehicleNumber,
+          commission: commVal,
+          commissionType: formCommissionType,
           partnerId: targetPartner,
           partnerName: selectedPartner ? selectedPartner.storeName : 'Admin Direct Fleet',
           createdBy: 'admin',
           approvalStatus: formApprovalStatus,
+          documents: docPayload,
         }),
       }).catch(err => console.warn('Sync admin rider insert warning:', err));
     }
@@ -464,7 +472,7 @@ export default function AdminDelivery() {
               </div>
 
               {/* Fleet & Commission Badge */}
-              <div className="flex items-center justify-between bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 mb-3">
+              <div className="flex items-center justify-between bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 mb-2">
                 <div className="flex items-center gap-1.5">
                   <Bike size={13} className="text-primary" />
                   <span className="text-[11px] font-bold text-gray-600">
@@ -478,6 +486,20 @@ export default function AdminDelivery() {
                 <div className="flex items-center gap-1">
                   <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
                     {commPayout}
+                  </span>
+                </div>
+              </div>
+
+              {/* Rider App Login Credentials Strip */}
+              <div className="flex items-center justify-between bg-amber-50/70 border border-amber-200/80 rounded-xl px-3 py-1.5 mb-3 text-xs">
+                <div className="flex items-center gap-1.5 text-amber-900 font-medium">
+                  <Key size={12} className="text-amber-700" />
+                  <span className="text-[11px] font-bold">App Login:</span>
+                  <span className="font-mono text-[11px] font-semibold text-gray-700">{agent.phone}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] font-mono font-bold bg-white px-2 py-0.5 rounded border border-amber-300 text-amber-950">
+                    {agent.password || '••••••••'}
                   </span>
                 </div>
               </div>

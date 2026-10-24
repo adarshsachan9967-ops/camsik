@@ -14,8 +14,8 @@ class DeliveryLoginScreen extends StatefulWidget {
 }
 
 class _DeliveryLoginScreenState extends State<DeliveryLoginScreen> {
-  final _phoneController = TextEditingController(text: '9876543210');
-  final _passwordController = TextEditingController(text: 'delivery123');
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
@@ -292,30 +292,23 @@ class _DeliveryLoginScreenState extends State<DeliveryLoginScreen> {
                               color: Colors.white.withValues(alpha: 0.08),
                             ),
                           ),
-                          child: const Column(
+                          child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Authorized Field Executive Demo:',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              const Icon(
+                                Icons.shield_outlined,
+                                color: AppColors.primary,
+                                size: 18,
                               ),
-                              SizedBox(height: 4),
-                              Text(
-                                '• Phone: 9876543210 or delivery@camsik.com',
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              Text(
-                                '• Pass: delivery123',
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 11,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Only authorized delivery riders registered by Super Admin or Partner Store can sign in.',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    fontSize: 11,
+                                    height: 1.4,
+                                  ),
                                 ),
                               ),
                             ],

@@ -142,43 +142,101 @@ export async function POST(request: Request) {
     }
 
     // 3. DELIVERY AGENT CHECK
-    if (
-      requestedRole === 'delivery' ||
-      cleanEmail === 'delivery@camsik.com' ||
-      cleanEmail === 'delivery@casmik.com'
-    ) {
-      const agent = deliveryAgents.find(
-        (a) =>
-          a.email.toLowerCase() === cleanEmail ||
-          a.phone.replace(/\D/g, '').slice(-10) === cleanPhone
-      );
+    let deliveryAgentDoc: any = null;
+    try {
+      const { getDatabase } = await import('@/lib/mongodb');
+      const db = await getDatabase();
+      deliveryAgentDoc = await db.collection('delivery_agents').findOne({
+        $or: [
+          ...(cleanEmail ? [{ email: cleanEmail }] : []),
+          ...(cleanPhone ? [{ phone: { $regex: cleanPhone + '$' } }] : []),
+          { id: identifier.trim() },
+        ],
+      });
+    } catch (dbErr) {
+      console.warn('MongoDB query error for delivery agent in auth/login:', dbErr);
+    }
 
-      if (agent || cleanEmail === 'delivery@camsik.com' || cleanEmail === 'delivery@casmik.com') {
-        const activeAgent = agent || deliveryAgents[0];
-        return NextResponse.json({
-          success: true,
-          role: 'delivery',
-          message: 'Delivery executive authenticated successfully',
-          agent: activeAgent,
-          user: {
-            id: activeAgent.id,
-            name: activeAgent.name,
-            phone: activeAgent.phone,
-            email: activeAgent.email,
-            role: 'delivery',
-            city: activeAgent.city,
-            vehicle: activeAgent.vehicle,
-            vehicleNumber: activeAgent.vehicleNumber,
-          },
-        });
-      }
-
-      if (requestedRole === 'delivery') {
+    if (requestedRole === 'delivery' || deliveryAgentDoc) {
+      if (!deliveryAgentDoc) {
         return NextResponse.json(
-          { success: false, message: 'No registered delivery agent account found with these credentials' },
+          {
+            success: false,
+            message: 'No registered delivery agent found with these credentials. Please check your phone/email or contact Super Admin / Partner.',
+          },
           { status: 404 }
         );
       }
+
+      // Strict Password Verification
+      if (!deliveryAgentDoc.password || deliveryAgentDoc.password !== password) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Incorrect password. Please enter the correct password set by your Super Admin or Partner.',
+          },
+          { status: 401 }
+        );
+      }
+
+      // Status & Approval Verification
+      if (deliveryAgentDoc.approvalStatus === 'pending') {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Your delivery executive application is pending Super Admin verification. You will be able to access the app once approved.',
+          },
+          { status: 403 }
+        );
+      }
+
+      if (
+        deliveryAgentDoc.approvalStatus === 'rejected' ||
+        deliveryAgentDoc.status === 'suspended' ||
+        deliveryAgentDoc.status === 'inactive'
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Your delivery executive account has been deactivated or suspended. Please contact support@camsik.com.',
+          },
+          { status: 403 }
+        );
+      }
+
+      const activeAgent = {
+        id: deliveryAgentDoc.id || deliveryAgentDoc._id.toString(),
+        name: deliveryAgentDoc.name,
+        phone: deliveryAgentDoc.phone,
+        email: deliveryAgentDoc.email || `${cleanPhone}@camsik.in`,
+        city: deliveryAgentDoc.city || 'Delhi NCR',
+        vehicle: deliveryAgentDoc.vehicle || 'Bike',
+        vehicleNumber: deliveryAgentDoc.vehicleNumber || '',
+        rating: Number(deliveryAgentDoc.rating) || 5.0,
+        status: deliveryAgentDoc.status || 'online',
+        approvalStatus: deliveryAgentDoc.approvalStatus || 'approved',
+        partnerId: deliveryAgentDoc.partnerId,
+        partnerName: deliveryAgentDoc.partnerName,
+        totalDeliveries: Number(deliveryAgentDoc.totalDeliveries) || 0,
+        earnings: Number(deliveryAgentDoc.earnings) || 0,
+      };
+
+      return NextResponse.json({
+        success: true,
+        role: 'delivery',
+        message: 'Delivery executive authenticated successfully',
+        agent: activeAgent,
+        user: {
+          id: activeAgent.id,
+          name: activeAgent.name,
+          phone: activeAgent.phone,
+          email: activeAgent.email,
+          role: 'delivery',
+          city: activeAgent.city,
+          vehicle: activeAgent.vehicle,
+          vehicleNumber: activeAgent.vehicleNumber,
+        },
+      });
     }
 
     // 4. CUSTOMER USER CHECK
