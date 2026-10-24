@@ -21,7 +21,7 @@ class AuthCubit extends Cubit<AuthState> {
     final cleanPass = password.trim();
 
     if (cleanId.isEmpty) {
-      emit(const AuthFailure('Please enter your agent ID or phone number.'));
+      emit(const AuthFailure('Please enter your registered mobile number or email.'));
       return;
     }
 

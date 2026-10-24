@@ -139,7 +139,7 @@ class _DeliveryLoginScreenState extends State<DeliveryLoginScreen> {
                             ),
                           ),
                         const Text(
-                          'Registered Mobile or Agent ID',
+                          'Registered Mobile Number or Email',
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
@@ -149,17 +149,18 @@ class _DeliveryLoginScreenState extends State<DeliveryLoginScreen> {
                         const SizedBox(height: 6),
                         TextField(
                           controller: _phoneController,
-                          keyboardType: TextInputType.phone,
+                          keyboardType: TextInputType.emailAddress,
+                          autocorrect: false,
                           style: const TextStyle(color: Colors.white, fontSize: 14),
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.white.withValues(alpha: 0.08),
                             prefixIcon: const Icon(
-                              Icons.phone_android,
+                              Icons.account_circle_outlined,
                               color: Colors.white54,
                               size: 18,
                             ),
-                            hintText: 'e.g. 9876543210 or delivery@camsik.com',
+                            hintText: 'e.g. 9876543210 or rider@camsik.com',
                             hintStyle: const TextStyle(
                               color: Colors.white30,
                               fontSize: 13,

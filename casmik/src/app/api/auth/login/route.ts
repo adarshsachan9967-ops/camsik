@@ -27,7 +27,8 @@ export async function POST(request: Request) {
     }
 
     const identifier = (body.identifier || body.phone || body.email || '').trim();
-    const cleanPhone = identifier.replace(/\D/g, '').slice(-10);
+    const rawDigits = identifier.replace(/\D/g, '');
+    const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : '';
     const cleanEmail = identifier.toLowerCase();
     const password = (body.password || '').trim();
     const requestedRole = (body.role || '').toLowerCase().trim();
@@ -143,18 +144,44 @@ export async function POST(request: Request) {
 
     // 3. DELIVERY AGENT CHECK
     let deliveryAgentDoc: any = null;
+
     try {
       const { getDatabase } = await import('@/lib/mongodb');
       const db = await getDatabase();
+      const orConditions: any[] = [];
+      if (cleanEmail) {
+        orConditions.push(
+          { email: cleanEmail },
+          { email: { $regex: `^${cleanEmail.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, $options: 'i' } }
+        );
+      }
+      if (cleanPhone) {
+        orConditions.push(
+          { phone: cleanPhone },
+          { phone: `+91${cleanPhone}` },
+          { phone: `91${cleanPhone}` },
+          { phone: { $regex: cleanPhone + '$' } }
+        );
+      }
+      orConditions.push({ id: identifier.trim() });
+
       deliveryAgentDoc = await db.collection('delivery_agents').findOne({
-        $or: [
-          ...(cleanEmail ? [{ email: cleanEmail }] : []),
-          ...(cleanPhone ? [{ phone: { $regex: cleanPhone + '$' } }] : []),
-          { id: identifier.trim() },
-        ],
+        $or: orConditions,
       });
     } catch (dbErr) {
       console.warn('MongoDB query error for delivery agent in auth/login:', dbErr);
+    }
+
+    if (!deliveryAgentDoc) {
+      const memoryAgent = deliveryAgents.find(
+        (a) =>
+          (cleanEmail && a.email?.toLowerCase() === cleanEmail) ||
+          (cleanPhone && a.phone?.replace(/\D/g, '').slice(-10) === cleanPhone) ||
+          a.id === identifier.trim()
+      );
+      if (memoryAgent) {
+        deliveryAgentDoc = memoryAgent;
+      }
     }
 
     if (requestedRole === 'delivery' || deliveryAgentDoc) {
