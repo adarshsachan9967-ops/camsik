@@ -129,7 +129,8 @@ export type OrderStatus =
   | 'completed'
   | 'rejected'
   | 'cancelled'
-  | 'rescheduled';
+  | 'rescheduled'
+  | 'unserviceable';
 
 export interface Partner {
   id: string;
@@ -241,7 +242,7 @@ export interface Customer {
 export const categories: Category[] = [
   {
     id: 'cat-dslr',
-    name: 'DSLR & Mirrorless',
+    name: 'Sell DSLR & Mirrorless',
     slug: 'sell-old-dslr-camera',
     icon: '📷',
     image: '/assets/images/categories/dslr.png',
@@ -254,7 +255,7 @@ export const categories: Category[] = [
   },
   {
     id: 'cat-lens',
-    name: 'Camera Lenses',
+    name: 'Sell Camera Lenses',
     slug: 'sell-old-dslr-mirrorless-lens',
     icon: '🔍',
     image: '/assets/images/categories/lens.png',
@@ -267,7 +268,7 @@ export const categories: Category[] = [
   },
   {
     id: 'cat-video-camera',
-    name: 'Video Cameras',
+    name: 'Sell Video Cameras',
     slug: 'sell-old-video-camera',
     icon: '📹',
     image: '/assets/images/categories/video.png',
@@ -280,7 +281,7 @@ export const categories: Category[] = [
   },
   {
     id: 'cat-action-camera',
-    name: 'Action Cameras',
+    name: 'Sell Action Cameras',
     slug: 'sell-old-action-camera',
     icon: '🎥',
     image: '/assets/images/categories/action.png',
@@ -293,7 +294,7 @@ export const categories: Category[] = [
   },
   {
     id: 'cat-gimbal',
-    name: 'Gimbals & Stabilizers',
+    name: 'Sell Gimbals & Stabilizers',
     slug: 'sell-old-gimbal',
     icon: '🕹️',
     image: '/assets/images/categories/gimbal.png',
@@ -306,7 +307,7 @@ export const categories: Category[] = [
   },
   {
     id: 'cat-smartphone',
-    name: 'Smartphones',
+    name: 'Sell Smartphones',
     slug: 'sell-old-smartphones',
     icon: '📱',
     image: '/assets/images/categories/smartphone.png',
@@ -319,7 +320,7 @@ export const categories: Category[] = [
   },
   {
     id: 'cat-laptop',
-    name: 'Laptops',
+    name: 'Sell Laptops',
     slug: 'sell-old-laptops',
     icon: '💻',
     image: '/assets/images/categories/laptop.png',
@@ -332,14 +333,14 @@ export const categories: Category[] = [
   },
   {
     id: 'cat-tablet',
-    name: 'Tablets & iPads',
+    name: 'Sell Tablets & iPads',
     slug: 'sell-old-tablets',
     icon: '📟',
     image: '/assets/images/categories/tablet.png',
     alt: 'Sell Old Tablets & iPads',
     description: 'Top resale value for Apple iPad Pro, iPad Air, Samsung Galaxy Tab & Lenovo Tablets.',
     brandCount: 4,
-    modelCount: 20,
+    modelCount: 18,
     active: true,
     sortOrder: 8,
   },
@@ -3303,6 +3304,7 @@ export function getOrderStatusLabel(status: OrderStatus): string {
     rejected: 'Price Declined',
     cancelled: 'Cancelled',
     rescheduled: 'Rescheduled',
+    unserviceable: 'Unserviceable Area',
   };
   return map[status] || status;
 }
@@ -3318,6 +3320,8 @@ export function getOrderStatusColor(status: OrderStatus): string {
     case 'inspection':
     case 'picked_up':
       return 'text-amber-600 bg-amber-50 border-amber-200';
+    case 'unserviceable':
+      return 'text-rose-700 bg-rose-50 border-rose-300';
     case 'cancelled':
     case 'rejected':
       return 'text-rose-600 bg-rose-50 border-rose-200';

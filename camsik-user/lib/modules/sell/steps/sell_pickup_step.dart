@@ -339,11 +339,11 @@ class _SellPickupStepState extends State<SellPickupStep> {
 
           const SizedBox(height: 22),
 
-          // ── 5. PAYMENT UPI ID SECTION ──
+          // ── 5. PAYMENT SECTION (CASH ON HANDOVER / SPOT PAYOUT) ──
           _buildSectionHeader(
-            icon: Icons.account_balance_wallet_rounded,
-            title: 'Instant Payment UPI ID',
-            badge: '100% Guaranteed',
+            icon: Icons.payments_rounded,
+            title: 'Doorstep Cash / Spot Handover Payout',
+            badge: '100% Guaranteed Cash',
           ),
           const SizedBox(height: 10),
           _buildUpiInputSection(),

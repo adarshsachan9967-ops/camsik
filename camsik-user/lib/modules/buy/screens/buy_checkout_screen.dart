@@ -60,8 +60,8 @@ class _BuyCheckoutScreenState extends State<BuyCheckoutScreen> {
     '5:00 PM – 8:00 PM',
   ];
 
-  // Payment Selection
-  String _selectedPaymentMethod = 'upi';
+  // Payment Selection - COD Only as requested
+  String _selectedPaymentMethod = 'pod';
   bool _isPlacingOrder = false;
 
   @override
@@ -325,6 +325,44 @@ class _BuyCheckoutScreenState extends State<BuyCheckoutScreen> {
     };
 
     try {
+      final pinToCheck = activeAddress?.pincode ?? '110001';
+      final pinRes = await ApiService.checkPincodeServiceability(pinToCheck);
+      if (pinRes['serviceable'] == false) {
+        setState(() => _isPlacingOrder = false);
+        final unserviceableData = {
+          ...orderData,
+          'status': 'unserviceable',
+          'notes': 'Unserviceable Area Buy Request. PIN: $pinToCheck',
+        };
+        await ApiService.createOrder(unserviceableData);
+
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              icon: const Icon(Icons.location_off_rounded, color: Colors.orange, size: 48),
+              title: const Text('Coverage Notice', style: TextStyle(fontWeight: FontWeight.w900)),
+              content: const Text(
+                'Thanks for your request, we will soon come and start servicing in your area.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
       final createdOrderMap = await ApiService.createOrder(orderData);
       if (createdOrderMap != null && mounted) {
         final orderObj = UserOrder.fromJson(createdOrderMap);
@@ -1464,37 +1502,14 @@ class _BuyCheckoutScreenState extends State<BuyCheckoutScreen> {
             ],
           ),
           const SizedBox(height: 12),
-
-          // Option 1: Instant UPI (Recommended)
-          _buildPaymentOption(
-            id: 'upi',
-            title: 'Instant UPI / Online Prepaid',
-            subtitle: 'Google Pay, PhonePe, Paytm, BHIM, Cards',
-            badge: '⚡ Extra ₹250 Instant Discount',
-            badgeColor: const Color(0xFF059669),
-            icon: Icons.flash_on_rounded,
-          ),
-          const SizedBox(height: 10),
-
-          // Option 2: Pay on Delivery
+          // Option: Pay on Delivery (COD Only)
           _buildPaymentOption(
             id: 'pod',
-            title: 'Pay on Doorstep Delivery',
-            subtitle: 'Inspect device first, then pay Cash or UPI to agent',
-            badge: 'Zero Advance Required',
-            badgeColor: const Color(0xFF334155),
+            title: 'Cash on Delivery (Pay on Doorstep)',
+            subtitle: 'Inspect device first at your doorstep, then pay Cash or scan QR',
+            badge: 'Zero Advance Required • COD',
+            badgeColor: const Color(0xFF059669),
             icon: Icons.handshake_rounded,
-          ),
-          const SizedBox(height: 10),
-
-          // Option 3: Cards & Netbanking
-          _buildPaymentOption(
-            id: 'card',
-            title: 'Credit / Debit Card & No-Cost EMI',
-            subtitle: 'All major banks supported (Starts at ₹4,999/mo)',
-            badge: 'No-Cost EMI Available',
-            badgeColor: const Color(0xFF2563EB),
-            icon: Icons.credit_card_rounded,
           ),
         ],
       ),

@@ -510,14 +510,21 @@ class ApiService {
 
   static Future<Map<String, dynamic>> checkPincodeServiceability(String pincode) async {
     try {
-      final res = await dio.get(ApiConstants.cities, queryParameters: {'pincode': pincode.trim()});
-      if (res.data != null) {
+      final res = await dio.get(ApiConstants.pincodes, queryParameters: {'pincode': pincode.trim()});
+      if (res.data != null && res.data is Map) {
         return Map<String, dynamic>.from(res.data as Map);
       }
     } catch (e) {
+      // Fallback to cities endpoint
+      try {
+        final res = await dio.get(ApiConstants.cities, queryParameters: {'pincode': pincode.trim()});
+        if (res.data != null && res.data is Map) {
+          return Map<String, dynamic>.from(res.data as Map);
+        }
+      } catch (_) {}
       appLog("⚠️ Pincode check error: $e");
     }
-    return {'success': true, 'serviceable': true, 'pincode': pincode};
+    return {'success': true, 'serviceable': false, 'pincode': pincode};
   }
 
   // ── NOTIFICATIONS ──

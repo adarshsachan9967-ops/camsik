@@ -1,14 +1,70 @@
-'use client';
-import React, { useState } from 'react';
-import { Save, Building2, CreditCard, Bell, Globe, Shield, Truck, Percent } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, Building2, CreditCard, Bell, Globe, Shield, Truck, Percent, MapPin, Plus, Trash2, CheckCircle2 } from 'lucide-react';
 import Icon from '@/components/ui/AppIcon';
 
-
-type SettingsTab = 'company' | 'payment' | 'notifications' | 'delivery' | 'commission' | 'security' | 'integrations';
+type SettingsTab = 'company' | 'pincodes' | 'payment' | 'notifications' | 'delivery' | 'commission' | 'security' | 'integrations';
 
 export default function AdminSettings() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('company');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('pincodes');
   const [saved, setSaved] = useState(false);
+  const [pincodesList, setPincodesList] = useState<{ pincode: string; city: string; active: boolean; addedAt?: string }[]>([]);
+  const [newPincode, setNewPincode] = useState('');
+  const [newCity, setNewCity] = useState('');
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+
+  const fetchPincodes = async () => {
+    try {
+      const res = await fetch('/api/pincodes');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.pincodes)) {
+        setPincodesList(data.pincodes);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchPincodes();
+  }, []);
+
+  const handleAddPincode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const pin = newPincode.trim();
+    if (!pin || pin.length < 5) {
+      alert('Please enter a valid PIN code (e.g. 401107)');
+      return;
+    }
+    setPincodeLoading(true);
+    try {
+      const res = await fetch('/api/pincodes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pincode: pin, city: newCity.trim() || 'Serviceable City' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNewPincode('');
+        setNewCity('');
+        setPincodesList(data.pincodes);
+      } else {
+        alert(data.message || 'Failed to add PIN code');
+      }
+    } catch (err: any) {
+      alert('Error adding PIN code: ' + err.message);
+    } finally {
+      setPincodeLoading(false);
+    }
+  };
+
+  const handleDeletePincode = async (pin: string) => {
+    if (!confirm(`Are you sure you want to remove PIN code ${pin}?`)) return;
+    try {
+      const res = await fetch(`/api/pincodes?pincode=${pin}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setPincodesList(data.pincodes);
+      }
+    } catch {}
+  };
 
   const handleSave = () => {
     setSaved(true);
@@ -16,6 +72,7 @@ export default function AdminSettings() {
   };
 
   const tabs: { key: SettingsTab; label: string; icon: React.ElementType }[] = [
+    { key: 'pincodes', label: 'Serviceable PINs', icon: MapPin },
     { key: 'company', label: 'Company', icon: Building2 },
     { key: 'payment', label: 'Payment', icon: CreditCard },
     { key: 'notifications', label: 'Notifications', icon: Bell },
@@ -56,6 +113,91 @@ export default function AdminSettings() {
 
         {/* Content */}
         <div className="flex-1 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          {activeTab === 'pincodes' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-extrabold text-gray-900 text-lg flex items-center gap-2">
+                    <MapPin className="text-primary" size={20} />
+                    Serviceable PIN Codes Management
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Orders will only be accepted for PIN codes listed here. Any unlisted PIN code will show an unserviceable area popup and be tracked in the Unserviceable Orders section.
+                  </p>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black">
+                  {pincodesList.length} Active PINs
+                </span>
+              </div>
+
+              {/* Add PIN Code Form */}
+              <form onSubmit={handleAddPincode} className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">Add New Serviceable PIN Code</p>
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="sm:col-span-4">
+                    <input
+                      type="text"
+                      maxLength={6}
+                      placeholder="6-Digit PIN (e.g. 401107)"
+                      value={newPincode}
+                      onChange={e => setNewPincode(e.target.value.replace(/\D/g, ''))}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
+                      required
+                    />
+                  </div>
+                  <div className="sm:col-span-5">
+                    <input
+                      type="text"
+                      placeholder="City / Area Name (e.g. Mumbai / Mira Road)"
+                      value={newCity}
+                      onChange={e => setNewCity(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
+                      required
+                    />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <button
+                      type="submit"
+                      disabled={pincodeLoading || !newPincode}
+                      className="w-full h-full py-2.5 px-4 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      <Plus size={14} /> Add Service Area
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              {/* Pincodes Grid */}
+              <div className="space-y-2">
+                <p className="text-xs font-black text-gray-700 uppercase tracking-wider">Currently Active Serviceable Areas ({pincodesList.length})</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-96 overflow-y-auto pr-1">
+                  {pincodesList.map((item) => (
+                    <div
+                      key={item.pincode}
+                      className="flex items-center justify-between p-3 rounded-xl border border-slate-200/80 bg-white hover:border-primary/40 transition-all shadow-xs"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-black text-sm text-slate-900">{item.pincode}</span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        </div>
+                        <p className="text-[11px] text-slate-500 truncate mt-0.5">{item.city}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePincode(item.pincode)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        title="Remove PIN code"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'company' && (
             <div className="space-y-5">
               <h3 className="font-bold text-gray-900 text-base">Company Details</h3>

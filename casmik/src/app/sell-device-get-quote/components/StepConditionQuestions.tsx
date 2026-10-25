@@ -322,8 +322,8 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
                       )}
 
                       {opt.adjustment !== 0 && (
-                        <span className={`text-xs font-black px-2.5 py-0.5 rounded-full mt-auto ${opt.adjustment > 0 ? 'bg-primary-100 text-primary' : 'bg-red-50 text-danger'}`}>
-                          {opt.adjustment > 0 ? '+' : ''}₹{Math.abs(opt.adjustment).toLocaleString('en-IN')}
+                        <span className={`text-xs font-black px-2.5 py-0.5 rounded-full mt-auto ${opt.adjustment > 0 ? 'bg-primary-100 text-primary' : 'bg-amber-50 text-amber-700'}`}>
+                          {opt.adjustment > 0 ? '+ * * *' : '- * * *'}
                         </span>
                       )}
                     </button>
@@ -335,7 +335,7 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
               <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/60">
                 <button onClick={() => setActiveQ(q => Math.max(q - 1, 0))} disabled={activeQ === 0}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                  <ChevronLeft size={14} /> Previous
+                  <ChevronLeft size={14} /> Previous Question
                 </button>
 
                 <div className="flex items-center gap-2">
@@ -349,7 +349,7 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
                     </button>
                   ) : (
                     <button onClick={onNext} className="flex items-center gap-2 px-6 py-2.5 gradient-green text-white rounded-xl font-bold text-sm shadow-green btn-press">
-                      Get My Quote →
+                      Reveal Final Quote →
                     </button>
                   )}
                 </div>
@@ -359,11 +359,11 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
         </div>
       </div>
 
-      {/* Continue button — allow proceeding whether answered or skipped */}
+      {/* Continue button — reveal final quote on checkout */}
       {(allAnswered || activeQ === questionsList.length - 1 || Object.keys(sellState.answers).length >= 1) && (
         <div className="fade-in">
           <button onClick={onNext} className="w-full py-4 gradient-green text-white rounded-2xl font-bold text-base shadow-green btn-press flex items-center justify-center gap-2">
-            <span>🎉 Get My Final Quote — ₹{sellState.currentPrice.toLocaleString('en-IN')}</span>
+            <span>🎉 Reveal Guaranteed Final Quote on Checkout →</span>
           </button>
         </div>
       )}

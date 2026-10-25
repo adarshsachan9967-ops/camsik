@@ -52,6 +52,7 @@ import {
   CustomerUser,
   CustomerOrderRecord,
 } from '@/lib/auth';
+import UnserviceableAreaModal from '@/components/UnserviceableAreaModal';
 
 // ── Types ──
 type ExchangeWizardStep =
@@ -527,7 +528,8 @@ export default function ExchangeDevicePage() {
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerCity, setCustomerCity] = useState('');
   const [customerPincode, setCustomerPincode] = useState('');
-  const [paymentPreference, setPaymentPreference] = useState<'delivery' | 'online' | 'emi'>('delivery');
+  const [paymentPreference, setPaymentPreference] = useState<'delivery'>('delivery');
+  const [showUnserviceableModal, setShowUnserviceableModal] = useState(false);
 
   // Payout Details if Old Device Trade-in Value > Upgrade Price
   const [payoutDetails, setPayoutDetails] = useState('');
@@ -817,7 +819,7 @@ export default function ExchangeDevicePage() {
   };
 
   // ── Confirm Exchange Order ──
-  const handleConfirmOrder = () => {
+  const handleConfirmOrder = async () => {
     if (!currentUserState) {
       setShowAuthModal(true);
       return;
@@ -829,6 +831,49 @@ export default function ExchangeDevicePage() {
     }
 
     const orderId = 'CAM-EXCH-' + Math.floor(100000 + Math.random() * 900000);
+
+    // Verify PIN serviceability
+    try {
+      const pinRes = await fetch(`/api/pincodes?pincode=${encodeURIComponent(customerPincode.trim())}`);
+      const pinData = await pinRes.json();
+      if (pinData.success && pinData.serviceable === false) {
+        const unserviceableOrder = {
+          id: orderId,
+          orderNumber: orderId,
+          type: 'exchange',
+          status: 'unserviceable',
+          customerName,
+          customerPhone,
+          customerAddress,
+          city: customerCity || 'Delhi NCR',
+          pinCode: customerPincode.trim(),
+          deviceName: `${selectedOldDevice?.name || 'Old Device'} ➔ ${selectedUpgradeProduct?.model || 'Upgrade Device'}`,
+          quotedPrice: upgradeDevicePrice,
+          finalPrice: netPayableAmount,
+          paymentStatus: 'pending',
+          notes: `Unserviceable Area Exchange Order. PIN: ${customerPincode.trim()}`,
+          createdAt: new Date().toISOString(),
+        };
+
+        if (typeof window !== 'undefined') {
+          try {
+            const list = JSON.parse(localStorage.getItem('casmik_orders_v1') || '[]');
+            localStorage.setItem('casmik_orders_v1', JSON.stringify([unserviceableOrder, ...list]));
+            window.dispatchEvent(new Event('casmik_orders_updated'));
+          } catch {}
+        }
+        await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(unserviceableOrder),
+        }).catch(() => {});
+
+        setShowUnserviceableModal(true);
+        return;
+      }
+    } catch (err) {
+      console.warn('Exchange pincode service check error:', err);
+    }
     const orderRecord: CustomerOrderRecord = {
       id: orderId,
       orderNumber: orderId,
@@ -2081,26 +2126,19 @@ export default function ExchangeDevicePage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {[
-                        { key: 'delivery', title: 'Pay on Handover', desc: 'UPI / Cash to technician' },
-                        { key: 'online', title: 'Pay Online Now', desc: 'Credit / Debit / UPI' },
-                        { key: 'emi', title: 'No-Cost EMI', desc: 'Starting ₹1,850/mo' },
-                      ].map((p) => (
-                        <button
-                          key={p.key}
-                          type="button"
-                          onClick={() => setPaymentPreference(p.key as any)}
-                          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
-                            paymentPreference === p.key
-                              ? 'border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/20 shadow-xs'
-                              : 'border-slate-200 bg-white hover:border-slate-300'
-                          }`}
-                        >
-                          <p className="text-xs font-black text-slate-900">{p.title}</p>
-                          <p className="text-[11px] text-slate-500 mt-0.5">{p.desc}</p>
-                        </button>
-                      ))}
+                    <div className="p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50/60 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-sm">
+                          COD
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-slate-900">Pay on Handover (Cash on Delivery)</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">Pay remaining difference via cash or UPI to technician upon doorstep delivery</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-800 bg-emerald-200/80 px-2.5 py-1 rounded-full">
+                        Active
+                      </span>
                     </div>
                   )}
                 </div>
@@ -2467,6 +2505,16 @@ export default function ExchangeDevicePage() {
           </div>
         )}
       </div>
+
+      <UnserviceableAreaModal
+        isOpen={showUnserviceableModal}
+        pincode={customerPincode}
+        onClose={() => setShowUnserviceableModal(false)}
+        onGoHome={() => {
+          setShowUnserviceableModal(false);
+          setStep('select-old');
+        }}
+      />
 
       <CustomerFooter />
     </main>

@@ -97,7 +97,7 @@ class EightCategoriesBar extends StatelessWidget {
 
         // Horizontal Category Cards
         SizedBox(
-          height: 104,
+          height: 108,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -107,18 +107,27 @@ class EightCategoriesBar extends StatelessWidget {
               final item = displayList[idx];
               final id = item['id'] as String? ?? 'cat-dslr';
               final rawName = item['name'] as String? ?? 'Category';
-              // Clean up category label for compact presentation
+              // Add Sell prefix to all categories as requested
               String name = rawName;
-              if (rawName.toLowerCase().contains('dslr')) {
-                name = 'Cameras';
-              } else if (rawName.toLowerCase().contains('lens')) {
-                name = 'Lenses';
-              } else if (rawName.toLowerCase().contains('gimbal')) {
-                name = 'Gimbals';
-              } else if (rawName.toLowerCase().contains('video')) {
-                name = 'Video Cam';
-              } else if (rawName.toLowerCase().contains('action')) {
-                name = 'Action Cam';
+              final lower = rawName.toLowerCase();
+              if (lower.contains('dslr') || lower.contains('camera')) {
+                name = 'Sell DSLR';
+              } else if (lower.contains('lens')) {
+                name = 'Sell Lenses';
+              } else if (lower.contains('gimbal')) {
+                name = 'Sell Gimbals';
+              } else if (lower.contains('video')) {
+                name = 'Sell Video Cam';
+              } else if (lower.contains('action')) {
+                name = 'Sell Action Cam';
+              } else if (lower.contains('phone') || lower.contains('smart')) {
+                name = 'Sell Phone';
+              } else if (lower.contains('laptop') || lower.contains('macbook')) {
+                name = 'Sell Laptop';
+              } else if (lower.contains('tablet') || lower.contains('ipad')) {
+                name = 'Sell Tablet';
+              } else if (!lower.startsWith('sell')) {
+                name = 'Sell $rawName';
               }
 
               final image = item['image'] as String? ?? 'assets/images/categories/dslr.png';
@@ -129,14 +138,14 @@ class EightCategoriesBar extends StatelessWidget {
                   onTap: () => onCategorySelected(id),
                   borderRadius: BorderRadius.circular(16),
                   child: SizedBox(
-                    width: 78,
+                    width: 86,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         // Image Card Container
                         Container(
                           height: 72,
-                          width: 78,
+                          width: 86,
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: Colors.white,

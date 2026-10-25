@@ -10,8 +10,35 @@ import '../tasks/bloc/tasks_cubit.dart';
 import '../tasks/bloc/tasks_state.dart';
 import '../tasks/screens/delivery_order_detail_screen.dart';
 
-class DeliveryDashboardScreen extends StatelessWidget {
+class DeliveryDashboardScreen extends StatefulWidget {
   const DeliveryDashboardScreen({super.key});
+
+  @override
+  State<DeliveryDashboardScreen> createState() => _DeliveryDashboardScreenState();
+}
+
+class _DeliveryDashboardScreenState extends State<DeliveryDashboardScreen> {
+  int _selectedScheduleTab = 0; // 0: Today, 1: Tomorrow, 2: Completed
+
+  int _parseTimeSlot(String? slot) {
+    if (slot == null || slot.isEmpty) return 999;
+    final s = slot.toLowerCase();
+    final regExp = RegExp(r'(\d+)(?::(\d+))?\s*(am|pm)?');
+    final match = regExp.firstMatch(s);
+    if (match == null) return 999;
+    int hours = int.tryParse(match.group(1) ?? '0') ?? 0;
+    final minutes = int.tryParse(match.group(2) ?? '0') ?? 0;
+    final meridiem = match.group(3) ?? (s.contains('pm') ? 'pm' : 'am');
+    if (meridiem == 'pm' && hours < 12) hours += 12;
+    if (meridiem == 'am' && hours == 12) hours = 0;
+    return hours * 60 + minutes;
+  }
+
+  bool _isTomorrow(String? dateStr) {
+    if (dateStr == null) return false;
+    final lower = dateStr.toLowerCase();
+    return lower.contains('tomorrow');
+  }
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -50,6 +77,23 @@ class DeliveryDashboardScreen extends StatelessWidget {
             final pending = tasks.length - completed;
             final estimatedFee = (completed * 250.0);
 
+            final completedTasks = tasks.where((t) => t.status == 'completed' || t.status == 'paid').toList();
+            final activeTasks = tasks.where((t) => t.status != 'completed' && t.status != 'paid').toList();
+
+            final todayTasks = activeTasks
+                .where((t) => !_isTomorrow(t.pickupDate))
+                .toList()
+              ..sort((a, b) => _parseTimeSlot(a.pickupSlot).compareTo(_parseTimeSlot(b.pickupSlot)));
+
+            final tomorrowTasks = activeTasks
+                .where((t) => _isTomorrow(t.pickupDate))
+                .toList()
+              ..sort((a, b) => _parseTimeSlot(a.pickupSlot).compareTo(_parseTimeSlot(b.pickupSlot)));
+
+            final currentScheduleList = _selectedScheduleTab == 0
+                ? todayTasks
+                : (_selectedScheduleTab == 1 ? tomorrowTasks : completedTasks);
+
             return RefreshIndicator(
               color: const Color(0xFFFF5722),
               onRefresh: () async {
@@ -82,16 +126,119 @@ class DeliveryDashboardScreen extends StatelessWidget {
                   const SizedBox(height: 18),
                   _buildPrimaryRouteButton(context, pendingCount: pending),
                   const SizedBox(height: 22),
-                  _buildAssignedRunsHeader(context, totalRuns: tasks.length),
+
+                  // Scheduled Pickups Header & Tabs
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Pickup Routing & Schedule", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900, color: const Color(0xFF0F172A))),
+                      InkWell(
+                        onTap: () => context.read<NavigationCubit>().setTab(1),
+                        child: Row(
+                          children: [
+                            Text('View All (${tasks.length})', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold, color: const Color(0xFF2563EB))),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFF2563EB)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
-                  if (tasks.isEmpty)
+
+                  // Schedule Filter Chips
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setState(() => _selectedScheduleTab = 0),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _selectedScheduleTab == 0 ? const Color(0xFFFF5722) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  "Today (${todayTasks.length})",
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w800,
+                                    color: _selectedScheduleTab == 0 ? Colors.white : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setState(() => _selectedScheduleTab = 1),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _selectedScheduleTab == 1 ? const Color(0xFF2563EB) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  "Tomorrow (${tomorrowTasks.length})",
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w800,
+                                    color: _selectedScheduleTab == 1 ? Colors.white : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setState(() => _selectedScheduleTab = 2),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _selectedScheduleTab == 2 ? const Color(0xFF16A34A) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  "Completed (${completedTasks.length})",
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w800,
+                                    color: _selectedScheduleTab == 2 ? Colors.white : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  if (currentScheduleList.isEmpty)
                     _buildEmptyRunsPlaceholder()
                   else
-                    ...tasks.map(
-                          (task) => _buildOrderRunCard(
+                    ...currentScheduleList.asMap().entries.map(
+                          (entry) => _buildOrderRunCard(
                             context,
-                            task: task,
+                            task: entry.value,
                             tasksCubit: tasksCubit,
+                            stopIndex: entry.key,
                           ),
                         ),
                   const SizedBox(height: 24),
@@ -413,6 +560,7 @@ class DeliveryDashboardScreen extends StatelessWidget {
     BuildContext context, {
     required DeliveryTask task,
     required TasksCubit tasksCubit,
+    int? stopIndex,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -449,11 +597,50 @@ class DeliveryDashboardScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(child: Text(task.deviceName, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.sp, color: const Color(0xFF0F172A)), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            if (stopIndex != null && _selectedScheduleTab == 0)
+                              Container(
+                                margin: const EdgeInsets.only(right: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0F172A),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'Stop #${stopIndex + 1}',
+                                  style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w900),
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(
+                                task.deviceName,
+                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.sp, color: const Color(0xFF0F172A)),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(width: 6),
                       _buildStatusPill(task.statusDisplay),
                     ],
                   ),
+                  if (task.pickupSlot.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time_rounded, size: 13, color: Color(0xFF2563EB)),
+                        const SizedBox(width: 4),
+                        Text(
+                          task.pickupSlot,
+                          style: TextStyle(fontSize: 12.sp, color: const Color(0xFF2563EB), fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   Row(children: [
                     const Icon(Icons.location_on, size: 14, color: Color(0xFFEA580C)),

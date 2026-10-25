@@ -40,7 +40,7 @@ class _RentalCheckoutViewState extends State<RentalCheckoutView> {
   final String _shootDate = 'Tomorrow';
   String _idProofType = 'Aadhaar Card';
   String _shootPurpose = 'Wedding / Event';
-  final String _paymentMode = 'Online UPI / Card';
+  final String _paymentMode = 'Pay on Delivery (Doorstep Cash)';
 
   @override
   void initState() {
@@ -126,6 +126,43 @@ class _RentalCheckoutViewState extends State<RentalCheckoutView> {
       'pickupSlot': '10:00 AM – 1:00 PM',
       'notes': 'Rental booking for ${widget.rentalDays} days. Deposit: ${formatCurrency(deposit)}. Shoot: $_shootPurpose.',
     };
+
+    final pinRes = await ApiService.checkPincodeServiceability(_pincodeController.text.trim());
+    if (pinRes['serviceable'] == false) {
+      final unserviceableData = {
+        ...orderData,
+        'status': 'unserviceable',
+        'notes': 'Unserviceable Area Rental Request. PIN: ${_pincodeController.text.trim()}',
+      };
+      await ApiService.createOrder(unserviceableData);
+
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          icon: const Icon(Icons.location_off_rounded, color: Colors.orange, size: 48),
+          title: const Text('Coverage Notice', style: TextStyle(fontWeight: FontWeight.w900)),
+          content: const Text(
+            'Thanks for your request, we will soon come and start servicing in your area.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pop(context);
+              },
+              child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
 
     final created = await ApiService.createOrder(orderData);
     if (!mounted) return;

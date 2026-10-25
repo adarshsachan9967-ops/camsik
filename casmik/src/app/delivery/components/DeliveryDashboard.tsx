@@ -67,9 +67,70 @@ export default function DeliveryDashboard({ onNavigateToTasks, onNavigateToEarni
     };
   }, [agent?.id]);
 
-  const pendingPickups = taskList.filter(o => ['assigned', 'accepted', 'pickup_scheduled'].includes(o.status));
-  const inTransit = taskList.filter(o => ['picked_up', 'in_transit', 'inspection'].includes(o.status));
-  const completedToday = taskList.filter(o => o.status === 'completed' || o.paymentStatus === 'paid');
+  const [scheduleTab, setScheduleTab] = useState<'today' | 'tomorrow' | 'completed'>('today');
+
+  const parseTimeSlot = (slot?: string): number => {
+    if (!slot) return 999;
+    const s = slot.toLowerCase();
+    const match = s.match(/(\d+)(?::(\d+))?\s*(am|pm)?/);
+    if (!match) return 999;
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2] ? parseInt(match[2], 10) : 0;
+    const meridiem = match[3] || (s.includes('pm') ? 'pm' : 'am');
+    if (meridiem === 'pm' && hours < 12) hours += 12;
+    if (meridiem === 'am' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  };
+
+  const isTmrw = (dateStr?: string) => {
+    if (!dateStr) return false;
+    const l = dateStr.toLowerCase();
+    if (l.includes('tomorrow')) return true;
+    const now = new Date();
+    const t = new Date(now);
+    t.setDate(t.getDate() + 1);
+    const d = new Date(dateStr);
+    return !isNaN(d.getTime()) && d.toDateString() === t.toDateString();
+  };
+
+  const completedOrders = taskList.filter(o => o.status === 'completed' || o.paymentStatus === 'paid');
+  const activeOrders = taskList.filter(o => !['completed', 'paid'].includes(o.status) && o.paymentStatus !== 'paid');
+
+  const todayPickups = activeOrders
+    .filter(o => !isTmrw(o.pickupDate))
+    .sort((a, b) => parseTimeSlot(a.pickupSlot) - parseTimeSlot(b.pickupSlot));
+
+  const tomorrowPickups = activeOrders
+    .filter(o => isTmrw(o.pickupDate))
+    .sort((a, b) => parseTimeSlot(a.pickupSlot) - parseTimeSlot(b.pickupSlot));
+
+  const currentDisplayList =
+    scheduleTab === 'today' ? todayPickups :
+    scheduleTab === 'tomorrow' ? tomorrowPickups : completedOrders;
+
+  const handleMarkComplete = async (orderId: string) => {
+    const updated = taskList.map(t => t.id === orderId ? { ...t, status: 'completed' as OrderStatus, paymentStatus: 'paid' } : t);
+    setTaskList(updated);
+    if (typeof window !== 'undefined') {
+      try {
+        const existing = JSON.parse(localStorage.getItem('casmik_orders_v1') || '[]');
+        const newOrders = existing.map((o: any) => o.id === orderId ? { ...o, status: 'completed', paymentStatus: 'paid' } : o);
+        localStorage.setItem('casmik_orders_v1', JSON.stringify(newOrders));
+        window.dispatchEvent(new Event('casmik_orders_updated'));
+      } catch {}
+    }
+    try {
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, status: 'completed', paymentStatus: 'paid' }),
+      });
+    } catch {}
+  };
+
+  const pendingPickups = todayPickups.filter(o => ['assigned', 'accepted', 'pickup_scheduled'].includes(o.status));
+  const inTransit = todayPickups.filter(o => ['picked_up', 'in_transit', 'inspection'].includes(o.status));
+  const completedToday = completedOrders;
 
   const targetPickups = 6;
   const completedCount = completedToday.length;
@@ -81,7 +142,7 @@ export default function DeliveryDashboard({ onNavigateToTasks, onNavigateToEarni
   const remainingPickups = Math.max(0, targetPickups - completedCount);
   const progressPercent = Math.min(100, Math.round((completedCount / targetPickups) * 100));
 
-  const nextTask = pendingPickups[0] || inTransit[0] || taskList[0];
+  const nextTask = todayPickups[0] || tomorrowPickups[0] || taskList[0];
 
   return (
     <div className="space-y-6 w-full">
@@ -293,64 +354,134 @@ export default function DeliveryDashboard({ onNavigateToTasks, onNavigateToEarni
             </div>
           )}
 
-          {/* Today's Full Task Queue */}
+          {/* Scheduled Pickups & Completed Orders Console */}
           <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
+            {/* Header & Schedule Filter Tabs */}
+            <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="font-black text-base text-slate-900">Today&apos;s Task Pipeline</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Assigned pickups and device transit orders</p>
+                <h3 className="font-black text-base text-slate-900">Assigned Pickups & Operations</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Sequenced pickup routing for optimal doorstep turnaround</p>
               </div>
-              <button
-                onClick={onNavigateToTasks}
-                className="text-xs font-bold text-primary hover:text-primary/80 flex items-center gap-1 hover:underline cursor-pointer"
-              >
-                <span>View All Tasks Queue ({taskList.length})</span>
-                <ArrowRight size={13} />
-              </button>
+
+              {/* Segmented Filter Control */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl w-fit">
+                <button
+                  type="button"
+                  onClick={() => setScheduleTab('today')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    scheduleTab === 'today'
+                      ? 'bg-white text-emerald-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  📅 Today ({todayPickups.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScheduleTab('tomorrow')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    scheduleTab === 'tomorrow'
+                      ? 'bg-white text-blue-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  ⏰ Tomorrow ({tomorrowPickups.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScheduleTab('completed')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    scheduleTab === 'completed'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  ✅ Completed ({completedOrders.length})
+                </button>
+              </div>
             </div>
 
+            {/* List Content */}
             <div className="divide-y divide-slate-100">
-              {taskList.slice(0, 5).map((task) => (
-                <div key={task.id} className="p-4 sm:p-5 hover:bg-slate-50/80 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-start gap-3.5 min-w-0">
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 font-bold ${
-                      task.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
-                      task.status === 'picked_up' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {task.status === 'completed' ? <CheckCircle size={20} /> :
-                       task.status === 'picked_up' ? <Truck size={20} /> : <Clock size={20} />}
-                    </div>
-
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                        <span className="font-mono text-xs font-bold text-slate-500">#{task.orderNumber}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getOrderStatusColor(task.status)}`}>
-                          {getOrderStatusLabel(task.status)}
-                        </span>
-                      </div>
-                      <h4 className="text-sm font-bold text-slate-900 truncate">{task.deviceName}</h4>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Customer: <strong className="text-slate-700">{task.customerName}</strong> ({task.customerPhone})
-                      </p>
-                      <p className="text-xs text-slate-400 mt-0.5 truncate flex items-center gap-1">
-                        <MapPin size={11} className="flex-shrink-0" />
-                        <span>{task.customerAddress || 'Address on file'}, {task.city} ({task.pinCode})</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 flex-shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
-                    <p className="text-base font-black text-emerald-600">₹{task.quotedPrice?.toLocaleString('en-IN')}</p>
-                    <span className="text-xs text-slate-400 font-medium">{task.pickupSlot || '10:00 AM - 1:00 PM'}</span>
-                    <a
-                      href={`tel:${task.customerPhone}`}
-                      className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
-                    >
-                      <Phone size={11} /> Call
-                    </a>
-                  </div>
+              {currentDisplayList.length === 0 ? (
+                <div className="text-center py-12 px-4">
+                  <Package size={36} className="mx-auto text-slate-300 mb-2" />
+                  <p className="text-sm font-bold text-slate-700">No Orders in this Section</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {scheduleTab === 'today' ? 'All today pickups have been completed or none assigned.' :
+                     scheduleTab === 'tomorrow' ? 'No orders scheduled for tomorrow yet.' :
+                     'Completed doorstep pickups will be cataloged here.'}
+                  </p>
                 </div>
-              ))}
+              ) : (
+                currentDisplayList.map((task, idx) => (
+                  <div key={task.id} className="p-4 sm:p-5 hover:bg-slate-50/80 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-start gap-3.5 min-w-0">
+                      {/* Sequence Stop Badge */}
+                      <div className="flex flex-col items-center">
+                        <div className={`w-11 h-11 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 font-black shadow-xs ${
+                          task.status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
+                          scheduleTab === 'today' ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white'
+                        }`}>
+                          <span className="text-[10px] uppercase font-bold leading-none">Stop</span>
+                          <span className="text-base font-black leading-none mt-0.5">#{idx + 1}</span>
+                        </div>
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="font-mono text-xs font-bold text-slate-500">#{task.orderNumber}</span>
+                          <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-slate-900 text-white flex items-center gap-1">
+                            <Clock size={10} /> {task.pickupSlot || '10:00 AM - 1:00 PM'}
+                          </span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getOrderStatusColor(task.status)}`}>
+                            {getOrderStatusLabel(task.status)}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-black text-slate-900 truncate">{task.deviceName}</h4>
+                        <p className="text-xs text-slate-600 mt-0.5">
+                          Customer: <strong className="text-slate-800">{task.customerName}</strong> ({task.customerPhone})
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5 truncate flex items-center gap-1">
+                          <MapPin size={11} className="flex-shrink-0 text-emerald-600" />
+                          <span>{task.customerAddress || 'Customer Address'}, {task.city} (PIN: {task.pinCode})</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2.5 flex-shrink-0 border-t sm:border-t-0 pt-2.5 sm:pt-0 border-slate-100">
+                      <p className="text-base font-black text-emerald-600">₹{task.quotedPrice?.toLocaleString('en-IN')}</p>
+                      <div className="flex items-center gap-2">
+                        {task.customerAddress && (
+                          <a
+                            href={`https://maps.google.com/?q=${encodeURIComponent(task.customerAddress + ' ' + (task.pinCode || ''))}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors"
+                          >
+                            <Navigation size={11} /> Map
+                          </a>
+                        )}
+                        <a
+                          href={`tel:${task.customerPhone}`}
+                          className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors"
+                        >
+                          <Phone size={11} /> Call
+                        </a>
+                        {task.status !== 'completed' && task.paymentStatus !== 'paid' && (
+                          <button
+                            type="button"
+                            onClick={() => handleMarkComplete(task.id)}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center gap-1 shadow-sm transition-all cursor-pointer"
+                          >
+                            <CheckCircle2 size={12} /> Complete
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

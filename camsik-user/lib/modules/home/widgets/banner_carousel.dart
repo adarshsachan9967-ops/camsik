@@ -236,7 +236,10 @@ class _CamsikFullWidthBannerCarouselState extends State<CamsikFullWidthBannerCar
                     const SizedBox(height: 12),
 
                     // 4. Two Buttons Row (Sell Now -> & Browse Deals)
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         // Button 1: Sell Now ->
                         InkWell(
@@ -277,7 +280,6 @@ class _CamsikFullWidthBannerCarouselState extends State<CamsikFullWidthBannerCar
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
 
                         // Button 2: Browse Deals
                         InkWell(

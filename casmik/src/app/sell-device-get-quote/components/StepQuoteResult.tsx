@@ -9,6 +9,7 @@ import FullVerificationReportModal from './FullVerificationReportModal';
 import DeviceVerificationModal from './DeviceVerificationModal';
 import { getCurrentUser } from '@/lib/auth';
 import CustomerAuthModal from '@/components/CustomerAuthModal';
+import UnserviceableAreaModal from '@/components/UnserviceableAreaModal';
 
 interface Props {
   sellState: SellState;
@@ -34,6 +35,7 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack, o
   const [showReportModal, setShowReportModal] = useState(false);
   const [showImeiModal, setShowImeiModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showUnserviceableModal, setShowUnserviceableModal] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -130,6 +132,37 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack, o
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
+    // Check pincode serviceability against Admin serviceable list
+    try {
+      const pinCheckRes = await fetch(`/api/pincodes?pincode=${encodeURIComponent(pinCode.trim())}`);
+      const pinData = await pinCheckRes.json();
+      if (pinData.success && pinData.serviceable === false) {
+        const unserviceableOrder = {
+          ...newOrder,
+          status: 'unserviceable',
+          notes: `Unserviceable Area Booking. PIN: ${pinCode}. Awaiting area service expansion.`,
+        };
+        if (typeof window !== 'undefined') {
+          try {
+            const existingGlobal = JSON.parse(localStorage.getItem('casmik_orders_v1') || '[]');
+            localStorage.setItem('casmik_orders_v1', JSON.stringify([unserviceableOrder, ...existingGlobal]));
+            window.dispatchEvent(new Event('casmik_orders_updated'));
+          } catch {}
+        }
+        await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(unserviceableOrder),
+        }).catch(() => {});
+
+        setIsSubmitting(false);
+        setShowUnserviceableModal(true);
+        return;
+      }
+    } catch (e) {
+      console.warn('Pincode service check error:', e);
+    }
 
     // 1. Save to local storage for Admin management (not assigned to partner/delivery yet)
     if (typeof window !== 'undefined') {
@@ -329,13 +362,19 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack, o
             </div>
             <div>
               <label className="block text-sm font-semibold text-foreground mb-2">Payment Method</label>
-              <div className="grid grid-cols-3 gap-2">
-                {['UPI', 'Bank Transfer', 'Cash'].map(m => (
-                  <button key={m} onClick={() => setPaymentMethod(m)}
-                    className={`py-2.5 rounded-xl border-2 text-xs font-semibold transition-all ${paymentMethod === m ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:border-primary/40'}`}>
-                    {m}
-                  </button>
-                ))}
+              <div className="p-3.5 rounded-xl border-2 border-primary bg-primary-50/60 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-sm">
+                    COD
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-900">Cash / Spot Payout on Handover</p>
+                    <p className="text-[11px] text-slate-500">Receive cash or spot IMPS/UPI at doorstep right upon verification</p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold text-emerald-800 bg-emerald-200/80 px-2 py-0.5 rounded-full">
+                  Guaranteed
+                </span>
               </div>
             </div>
           </div>
@@ -542,6 +581,16 @@ export default function StepQuoteResult({ sellState, onSchedulePickup, onBack, o
         }}
         title="Login Required to Schedule Pickup"
         subtitle="Please verify your mobile number to lock this price quote and schedule your doorstep device pickup."
+      />
+
+      <UnserviceableAreaModal
+        isOpen={showUnserviceableModal}
+        pincode={pinCode}
+        onClose={() => setShowUnserviceableModal(false)}
+        onGoHome={() => {
+          setShowUnserviceableModal(false);
+          window.location.href = '/';
+        }}
       />
     </div>
   );

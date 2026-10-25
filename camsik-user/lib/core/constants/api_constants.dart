@@ -56,5 +56,6 @@ class ApiConstants {
 
   // ── Location & Notifications ──
   static const String cities = "$baseUrl/cities";
+  static const String pincodes = "$baseUrl/pincodes";
   static const String notifications = "$baseUrl/notifications";
 }

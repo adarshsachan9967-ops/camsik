@@ -24,7 +24,23 @@ const COMMON_LENSES = [
   { id: 'lens-flagship-tele', name: '70-200mm f/2.8 Flagship Telephoto', type: 'Pro Telephoto', price: 36000, icon: '⚡' },
 ];
 
+const LENS_MOUNTS = [
+  { id: 'all', name: 'All Mounts', keywords: [] },
+  { id: 'sony-e', name: 'Sony E / FE Mount', keywords: ['sony e', 'fe', 'e-mount', 'e mount'] },
+  { id: 'canon-rf', name: 'Canon RF Mount', keywords: ['canon rf', 'rf mount', 'rf'] },
+  { id: 'canon-ef', name: 'Canon EF / EF-S', keywords: ['canon ef', 'ef-s', 'ef mount', 'ef'] },
+  { id: 'nikon-z', name: 'Nikon Z Mount', keywords: ['nikon z', 'z mount', 'nikkor z', 'z '] },
+  { id: 'nikon-f', name: 'Nikon F Mount', keywords: ['nikon f', 'f mount', 'af-s', 'af-p'] },
+  { id: 'fuji-x', name: 'Fujifilm X Mount', keywords: ['fuji x', 'xf', 'xc', 'x-mount', 'fujinon x'] },
+  { id: 'mft', name: 'Micro Four Thirds (MFT)', keywords: ['micro four thirds', 'mft', 'm4/3', 'lumix g', 'zuiko'] },
+  { id: 'l-mount', name: 'L-Mount (Leica/Panasonic/Sigma)', keywords: ['l-mount', 'lumix s', 'leica l', 'dg dn'] },
+  { id: 'pl-mount', name: 'Cinema PL Mount', keywords: ['pl mount', 'cine', 'cinema'] },
+];
+
 export default function StepModelSelect({ brand, brandId, categoryId, selectedModel, selectedStorage, selectedColor, selectedLenses = [], onSelect, onBack }: Props) {
+  const [selectedMount, setSelectedMount] = useState<string>('all');
+  const isLensCategory = categoryId === 'cat-lens';
+
   const modelsForCat = deviceModels.filter(m => {
     const matchesBrand = brandId ? m.brandId === brandId : true;
     const matchesCat = categoryId ? m.categoryId === categoryId : true;
@@ -71,7 +87,20 @@ export default function StepModelSelect({ brand, brandId, categoryId, selectedMo
   const isCamera = categoryId === 'cat-dslr' || categoryId === 'cat-video-camera' || categoryId === 'cat-action-camera' ||
     (chosenModel?.name && /camera|dslr|mirrorless|eos|alpha|lumix|nikon|fuji/i.test(chosenModel.name));
 
-  const filtered = models.filter(m => m.name.toLowerCase().includes(query.toLowerCase()));
+  const filtered = models.filter(m => {
+    const matchesQuery = m.name.toLowerCase().includes(query.toLowerCase());
+    if (!matchesQuery) return false;
+
+    if (isLensCategory && selectedMount !== 'all') {
+      const mountObj = LENS_MOUNTS.find(x => x.id === selectedMount);
+      if (mountObj) {
+        const text = `${m.name} ${m.alt || ''} ${JSON.stringify(m.specs || '')} ${(m.storages || []).join(' ')}`.toLowerCase();
+        const matchesMount = mountObj.keywords.some(k => text.includes(k.toLowerCase()));
+        return matchesMount;
+      }
+    }
+    return true;
+  });
   const canContinue = chosenModel && chosenStorage && chosenColor;
 
   const totalLensBonus = addedLenses.reduce((acc, l) => acc + l.price, 0);
@@ -105,12 +134,44 @@ export default function StepModelSelect({ brand, brandId, categoryId, selectedMo
       <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-5 transition-colors">
         <ChevronLeft size={16} /> Back to Brand
       </button>
-      <h2 className="text-xl font-bold text-foreground mb-1">Select Model</h2>
-      <p className="text-sm text-muted-foreground mb-5">Showing models for <span className="font-semibold text-foreground">{brand}</span></p>
+      <h2 className="text-xl font-bold text-foreground mb-1">
+        {isLensCategory ? 'Select Lens Mount & Model' : 'Select Model'}
+      </h2>
+      <p className="text-sm text-muted-foreground mb-4">Showing models for <span className="font-semibold text-foreground">{brand}</span></p>
+
+      {/* Mount Selector Bar for Camera Lenses */}
+      {isLensCategory && (
+        <div className="mb-5 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <span>🔍</span> Select Lens Mount:
+            </span>
+            <span className="text-[11px] text-slate-500">
+              {selectedMount === 'all' ? 'All mounts' : LENS_MOUNTS.find(m => m.id === selectedMount)?.name}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {LENS_MOUNTS.map((mount) => (
+              <button
+                key={mount.id}
+                type="button"
+                onClick={() => setSelectedMount(mount.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  selectedMount === mount.id
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:border-purple-300'
+                }`}
+              >
+                {mount.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="relative mb-4">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search model..."
+        <input type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder={isLensCategory ? "Search lens by focal length (e.g. 24-70mm, 50mm)..." : "Search model..."}
           className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-surface transition-all" />
       </div>
 

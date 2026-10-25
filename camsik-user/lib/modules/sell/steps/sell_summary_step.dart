@@ -602,18 +602,18 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
                             const SizedBox(width: 8),
                             if (adj == 0)
                               const Text(
-                                '₹0',
-                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
+                                '* * *',
+                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF64748B), letterSpacing: 1.0),
                               )
                             else if (adj > 0)
-                              Text(
-                                '+${formatCurrency(adj)}',
-                                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFF059669)),
+                              const Text(
+                                '+ * * *',
+                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFF059669), letterSpacing: 1.0),
                               )
                             else
-                              Text(
-                                '-${formatCurrency(adj.abs())}',
-                                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFFDC2626)),
+                              const Text(
+                                '- * * *',
+                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFFDC2626), letterSpacing: 1.0),
                               ),
                           ],
                         ),

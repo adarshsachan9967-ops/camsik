@@ -123,7 +123,7 @@ class _UserMainNavigationScreenState extends State<UserMainNavigationScreen> {
   void _handleOrderCreated(UserOrder order) {
     setState(() {
       _orders.insert(0, order);
-      _currentIndex = 4; // Navigate to Profile / My Orders
+      _currentIndex = 0; // Navigate back to Home from start cleanly
     });
 
     // Native Android Notification & In-App SnackBar

@@ -38,6 +38,7 @@ import {
 } from '@/lib/refurbishedCatalog';
 import { getCurrentUser } from '@/lib/auth';
 import CustomerAuthModal from '@/components/CustomerAuthModal';
+import UnserviceableAreaModal from '@/components/UnserviceableAreaModal';
 
 export default function BuyRefurbishedPage() {
   const [products, setProducts] = useState<RefurbishedProduct[]>(DEFAULT_REFURBISHED_PRODUCTS);
@@ -45,6 +46,7 @@ export default function BuyRefurbishedPage() {
   const [activeCondition, setActiveCondition] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showUnserviceableModal, setShowUnserviceableModal] = useState(false);
 
   // Navigation / views: 'list' | 'details' | 'checkout' | 'confirmed'
   const [currentView, setCurrentView] = useState<'list' | 'details' | 'checkout' | 'confirmed'>('list');
@@ -55,9 +57,9 @@ export default function BuyRefurbishedPage() {
   // Checkout form state
   const [address, setAddress] = useState('');
   const [pincode, setPincode] = useState('');
-  const [phone, setPhone] = useState('');
   const [fullName, setFullName] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'Card' | 'EMI'>('UPI');
+  const [phone, setPhone] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'COD'>('COD');
   const [confirmedOrderId, setConfirmedOrderId] = useState('');
 
   // Load products & listen to admin updates
@@ -155,13 +157,59 @@ export default function BuyRefurbishedPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!getCurrentUser()) {
       setShowAuthModal(true);
       return;
     }
+
     const randomId = 'CAM-ORD-' + Math.floor(100000 + Math.random() * 900000);
+
+    // Verify PIN code serviceability
+    try {
+      const pinRes = await fetch(`/api/pincodes?pincode=${encodeURIComponent(pincode.trim())}`);
+      const pinData = await pinRes.json();
+      if (pinData.success && pinData.serviceable === false) {
+        // Record as unserviceable order
+        const unserviceableOrder = {
+          id: randomId,
+          orderNumber: randomId,
+          type: 'buy',
+          status: 'unserviceable',
+          customerName: fullName || 'Valued Customer',
+          customerPhone: phone || '',
+          customerAddress: address,
+          pinCode: pincode.trim(),
+          city: 'Customer Location',
+          deviceName: selectedProduct ? `${selectedProduct.brand} ${selectedProduct.model}` : 'Refurbished Device',
+          quotedPrice: selectedProduct?.sellingPrice || 0,
+          finalPrice: selectedProduct?.sellingPrice || 0,
+          paymentStatus: 'pending',
+          notes: `Unserviceable Area Buy Order. PIN: ${pincode}. Coverage requested.`,
+          createdAt: new Date().toISOString(),
+        };
+
+        if (typeof window !== 'undefined') {
+          try {
+            const list = JSON.parse(localStorage.getItem('casmik_orders_v1') || '[]');
+            localStorage.setItem('casmik_orders_v1', JSON.stringify([unserviceableOrder, ...list]));
+            window.dispatchEvent(new Event('casmik_orders_updated'));
+          } catch {}
+        }
+        await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(unserviceableOrder),
+        }).catch(() => {});
+
+        setShowUnserviceableModal(true);
+        return;
+      }
+    } catch (err) {
+      console.warn('Pincode check error:', err);
+    }
+
     setConfirmedOrderId(randomId);
     setCurrentView('confirmed');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -419,29 +467,24 @@ export default function BuyRefurbishedPage() {
                 />
               </div>
 
-              {/* Payment Method Selector (matches Screenshot 4) */}
+              {/* Payment Method Selector (COD Only as requested) */}
               <div>
                 <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
                   Payment Method
                 </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {(['UPI', 'Card', 'EMI'] as const).map((method) => {
-                    const isSelected = paymentMethod === method;
-                    return (
-                      <button
-                        key={method}
-                        type="button"
-                        onClick={() => setPaymentMethod(method)}
-                        className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all text-center ${
-                          isSelected
-                            ? 'border-emerald-500 bg-emerald-50/50 text-emerald-700 shadow-sm ring-1 ring-emerald-500'
-                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                        }`}
-                      >
-                        {method}
-                      </button>
-                    );
-                  })}
+                <div className="p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50/60 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-sm">
+                      COD
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-slate-900">Cash on Delivery (Pay on Doorstep Handover)</p>
+                      <p className="text-xs text-slate-500">Pay cash or scan QR at doorstep after device inspection</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-200/80 px-2.5 py-1 rounded-full">
+                    Active
+                  </span>
                 </div>
               </div>
 
@@ -1198,6 +1241,16 @@ export default function BuyRefurbishedPage() {
         }}
         title="Login Required to Buy Device"
         subtitle="Please verify your mobile number to complete your refurbished camera order."
+      />
+
+      <UnserviceableAreaModal
+        isOpen={showUnserviceableModal}
+        pincode={pincode}
+        onClose={() => setShowUnserviceableModal(false)}
+        onGoHome={() => {
+          setShowUnserviceableModal(false);
+          setCurrentView('list');
+        }}
       />
 
       <CustomerFooter />

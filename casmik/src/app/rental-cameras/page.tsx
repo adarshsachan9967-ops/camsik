@@ -44,6 +44,7 @@ import {
 import { saveRentalOrder } from '@/lib/rentalOrders';
 import { getCurrentUser } from '@/lib/auth';
 import CustomerAuthModal from '@/components/CustomerAuthModal';
+import UnserviceableAreaModal from '@/components/UnserviceableAreaModal';
 
 function RentalCamerasContent() {
   const searchParams = useSearchParams();
@@ -81,10 +82,11 @@ function RentalCamerasContent() {
   const [idProofType, setIdProofType] = useState('Aadhaar Card');
   const [idProofNumber, setIdProofNumber] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState<'doorstep' | 'store_pickup'>('doorstep');
-  const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'Card' | 'COD'>('UPI');
+  const [paymentMethod, setPaymentMethod] = useState<'COD'>('COD');
   const [confirmedOrderId, setConfirmedOrderId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showUnserviceableModal, setShowUnserviceableModal] = useState(false);
 
   // Load catalog & pre-fill logged in user
   useEffect(() => {
@@ -185,7 +187,7 @@ function RentalCamerasContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handlePlaceRentalOrder = (e: React.FormEvent) => {
+  const handlePlaceRentalOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!getCurrentUser()) {
       setShowAuthModal(true);
@@ -201,6 +203,48 @@ function RentalCamerasContent() {
     setIsSubmitting(true);
 
     try {
+      // Check serviceable PIN code
+      const pinRes = await fetch(`/api/pincodes?pincode=${encodeURIComponent(pincode.trim())}`);
+      const pinData = await pinRes.json();
+      if (pinData.success && pinData.serviceable === false) {
+        const randomOrderNo = `CAM-RNT-${Math.floor(100000 + Math.random() * 900000)}`;
+        const unserviceableOrder = {
+          id: randomOrderNo,
+          orderNumber: randomOrderNo,
+          type: 'rent',
+          status: 'unserviceable',
+          customerName: fullName.trim(),
+          customerPhone: phone.trim(),
+          customerEmail: email.trim(),
+          customerAddress: address.trim(),
+          city: city.trim(),
+          pinCode: pincode.trim(),
+          deviceName: selectedCamera.model,
+          quotedPrice: priceMath.grandTotal,
+          finalPrice: priceMath.grandTotal,
+          paymentStatus: 'pending',
+          notes: `Unserviceable Area Rental Request for ${selectedCamera.brand} ${selectedCamera.model}. PIN: ${pincode.trim()}`,
+          createdAt: new Date().toISOString(),
+        };
+
+        if (typeof window !== 'undefined') {
+          try {
+            const list = JSON.parse(localStorage.getItem('casmik_orders_v1') || '[]');
+            localStorage.setItem('casmik_orders_v1', JSON.stringify([unserviceableOrder, ...list]));
+            window.dispatchEvent(new Event('casmik_orders_updated'));
+          } catch {}
+        }
+        await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(unserviceableOrder),
+        }).catch(() => {});
+
+        setIsSubmitting(false);
+        setShowUnserviceableModal(true);
+        return;
+      }
+
       const newOrder = saveRentalOrder({
         camera: selectedCamera,
         customerName: fullName.trim(),
@@ -564,68 +608,24 @@ function RentalCamerasContent() {
                 </div>
               </div>
 
-              {/* Payment Method */}
+              {/* Payment Method - COD Only as requested */}
               <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                  3. Select Payment Preference
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <span>💳</span> 3. Payment Method
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div
-                    onClick={() => setPaymentMethod('UPI')}
-                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
-                      paymentMethod === 'UPI'
-                        ? 'border-rose-600 bg-rose-50/40 ring-2 ring-rose-600/20'
-                        : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-extrabold text-xs text-slate-900">Instant UPI</span>
-                      <span className="w-3.5 h-3.5 rounded-full border-2 border-rose-600 flex items-center justify-center">
-                        {paymentMethod === 'UPI' && (
-                          <span className="w-2 h-2 rounded-full bg-rose-600" />
-                        )}
-                      </span>
+                <div className="p-4 rounded-2xl border-2 border-rose-600 bg-rose-50/40 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black text-xs shadow-sm">
+                      COD
                     </div>
-                    <p className="text-[11px] text-slate-500">GPay, PhonePe, Paytm QR</p>
-                  </div>
-
-                  <div
-                    onClick={() => setPaymentMethod('Card')}
-                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
-                      paymentMethod === 'Card'
-                        ? 'border-rose-600 bg-rose-50/40 ring-2 ring-rose-600/20'
-                        : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-extrabold text-xs text-slate-900">Debit / Credit Card</span>
-                      <span className="w-3.5 h-3.5 rounded-full border-2 border-rose-600 flex items-center justify-center">
-                        {paymentMethod === 'Card' && (
-                          <span className="w-2 h-2 rounded-full bg-rose-600" />
-                        )}
-                      </span>
+                    <div>
+                      <p className="text-sm font-black text-slate-900">Pay on Handover (Cash on Delivery)</p>
+                      <p className="text-xs text-slate-500">Pay cash or UPI directly when camera gear arrives at your doorstep</p>
                     </div>
-                    <p className="text-[11px] text-slate-500">Visa, Mastercard, RuPay</p>
                   </div>
-
-                  <div
-                    onClick={() => setPaymentMethod('COD')}
-                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
-                      paymentMethod === 'COD'
-                        ? 'border-rose-600 bg-rose-50/40 ring-2 ring-rose-600/20'
-                        : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-extrabold text-xs text-slate-900">Pay on Handover</span>
-                      <span className="w-3.5 h-3.5 rounded-full border-2 border-rose-600 flex items-center justify-center">
-                        {paymentMethod === 'COD' && (
-                          <span className="w-2 h-2 rounded-full bg-rose-600" />
-                        )}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500">Pay when camera arrives at doorstep</p>
-                  </div>
+                  <span className="text-xs font-bold text-rose-700 bg-rose-100 px-2.5 py-1 rounded-full">
+                    Active
+                  </span>
                 </div>
               </div>
 
@@ -1236,6 +1236,16 @@ function RentalCamerasContent() {
         }}
         title="Login Required to Rent Camera"
         subtitle="Please verify your mobile number to reserve professional photography equipment."
+      />
+
+      <UnserviceableAreaModal
+        isOpen={showUnserviceableModal}
+        pincode={pincode}
+        onClose={() => setShowUnserviceableModal(false)}
+        onGoHome={() => {
+          setShowUnserviceableModal(false);
+          setCurrentView('list');
+        }}
       />
 
       <CustomerFooter />

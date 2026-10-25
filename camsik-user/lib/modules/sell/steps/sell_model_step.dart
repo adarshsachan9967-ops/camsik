@@ -22,7 +22,21 @@ class SellModelStep extends StatefulWidget {
 
 class _SellModelStepState extends State<SellModelStep> {
   String _searchQuery = '';
+  String _selectedMount = 'All Mounts';
   final TextEditingController _searchController = TextEditingController();
+
+  static const List<Map<String, dynamic>> _lensMounts = [
+    {'name': 'All Mounts', 'keywords': <String>[]},
+    {'name': 'Sony E / FE', 'keywords': ['sony e', 'fe', 'e-mount', 'e mount']},
+    {'name': 'Canon RF', 'keywords': ['canon rf', 'rf mount', 'rf']},
+    {'name': 'Canon EF / EF-S', 'keywords': ['canon ef', 'ef-s', 'ef mount', 'ef']},
+    {'name': 'Nikon Z', 'keywords': ['nikon z', 'z mount', 'nikkor z']},
+    {'name': 'Nikon F', 'keywords': ['nikon f', 'f mount', 'af-s', 'af-p']},
+    {'name': 'Fujifilm X', 'keywords': ['fuji x', 'xf', 'xc', 'x-mount', 'fujinon']},
+    {'name': 'Micro Four Thirds', 'keywords': ['micro four thirds', 'mft', 'm4/3', 'lumix g', 'zuiko']},
+    {'name': 'L-Mount', 'keywords': ['l-mount', 'lumix s', 'leica l']},
+    {'name': 'Cinema PL', 'keywords': ['pl mount', 'cine', 'cinema']},
+  ];
 
   @override
   void dispose() {
@@ -33,15 +47,89 @@ class _SellModelStepState extends State<SellModelStep> {
   @override
   Widget build(BuildContext context) {
     final query = _searchQuery.trim().toLowerCase();
+    final bool isLensCategory = widget.models.any((m) =>
+        (m['categoryId']?.toString() ?? '') == 'cat-lens' ||
+        (m['category']?.toString() ?? '').toLowerCase().contains('lens') ||
+        (m['name']?.toString() ?? '').toLowerCase().contains('lens') ||
+        (m['name']?.toString() ?? '').toLowerCase().contains('mm'));
+
     final filtered = widget.models.where((m) {
-      if (query.isEmpty) return true;
-      final name = (m['name'] as String? ?? '').toLowerCase();
-      final brand = (m['brand'] as String? ?? '').toLowerCase();
-      return name.contains(query) || brand.contains(query);
+      if (query.isNotEmpty) {
+        final name = (m['name'] as String? ?? '').toLowerCase();
+        final brand = (m['brand'] as String? ?? '').toLowerCase();
+        if (!name.contains(query) && !brand.contains(query)) return false;
+      }
+
+      if (isLensCategory && _selectedMount != 'All Mounts') {
+        final mountObj = _lensMounts.firstWhere((x) => x['name'] == _selectedMount, orElse: () => _lensMounts[0]);
+        final keywords = mountObj['keywords'] as List<String>;
+        final hayStack = '${m['name']} ${m['brand']} ${m['storages']} ${m['specs']}'.toLowerCase();
+        return keywords.any((k) => hayStack.contains(k));
+      }
+
+      return true;
     }).toList();
 
     return Column(
       children: [
+        // Mount selector for lenses
+        if (isLensCategory)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.camera_rounded, size: 14, color: Color(0xFF059669)),
+                    SizedBox(width: 4),
+                    Text(
+                      'Select Lens Mount:',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  height: 32,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _lensMounts.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 6),
+                    itemBuilder: (ctx, idx) {
+                      final mountName = _lensMounts[idx]['name'] as String;
+                      final isSelected = _selectedMount == mountName;
+                      return ChoiceChip(
+                        label: Text(
+                          mountName,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            color: isSelected ? Colors.white : const Color(0xFF334155),
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFF059669),
+                        backgroundColor: Colors.white,
+                        showCheckmark: false,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(
+                            color: isSelected ? const Color(0xFF059669) : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        onSelected: (val) {
+                          if (val) setState(() => _selectedMount = mountName);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
         // Search bar
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),

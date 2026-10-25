@@ -69,7 +69,7 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Base Market Price</span>
                 <span className="font-semibold text-foreground font-tabular">
-                  ₹{sellState.basePrice.toLocaleString('en-IN')}
+                  {currentStep === 2 ? '₹ * * * * *' : `₹${sellState.basePrice.toLocaleString('en-IN')}`}
                 </span>
               </div>
 
@@ -80,7 +80,7 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
                     <span className="truncate">{adj.reason}</span>
                   </span>
                   <span className="font-semibold text-primary font-tabular flex-shrink-0">
-                    +₹{Math.abs(adj.amount).toLocaleString('en-IN')}
+                    + * * *
                   </span>
                 </div>
               ))}
@@ -88,17 +88,17 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
               {negativeAdj.map((adj, ai) => (
                 <div key={`adj-neg-${ai}`} className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground flex items-center gap-1.5 truncate max-w-[55%]">
-                    <TrendingDown size={11} className="text-danger flex-shrink-0" />
+                    <TrendingDown size={11} className="text-amber-600 flex-shrink-0" />
                     <span className="truncate">{adj.reason}</span>
                   </span>
-                  <span className="font-semibold text-danger font-tabular flex-shrink-0">
-                    -₹{Math.abs(adj.amount).toLocaleString('en-IN')}
+                  <span className="font-semibold text-amber-600 font-tabular flex-shrink-0">
+                    - * * *
                   </span>
                 </div>
               ))}
 
               {positiveAdj.length === 0 && negativeAdj.length === 0 && currentStep === 2 && (
-                <p className="text-xs text-muted-foreground italic">Answer questions to see price adjustments</p>
+                <p className="text-xs text-muted-foreground italic">Answer questions to complete your evaluation</p>
               )}
 
               {/* Instant payment bonus */}
@@ -108,7 +108,9 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
                     <TrendingUp size={11} className="text-primary flex-shrink-0" />
                     Instant Payment Bonus
                   </span>
-                  <span className="font-semibold text-primary font-tabular">+₹1,000</span>
+                  <span className="font-semibold text-primary font-tabular">
+                    {currentStep === 2 ? '+ * * *' : '+₹1,000'}
+                  </span>
                 </div>
               )}
             </div>
@@ -122,14 +124,16 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
                     Included Lenses ({sellState.lenses.length})
                   </span>
                   <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                    +₹{sellState.lenses.reduce((a, b) => a + b.price, 0).toLocaleString('en-IN')}
+                    {currentStep === 2 ? '+ * * *' : `+₹${sellState.lenses.reduce((a, b) => a + b.price, 0).toLocaleString('en-IN')}`}
                   </span>
                 </div>
                 <div className="bg-slate-50 p-2.5 rounded-xl border border-border/70 space-y-1.5 text-xs">
                   {sellState.lenses.map((lens) => (
                     <div key={lens.id} className="flex justify-between items-center">
                       <span className="text-slate-600 truncate max-w-[160px]">{lens.name}</span>
-                      <span className="font-bold text-emerald-600 font-tabular">+₹{lens.price.toLocaleString('en-IN')}</span>
+                      <span className="font-bold text-emerald-600 font-tabular">
+                        {currentStep === 2 ? '+ * * *' : `+₹${lens.price.toLocaleString('en-IN')}`}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -139,9 +143,14 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
             {/* Divider */}
             <div className="border-t-2 border-dashed border-border pt-3 mb-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-foreground">You Get</span>
+                <div>
+                  <span className="text-sm font-bold text-foreground block">You Get</span>
+                  {currentStep === 2 && (
+                    <span className="text-[10px] text-muted-foreground">Final price reveals at final checkout</span>
+                  )}
+                </div>
                 <span className="text-2xl font-extrabold text-primary font-tabular">
-                  ₹{sellState.currentPrice.toLocaleString('en-IN')}
+                  {currentStep === 2 ? '₹ * * * * *' : `₹${sellState.currentPrice.toLocaleString('en-IN')}`}
                 </span>
               </div>
             </div>

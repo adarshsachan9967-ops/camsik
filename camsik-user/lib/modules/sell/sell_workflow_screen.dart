@@ -163,6 +163,10 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
   }
 
   void _handleConfirmSellOrder() async {
+    final addressText = _addressController.text.trim();
+    final pinMatch = RegExp(r'\b\d{6}\b').firstMatch(addressText);
+    final pinCode = pinMatch?.group(0) ?? '401107';
+
     final lensSummary = _selectedLenses.isNotEmpty
         ? ' + ${_selectedLenses.length} Lens (${_selectedLenses.map((l) => l['name']).join(', ')})'
         : '';
@@ -170,19 +174,72 @@ class _SellWorkflowWidgetState extends State<SellWorkflowWidget> {
       'type': 'sell',
       'customerName': widget.userProfile.name,
       'customerPhone': widget.userProfile.phone,
-      'customerAddress': _addressController.text.trim(),
+      'customerAddress': addressText,
+      'pinCode': pinCode,
       'pickupDate': _selectedDate,
       'pickupSlot': _selectedSlot,
-      'paymentMethod': 'Instant UPI (${_upiController.text.trim()})',
+      'paymentMethod': 'Doorstep Cash / Handover Payout',
       'amount': _calculatedPrice,
+      'quotedPrice': _calculatedPrice,
+      'finalPrice': _calculatedPrice,
       'deviceName': '${_selectedModel?['name'] ?? 'Device'} ($_selectedStorage)$lensSummary',
-      'status': 'Order Placed',
+      'status': 'created',
       if (_verifiedImei != null && _verifiedImei!.isNotEmpty) 'deviceImei': _verifiedImei,
     };
+
+    // Verify PIN serviceability
+    final pinRes = await ApiService.checkPincodeServiceability(pinCode);
+    if (pinRes['serviceable'] == false) {
+      final unserviceableData = {
+        ...orderData,
+        'status': 'unserviceable',
+        'notes': 'Unserviceable Area Sell Order Request. PIN: $pinCode',
+      };
+      await ApiService.createOrder(unserviceableData);
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            icon: const Icon(Icons.location_off_rounded, color: Colors.orange, size: 48),
+            title: const Text('Coverage Notice', style: TextStyle(fontWeight: FontWeight.w900)),
+            content: const Text(
+              'Thanks for your request, we will soon come and start servicing in your area.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  setState(() {
+                    _step = 0;
+                    _selectedBrand = null;
+                    _selectedModel = null;
+                    _selectedAnswers.clear();
+                    _selectedLenses.clear();
+                  });
+                },
+                child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
 
     final created = await ApiService.createOrder(orderData);
     if (created != null && mounted) {
       final userOrder = UserOrder.fromJson(created);
+      setState(() {
+        _step = 0;
+        _selectedBrand = null;
+        _selectedModel = null;
+        _selectedAnswers.clear();
+        _selectedLenses.clear();
+      });
       widget.onOrderCreated(userOrder);
     }
   }

@@ -61,7 +61,7 @@ export default function CameraCategoryBar() {
               </div>
 
               {/* Title & Stats */}
-              <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 group-hover:text-purple-700 transition-colors mb-0.5 line-clamp-1">
+              <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 group-hover:text-purple-700 transition-colors mb-0.5 line-clamp-2 min-h-[2.25rem] flex items-center justify-center text-center">
                 {cat.name}
               </h3>
               <p className="text-[10px] text-slate-500 line-clamp-1 mb-3">

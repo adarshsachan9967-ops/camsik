@@ -37,6 +37,7 @@ const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: 'in_transit', label: 'In Transit' },
   { value: 'inspection', label: 'Under Inspection' },
   { value: 'completed', label: 'Order Completed' },
+  { value: 'unserviceable', label: 'Unserviceable Area' },
   { value: 'cancelled', label: 'Cancelled' },
   { value: 'rejected', label: 'Rejected' },
 ];
@@ -50,6 +51,7 @@ const STATUS_PROGRESSION: Record<string, number> = {
   in_transit: 6,
   inspection: 7,
   completed: 8,
+  unserviceable: 90,
   cancelled: 99,
   rejected: 99,
 };
@@ -643,8 +645,8 @@ export default function AdminOrders({
       return;
     }
 
-    const pickupDate = scheduledPickupDate || assignDeliveryModal.pickupDate || 'Today';
-    const pickupSlot = scheduledPickupSlot || assignDeliveryModal.pickupSlot || '10:00 AM - 1:00 PM';
+    const pickupDate = assignDeliveryModal.pickupDate || 'Today';
+    const pickupSlot = assignDeliveryModal.pickupSlot || '10:00 AM - 1:00 PM';
 
     const updatedOrder: Order = {
       ...assignDeliveryModal,
@@ -779,6 +781,7 @@ export default function AdminOrders({
     pending: orderList.filter(o => ['created', 'assigned'].includes(o.status)).length,
     active: orderList.filter(o => ['accepted', 'pickup_scheduled', 'picked_up', 'inspection'].includes(o.status)).length,
     completed: orderList.filter(o => o.status === 'completed' || o.status === 'paid').length,
+    unserviceable: orderList.filter(o => o.status === 'unserviceable').length,
   };
 
   return (
@@ -820,12 +823,13 @@ export default function AdminOrders({
       ) : (
         <>
           {/* Stats Cards (Interactive Click-to-filter) */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
             {[
               { label: 'Total Orders', value: stats.total, icon: '📦', color: 'bg-blue-50 text-blue-700', statusKey: 'all' },
               { label: 'Pending', value: stats.pending, icon: '⏳', color: 'bg-yellow-50 text-yellow-700', statusKey: 'pending' },
               { label: 'Active', value: stats.active, icon: '🔄', color: 'bg-purple-50 text-purple-700', statusKey: 'accepted' },
               { label: 'Completed', value: stats.completed, icon: '✅', color: 'bg-green-50 text-green-700', statusKey: 'completed' },
+              { label: 'Unserviceable', value: stats.unserviceable, icon: '🚫', color: 'bg-rose-50 text-rose-700', statusKey: 'unserviceable' },
             ].map(s => (
               <div
                 key={s.label}
@@ -893,6 +897,7 @@ export default function AdminOrders({
               <option value="assigned">Assigned</option>
               <option value="inspection">Inspection</option>
               <option value="completed">Completed</option>
+              <option value="unserviceable">Unserviceable Area</option>
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
@@ -906,6 +911,7 @@ export default function AdminOrders({
                     <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wide">Order</th>
                     <th className="text-left px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wide">Customer</th>
                     <th className="text-left px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wide">Device</th>
+                    <th className="text-left px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wide">PIN & Area</th>
                     <th className="text-left px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wide">Type</th>
                     <th className="text-left px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wide">Amount</th>
                     <th className="text-left px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wide">Status</th>
@@ -935,6 +941,20 @@ export default function AdminOrders({
                           {(order.deviceVerificationStatus === 'verified' || order.deviceVerificationId) && (
                             <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1 rounded border border-emerald-200">
                               ✓ Verified
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-mono text-xs font-bold text-gray-800">{order.pinCode || 'N/A'}</span>
+                          {order.status === 'unserviceable' ? (
+                            <span className="text-[10px] font-black text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded w-fit">
+                              Unserviceable ✕
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded w-fit">
+                              Serviceable ✓
                             </span>
                           )}
                         </div>
@@ -1614,30 +1634,19 @@ export default function AdminOrders({
               </div>
             </div>
 
-            {/* Schedule Slot Inputs */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            {/* Auto-Inherited Customer Pickup Schedule */}
+            <div className="bg-blue-50/80 rounded-2xl p-3 border border-blue-200/70 mb-4 flex items-center justify-between text-xs">
               <div>
-                <label className="text-[11px] font-bold text-gray-600 mb-1 block">Scheduled Date</label>
-                <input
-                  type="date"
-                  value={scheduledPickupDate}
-                  onChange={e => setScheduledPickupDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Customer Scheduled Date</span>
+                <span className="font-black text-blue-900 text-sm">
+                  📅 {assignDeliveryModal.pickupDate || 'Today'}
+                </span>
               </div>
-              <div>
-                <label className="text-[11px] font-bold text-gray-600 mb-1 block">Pickup Window</label>
-                <select
-                  value={scheduledPickupSlot}
-                  onChange={e => setScheduledPickupSlot(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
-                >
-                  <option value="">Select Time Slot</option>
-                  <option value="10:00 AM - 1:00 PM">10:00 AM - 1:00 PM</option>
-                  <option value="1:00 PM - 4:00 PM">1:00 PM - 4:00 PM</option>
-                  <option value="4:00 PM - 7:00 PM">4:00 PM - 7:00 PM</option>
-                  <option value="7:00 PM - 9:00 PM">7:00 PM - 9:00 PM</option>
-                </select>
+              <div className="text-right">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Customer Pickup Slot</span>
+                <span className="font-black text-blue-900 text-sm">
+                  ⏰ {assignDeliveryModal.pickupSlot || '10:00 AM - 1:00 PM'}
+                </span>
               </div>
             </div>
 
