@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../models/admin_models.dart';
@@ -12,60 +13,25 @@ class AdminPayoutsScreen extends StatefulWidget {
 }
 
 class _AdminPayoutsScreenState extends State<AdminPayoutsScreen> {
-  final bool _isLoading = false;
+  bool _isLoading = true;
   String _filter = 'all';
+  List<AdminPayout> _payouts = [];
 
-  // Seed with active payouts list
-  final List<AdminPayout> _payouts = [
-    const AdminPayout(
-      id: 'pay-801',
-      requesterName: 'Adarsh Camera Store',
-      requesterType: 'partner',
-      requesterId: 'partner-46819',
-      amount: 45000.0,
-      paymentMethod: 'Bank Transfer (IMPS)',
-      accountDetails: 'HDFC Bank - A/C 5010048291039, IFSC: HDFC0000128',
-      status: 'pending',
-      transactionRef: '',
-      requestedAt: '2026-10-25 14:30',
-    ),
-    const AdminPayout(
-      id: 'pay-802',
-      requesterName: 'Rohan Sharma (Fleet Rider)',
-      requesterType: 'rider',
-      requesterId: 'agent-760782',
-      amount: 6200.0,
-      paymentMethod: 'UPI',
-      accountDetails: 'rohan.fleet@okhdfcbank',
-      status: 'pending',
-      transactionRef: '',
-      requestedAt: '2026-10-25 18:00',
-    ),
-    const AdminPayout(
-      id: 'pay-799',
-      requesterName: 'Sony Center CP',
-      requesterType: 'partner',
-      requesterId: 'partner-202',
-      amount: 112000.0,
-      paymentMethod: 'NEFT',
-      accountDetails: 'ICICI Bank - A/C 000201594839',
-      status: 'approved',
-      transactionRef: 'CMSK-TXN-984712',
-      requestedAt: '2026-10-24 11:20',
-    ),
-    const AdminPayout(
-      id: 'pay-798',
-      requesterName: 'Vikram Delivery Executive',
-      requesterType: 'rider',
-      requesterId: 'agent-104',
-      amount: 3400.0,
-      paymentMethod: 'UPI',
-      accountDetails: 'vikram.rider@paytm',
-      status: 'paid',
-      transactionRef: 'CMSK-UPI-331904',
-      requestedAt: '2026-10-23 09:40',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadPayouts();
+  }
+
+  Future<void> _loadPayouts() async {
+    setState(() => _isLoading = true);
+    final items = await ApiService.fetchPayouts(_filter);
+    if (!mounted) return;
+    setState(() {
+      _payouts = items;
+      _isLoading = false;
+    });
+  }
 
   void _showApproveDialog(AdminPayout payout) {
     final refController = TextEditingController(text: 'CMSK-TXN-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}');
@@ -98,26 +64,20 @@ class _AdminPayoutsScreenState extends State<AdminPayoutsScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              setState(() {
-                final idx = _payouts.indexWhere((p) => p.id == payout.id);
-                if (idx != -1) {
-                  _payouts[idx] = AdminPayout(
-                    id: payout.id,
-                    requesterName: payout.requesterName,
-                    requesterType: payout.requesterType,
-                    requesterId: payout.requesterId,
-                    amount: payout.amount,
-                    paymentMethod: payout.paymentMethod,
-                    accountDetails: payout.accountDetails,
-                    status: 'paid',
-                    transactionRef: refController.text.trim(),
-                    requestedAt: payout.requestedAt,
-                  );
-                }
+              final utr = refController.text.trim();
+              final success = await ApiService.updatePayout({
+                'id': payout.id,
+                'status': 'approved',
+                'transactionRef': utr,
               });
-              showCustomSnackBar(context, 'Payout approved & marked as PAID', isError: false);
+              if (success) {
+                Helpers.showSuccessSnackbar('Success', 'Payout approved with UTR: $utr');
+                _loadPayouts();
+              } else {
+                Helpers.showErrorSnackbar('Error', 'Failed to approve payout');
+              }
             },
             child: const Text('Confirm Payout'),
           ),
@@ -126,25 +86,17 @@ class _AdminPayoutsScreenState extends State<AdminPayoutsScreen> {
     );
   }
 
-  void _rejectPayout(AdminPayout payout) {
-    setState(() {
-      final idx = _payouts.indexWhere((p) => p.id == payout.id);
-      if (idx != -1) {
-        _payouts[idx] = AdminPayout(
-          id: payout.id,
-          requesterName: payout.requesterName,
-          requesterType: payout.requesterType,
-          requesterId: payout.requesterId,
-          amount: payout.amount,
-          paymentMethod: payout.paymentMethod,
-          accountDetails: payout.accountDetails,
-          status: 'rejected',
-          transactionRef: 'Rejected by Super Admin',
-          requestedAt: payout.requestedAt,
-        );
-      }
+  void _rejectPayout(AdminPayout payout) async {
+    final success = await ApiService.updatePayout({
+      'id': payout.id,
+      'status': 'rejected',
     });
-    showCustomSnackBar(context, 'Payout rejected', isError: true);
+    if (success) {
+      Helpers.showSuccessSnackbar('Rejected', 'Payout request marked as rejected');
+      _loadPayouts();
+    } else {
+      Helpers.showErrorSnackbar('Error', 'Failed to reject payout');
+    }
   }
 
   @override
@@ -158,6 +110,9 @@ class _AdminPayoutsScreenState extends State<AdminPayoutsScreen> {
         title: const Text('Wallet & Payouts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         backgroundColor: AppColors.secondary,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh, size: 20), onPressed: _loadPayouts),
+        ],
       ),
       body: Column(
         children: [

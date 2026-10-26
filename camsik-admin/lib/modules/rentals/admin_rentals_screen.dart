@@ -233,7 +233,7 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> with SingleTick
     );
   }
 
-  void _updateCameraStatus(String id, String status) {
+  void _updateCameraStatus(String id, String status) async {
     setState(() {
       final idx = _cameras.indexWhere((c) => c.id == id);
       if (idx != -1) {
@@ -256,7 +256,15 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> with SingleTick
         );
       }
     });
-    showCustomSnackBar(context, 'Camera status updated to $status', isError: false);
+    showCustomSnackBar(context, 'Updating camera status...', isError: false);
+    final ok = await ApiService.updateRentalCamera({'id': id, 'status': status});
+    if (mounted) {
+      if (ok) {
+        showCustomSnackBar(context, 'Camera status updated to $status in database', isError: false);
+      } else {
+        showCustomSnackBar(context, 'Status updated locally (database offline)', isError: false);
+      }
+    }
   }
 
   @override
@@ -395,15 +403,24 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> with SingleTick
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                width: 70,
-                                height: 70,
-                                decoration: BoxDecoration(
-                                  color: AppColors.background,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: AppColors.border),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  width: 70,
+                                  height: 70,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.background,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: AppColors.border),
+                                  ),
+                                  child: cam.image.startsWith('http')
+                                      ? Image.network(
+                                          cam.image,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, _, _) => const Icon(Icons.camera_rounded, size: 36, color: AppColors.primary),
+                                        )
+                                      : const Icon(Icons.camera_rounded, size: 36, color: AppColors.primary),
                                 ),
-                                child: const Icon(Icons.camera_rounded, size: 36, color: AppColors.primary),
                               ),
                               const SizedBox(width: 14),
                               Expanded(
@@ -446,21 +463,30 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> with SingleTick
                                     const SizedBox(height: 2),
                                     Text('${cam.brand} • ${cam.category}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                                     const SizedBox(height: 6),
-                                    Row(
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 4,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
                                       children: [
                                         Text(
                                           '${CurrencyFormatter.format(cam.dailyPrice)}/day',
                                           style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: AppColors.primary),
                                         ),
-                                        const SizedBox(width: 10),
                                         Text(
-                                          'Deposit: ${CurrencyFormatter.format(cam.securityDeposit)}',
+                                          '• Deposit: ${CurrencyFormatter.format(cam.securityDeposit)}',
                                           style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                                         ),
-                                        const Spacer(),
-                                        Text(
-                                          'Stock: ${cam.stock}',
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondary),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.background,
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: AppColors.border),
+                                          ),
+                                          child: Text(
+                                            'Stock: ${cam.stock}',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: AppColors.textSecondary),
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -539,13 +565,21 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> with SingleTick
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Pickup / Delivery Slot', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
-                                Text(order.pickupDate.isNotEmpty ? '${order.pickupDate} (${order.pickupSlot})' : 'Slot Pending', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                              ],
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Pickup / Delivery Slot', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                                  Text(
+                                    order.pickupDate.isNotEmpty ? '${order.pickupDate} (${order.pickupSlot})' : 'Slot Pending',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
                               CurrencyFormatter.format(order.finalPrice),
                               style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.success),

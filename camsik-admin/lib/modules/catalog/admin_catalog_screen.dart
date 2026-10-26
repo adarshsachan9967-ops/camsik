@@ -810,11 +810,20 @@ class _AdminCatalogScreenState extends State<AdminCatalogScreen> with SingleTick
             ),
             child: Row(
               children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.verified, size: 30, color: AppColors.primary),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)),
+                    child: r.image.startsWith('http')
+                        ? Image.network(
+                            r.image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const Icon(Icons.verified, size: 30, color: AppColors.primary),
+                          )
+                        : const Icon(Icons.verified, size: 30, color: AppColors.primary),
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(

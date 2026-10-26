@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../models/admin_models.dart';
@@ -12,47 +13,24 @@ class AdminCouponsScreen extends StatefulWidget {
 }
 
 class _AdminCouponsScreenState extends State<AdminCouponsScreen> {
-  final List<AdminCoupon> _coupons = [
-    const AdminCoupon(
-      id: 'cpn-1',
-      code: 'CAMSIK15',
-      description: '15% Off on DSLR & Cinema Rentals',
-      discountType: 'percentage',
-      discountValue: 15.0,
-      minOrderValue: 2000.0,
-      maxDiscount: 1500.0,
-      expiryDate: '2026-12-31',
-      usageLimit: 500,
-      usedCount: 142,
-      active: true,
-    ),
-    const AdminCoupon(
-      id: 'cpn-2',
-      code: 'FIRSTBONUS',
-      description: '₹500 Flat Bonus on First Camera Buyback',
-      discountType: 'fixed',
-      discountValue: 500.0,
-      minOrderValue: 10000.0,
-      maxDiscount: 500.0,
-      expiryDate: '2026-11-30',
-      usageLimit: 200,
-      usedCount: 88,
-      active: true,
-    ),
-    const AdminCoupon(
-      id: 'cpn-3',
-      code: 'FESTIVE2026',
-      description: 'Festive Flash Discount ₹1,000 Off',
-      discountType: 'fixed',
-      discountValue: 1000.0,
-      minOrderValue: 25000.0,
-      maxDiscount: 1000.0,
-      expiryDate: '2026-10-31',
-      usageLimit: 100,
-      usedCount: 97,
-      active: false,
-    ),
-  ];
+  List<AdminCoupon> _coupons = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCoupons();
+  }
+
+  Future<void> _loadCoupons() async {
+    setState(() => _isLoading = true);
+    final items = await ApiService.fetchCoupons();
+    if (!mounted) return;
+    setState(() {
+      _coupons = items;
+      _isLoading = false;
+    });
+  }
 
   void _showAddCouponDialog() {
     final codeController = TextEditingController();
@@ -116,29 +94,31 @@ class _AdminCouponsScreenState extends State<AdminCouponsScreen> {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-              onPressed: () {
+              onPressed: () async {
                 final code = codeController.text.trim().toUpperCase();
                 if (code.isEmpty) return;
-                setState(() {
-                  _coupons.insert(
-                    0,
-                    AdminCoupon(
-                      id: 'cpn-${DateTime.now().millisecondsSinceEpoch}',
-                      code: code,
-                      description: descController.text.trim().isEmpty ? 'Special Promo Code' : descController.text.trim(),
-                      discountType: type,
-                      discountValue: double.tryParse(valController.text) ?? 10.0,
-                      minOrderValue: double.tryParse(minController.text) ?? 0.0,
-                      maxDiscount: double.tryParse(maxController.text) ?? 500.0,
-                      expiryDate: '2026-12-31',
-                      usageLimit: 500,
-                      usedCount: 0,
-                      active: true,
-                    ),
-                  );
-                });
                 Navigator.pop(ctx);
-                showCustomSnackBar(context, 'Coupon $code created successfully!', isError: false);
+
+                final newCouponData = {
+                  'id': 'cpn-${DateTime.now().millisecondsSinceEpoch}',
+                  'code': code,
+                  'description': descController.text.trim().isEmpty ? 'Special Promo Code' : descController.text.trim(),
+                  'discountType': type,
+                  'discountValue': double.tryParse(valController.text) ?? 10.0,
+                  'minOrderValue': double.tryParse(minController.text) ?? 0.0,
+                  'maxDiscount': double.tryParse(maxController.text) ?? 500.0,
+                  'expiryDate': '2026-12-31',
+                  'usageLimit': 500,
+                  'active': true,
+                };
+
+                final success = await ApiService.addCoupon(newCouponData);
+                if (success) {
+                  Helpers.showSuccessSnackbar('Success', 'Coupon $code created!');
+                  _loadCoupons();
+                } else {
+                  Helpers.showErrorSnackbar('Error', 'Failed to create coupon');
+                }
               },
               child: const Text('Save Coupon'),
             ),
@@ -148,23 +128,18 @@ class _AdminCouponsScreenState extends State<AdminCouponsScreen> {
     );
   }
 
-  void _toggleCoupon(int index) {
-    setState(() {
-      final c = _coupons[index];
-      _coupons[index] = AdminCoupon(
-        id: c.id,
-        code: c.code,
-        description: c.description,
-        discountType: c.discountType,
-        discountValue: c.discountValue,
-        minOrderValue: c.minOrderValue,
-        maxDiscount: c.maxDiscount,
-        expiryDate: c.expiryDate,
-        usageLimit: c.usageLimit,
-        usedCount: c.usedCount,
-        active: !c.active,
-      );
+  void _toggleCoupon(int index) async {
+    final c = _coupons[index];
+    final success = await ApiService.updateCoupon({
+      'id': c.id,
+      'active': !c.active,
     });
+    if (success) {
+      Helpers.showSuccessSnackbar('Updated', '${c.code} status changed');
+      _loadCoupons();
+    } else {
+      Helpers.showErrorSnackbar('Error', 'Failed to update coupon');
+    }
   }
 
   @override
@@ -174,6 +149,9 @@ class _AdminCouponsScreenState extends State<AdminCouponsScreen> {
         title: const Text('Coupons & Offers', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         backgroundColor: AppColors.secondary,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh, size: 20), onPressed: _loadCoupons),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primary,
@@ -182,11 +160,15 @@ class _AdminCouponsScreenState extends State<AdminCouponsScreen> {
         label: const Text('Create Coupon', style: TextStyle(fontWeight: FontWeight.bold)),
         onPressed: _showAddCouponDialog,
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _coupons.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (context, idx) {
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _coupons.isEmpty
+              ? const Center(child: Text('No promo coupons found', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMuted)))
+              : ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _coupons.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, idx) {
           final c = _coupons[idx];
           return Container(
             padding: const EdgeInsets.all(16),

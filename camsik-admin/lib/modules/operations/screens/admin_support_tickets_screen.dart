@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../models/admin_models.dart';
 
@@ -12,48 +13,24 @@ class AdminSupportTicketsScreen extends StatefulWidget {
 
 class _AdminSupportTicketsScreenState extends State<AdminSupportTicketsScreen> {
   String _filter = 'all';
+  List<AdminSupportTicket> _tickets = [];
+  bool _isLoading = true;
 
-  final List<AdminSupportTicket> _tickets = [
-    const AdminSupportTicket(
-      id: 'tkt-101',
-      ticketNumber: 'TCK-2026-091',
-      userName: 'Aman Kumar',
-      userPhone: '9868689565',
-      userRole: 'customer',
-      subject: 'Delay in pickup rider arrival',
-      category: 'Order Pickup',
-      priority: 'high',
-      status: 'open',
-      createdAt: '2026-10-25 15:40',
-      lastMessage: 'Rider has not arrived yet for order CSM-2024-735. Please check.',
-    ),
-    const AdminSupportTicket(
-      id: 'tkt-102',
-      ticketNumber: 'TCK-2026-088',
-      userName: 'Camera Hub Mumbai',
-      userPhone: '9967853364',
-      userRole: 'partner',
-      subject: 'Commission discrepancy for October cycle',
-      category: 'Payouts',
-      priority: 'medium',
-      status: 'in_progress',
-      createdAt: '2026-10-24 18:20',
-      lastMessage: 'We noticed a 1% deduction difference in last payout statement.',
-    ),
-    const AdminSupportTicket(
-      id: 'tkt-100',
-      ticketNumber: 'TCK-2026-080',
-      userName: 'Rahul Verma',
-      userPhone: '9811223344',
-      userRole: 'customer',
-      subject: 'Lens compatibility query for Sony FX3 rental',
-      category: 'Rental Inquiry',
-      priority: 'low',
-      status: 'resolved',
-      createdAt: '2026-10-22 10:15',
-      lastMessage: 'Resolved: Advised client to use native Sony E-Mount 24-70mm G-Master.',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadTickets();
+  }
+
+  Future<void> _loadTickets() async {
+    setState(() => _isLoading = true);
+    final items = await ApiService.fetchSupportTickets(_filter);
+    if (!mounted) return;
+    setState(() {
+      _tickets = items;
+      _isLoading = false;
+    });
+  }
 
   void _showReplyDialog(AdminSupportTicket ticket) {
     final replyController = TextEditingController();
@@ -90,46 +67,35 @@ class _AdminSupportTicketsScreenState extends State<AdminSupportTicketsScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           OutlinedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              _updateTicketStatus(ticket.id, 'in_progress');
+              final reply = replyController.text.trim();
+              if (reply.isNotEmpty) {
+                await ApiService.replySupportTicket(ticket.id, reply);
+              }
+              await ApiService.updateSupportTicket({'id': ticket.id, 'status': 'in_progress'});
+              Helpers.showSuccessSnackbar('Updated', 'Ticket status marked In Progress');
+              _loadTickets();
             },
             child: const Text('Mark In Progress'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              _updateTicketStatus(ticket.id, 'resolved');
-              showCustomSnackBar(context, 'Ticket marked as Resolved & reply sent', isError: false);
+              final reply = replyController.text.trim();
+              if (reply.isNotEmpty) {
+                await ApiService.replySupportTicket(ticket.id, reply);
+              }
+              await ApiService.updateSupportTicket({'id': ticket.id, 'status': 'resolved'});
+              Helpers.showSuccessSnackbar('Success', 'Ticket marked as Resolved & reply sent');
+              _loadTickets();
             },
             child: const Text('Resolve Ticket'),
           ),
         ],
       ),
     );
-  }
-
-  void _updateTicketStatus(String id, String status) {
-    setState(() {
-      final idx = _tickets.indexWhere((t) => t.id == id);
-      if (idx != -1) {
-        final t = _tickets[idx];
-        _tickets[idx] = AdminSupportTicket(
-          id: t.id,
-          ticketNumber: t.ticketNumber,
-          userName: t.userName,
-          userPhone: t.userPhone,
-          userRole: t.userRole,
-          subject: t.subject,
-          category: t.category,
-          priority: t.priority,
-          status: status,
-          createdAt: t.createdAt,
-          lastMessage: t.lastMessage,
-        );
-      }
-    });
   }
 
   @override
@@ -141,6 +107,9 @@ class _AdminSupportTicketsScreenState extends State<AdminSupportTicketsScreen> {
         title: const Text('Support Tickets', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         backgroundColor: AppColors.secondary,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh, size: 20), onPressed: _loadTickets),
+        ],
       ),
       body: Column(
         children: [
@@ -163,13 +132,15 @@ class _AdminSupportTicketsScreenState extends State<AdminSupportTicketsScreen> {
             ),
           ),
           Expanded(
-            child: filtered.isEmpty
-                ? const Center(child: Text('No support tickets in this category', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMuted)))
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, idx) {
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : filtered.isEmpty
+                    ? const Center(child: Text('No support tickets in this category', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMuted)))
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
+                        itemBuilder: (context, idx) {
                       final item = filtered[idx];
                       final isOpen = item.status == 'open';
 

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AdminPanelLayout from './components/AdminPanelLayout';
@@ -42,6 +42,19 @@ export default function AdminPage() {
   const [ordersFilterType, setOrdersFilterType] = useState<string>('all');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
+  const handleNavigate = useCallback((section: AdminSection, options?: AdminNavigationOptions) => {
+    setActiveSection(section);
+    if (options?.filterStatus !== undefined) {
+      setOrdersFilterStatus(options.filterStatus);
+    }
+    if (options?.filterType !== undefined) {
+      setOrdersFilterType(options.filterType);
+    }
+    if (options?.orderId !== undefined) {
+      setSelectedOrderId(options.orderId);
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const auth = localStorage.getItem('casmik_admin_auth');
@@ -61,7 +74,7 @@ export default function AdminPage() {
     };
     window.addEventListener('casmik_admin_navigate', handleNavEvent);
     return () => window.removeEventListener('casmik_admin_navigate', handleNavEvent);
-  }, []);
+  }, [handleNavigate]);
 
   if (isAuthorized !== true) {
     return (
@@ -79,19 +92,6 @@ export default function AdminPage() {
       </div>
     );
   }
-
-  const handleNavigate = (section: AdminSection, options?: AdminNavigationOptions) => {
-    setActiveSection(section);
-    if (options?.filterStatus !== undefined) {
-      setOrdersFilterStatus(options.filterStatus);
-    }
-    if (options?.filterType !== undefined) {
-      setOrdersFilterType(options.filterType);
-    }
-    if (options?.orderId !== undefined) {
-      setSelectedOrderId(options.orderId);
-    }
-  };
 
   const renderSection = () => {
     switch (activeSection) {

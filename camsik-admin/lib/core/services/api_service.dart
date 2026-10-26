@@ -397,6 +397,16 @@ class ApiService {
     }
   }
 
+  static Future<bool> updateRentalCamera(Map<String, dynamic> data) async {
+    try {
+      final res = await dio.put(ApiConstants.rentals, data: data);
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error updating rental camera: $e");
+      return false;
+    }
+  }
+
   static Future<bool> deleteRentalCamera(String id) async {
     try {
       final res = await dio.delete("${ApiConstants.rentals}?id=$id");
@@ -689,6 +699,115 @@ class ApiService {
       return res.data != null && res.data['success'] == true;
     } catch (e) {
       appLog("Error deleting question: $e");
+      return false;
+    }
+  }
+
+  // ── PAYOUTS ──
+  static Future<List<AdminPayout>> fetchPayouts([String status = 'all']) async {
+    try {
+      final res = await dio.get(ApiConstants.payouts, queryParameters: {'status': status});
+      if (res.data != null && res.data['success'] == true && res.data['payouts'] is List) {
+        return (res.data['payouts'] as List)
+            .map((e) => AdminPayout.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (e) {
+      appLog("Error fetching payouts: $e");
+    }
+    return [];
+  }
+
+  static Future<bool> updatePayout(Map<String, dynamic> data) async {
+    try {
+      final res = await dio.put(ApiConstants.payouts, data: data);
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error updating payout: $e");
+      return false;
+    }
+  }
+
+  // ── COUPONS ──
+  static Future<List<AdminCoupon>> fetchCoupons() async {
+    try {
+      final res = await dio.get(ApiConstants.coupons);
+      if (res.data != null && res.data['success'] == true && res.data['coupons'] is List) {
+        return (res.data['coupons'] as List)
+            .map((e) => AdminCoupon.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (e) {
+      appLog("Error fetching coupons: $e");
+    }
+    return [];
+  }
+
+  static Future<bool> addCoupon(Map<String, dynamic> data) async {
+    try {
+      final res = await dio.post(ApiConstants.coupons, data: data);
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error adding coupon: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> updateCoupon(Map<String, dynamic> data) async {
+    try {
+      final res = await dio.put(ApiConstants.coupons, data: data);
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error updating coupon: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> deleteCoupon(String id) async {
+    try {
+      final res = await dio.delete("${ApiConstants.coupons}?id=$id");
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error deleting coupon: $e");
+      return false;
+    }
+  }
+
+  // ── SUPPORT TICKETS ──
+  static Future<List<AdminSupportTicket>> fetchSupportTickets([String status = 'all']) async {
+    try {
+      final res = await dio.get(ApiConstants.supportTickets, queryParameters: {'status': status});
+      if (res.data != null && res.data['success'] == true && res.data['tickets'] is List) {
+        return (res.data['tickets'] as List)
+            .map((e) => AdminSupportTicket.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (e) {
+      appLog("Error fetching support tickets: $e");
+    }
+    return [];
+  }
+
+  static Future<bool> updateSupportTicket(Map<String, dynamic> data) async {
+    try {
+      final res = await dio.put(ApiConstants.supportTickets, data: data);
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error updating support ticket: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> replySupportTicket(String ticketId, String replyMessage) async {
+    try {
+      final res = await dio.post(ApiConstants.supportTickets, data: {
+        'ticketId': ticketId,
+        'replyMessage': replyMessage,
+        'author': 'Super Admin',
+      });
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error sending ticket reply: $e");
       return false;
     }
   }

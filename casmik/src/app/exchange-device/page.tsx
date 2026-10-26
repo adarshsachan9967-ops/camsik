@@ -528,7 +528,7 @@ export default function ExchangeDevicePage() {
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerCity, setCustomerCity] = useState('');
   const [customerPincode, setCustomerPincode] = useState('');
-  const [paymentPreference, setPaymentPreference] = useState<'delivery'>('delivery');
+  const [paymentPreference, setPaymentPreference] = useState<'delivery' | 'online' | 'emi'>('delivery');
   const [showUnserviceableModal, setShowUnserviceableModal] = useState(false);
 
   // Payout Details if Old Device Trade-in Value > Upgrade Price

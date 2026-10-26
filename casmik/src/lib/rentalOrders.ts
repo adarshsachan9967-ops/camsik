@@ -176,7 +176,18 @@ Kit Included: ${input.camera.includedKit.slice(0, 3).join(', ')}...`,
       console.error('Failed triggering rental notification:', e);
     }
 
-    // 5. Broadcast custom events across tabs
+    // 5. Persist to MongoDB orders collection
+    try {
+      fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrder),
+      }).catch((err) => console.error('Failed saving rental order to MongoDB:', err));
+    } catch (e) {
+      console.error('Failed dispatching order to MongoDB API:', e);
+    }
+
+    // 6. Broadcast custom events across tabs
     window.dispatchEvent(new CustomEvent('casmik_orders_updated', { detail: [newOrder] }));
     window.dispatchEvent(new CustomEvent('casmik_rental_orders_updated', { detail: newOrder }));
   }
@@ -202,9 +213,16 @@ export function updateRentalOrderStatus(orderId: string, status: OrderStatus): v
       localStorage.setItem(RENTAL_ORDERS_STORAGE_KEY, JSON.stringify(updated));
     }
 
+    fetch('/api/orders', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: orderId, status }),
+    }).catch((err) => console.error('Failed updating rental order in MongoDB:', err));
+
     window.dispatchEvent(new CustomEvent('casmik_orders_updated'));
     window.dispatchEvent(new CustomEvent('casmik_rental_orders_updated'));
   } catch (e) {
     console.error('Failed updating rental order status:', e);
   }
 }
+

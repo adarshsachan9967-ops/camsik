@@ -56,11 +56,11 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 8000,
     rating: 4.9,
     reviewsCount: 142,
-    image: '/assets/images/refurbished/sony-a7.jpg',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/refurbished/sony-a7.jpg',
     gallery: [
-      '/assets/images/refurbished/sony-a7.jpg',
-      '/assets/images/categories/dslr.png',
-      '/assets/images/categories/video.png',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/sony-a7.jpg',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/dslr.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
     ],
     includedKit: [
       'Sony FX3 Camera Body with Sensor Cap',
@@ -98,10 +98,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 5000,
     rating: 4.8,
     reviewsCount: 230,
-    image: '/assets/images/refurbished/sony-a7.jpg',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/refurbished/sony-a7.jpg',
     gallery: [
-      '/assets/images/refurbished/sony-a7.jpg',
-      '/assets/images/categories/dslr.png',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/sony-a7.jpg',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/dslr.png',
     ],
     includedKit: [
       'Sony Alpha A7 IV Camera Body',
@@ -138,11 +138,11 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 8000,
     rating: 4.9,
     reviewsCount: 118,
-    image: '/assets/images/refurbished/canon-eos-r.webp',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/refurbished/canon-eos-r.webp',
     gallery: [
-      '/assets/images/refurbished/canon-eos-r.webp',
-      '/assets/images/refurbished/canon-eos-rp.jpg',
-      '/assets/images/categories/dslr.png',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/canon-eos-r.webp',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/canon-eos-rp.jpg',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/dslr.png',
     ],
     includedKit: [
       'Canon EOS R5 Camera Body',
@@ -179,10 +179,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 5000,
     rating: 4.9,
     reviewsCount: 95,
-    image: '/assets/images/refurbished/canon-eos-rp.jpg',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/refurbished/canon-eos-rp.jpg',
     gallery: [
-      '/assets/images/refurbished/canon-eos-rp.jpg',
-      '/assets/images/refurbished/canon-eos-r.webp',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/canon-eos-rp.jpg',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/canon-eos-r.webp',
     ],
     includedKit: [
       'Canon EOS R6 Mark II Body',
@@ -219,10 +219,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 15000,
     rating: 5.0,
     reviewsCount: 68,
-    image: '/assets/images/categories/video.png',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
     gallery: [
-      '/assets/images/categories/video.png',
-      '/assets/images/refurbished/sony-a7.jpg',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/sony-a7.jpg',
     ],
     includedKit: [
       'Sony FX6 Cinema Camera Body with Smart Grip',
@@ -261,10 +261,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 9000,
     rating: 4.9,
     reviewsCount: 76,
-    image: '/assets/images/refurbished/nikon-z50ii.png',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/refurbished/nikon-z50ii.png',
     gallery: [
-      '/assets/images/refurbished/nikon-z50ii.png',
-      '/assets/images/categories/dslr.png',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/nikon-z50ii.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/dslr.png',
     ],
     includedKit: [
       'Nikon Z8 Pro Camera Body',
@@ -301,10 +301,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 6000,
     rating: 4.8,
     reviewsCount: 164,
-    image: '/assets/images/categories/video.png',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
     gallery: [
-      '/assets/images/categories/video.png',
-      '/assets/images/categories/dslr.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/dslr.png',
     ],
     includedKit: [
       'BMPCC 6K Pro Body with Sensor Cap',
@@ -342,10 +342,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 20000,
     rating: 5.0,
     reviewsCount: 52,
-    image: '/assets/images/categories/video.png',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
     gallery: [
-      '/assets/images/categories/video.png',
-      '/assets/images/categories/dslr.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/dslr.png',
     ],
     includedKit: [
       'RED KOMODO 6K Production Body',
@@ -384,10 +384,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 7000,
     rating: 4.9,
     reviewsCount: 188,
-    image: '/assets/images/refurbished/sony-a7.jpg',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/refurbished/sony-a7.jpg',
     gallery: [
-      '/assets/images/refurbished/sony-a7.jpg',
-      '/assets/images/categories/dslr.png',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/sony-a7.jpg',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/dslr.png',
     ],
     includedKit: [
       'Sony Alpha A7S III Body',
@@ -424,10 +424,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 4000,
     rating: 4.8,
     reviewsCount: 92,
-    image: '/assets/images/refurbished/fujifilm-xt5.jpg',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/refurbished/fujifilm-xt5.jpg',
     gallery: [
-      '/assets/images/refurbished/fujifilm-xt5.jpg',
-      '/assets/images/categories/dslr.png',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/fujifilm-xt5.jpg',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/dslr.png',
     ],
     includedKit: [
       'Fujifilm X-T5 Camera Body',
@@ -464,10 +464,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 3000,
     rating: 5.0,
     reviewsCount: 310,
-    image: '/assets/images/refurbished/sony-1635gm.jpg',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/refurbished/sony-1635gm.jpg',
     gallery: [
-      '/assets/images/refurbished/sony-1635gm.jpg',
-      '/assets/images/categories/lens.png',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/sony-1635gm.jpg',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/lens.png',
     ],
     includedKit: [
       'Sony FE 24-70mm f/2.8 GM II Lens',
@@ -504,10 +504,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 4000,
     rating: 4.9,
     reviewsCount: 145,
-    image: '/assets/images/categories/lens.png',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/categories/lens.png',
     gallery: [
-      '/assets/images/categories/lens.png',
-      '/assets/images/refurbished/sony-1635gm.jpg',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/lens.png',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/sony-1635gm.jpg',
     ],
     includedKit: [
       'Sony FE 70-200mm f/2.8 GM OSS II Lens',
@@ -544,10 +544,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 4500,
     rating: 5.0,
     reviewsCount: 88,
-    image: '/assets/images/categories/lens.png',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/categories/lens.png',
     gallery: [
-      '/assets/images/categories/lens.png',
-      '/assets/images/refurbished/canon-eos-r.webp',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/lens.png',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/canon-eos-r.webp',
     ],
     includedKit: [
       'Canon RF 28-70mm f/2L USM Lens',
@@ -584,10 +584,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 25000,
     rating: 5.0,
     reviewsCount: 39,
-    image: '/assets/images/categories/video.png',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
     gallery: [
-      '/assets/images/categories/video.png',
-      '/assets/images/categories/gimbal.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/gimbal.png',
     ],
     includedKit: [
       'DJI Ronin 4D 6K Cinema Body with X9 Gimbal Camera',
@@ -627,10 +627,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 2500,
     rating: 4.9,
     reviewsCount: 280,
-    image: '/assets/images/categories/gimbal.png',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/categories/gimbal.png',
     gallery: [
-      '/assets/images/categories/gimbal.png',
-      '/assets/images/categories/video.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/gimbal.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
     ],
     includedKit: [
       'DJI RS 3 Pro Gimbal with Carbon Fiber Axis Arms',
@@ -669,10 +669,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 10000,
     rating: 4.9,
     reviewsCount: 84,
-    image: '/assets/images/categories/video.png',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
     gallery: [
-      '/assets/images/categories/video.png',
-      '/assets/images/refurbished/canon-eos-r.webp',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
+      'https://ik.imagekit.io/avdarinn/casmik/refurbished/canon-eos-r.webp',
     ],
     includedKit: [
       'Canon EOS C70 Camera Body',
@@ -710,10 +710,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 1500,
     rating: 4.8,
     reviewsCount: 312,
-    image: '/assets/images/categories/action.png',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/categories/action.png',
     gallery: [
-      '/assets/images/categories/action.png',
-      '/assets/images/categories/dslr.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/action.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/dslr.png',
     ],
     includedKit: [
       'GoPro HERO 12 Black Camera Unit (Waterproof to 33ft/10m)',
@@ -752,10 +752,10 @@ export const defaultRentalCameras: RentalCamera[] = [
     securityDeposit: 4500,
     rating: 4.8,
     reviewsCount: 71,
-    image: '/assets/images/categories/video.png',
+    image: 'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
     gallery: [
-      '/assets/images/categories/video.png',
-      '/assets/images/categories/dslr.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/video.png',
+      'https://ik.imagekit.io/avdarinn/casmik/categories/dslr.png',
     ],
     includedKit: [
       'Panasonic LUMIX S5IIX Matte Black Body',

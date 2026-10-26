@@ -282,7 +282,7 @@ class AdminOverviewScreen extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 1.25,
+                childAspectRatio: 1.08,
                 children: [
                   SummaryCard(
                     title: 'Total Bookings',

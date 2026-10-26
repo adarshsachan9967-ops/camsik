@@ -78,19 +78,30 @@ export default function AdminRentalCameras({ initialTab = 'fleet' }: { initialTa
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const loadData = () => {
-    setCameras(getRentalCameras());
-    setRentalOrders(getRentalOrders());
-    fetch('/api/orders')
-      .then(r => r.json())
-      .then(d => {
-        if (d.success && Array.isArray(d.orders)) {
-          const rents = d.orders.filter((o: Order) => o.type === 'rent');
-          if (rents.length > 0) {
-            setRentalOrders(rents);
-          }
+    fetch('/api/rentals')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && Array.isArray(d.cameras)) {
+          setCameras(d.cameras);
+          saveRentalCameras(d.cameras);
+        } else {
+          setCameras(getRentalCameras());
         }
       })
-      .catch(() => {});
+      .catch(() => setCameras(getRentalCameras()));
+
+    fetch('/api/orders?type=rent')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && Array.isArray(d.orders)) {
+          setRentalOrders(d.orders);
+        } else {
+          setRentalOrders(getRentalOrders());
+        }
+      })
+      .catch(() => {
+        setRentalOrders(getRentalOrders());
+      });
   };
 
   useEffect(() => {
@@ -101,12 +112,12 @@ export default function AdminRentalCameras({ initialTab = 'fleet' }: { initialTa
       if (customEvent.detail) {
         setCameras(customEvent.detail);
       } else {
-        setCameras(getRentalCameras());
+        loadData();
       }
     };
 
     const handleOrdersUpdate = () => {
-      setRentalOrders(getRentalOrders());
+      loadData();
     };
 
     window.addEventListener('casmik_rental_catalog_updated', handleCatalogUpdate);
@@ -158,7 +169,7 @@ export default function AdminRentalCameras({ initialTab = 'fleet' }: { initialTa
     setShowModal(true);
   };
 
-  const handleSaveCamera = (e: React.FormEvent) => {
+  const handleSaveCamera = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formModel.trim()) {
       alert('Please enter a camera model name.');
@@ -172,30 +183,37 @@ export default function AdminRentalCameras({ initialTab = 'fleet' }: { initialTa
 
     if (editCamera) {
       // Edit existing
-      const updated = cameras.map((c) => {
-        if (c.id === editCamera.id) {
-          return {
-            ...c,
-            brand: formBrand,
-            model: formModel,
-            category: formCategory,
-            dailyPrice: Number(formDailyPrice) || c.dailyPrice,
-            weeklyPrice: Number(formWeeklyPrice) || c.weeklyPrice,
-            securityDeposit: Number(formDeposit) || c.securityDeposit,
-            sensor: formSensor,
-            mount: formMount,
-            videoRes: formVideoRes,
-            stock: Number(formStock) || 1,
-            status: formStatus,
-            image: formImage,
-            specs: formSpecs,
-            includedKit: kitArray.length > 0 ? kitArray : c.includedKit,
-          };
-        }
-        return c;
-      });
+      const updatedCamera: RentalCamera = {
+        ...editCamera,
+        brand: formBrand,
+        model: formModel,
+        category: formCategory,
+        dailyPrice: Number(formDailyPrice) || editCamera.dailyPrice,
+        weeklyPrice: Number(formWeeklyPrice) || editCamera.weeklyPrice,
+        securityDeposit: Number(formDeposit) || editCamera.securityDeposit,
+        sensor: formSensor,
+        mount: formMount,
+        videoRes: formVideoRes,
+        stock: Number(formStock) || 1,
+        status: formStatus,
+        image: formImage,
+        specs: formSpecs,
+        includedKit: kitArray.length > 0 ? kitArray : editCamera.includedKit,
+      };
+
+      const updated = cameras.map((c) => (c.id === editCamera.id ? updatedCamera : c));
       saveRentalCameras(updated);
       setCameras(updated);
+
+      try {
+        await fetch('/api/rentals', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedCamera),
+        });
+      } catch (err) {
+        console.error('Failed to update rental camera in MongoDB:', err);
+      }
     } else {
       // Add new camera
       const newId = `rent-${formBrand.toLowerCase()}-${Date.now().toString(36)}`;
@@ -233,15 +251,33 @@ export default function AdminRentalCameras({ initialTab = 'fleet' }: { initialTa
       const updated = [newCamera, ...cameras];
       saveRentalCameras(updated);
       setCameras(updated);
+
+      try {
+        await fetch('/api/rentals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newCamera),
+        });
+      } catch (err) {
+        console.error('Failed to add rental camera to MongoDB:', err);
+      }
     }
     setShowModal(false);
   };
 
-  const handleDeleteCamera = (id: string, name: string) => {
+  const handleDeleteCamera = async (id: string, name: string) => {
     if (confirm(`Are you sure you want to remove "${name}" from the rental catalog?`)) {
       const updated = cameras.filter((c) => c.id !== id);
       saveRentalCameras(updated);
       setCameras(updated);
+
+      try {
+        await fetch(`/api/rentals?id=${id}`, {
+          method: 'DELETE',
+        });
+      } catch (err) {
+        console.error('Failed to delete rental camera from MongoDB:', err);
+      }
     }
   };
 

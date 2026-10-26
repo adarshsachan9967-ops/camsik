@@ -49,6 +49,18 @@ class AdminProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    try {
+      context.read<ProfileCubit>();
+      return _buildBody(context);
+    } catch (_) {
+      return BlocProvider(
+        create: (_) => ProfileCubit()..loadProfile(),
+        child: Builder(builder: (ctx) => _buildBody(ctx)),
+      );
+    }
+  }
+
+  Widget _buildBody(BuildContext context) {
     return BlocBuilder<ProfileCubit, ProfileState>(
       builder: (context, state) {
         final profileUser = (state is ProfileLoaded ? state.user : null) ?? user;

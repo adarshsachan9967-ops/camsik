@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { orders, deliveryAgents, getOrderStatusLabel, getOrderStatusColor } from '@/lib/casmikData';
-import type { Order } from '@/lib/casmikData';
+import type { Order, OrderStatus } from '@/lib/casmikData';
 import { 
   MapPin, 
   Package, 
@@ -109,7 +109,7 @@ export default function DeliveryDashboard({ onNavigateToTasks, onNavigateToEarni
     scheduleTab === 'tomorrow' ? tomorrowPickups : completedOrders;
 
   const handleMarkComplete = async (orderId: string) => {
-    const updated = taskList.map(t => t.id === orderId ? { ...t, status: 'completed' as OrderStatus, paymentStatus: 'paid' } : t);
+    const updated = taskList.map(t => t.id === orderId ? { ...t, status: 'completed' as OrderStatus, paymentStatus: 'paid' as const } : t);
     setTaskList(updated);
     if (typeof window !== 'undefined') {
       try {

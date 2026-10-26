@@ -25,17 +25,7 @@ class AdminMainShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (_) => NavigationCubit()),
-        BlocProvider(create: (_) => OverviewCubit()..loadOverview()),
-        BlocProvider(create: (_) => OrdersCubit()..loadOrders()),
-        BlocProvider(create: (_) => PartnersCubit()..loadPartners()),
-        BlocProvider(create: (_) => FleetCubit()..loadAgents()),
-        BlocProvider(create: (_) => ProfileCubit()..loadProfile()),
-      ],
-      child: _AdminMainShellView(user: user),
-    );
+    return _AdminMainShellView(user: user);
   }
 }
 
@@ -72,9 +62,12 @@ class _AdminMainShellView extends StatelessWidget {
         backgroundColor: AppColors.secondary,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               _getTitle(currentIndex),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -82,34 +75,45 @@ class _AdminMainShellView extends StatelessWidget {
               ),
             ),
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  adminUser?.name ?? 'Super Administrator',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                Flexible(
+                  child: Text(
+                    adminUser?.name ?? 'Admin',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                  ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 const Text('•', style: TextStyle(color: Color(0xFF64748B), fontSize: 10)),
-                const SizedBox(width: 6),
-                InkWell(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServerSettingsScreen()));
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.circle, size: 6, color: AppColors.success),
-                        const SizedBox(width: 4),
-                        Text(
-                          serverShort,
-                          style: const TextStyle(fontSize: 9, color: Color(0xFFC4B5FD), fontWeight: FontWeight.bold),
-                        ),
-                      ],
+                const SizedBox(width: 4),
+                Flexible(
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServerSettingsScreen()));
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.circle, size: 6, color: AppColors.success),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              serverShort,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 9, color: Color(0xFFC4B5FD), fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -119,15 +123,21 @@ class _AdminMainShellView extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.dns_rounded, size: 20, color: Colors.white),
+            icon: const Icon(Icons.dns_rounded, size: 19, color: Colors.white),
             tooltip: 'Server Settings',
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServerSettingsScreen()));
             },
           ),
           IconButton(
-            icon: const Icon(Icons.refresh, size: 20, color: Colors.white),
+            icon: const Icon(Icons.refresh, size: 19, color: Colors.white),
             tooltip: 'Refresh All Hubs',
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             onPressed: () {
               context.read<OverviewCubit>().loadOverview();
               context.read<OrdersCubit>().loadOrders();
@@ -137,12 +147,16 @@ class _AdminMainShellView extends StatelessWidget {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.account_circle, size: 22, color: Colors.white),
+            icon: const Icon(Icons.account_circle, size: 21, color: Colors.white),
             tooltip: 'Super Admin Profile',
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(body: AdminProfileScreen(user: adminUser))));
             },
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: IndexedStack(

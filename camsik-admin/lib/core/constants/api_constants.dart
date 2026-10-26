@@ -44,6 +44,9 @@ class ApiConstants {
   // ── Logistics & Settings ──
   static String get pincodes => "$baseUrl/pincodes";
   static String get notifications => "$baseUrl/notifications";
+  static String get payouts => "$baseUrl/payouts";
+  static String get coupons => "$baseUrl/coupons";
+  static String get supportTickets => "$baseUrl/support-tickets";
 
   // ── Media & Proof Upload ──
   static String get imageKitAuth => "$baseUrl/imagekit/auth";
