@@ -7,6 +7,7 @@ import 'core/services/session_service.dart';
 void main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    await ApiService.loadSavedServerUrl();
     ApiService.init();
     await SessionService.init();
     FlutterError.onError = (details) {

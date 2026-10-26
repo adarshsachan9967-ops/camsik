@@ -73,8 +73,11 @@ class ExchangeQuestionsStep extends StatelessWidget {
             separatorBuilder: (c, i) => const SizedBox(height: 14),
             itemBuilder: (ctx, qIdx) {
               final q = questions[qIdx];
-              final options =
-                  (q['options'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+              final options = (q['options'] as List?)
+                      ?.whereType<Map>()
+                      .map((e) => Map<String, dynamic>.from(e))
+                      .toList() ??
+                  [];
               final sel = selectedAnswers[qIdx] ?? 0;
 
               return Container(

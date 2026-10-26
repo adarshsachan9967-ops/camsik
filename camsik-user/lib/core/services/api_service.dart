@@ -325,10 +325,27 @@ class ApiService {
     try {
       final res = await dio.get(ApiConstants.questions, queryParameters: {'categoryId': categoryId});
       if (res.data != null && res.data['questions'] is List) {
-        final list = (res.data['questions'] as List).cast<Map<String, dynamic>>();
+        final list = (res.data['questions'] as List)
+            .whereType<Map>()
+            .map((e) {
+              final q = Map<String, dynamic>.from(e);
+              if (q['options'] is List) {
+                q['options'] = (q['options'] as List).whereType<Map>().map((o) {
+                  final opt = Map<String, dynamic>.from(o);
+                  if (!opt.containsKey('desc') && opt.containsKey('sublabel')) {
+                    opt['desc'] = opt['sublabel'];
+                  }
+                  return opt;
+                }).toList();
+              }
+              return q;
+            })
+            .toList();
         if (list.isNotEmpty) return list;
       }
-    } catch (_) {}
+    } catch (e) {
+      appLog("⚠️ Failed to fetch questions from API: $e");
+    }
     return const [];
   }
 

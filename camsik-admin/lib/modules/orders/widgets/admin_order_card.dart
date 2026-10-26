@@ -29,7 +29,7 @@ class AdminOrderCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        order.id,
+                        order.orderNumber.isNotEmpty ? order.orderNumber : order.id,
                         style: const TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 14,
@@ -40,15 +40,23 @@ class AdminOrderCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: order.type == 'rent'
+                              ? const Color(0xFFF43F5E).withValues(alpha: 0.12)
+                              : order.type == 'repair'
+                                  ? const Color(0xFFF59E0B).withValues(alpha: 0.12)
+                                  : AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           order.type.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                            color: order.type == 'rent'
+                                ? const Color(0xFFF43F5E)
+                                : order.type == 'repair'
+                                    ? const Color(0xFFF59E0B)
+                                    : AppColors.primary,
                           ),
                         ),
                       ),

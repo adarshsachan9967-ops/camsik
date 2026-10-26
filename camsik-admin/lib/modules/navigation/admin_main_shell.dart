@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/session_service.dart';
 import '../../models/admin_models.dart';
-import '../fleet/admin_fleet_screen.dart';
+import '../catalog/admin_catalog_screen.dart';
 import '../fleet/bloc/fleet_cubit.dart';
+import '../operations/admin_operations_hub_screen.dart';
+import '../operations/screens/admin_server_settings_screen.dart';
 import '../orders/admin_orders_screen.dart';
 import '../orders/bloc/orders_cubit.dart';
 import '../overview/admin_overview_screen.dart';
 import '../overview/bloc/overview_cubit.dart';
-import '../partners/admin_partners_screen.dart';
 import '../partners/bloc/partners_cubit.dart';
 import '../profile/admin_profile_screen.dart';
 import '../profile/bloc/profile_cubit.dart';
+import '../rentals/admin_rentals_screen.dart';
 import 'bloc/navigation_cubit.dart';
 
 class AdminMainShell extends StatelessWidget {
@@ -48,11 +51,11 @@ class _AdminMainShellView extends StatelessWidget {
       case 1:
         return 'Orders Command Center';
       case 2:
-        return 'Partner Stores Network';
+        return 'Rental Cameras & Fleet';
       case 3:
-        return 'Field Fleet Logistics';
+        return 'Catalog & Pricing Engine';
       case 4:
-        return 'Admin System & Controls';
+        return 'Operations & Management Hub';
       default:
         return 'Camsik Admin Suite';
     }
@@ -62,6 +65,7 @@ class _AdminMainShellView extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentIndex = context.watch<NavigationCubit>().state;
     final adminUser = user ?? SessionService.currentUser;
+    final serverShort = ApiConstants.serverUrl.replaceAll('http://', '').replaceAll('https://', '');
 
     return Scaffold(
       appBar: AppBar(
@@ -77,15 +81,53 @@ class _AdminMainShellView extends StatelessWidget {
                 color: Colors.white,
               ),
             ),
-            Text(
-              adminUser?.name ?? 'Super Administrator',
-              style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+            Row(
+              children: [
+                Text(
+                  adminUser?.name ?? 'Super Administrator',
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                ),
+                const SizedBox(width: 6),
+                const Text('•', style: TextStyle(color: Color(0xFF64748B), fontSize: 10)),
+                const SizedBox(width: 6),
+                InkWell(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServerSettingsScreen()));
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.circle, size: 6, color: AppColors.success),
+                        const SizedBox(width: 4),
+                        Text(
+                          serverShort,
+                          style: const TextStyle(fontSize: 9, color: Color(0xFFC4B5FD), fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.dns_rounded, size: 20, color: Colors.white),
+            tooltip: 'Server Settings',
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServerSettingsScreen()));
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh, size: 20, color: Colors.white),
+            tooltip: 'Refresh All Hubs',
             onPressed: () {
               context.read<OverviewCubit>().loadOverview();
               context.read<OrdersCubit>().loadOrders();
@@ -94,16 +136,23 @@ class _AdminMainShellView extends StatelessWidget {
               context.read<ProfileCubit>().loadProfile();
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.account_circle, size: 22, color: Colors.white),
+            tooltip: 'Super Admin Profile',
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(body: AdminProfileScreen(user: adminUser))));
+            },
+          ),
         ],
       ),
       body: IndexedStack(
         index: currentIndex,
-        children: [
-          const AdminOverviewScreen(),
-          const AdminOrdersScreen(),
-          const AdminPartnersScreen(),
-          const AdminFleetScreen(),
-          AdminProfileScreen(user: adminUser),
+        children: const [
+          AdminOverviewScreen(),
+          AdminOrdersScreen(),
+          AdminRentalsScreen(),
+          AdminCatalogScreen(),
+          AdminOperationsHubScreen(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -124,19 +173,19 @@ class _AdminMainShellView extends StatelessWidget {
             label: 'Orders',
           ),
           NavigationDestination(
-            icon: Icon(Icons.storefront_outlined),
-            selectedIcon: Icon(Icons.storefront, color: AppColors.primary),
-            label: 'Partners',
+            icon: Icon(Icons.camera_alt_outlined),
+            selectedIcon: Icon(Icons.camera_alt, color: AppColors.primary),
+            label: 'Rentals',
           ),
           NavigationDestination(
-            icon: Icon(Icons.two_wheeler_outlined),
-            selectedIcon: Icon(Icons.two_wheeler, color: AppColors.primary),
-            label: 'Fleet',
+            icon: Icon(Icons.category_outlined),
+            selectedIcon: Icon(Icons.category, color: AppColors.primary),
+            label: 'Catalog',
           ),
           NavigationDestination(
-            icon: Icon(Icons.admin_panel_settings_outlined),
-            selectedIcon: Icon(Icons.admin_panel_settings, color: AppColors.primary),
-            label: 'System',
+            icon: Icon(Icons.hub_outlined),
+            selectedIcon: Icon(Icons.hub, color: AppColors.primary),
+            label: 'Operations',
           ),
         ],
       ),

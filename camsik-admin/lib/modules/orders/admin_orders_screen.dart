@@ -19,13 +19,16 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
 
   final List<String> _statuses = [
     'all',
-    'pending',
+    'created',
     'assigned',
-    'out_for_pickup',
+    'accepted',
+    'pickup_scheduled',
     'picked_up',
-    'inspection_in_progress',
+    'in_transit',
+    'inspection',
     'completed',
     'cancelled',
+    'rejected',
   ];
 
   final List<String> _types = [
@@ -33,6 +36,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     'sell',
     'buy',
     'repair',
+    'rent',
     'exchange',
   ];
 

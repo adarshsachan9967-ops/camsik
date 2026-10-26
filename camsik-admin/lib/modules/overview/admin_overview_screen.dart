@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../navigation/bloc/navigation_cubit.dart';
+import '../operations/screens/admin_payouts_screen.dart';
+import '../operations/screens/admin_pincodes_screen.dart';
+import '../operations/screens/admin_push_notifications_screen.dart';
+import '../operations/screens/admin_server_settings_screen.dart';
 import 'bloc/overview_cubit.dart';
 import 'bloc/overview_state.dart';
 import 'widgets/metric_pill.dart';
@@ -27,18 +32,46 @@ class AdminOverviewScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 44, color: AppColors.error),
+                const Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.error),
                 const SizedBox(height: 12),
                 Text(
-                  state.error,
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                  textAlign: TextAlign.center,
+                  'Connection Notice',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    state.error,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
                 ),
                 const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () => overviewCubit.loadOverview(),
-                  icon: const Icon(Icons.refresh, size: 18),
-                  label: const Text('Try Again'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () => overviewCubit.loadOverview(),
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Retry'),
+                    ),
+                    const SizedBox(width: 12),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AdminServerSettingsScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.dns, size: 16),
+                      label: const Text('Server Settings'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -57,6 +90,42 @@ class AdminOverviewScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // Live Target Server Ribbon
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AdminServerSettingsScreen()),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle, size: 14, color: AppColors.success),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Server: ${ApiConstants.serverUrl}',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                      ),
+                      const Spacer(),
+                      const Text(
+                        'Change',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      ),
+                      const Icon(Icons.chevron_right, size: 16, color: AppColors.primary),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
               // Platform Revenue Banner
               Container(
                 padding: const EdgeInsets.all(20),
@@ -101,7 +170,7 @@ class AdminOverviewScreen extends StatelessWidget {
                               Icon(Icons.bolt, color: Colors.amberAccent, size: 14),
                               SizedBox(width: 4),
                               Text(
-                                'LIVE ECOSYSTEM',
+                                'LIVE SYSTEM',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 10,
@@ -144,6 +213,68 @@ class AdminOverviewScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
+              // Quick Actions Toolbar
+              const Text(
+                'EXECUTIVE WORKFLOW SHORTCUTS',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 0.5),
+              ),
+              const SizedBox(height: 10),
+
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildShortcutButton(
+                      context,
+                      icon: Icons.camera_alt_rounded,
+                      label: 'Rental Fleet',
+                      color: const Color(0xFFF43F5E),
+                      onTap: () => context.read<NavigationCubit>().setTab(2),
+                    ),
+                    const SizedBox(width: 10),
+                    _buildShortcutButton(
+                      context,
+                      icon: Icons.category_rounded,
+                      label: 'Catalog Engine',
+                      color: const Color(0xFF6366F1),
+                      onTap: () => context.read<NavigationCubit>().setTab(3),
+                    ),
+                    const SizedBox(width: 10),
+                    _buildShortcutButton(
+                      context,
+                      icon: Icons.account_balance_wallet_rounded,
+                      label: 'Payouts',
+                      color: AppColors.success,
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPayoutsScreen()));
+                      },
+                    ),
+                    const SizedBox(width: 10),
+                    _buildShortcutButton(
+                      context,
+                      icon: Icons.pin_drop_rounded,
+                      label: 'Pincodes',
+                      color: const Color(0xFF0EA5E9),
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPincodesScreen()));
+                      },
+                    ),
+                    const SizedBox(width: 10),
+                    _buildShortcutButton(
+                      context,
+                      icon: Icons.campaign_rounded,
+                      label: 'Broadcasts',
+                      color: const Color(0xFF8B5CF6),
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPushNotificationsScreen()));
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
               // KPI Grid
               GridView.count(
                 crossAxisCount: 2,
@@ -162,20 +293,12 @@ class AdminOverviewScreen extends StatelessWidget {
                     onTap: () => context.read<NavigationCubit>().setTab(1),
                   ),
                   SummaryCard(
-                    title: 'Partner Stores',
-                    value: '${stats.totalPartners}',
-                    subtitle: '${stats.activePartners} currently active',
-                    icon: Icons.storefront_rounded,
-                    color: AppColors.success,
+                    title: 'Rental Gear Fleet',
+                    value: '18+',
+                    subtitle: 'Cinema & Mirrorless',
+                    icon: Icons.camera_alt_rounded,
+                    color: const Color(0xFFF43F5E),
                     onTap: () => context.read<NavigationCubit>().setTab(2),
-                  ),
-                  SummaryCard(
-                    title: 'Field Fleet',
-                    value: '${stats.totalDeliveryAgents}',
-                    subtitle: '${stats.activeDeliveryAgents} on road duty',
-                    icon: Icons.two_wheeler_rounded,
-                    color: AppColors.warning,
-                    onTap: () => context.read<NavigationCubit>().setTab(3),
                   ),
                   SummaryCard(
                     title: 'Catalog Devices',
@@ -183,6 +306,15 @@ class AdminOverviewScreen extends StatelessWidget {
                     subtitle: '${stats.totalBrands} verified brands',
                     icon: Icons.devices_other_rounded,
                     color: AppColors.primary,
+                    onTap: () => context.read<NavigationCubit>().setTab(3),
+                  ),
+                  SummaryCard(
+                    title: 'Operations Hub',
+                    value: '${stats.totalPartners + stats.totalDeliveryAgents}',
+                    subtitle: 'Partners & Field Fleet',
+                    icon: Icons.hub_rounded,
+                    color: AppColors.warning,
+                    onTap: () => context.read<NavigationCubit>().setTab(4),
                   ),
                 ],
               ),
@@ -235,6 +367,38 @@ class AdminOverviewScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildShortcutButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2)),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 8),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textPrimary)),
+          ],
+        ),
+      ),
     );
   }
 }

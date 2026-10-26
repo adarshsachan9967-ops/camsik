@@ -43,11 +43,20 @@ class QuestionModel {
     final rawOptions = json['options'] as List? ?? [];
     return QuestionModel(
       id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
+      title: json['question']?.toString() ?? json['title']?.toString() ?? '',
+      description: json['subtext']?.toString() ?? json['description']?.toString() ?? '',
       options: rawOptions
           .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
+          .map((e) {
+            final m = Map<String, dynamic>.from(e);
+            if (!m.containsKey('desc') && m.containsKey('sublabel')) {
+              m['desc'] = m['sublabel'];
+            }
+            if (!m.containsKey('sublabel') && m.containsKey('desc')) {
+              m['sublabel'] = m['desc'];
+            }
+            return m;
+          })
           .toList(),
     );
   }

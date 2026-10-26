@@ -318,15 +318,18 @@ class _AdminOrderDetailModalState extends State<AdminOrderDetailModal> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                'pending',
+                'created',
                 'assigned',
-                'out_for_pickup',
+                'accepted',
+                'pickup_scheduled',
                 'picked_up',
-                'inspection_in_progress',
+                'in_transit',
+                'inspection',
                 'completed',
                 'cancelled',
+                'rejected',
               ].map((s) {
-                final isCurrent = widget.order.status == s;
+                final isCurrent = widget.order.status == s || (s == 'inspection' && widget.order.status == 'inspection_in_progress');
                 return ChoiceChip(
                   label: Text(s.replaceAll('_', ' ').toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isCurrent ? Colors.white : AppColors.textPrimary)),
                   selected: isCurrent,

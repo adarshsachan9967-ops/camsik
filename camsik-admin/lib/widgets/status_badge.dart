@@ -14,22 +14,33 @@ class StatusBadge extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'completed':
       case 'paid':
+      case 'available':
+      case 'resolved':
         bg = AppColors.successLight;
         fg = AppColors.success;
         break;
-      case 'out_for_pickup':
+      case 'created':
+      case 'accepted':
       case 'assigned':
+      case 'pickup_scheduled':
+      case 'picked_up':
+      case 'in_transit':
+      case 'out_for_pickup':
       case 'in_progress':
         bg = AppColors.accentLight;
         fg = AppColors.accent;
         break;
+      case 'inspection':
       case 'inspection_in_progress':
       case 'pending':
+      case 'rented':
+      case 'maintenance':
         bg = AppColors.warningLight;
         fg = AppColors.warning;
         break;
       case 'cancelled':
       case 'rejected':
+      case 'suspended':
         bg = AppColors.errorLight;
         fg = AppColors.error;
         break;

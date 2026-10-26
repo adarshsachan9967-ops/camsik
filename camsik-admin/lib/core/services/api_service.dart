@@ -20,6 +20,23 @@ class ApiService {
 
   static set dio(Dio value) => _dio = value;
 
+  static Future<void> loadSavedServerUrl() async {
+    try {
+      final prefs = await SharedPreferencesService.getInstance();
+      final savedUrl = prefs.getString('custom_server_url');
+      if (savedUrl != null && savedUrl.isNotEmpty) {
+        ApiConstants.serverUrl = savedUrl;
+      }
+    } catch (_) {}
+  }
+
+  static Future<void> switchServerUrl(String newUrl) async {
+    ApiConstants.serverUrl = newUrl;
+    final prefs = await SharedPreferencesService.getInstance();
+    await prefs.setString('custom_server_url', newUrl);
+    init();
+  }
+
   static void init() {
     _dio = Dio(
       BaseOptions(
@@ -59,8 +76,9 @@ class ApiService {
             }
 
             appLog("📤 REQUEST → ${options.method} ${options.uri}");
-            appLog("🔸 Headers: ${options.headers}");
-            appLog("🔸 Data: $dataToLog");
+            if (dataToLog != null) {
+              appLog("📦 Payload: $dataToLog");
+            }
             appLog("⏱️ Started at: $startTime");
 
             return handler.next(options);
@@ -69,20 +87,13 @@ class ApiService {
             final startTime = response.requestOptions.extra['startTime'] as DateTime?;
             final duration = startTime != null ? DateTime.now().difference(startTime) : null;
             appLog("✅ RESPONSE ← ${response.statusCode} ${response.requestOptions.uri}");
-            appLog("📦 Response Data: ${response.data}");
             if (duration != null) {
-              appLog("⏳ API Duration: ${duration.inMilliseconds} ms (${duration.inSeconds}s)");
+              appLog("⏳ API Duration: ${duration.inMilliseconds} ms");
             }
             return handler.next(response);
           },
           onError: (DioException e, handler) async {
-            final startTime = e.requestOptions.extra['startTime'] as DateTime?;
-            final duration = startTime != null ? DateTime.now().difference(startTime) : null;
-
             appLog("❌ ERROR ← ${e.response?.statusCode} ${e.requestOptions.uri}");
-            if (duration != null) {
-              appLog("⏱️ API failed after: ${duration.inMilliseconds} ms (${duration.inSeconds}s)");
-            }
 
             if (e.response?.statusCode == 401) {
               if (e.requestOptions.path.contains('/auth/refresh-token')) {
@@ -135,19 +146,13 @@ class ApiService {
             }
 
             if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
-              appLog("⚠️ Timeout: The API took too long to respond.");
               try {
-                appLog("🔁 Retrying request once due to timeout...");
                 final retryOptions = e.requestOptions;
                 retryOptions.connectTimeout = const Duration(seconds: 30);
                 retryOptions.receiveTimeout = const Duration(seconds: 30);
-
                 final response = await dio.fetch(retryOptions);
-                appLog("✅ Retry succeeded with status ${response.statusCode}");
                 return handler.resolve(response);
-              } catch (retryError) {
-                appLog("❌ Retry failed too: $retryError");
-              }
+              } catch (_) {}
             }
 
             return handler.next(e);
@@ -163,6 +168,7 @@ class ApiService {
         ApiConstants.login,
         data: {
           'identifier': identifier.trim(),
+          'email': identifier.trim(),
           'password': password.trim(),
           'role': 'admin',
         },
@@ -170,8 +176,8 @@ class ApiService {
 
       if (res.data != null && res.data['success'] == true) {
         final userData = res.data['user'] ?? res.data['admin'];
-        final token = res.data['token'] ?? res.data['accessToken'];
-        final refreshToken = res.data['refreshToken'];
+        final token = res.data['token'] ?? res.data['accessToken'] ?? 'admin-session-token';
+        final refreshToken = res.data['refreshToken'] ?? '';
 
         if (userData != null) {
           final adminUser = AdminUser.fromJson(Map<String, dynamic>.from(userData));
@@ -238,19 +244,33 @@ class ApiService {
     required String orderId,
     String? status,
     String? notes,
+    double? finalPrice,
     String? assignedPartnerId,
     String? assignedPartnerName,
     String? assignedRiderId,
     String? assignedRiderName,
   }) async {
     try {
-      final payload = <String, dynamic>{'orderId': orderId};
+      final payload = <String, dynamic>{'orderId': orderId, 'id': orderId};
       if (status != null && status.isNotEmpty) payload['status'] = status;
       if (notes != null && notes.isNotEmpty) payload['notes'] = notes;
-      if (assignedPartnerId != null) payload['assignedPartnerId'] = assignedPartnerId;
-      if (assignedPartnerName != null) payload['assignedPartnerName'] = assignedPartnerName;
-      if (assignedRiderId != null) payload['assignedRiderId'] = assignedRiderId;
-      if (assignedRiderName != null) payload['assignedRiderName'] = assignedRiderName;
+      if (finalPrice != null) payload['finalPrice'] = finalPrice;
+      if (assignedPartnerId != null) {
+        payload['partnerId'] = assignedPartnerId;
+        payload['assignedPartnerId'] = assignedPartnerId;
+      }
+      if (assignedPartnerName != null) {
+        payload['partnerName'] = assignedPartnerName;
+        payload['assignedPartnerName'] = assignedPartnerName;
+      }
+      if (assignedRiderId != null) {
+        payload['deliveryAgentId'] = assignedRiderId;
+        payload['assignedRiderId'] = assignedRiderId;
+      }
+      if (assignedRiderName != null) {
+        payload['deliveryAgentName'] = assignedRiderName;
+        payload['assignedRiderName'] = assignedRiderName;
+      }
 
       final res = await dio.patch(ApiConstants.orders, data: payload);
       return res.data != null && res.data['success'] == true;
@@ -295,6 +315,22 @@ class ApiService {
     }
   }
 
+  static Future<bool> updatePartnerCommission({
+    required String partnerId,
+    required double commissionRate,
+  }) async {
+    try {
+      final res = await dio.patch(
+        ApiConstants.partners,
+        data: {'id': partnerId, 'commissionRate': commissionRate},
+      );
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error updating partner commission: $e");
+      return false;
+    }
+  }
+
   // ── DELIVERY FLEET & AGENTS ──
   static Future<List<AdminDeliveryAgent>> fetchDeliveryAgents({String? dutyStatus}) async {
     try {
@@ -327,6 +363,332 @@ class ApiService {
       return res.data != null && res.data['success'] == true;
     } catch (e) {
       appLog("Error updating agent duty status: $e");
+      return false;
+    }
+  }
+
+  // ── RENTALS FLEET & BOOKINGS ──
+  static Future<List<AdminRentalCamera>> fetchRentalCameras({String? category, String? brand, String? search}) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (category != null && category.isNotEmpty && category != 'all') queryParams['category'] = category;
+      if (brand != null && brand.isNotEmpty && brand != 'all') queryParams['brand'] = brand;
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+
+      final res = await dio.get(ApiConstants.rentals, queryParameters: queryParams);
+      if (res.data != null && res.data['success'] == true && res.data['cameras'] is List) {
+        return (res.data['cameras'] as List)
+            .map((e) => AdminRentalCamera.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (e) {
+      appLog("Error fetching rental cameras: $e");
+    }
+    return [];
+  }
+
+  static Future<bool> addRentalCamera(Map<String, dynamic> data) async {
+    try {
+      final res = await dio.post(ApiConstants.rentals, data: data);
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error adding rental camera: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> deleteRentalCamera(String id) async {
+    try {
+      final res = await dio.delete("${ApiConstants.rentals}?id=$id");
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error deleting rental camera: $e");
+      return false;
+    }
+  }
+
+  // ── CATALOG: CATEGORIES ──
+  static Future<List<AdminCategory>> fetchCategories() async {
+    try {
+      final res = await dio.get(ApiConstants.categories);
+      if (res.data != null && res.data['success'] == true && res.data['categories'] is List) {
+        return (res.data['categories'] as List)
+            .map((e) => AdminCategory.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (e) {
+      appLog("Error fetching categories: $e");
+    }
+    return [];
+  }
+
+  static Future<bool> addCategory(Map<String, dynamic> data) async {
+    try {
+      final res = await dio.post(ApiConstants.categories, data: data);
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error adding category: $e");
+      return false;
+    }
+  }
+
+  // ── CATALOG: BRANDS ──
+  static Future<List<AdminBrand>> fetchBrands({String? categoryId}) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') {
+        queryParams['categoryId'] = categoryId;
+      }
+      final res = await dio.get(ApiConstants.brands, queryParameters: queryParams);
+      if (res.data != null && res.data['success'] == true && res.data['brands'] is List) {
+        return (res.data['brands'] as List)
+            .map((e) => AdminBrand.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (e) {
+      appLog("Error fetching brands: $e");
+    }
+    return [];
+  }
+
+  static Future<bool> addBrand(Map<String, dynamic> data) async {
+    try {
+      final res = await dio.post(ApiConstants.brands, data: data);
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error adding brand: $e");
+      return false;
+    }
+  }
+
+  // ── CATALOG: MODELS ──
+  static Future<List<AdminDeviceModel>> fetchModels({String? categoryId, String? brandId, String? search}) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') queryParams['categoryId'] = categoryId;
+      if (brandId != null && brandId.isNotEmpty && brandId != 'all') queryParams['brandId'] = brandId;
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+
+      final res = await dio.get(ApiConstants.models, queryParameters: queryParams);
+      if (res.data != null && res.data['success'] == true && res.data['models'] is List) {
+        return (res.data['models'] as List)
+            .map((e) => AdminDeviceModel.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (e) {
+      appLog("Error fetching models: $e");
+    }
+    return [];
+  }
+
+  static Future<bool> addModel(Map<String, dynamic> data) async {
+    try {
+      final res = await dio.post(ApiConstants.models, data: data);
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error adding model: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> updateModelPrice(String id, double basePrice) async {
+    try {
+      final res = await dio.put(ApiConstants.models, data: {'id': id, 'basePrice': basePrice});
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error updating model price: $e");
+      return false;
+    }
+  }
+
+  // ── CATALOG: LENSES ──
+  static Future<List<AdminLens>> fetchLenses() async {
+    try {
+      final res = await dio.get(ApiConstants.lenses);
+      if (res.data != null && res.data['success'] == true && res.data['lenses'] is List) {
+        return (res.data['lenses'] as List)
+            .map((e) => AdminLens.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (e) {
+      appLog("Error fetching lenses: $e");
+    }
+    return [];
+  }
+
+  static Future<bool> addLens(Map<String, dynamic> data) async {
+    try {
+      final res = await dio.post(ApiConstants.lenses, data: data);
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error adding lens: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> deleteLens(String id) async {
+    try {
+      final res = await dio.delete("${ApiConstants.lenses}?id=$id");
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error deleting lens: $e");
+      return false;
+    }
+  }
+
+  // ── CATALOG: REFURBISHED ──
+  static Future<List<AdminRefurbishedDevice>> fetchRefurbished() async {
+    try {
+      final res = await dio.get(ApiConstants.refurbished);
+      if (res.data != null && res.data['success'] == true && res.data['products'] is List) {
+        return (res.data['products'] as List)
+            .map((e) => AdminRefurbishedDevice.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (e) {
+      appLog("Error fetching refurbished devices: $e");
+    }
+    return [];
+  }
+
+  static Future<bool> addRefurbished(Map<String, dynamic> data) async {
+    try {
+      final res = await dio.post(ApiConstants.refurbished, data: data);
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error adding refurbished device: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> deleteRefurbished(String id) async {
+    try {
+      final res = await dio.delete("${ApiConstants.refurbished}?id=$id");
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error deleting refurbished: $e");
+      return false;
+    }
+  }
+
+  // ── LOGISTICS: PINCODES ──
+  static Future<List<AdminPincode>> fetchPincodes() async {
+    try {
+      final res = await dio.get(ApiConstants.pincodes);
+      if (res.data != null && res.data['success'] == true && res.data['pincodes'] is List) {
+        return (res.data['pincodes'] as List)
+            .map((e) => AdminPincode.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (e) {
+      appLog("Error fetching pincodes: $e");
+    }
+    return [];
+  }
+
+  static Future<bool> addPincode(String pincode, String city) async {
+    try {
+      final res = await dio.post(
+        ApiConstants.pincodes,
+        data: {'pincode': pincode.trim(), 'city': city.trim()},
+      );
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error adding pincode: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> deletePincode(String pincode) async {
+    try {
+      final res = await dio.delete("${ApiConstants.pincodes}?pincode=$pincode");
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error deleting pincode: $e");
+      return false;
+    }
+  }
+
+  // ── NOTIFICATIONS & BROADCASTS ──
+  static Future<List<AdminPushNotification>> fetchNotifications() async {
+    try {
+      final res = await dio.get(ApiConstants.notifications);
+      if (res.data != null && res.data['success'] == true && res.data['notifications'] is List) {
+        return (res.data['notifications'] as List)
+            .map((e) => AdminPushNotification.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (e) {
+      appLog("Error fetching notifications: $e");
+    }
+    return [];
+  }
+
+  static Future<bool> sendPushNotification({
+    required String title,
+    required String message,
+    String target = 'all',
+    String type = 'general',
+  }) async {
+    try {
+      final res = await dio.post(
+        ApiConstants.notifications,
+        data: {
+          'title': title,
+          'message': message,
+          'body': message,
+          'targetRole': target,
+          'type': type,
+        },
+      );
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error sending push notification: $e");
+      return false;
+    }
+  }
+
+  // ── DIAGNOSTIC VALUATION QUESTIONS ──
+  static Future<List<AdminCategoryQuestion>> fetchDiagnosticQuestions([String categoryId = 'cat-dslr']) async {
+    try {
+      final res = await dio.get("${ApiConstants.questions}?categoryId=$categoryId");
+      if (res.data != null && res.data['success'] == true && res.data['questions'] is List) {
+        return (res.data['questions'] as List)
+            .map((e) => AdminCategoryQuestion.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (e) {
+      appLog("Error fetching diagnostic questions: $e");
+    }
+    return [];
+  }
+
+  static Future<bool> createQuestion(Map<String, dynamic> data) async {
+    try {
+      final res = await dio.post(ApiConstants.questions, data: data);
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error creating question: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> updateQuestion(Map<String, dynamic> data) async {
+    try {
+      final res = await dio.put(ApiConstants.questions, data: data);
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error updating question: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> deleteQuestion(String id) async {
+    try {
+      final res = await dio.delete("${ApiConstants.questions}?id=$id");
+      return res.data != null && res.data['success'] == true;
+    } catch (e) {
+      appLog("Error deleting question: $e");
       return false;
     }
   }
