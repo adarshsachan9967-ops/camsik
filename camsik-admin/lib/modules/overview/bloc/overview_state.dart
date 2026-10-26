@@ -15,10 +15,14 @@ class OverviewLoading extends OverviewState {
 class OverviewLoaded extends OverviewState {
   final AdminOverviewStats stats;
   final List<AdminOrder> recentOrders;
+  final List<Map<String, dynamic>> weeklyRevenue;
+  final List<Map<String, dynamic>> topCategories;
 
   const OverviewLoaded({
     required this.stats,
     required this.recentOrders,
+    this.weeklyRevenue = const [],
+    this.topCategories = const [],
   });
 }
 

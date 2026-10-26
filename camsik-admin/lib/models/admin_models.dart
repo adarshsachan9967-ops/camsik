@@ -41,8 +41,12 @@ class AdminOverviewStats {
   final int cancelledOrders;
   final int totalPartners;
   final int activePartners;
+  final int pendingPartners;
   final int totalDeliveryAgents;
   final int activeDeliveryAgents;
+  final int onlineAgents;
+  final int totalCustomers;
+  final double pendingPayouts;
   final int totalModels;
   final int totalBrands;
 
@@ -55,8 +59,12 @@ class AdminOverviewStats {
     required this.cancelledOrders,
     required this.totalPartners,
     required this.activePartners,
+    this.pendingPartners = 0,
     required this.totalDeliveryAgents,
     required this.activeDeliveryAgents,
+    this.onlineAgents = 0,
+    this.totalCustomers = 0,
+    this.pendingPayouts = 0.0,
     required this.totalModels,
     required this.totalBrands,
   });
@@ -71,8 +79,12 @@ class AdminOverviewStats {
       cancelledOrders: (json['cancelledOrders'] as num?)?.toInt() ?? 0,
       totalPartners: (json['totalPartners'] as num?)?.toInt() ?? 0,
       activePartners: (json['activePartners'] as num?)?.toInt() ?? 0,
+      pendingPartners: (json['pendingPartners'] as num?)?.toInt() ?? 0,
       totalDeliveryAgents: (json['totalDeliveryAgents'] as num?)?.toInt() ?? 0,
       activeDeliveryAgents: (json['activeDeliveryAgents'] as num?)?.toInt() ?? 0,
+      onlineAgents: (json['onlineAgents'] as num?)?.toInt() ?? (json['activeDeliveryAgents'] as num?)?.toInt() ?? 0,
+      totalCustomers: (json['totalCustomers'] as num?)?.toInt() ?? 0,
+      pendingPayouts: (json['pendingPayouts'] as num?)?.toDouble() ?? 0.0,
       totalModels: (json['totalModels'] as num?)?.toInt() ?? 0,
       totalBrands: (json['totalBrands'] as num?)?.toInt() ?? 0,
     );
@@ -137,6 +149,9 @@ class AdminOrder {
     this.qaScore,
     this.notes,
   });
+
+  String get partnerName => assignedPartnerName;
+  double get quotedPrice => estimatedPrice;
 
   factory AdminOrder.fromJson(Map<String, dynamic> json) {
     final customer = json['customer'] as Map<String, dynamic>? ?? {};

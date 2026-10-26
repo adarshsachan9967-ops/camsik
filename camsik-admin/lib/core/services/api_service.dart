@@ -24,8 +24,11 @@ class ApiService {
     try {
       final prefs = await SharedPreferencesService.getInstance();
       final savedUrl = prefs.getString('custom_server_url');
-      if (savedUrl != null && savedUrl.isNotEmpty) {
+      if (savedUrl != null && savedUrl.isNotEmpty && !savedUrl.contains('casmik-one.vercel.app') && !savedUrl.contains('casmik.vercel.app')) {
         ApiConstants.serverUrl = savedUrl;
+      } else {
+        ApiConstants.serverUrl = "http://localhost:4028";
+        await prefs.setString('custom_server_url', "http://localhost:4028");
       }
     } catch (_) {}
   }

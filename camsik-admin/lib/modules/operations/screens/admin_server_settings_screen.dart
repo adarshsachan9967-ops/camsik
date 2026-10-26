@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/utils/helpers.dart';
+import '../../overview/bloc/overview_cubit.dart';
 
 class AdminServerSettingsScreen extends StatefulWidget {
   const AdminServerSettingsScreen({super.key});
@@ -78,6 +80,9 @@ class _AdminServerSettingsScreenState extends State<AdminServerSettingsScreen> {
     await ApiService.switchServerUrl(url);
     if (!mounted) return;
     _customUrlController.text = url;
+    try {
+      context.read<OverviewCubit>().loadOverview();
+    } catch (_) {}
     showCustomSnackBar(context, 'Switched to $url', isError: false);
     _testConnection(url);
   }
