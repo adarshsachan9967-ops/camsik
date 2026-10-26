@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/services/api_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../models/admin_models.dart';
+import '../repositories/operations_repository.dart';
 
 class AdminDiagnosticQuestionsScreen extends StatefulWidget {
   const AdminDiagnosticQuestionsScreen({super.key});
@@ -13,6 +13,7 @@ class AdminDiagnosticQuestionsScreen extends StatefulWidget {
 }
 
 class _AdminDiagnosticQuestionsScreenState extends State<AdminDiagnosticQuestionsScreen> {
+  final OperationsRepository _operationsRepository = OperationsRepositoryImpl();
   final List<Map<String, String>> _categories = const [
     {'id': 'cat-dslr', 'label': 'Cameras', 'icon': '📷'},
     {'id': 'cat-smartphone', 'label': 'Smartphones', 'icon': '📱'},
@@ -32,7 +33,7 @@ class _AdminDiagnosticQuestionsScreenState extends State<AdminDiagnosticQuestion
 
   Future<void> _loadQuestions() async {
     setState(() => _loading = true);
-    final items = await ApiService.fetchDiagnosticQuestions(_selectedCategoryId);
+    final items = await _operationsRepository.fetchDiagnosticQuestions(_selectedCategoryId);
     if (!mounted) return;
     setState(() {
       _questions = items;
@@ -47,7 +48,7 @@ class _AdminDiagnosticQuestionsScreenState extends State<AdminDiagnosticQuestion
   }
 
   Future<void> _toggleQuestionActive(AdminCategoryQuestion q, bool active) async {
-    final success = await ApiService.updateQuestion({
+    final success = await _operationsRepository.updateQuestion({
       'id': q.id,
       'active': active,
       'categoryId': q.categoryId,
@@ -78,7 +79,7 @@ class _AdminDiagnosticQuestionsScreenState extends State<AdminDiagnosticQuestion
     );
 
     if (confirm == true) {
-      final success = await ApiService.deleteQuestion(id);
+      final success = await _operationsRepository.deleteQuestion(id);
       if (success) {
         Helpers.showSuccessSnackbar('Deleted', 'Question removed from valuation engine');
         _loadQuestions();
@@ -126,7 +127,7 @@ class _AdminDiagnosticQuestionsScreenState extends State<AdminDiagnosticQuestion
                 return o;
               }).toList();
 
-              final success = await ApiService.updateQuestion({
+              final success = await _operationsRepository.updateQuestion({
                 'id': q.id,
                 'categoryId': q.categoryId,
                 'options': updatedOptions.map((o) => o.toJson()).toList(),
@@ -203,7 +204,7 @@ class _AdminDiagnosticQuestionsScreenState extends State<AdminDiagnosticQuestion
 
               final updatedOptions = [...q.options, newOption];
 
-              final success = await ApiService.updateQuestion({
+              final success = await _operationsRepository.updateQuestion({
                 'id': q.id,
                 'categoryId': q.categoryId,
                 'options': updatedOptions.map((o) => o.toJson()).toList(),
@@ -265,7 +266,7 @@ class _AdminDiagnosticQuestionsScreenState extends State<AdminDiagnosticQuestion
               if (questionCtrl.text.trim().isEmpty) return;
               Navigator.pop(ctx);
 
-              final success = await ApiService.createQuestion({
+              final success = await _operationsRepository.createQuestion({
                 'id': 'q-${DateTime.now().millisecondsSinceEpoch}',
                 'categoryId': _selectedCategoryId,
                 'question': questionCtrl.text.trim(),

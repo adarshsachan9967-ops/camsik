@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/services/api_service.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/helpers.dart';
 import '../../models/admin_models.dart';
 import '../../widgets/status_badge.dart';
+import 'repositories/rentals_repository.dart';
 
 class AdminRentalsScreen extends StatefulWidget {
   final int initialTab;
@@ -15,6 +15,7 @@ class AdminRentalsScreen extends StatefulWidget {
 }
 
 class _AdminRentalsScreenState extends State<AdminRentalsScreen> with SingleTickerProviderStateMixin {
+  final RentalsRepository _rentalsRepository = RentalsRepositoryImpl();
   late TabController _tabController;
   List<AdminRentalCamera> _cameras = [];
   List<AdminOrder> _rentalOrders = [];
@@ -42,7 +43,7 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> with SingleTick
 
   Future<void> _loadFleet() async {
     setState(() => _isLoadingCameras = true);
-    final list = await ApiService.fetchRentalCameras();
+    final list = await _rentalsRepository.fetchRentalCameras();
     if (!mounted) return;
     setState(() {
       _cameras = list;
@@ -52,7 +53,7 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> with SingleTick
 
   Future<void> _loadRentalOrders() async {
     setState(() => _isLoadingOrders = true);
-    final all = await ApiService.fetchOrders(type: 'rent');
+    final all = await _rentalsRepository.fetchRentalOrders();
     if (!mounted) return;
     setState(() {
       _rentalOrders = all;
@@ -150,7 +151,7 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> with SingleTick
                 'status': 'available',
               };
 
-              final ok = await ApiService.addRentalCamera(newCam);
+              final ok = await _rentalsRepository.addRentalCamera(newCam);
               if (mounted) {
                 if (ok) {
                   showCustomSnackBar(context, 'Camera $model added to rental fleet!', isError: false);
@@ -216,7 +217,7 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> with SingleTick
                 onTap: () async {
                   Navigator.pop(ctx);
                   setState(() => _isLoadingCameras = true);
-                  await ApiService.deleteRentalCamera(camera.id);
+                  await _rentalsRepository.deleteRentalCamera(camera.id);
                   setState(() {
                     _cameras.removeWhere((c) => c.id == camera.id);
                     _isLoadingCameras = false;
@@ -257,7 +258,7 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> with SingleTick
       }
     });
     showCustomSnackBar(context, 'Updating camera status...', isError: false);
-    final ok = await ApiService.updateRentalCamera({'id': id, 'status': status});
+    final ok = await _rentalsRepository.updateRentalCamera({'id': id, 'status': status});
     if (mounted) {
       if (ok) {
         showCustomSnackBar(context, 'Camera status updated to $status in database', isError: false);

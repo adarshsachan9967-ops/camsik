@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/services/api_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../models/admin_models.dart';
+import '../../orders/repositories/orders_repository.dart';
 
 class AdminCustomersScreen extends StatefulWidget {
   const AdminCustomersScreen({super.key});
@@ -13,6 +13,7 @@ class AdminCustomersScreen extends StatefulWidget {
 }
 
 class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
+  final _ordersRepository = OrdersRepository();
   List<AdminCustomer> _customers = [];
   bool _isLoading = true;
   final _searchController = TextEditingController();
@@ -32,7 +33,7 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
   Future<void> _loadCustomers() async {
     setState(() => _isLoading = true);
     // Derive unique customers from orders
-    final orders = await ApiService.fetchOrders();
+    final orders = await _ordersRepository.getOrders();
     final Map<String, AdminCustomer> map = {};
 
     for (final o in orders) {

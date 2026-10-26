@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/services/api_service.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/helpers.dart';
 import '../../models/admin_models.dart';
 import '../operations/screens/admin_diagnostic_questions_screen.dart';
+import 'repositories/catalog_repository.dart';
 
 class AdminCatalogScreen extends StatefulWidget {
   final int initialTab;
@@ -15,6 +15,7 @@ class AdminCatalogScreen extends StatefulWidget {
 }
 
 class _AdminCatalogScreenState extends State<AdminCatalogScreen> with SingleTickerProviderStateMixin {
+  final _catalogRepository = CatalogRepository();
   late TabController _tabController;
 
   // Data
@@ -43,11 +44,11 @@ class _AdminCatalogScreenState extends State<AdminCatalogScreen> with SingleTick
 
   Future<void> _loadAllCatalogData() async {
     setState(() => _loading = true);
-    final cats = await ApiService.fetchCategories();
-    final brs = await ApiService.fetchBrands();
-    final mods = await ApiService.fetchModels();
-    final lns = await ApiService.fetchLenses();
-    final refs = await ApiService.fetchRefurbished();
+    final cats = await _catalogRepository.fetchCategories();
+    final brs = await _catalogRepository.fetchBrands();
+    final mods = await _catalogRepository.fetchModels();
+    final lns = await _catalogRepository.fetchLenses();
+    final refs = await _catalogRepository.fetchRefurbished();
 
     if (!mounted) return;
     setState(() {
@@ -110,7 +111,7 @@ class _AdminCatalogScreenState extends State<AdminCatalogScreen> with SingleTick
               setState(() {
                 _categories.add(AdminCategory.fromJson(newCat));
               });
-              await ApiService.addCategory(newCat);
+              await _catalogRepository.addCategory(newCat);
               if (mounted) {
                 showCustomSnackBar(context, 'Category $name added!', isError: false);
               }
@@ -166,7 +167,7 @@ class _AdminCatalogScreenState extends State<AdminCatalogScreen> with SingleTick
                   'active': true,
                 };
                 setState(() => _brands.add(AdminBrand.fromJson(newBrand)));
-                await ApiService.addBrand(newBrand);
+                await _catalogRepository.addBrand(newBrand);
                 Helpers.showSuccessSnackbar('Success', 'Brand $name added!');
               },
               child: const Text('Add Brand'),
@@ -239,7 +240,7 @@ class _AdminCatalogScreenState extends State<AdminCatalogScreen> with SingleTick
                   'colors': ['Black'],
                 };
                 setState(() => _models.insert(0, AdminDeviceModel.fromJson(newMod)));
-                await ApiService.addModel(newMod);
+                await _catalogRepository.addModel(newMod);
                 Helpers.showSuccessSnackbar('Success', 'Model $name added!');
               },
               child: const Text('Save Model'),
@@ -287,7 +288,7 @@ class _AdminCatalogScreenState extends State<AdminCatalogScreen> with SingleTick
                   );
                 }
               });
-              await ApiService.updateModelPrice(model.id, newP);
+              await _catalogRepository.updateModelPrice(model.id, newP);
               if (mounted) {
                 showCustomSnackBar(context, 'Updated base price for ${model.name}', isError: false);
               }
@@ -345,7 +346,7 @@ class _AdminCatalogScreenState extends State<AdminCatalogScreen> with SingleTick
                 'active': true,
               };
               setState(() => _lenses.add(AdminLens.fromJson(newL)));
-              await ApiService.addLens(newL);
+              await _catalogRepository.addLens(newL);
               if (mounted) {
                 showCustomSnackBar(context, 'Lens $name added!', isError: false);
               }
@@ -419,7 +420,7 @@ class _AdminCatalogScreenState extends State<AdminCatalogScreen> with SingleTick
                   'active': true,
                 };
                 setState(() => _refurbished.insert(0, AdminRefurbishedDevice.fromJson(newRef)));
-                await ApiService.addRefurbished(newRef);
+                await _catalogRepository.addRefurbished(newRef);
                 Helpers.showSuccessSnackbar('Success', 'Refurbished $model listed for sale!');
               },
               child: const Text('Add Refurbished'),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/services/api_service.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../models/admin_models.dart';
+import '../repositories/operations_repository.dart';
 
 class AdminPincodesScreen extends StatefulWidget {
   const AdminPincodesScreen({super.key});
@@ -12,6 +12,7 @@ class AdminPincodesScreen extends StatefulWidget {
 }
 
 class _AdminPincodesScreenState extends State<AdminPincodesScreen> {
+  final _operationsRepository = OperationsRepository();
   List<AdminPincode> _pincodes = [];
   bool _isLoading = true;
   final _searchController = TextEditingController();
@@ -30,7 +31,7 @@ class _AdminPincodesScreenState extends State<AdminPincodesScreen> {
 
   Future<void> _loadPincodes() async {
     setState(() => _isLoading = true);
-    final list = await ApiService.fetchPincodes();
+    final list = await _operationsRepository.fetchPincodes();
     if (!mounted) return;
     setState(() {
       _pincodes = list;
@@ -86,7 +87,7 @@ class _AdminPincodesScreenState extends State<AdminPincodesScreen> {
               }
               Navigator.pop(ctx);
               setState(() => _isLoading = true);
-              final ok = await ApiService.addPincode(pin, city.isEmpty ? 'Serviceable Area' : city);
+              final ok = await _operationsRepository.addPincode(pin, city.isEmpty ? 'Serviceable Area' : city);
               if (mounted) {
                 if (ok) {
                   showCustomSnackBar(context, 'Pincode $pin added to service network', isError: false);
@@ -122,7 +123,7 @@ class _AdminPincodesScreenState extends State<AdminPincodesScreen> {
 
     if (confirm == true) {
       setState(() => _isLoading = true);
-      final ok = await ApiService.deletePincode(pin);
+      final ok = await _operationsRepository.deletePincode(pin);
       if (!mounted) return;
       if (ok) {
         showCustomSnackBar(context, 'Pincode $pin removed', isError: false);

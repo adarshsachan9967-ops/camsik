@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/services/api_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../models/admin_models.dart';
+import '../repositories/operations_repository.dart';
 
 class AdminPayoutsScreen extends StatefulWidget {
   const AdminPayoutsScreen({super.key});
@@ -13,6 +13,7 @@ class AdminPayoutsScreen extends StatefulWidget {
 }
 
 class _AdminPayoutsScreenState extends State<AdminPayoutsScreen> {
+  final OperationsRepository _operationsRepository = OperationsRepositoryImpl();
   bool _isLoading = true;
   String _filter = 'all';
   List<AdminPayout> _payouts = [];
@@ -25,7 +26,7 @@ class _AdminPayoutsScreenState extends State<AdminPayoutsScreen> {
 
   Future<void> _loadPayouts() async {
     setState(() => _isLoading = true);
-    final items = await ApiService.fetchPayouts(_filter);
+    final items = await _operationsRepository.fetchPayouts(_filter);
     if (!mounted) return;
     setState(() {
       _payouts = items;
@@ -67,7 +68,7 @@ class _AdminPayoutsScreenState extends State<AdminPayoutsScreen> {
             onPressed: () async {
               Navigator.pop(ctx);
               final utr = refController.text.trim();
-              final success = await ApiService.updatePayout({
+              final success = await _operationsRepository.updatePayout({
                 'id': payout.id,
                 'status': 'approved',
                 'transactionRef': utr,
@@ -87,7 +88,7 @@ class _AdminPayoutsScreenState extends State<AdminPayoutsScreen> {
   }
 
   void _rejectPayout(AdminPayout payout) async {
-    final success = await ApiService.updatePayout({
+    final success = await _operationsRepository.updatePayout({
       'id': payout.id,
       'status': 'rejected',
     });

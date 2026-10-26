@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/services/api_service.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../models/admin_models.dart';
+import '../repositories/operations_repository.dart';
 
 class AdminPushNotificationsScreen extends StatefulWidget {
   const AdminPushNotificationsScreen({super.key});
@@ -12,6 +12,7 @@ class AdminPushNotificationsScreen extends StatefulWidget {
 }
 
 class _AdminPushNotificationsScreenState extends State<AdminPushNotificationsScreen> {
+  final _operationsRepository = OperationsRepository();
   final _titleController = TextEditingController();
   final _messageController = TextEditingController();
   String _targetAudience = 'all'; // 'all', 'customers', 'partners', 'riders'
@@ -32,7 +33,7 @@ class _AdminPushNotificationsScreenState extends State<AdminPushNotificationsScr
   }
 
   Future<void> _loadHistory() async {
-    final list = await ApiService.fetchNotifications();
+    final list = await _operationsRepository.fetchNotifications();
     if (!mounted) return;
     setState(() => _history = list);
   }
@@ -47,7 +48,7 @@ class _AdminPushNotificationsScreenState extends State<AdminPushNotificationsScr
     }
 
     setState(() => _isSending = true);
-    final ok = await ApiService.sendPushNotification(
+    final ok = await _operationsRepository.sendPushNotification(
       title: title,
       message: message,
       target: _targetAudience,

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/services/api_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../models/admin_models.dart';
+import '../repositories/operations_repository.dart';
 
 class AdminCouponsScreen extends StatefulWidget {
   const AdminCouponsScreen({super.key});
@@ -13,6 +13,7 @@ class AdminCouponsScreen extends StatefulWidget {
 }
 
 class _AdminCouponsScreenState extends State<AdminCouponsScreen> {
+  final OperationsRepository _operationsRepository = OperationsRepositoryImpl();
   List<AdminCoupon> _coupons = [];
   bool _isLoading = true;
 
@@ -24,7 +25,7 @@ class _AdminCouponsScreenState extends State<AdminCouponsScreen> {
 
   Future<void> _loadCoupons() async {
     setState(() => _isLoading = true);
-    final items = await ApiService.fetchCoupons();
+    final items = await _operationsRepository.fetchCoupons();
     if (!mounted) return;
     setState(() {
       _coupons = items;
@@ -112,7 +113,7 @@ class _AdminCouponsScreenState extends State<AdminCouponsScreen> {
                   'active': true,
                 };
 
-                final success = await ApiService.addCoupon(newCouponData);
+                final success = await _operationsRepository.addCoupon(newCouponData);
                 if (success) {
                   Helpers.showSuccessSnackbar('Success', 'Coupon $code created!');
                   _loadCoupons();
@@ -130,7 +131,7 @@ class _AdminCouponsScreenState extends State<AdminCouponsScreen> {
 
   void _toggleCoupon(int index) async {
     final c = _coupons[index];
-    final success = await ApiService.updateCoupon({
+    final success = await _operationsRepository.updateCoupon({
       'id': c.id,
       'active': !c.active,
     });

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/services/api_service.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../models/admin_models.dart';
+import '../repositories/operations_repository.dart';
 
 class AdminSupportTicketsScreen extends StatefulWidget {
   const AdminSupportTicketsScreen({super.key});
@@ -12,6 +12,7 @@ class AdminSupportTicketsScreen extends StatefulWidget {
 }
 
 class _AdminSupportTicketsScreenState extends State<AdminSupportTicketsScreen> {
+  final OperationsRepository _operationsRepository = OperationsRepositoryImpl();
   String _filter = 'all';
   List<AdminSupportTicket> _tickets = [];
   bool _isLoading = true;
@@ -24,7 +25,7 @@ class _AdminSupportTicketsScreenState extends State<AdminSupportTicketsScreen> {
 
   Future<void> _loadTickets() async {
     setState(() => _isLoading = true);
-    final items = await ApiService.fetchSupportTickets(_filter);
+    final items = await _operationsRepository.fetchSupportTickets(_filter);
     if (!mounted) return;
     setState(() {
       _tickets = items;
@@ -71,9 +72,9 @@ class _AdminSupportTicketsScreenState extends State<AdminSupportTicketsScreen> {
               Navigator.pop(ctx);
               final reply = replyController.text.trim();
               if (reply.isNotEmpty) {
-                await ApiService.replySupportTicket(ticket.id, reply);
+                await _operationsRepository.replySupportTicket(ticket.id, reply);
               }
-              await ApiService.updateSupportTicket({'id': ticket.id, 'status': 'in_progress'});
+              await _operationsRepository.updateSupportTicket({'id': ticket.id, 'status': 'in_progress'});
               Helpers.showSuccessSnackbar('Updated', 'Ticket status marked In Progress');
               _loadTickets();
             },
@@ -85,9 +86,9 @@ class _AdminSupportTicketsScreenState extends State<AdminSupportTicketsScreen> {
               Navigator.pop(ctx);
               final reply = replyController.text.trim();
               if (reply.isNotEmpty) {
-                await ApiService.replySupportTicket(ticket.id, reply);
+                await _operationsRepository.replySupportTicket(ticket.id, reply);
               }
-              await ApiService.updateSupportTicket({'id': ticket.id, 'status': 'resolved'});
+              await _operationsRepository.updateSupportTicket({'id': ticket.id, 'status': 'resolved'});
               Helpers.showSuccessSnackbar('Success', 'Ticket marked as Resolved & reply sent');
               _loadTickets();
             },
