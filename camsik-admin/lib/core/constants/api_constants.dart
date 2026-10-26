@@ -2,8 +2,8 @@ class ApiConstants {
   ApiConstants._();
 
   // Primary Server & API Base URL
-  static String serverUrl = "http://localhost:4028";
-  static String get baseUrl => "$serverUrl/api";
+  static  String serverUrl = "https://casmik-one.vercel.app";
+  static  String baseUrl = "$serverUrl/api";
 
   // Fallback Server URLs for local development / testing
   static const List<String> fallbackUrls = [
