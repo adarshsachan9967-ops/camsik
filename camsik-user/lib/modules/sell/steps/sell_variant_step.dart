@@ -544,24 +544,65 @@ class _SellVariantStepState extends State<SellVariantStep> {
                             border: Border.all(color: const Color(0xFF86EFAC), width: 0.8),
                           ),
                           child: Text(
-                            '+${widget.selectedLenses.length} Lens (+₹$totalLensBonus)',
+                            '+${widget.selectedLenses.length} Lens (+ ₹ * * * *)',
                             style: const TextStyle(
                               color: Color(0xFF047857),
                               fontSize: 10,
                               fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
+
+                  // Review Guarantee Banner
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('⭐', style: TextStyle(fontSize: 13)),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'You will get the best price after review from our team',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF14532D),
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Select your lenses below. Our specialists review and evaluate each lens to provide maximum payout.',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Color(0xFF166534),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
 
                   // Lenses List / Grid
                   ..._availableLenses.map((lens) {
                     final lensId = lens['id'] as String? ?? '';
                     final lensName = lens['name'] as String? ?? 'Camera Lens';
                     final lensType = lens['type'] as String? ?? 'Lens';
-                    final lensPrice = (lens['price'] as num?)?.toInt() ?? 0;
                     final lensIcon = lens['icon'] as String? ?? '📷';
                     final isSelected = widget.selectedLenses.any((l) => l['id'] == lensId);
 
@@ -610,25 +651,39 @@ class _SellVariantStepState extends State<SellVariantStep> {
                                       ),
                                     ),
                                     const SizedBox(height: 1),
-                                    Text(
-                                      lensType,
-                                      style: const TextStyle(
-                                        fontSize: 10.5,
-                                        color: Color(0xFF64748B),
-                                      ),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          lensType,
+                                          style: const TextStyle(
+                                            fontSize: 10.5,
+                                            color: Color(0xFF64748B),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        const Text(
+                                          '• Best price on review',
+                                          style: TextStyle(
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF059669),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                '+₹${lensPrice.toString()}',
+                                '+ ₹ * * * *',
                                 style: TextStyle(
-                                  fontSize: 12.5,
+                                  fontSize: 11.5,
                                   fontWeight: FontWeight.w900,
+                                  letterSpacing: 1,
                                   color: isSelected
                                       ? const Color(0xFF047857)
-                                      : const Color(0xFF475569),
+                                      : const Color(0xFF64748B),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -724,8 +779,8 @@ class _SellVariantStepState extends State<SellVariantStep> {
                                   elevation: 0,
                                 ),
                                 child: const Text(
-                                  'Add (+₹8,000)',
-                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
+                                  'Add Lens (+ ₹ * * * *)',
+                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -739,6 +794,23 @@ class _SellVariantStepState extends State<SellVariantStep> {
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                 ),
                                 child: const Text('Cancel', style: TextStyle(fontSize: 11.5)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          const Row(
+                            children: [
+                              Text('⭐', style: TextStyle(fontSize: 11)),
+                              SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  'You will get the best price after review from our team',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF047857),
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -757,30 +829,74 @@ class _SellVariantStepState extends State<SellVariantStep> {
           if (isCamera && widget.selectedLenses.isNotEmpty)
             Container(
               margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: const Color(0xFFECFDF5),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: const Color(0xFFA7F3D0)),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  Text(
-                    'Base Camera + ${widget.selectedLenses.length} Lens Included:',
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF047857),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Base Camera Quote:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF047857),
+                        ),
+                      ),
+                      Text(
+                        formatCurrency(widget.basePrice),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF047857),
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    formatCurrency(totalEstimated),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF047857),
-                    ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '+ ${widget.selectedLenses.length} Lens Included:',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF059669),
+                        ),
+                      ),
+                      const Text(
+                        '+ ₹ * * * *',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
+                          color: Color(0xFF059669),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Row(
+                    children: [
+                      Text('⭐', style: TextStyle(fontSize: 11)),
+                      SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'You will get the best price after review from our team',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF166534),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

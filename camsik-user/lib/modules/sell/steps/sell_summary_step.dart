@@ -514,11 +514,12 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
                                 color: Color(0xFF0F172A),
                               ),
                             ),
-                            Text(
-                              '+₹${widget.selectedLenses.fold<int>(0, (sum, l) => sum + ((l['price'] as num?)?.toInt() ?? 0)).toString()}',
-                              style: const TextStyle(
+                            const Text(
+                              '+ ₹ * * * *',
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w900,
+                                letterSpacing: 1,
                                 color: Color(0xFF059669),
                               ),
                             ),
@@ -541,17 +542,35 @@ class _SellSummaryStepState extends State<SellSummaryStep> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  Text(
-                                    '+₹${l['price']}',
-                                    style: const TextStyle(
+                                  const Text(
+                                    '+ ₹ * * * *',
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 1,
                                       color: Color(0xFF059669),
                                     ),
                                   ),
                                 ],
                               ),
                             )),
+                        const SizedBox(height: 6),
+                        const Row(
+                          children: [
+                            Text('⭐', style: TextStyle(fontSize: 11)),
+                            SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'You will get the best price after review from our team',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF047857),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),

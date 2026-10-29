@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../models/admin_models.dart';
@@ -16,9 +18,13 @@ class _AdminDiagnosticQuestionsScreenState extends State<AdminDiagnosticQuestion
   final OperationsRepository _operationsRepository = OperationsRepositoryImpl();
   final List<Map<String, String>> _categories = const [
     {'id': 'cat-dslr', 'label': 'Cameras', 'icon': '📷'},
+    {'id': 'cat-lens', 'label': 'Lenses', 'icon': '🔍'},
     {'id': 'cat-smartphone', 'label': 'Smartphones', 'icon': '📱'},
     {'id': 'cat-laptop', 'label': 'Laptops', 'icon': '💻'},
-    {'id': 'cat-lens', 'label': 'Lenses', 'icon': '🔍'},
+    {'id': 'cat-tablet', 'label': 'Tablets', 'icon': '📟'},
+    {'id': 'cat-action-camera', 'label': 'Action Cams', 'icon': '🏄'},
+    {'id': 'cat-video-camera', 'label': 'Video Cams', 'icon': '📹'},
+    {'id': 'cat-gimbal', 'label': 'Gimbals', 'icon': '🕹️'},
   ];
 
   String _selectedCategoryId = 'cat-dslr';
@@ -302,6 +308,38 @@ class _AdminDiagnosticQuestionsScreenState extends State<AdminDiagnosticQuestion
         backgroundColor: Colors.white,
         elevation: 0.5,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sync_rounded, color: AppColors.primary),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Re-sync All Question Templates?'),
+                  content: const Text('This will reset and synchronize the complete official questions & answers for all 8 categories in the valuation engine.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Re-sync All', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true) {
+                setState(() => _loading = true);
+                try {
+                  await ApiService.dio.get('${ApiConstants.questions}?reset=true');
+                  Helpers.showSuccessSnackbar('Synchronized', 'Diagnostic questions reset for all 8 categories');
+                  _loadQuestions();
+                } catch (e) {
+                  Helpers.showErrorSnackbar('Error', 'Failed to synchronize questions');
+                  setState(() => _loading = false);
+                }
+              }
+            },
+            tooltip: 'Re-sync All Categories',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
             onPressed: _loadQuestions,

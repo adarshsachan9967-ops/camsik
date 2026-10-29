@@ -243,10 +243,24 @@ export default function StepModelSelect({ brand, brandId, categoryId, selectedMo
                   </p>
                 </div>
                 {addedLenses.length > 0 && (
-                  <div className="px-3 py-1 bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-black rounded-lg self-start sm:self-auto">
-                    +{addedLenses.length} Lens Added (+₹{totalLensBonus.toLocaleString('en-IN')})
+                  <div className="px-3 py-1 bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-black rounded-lg self-start sm:self-auto flex items-center gap-1.5 shadow-sm">
+                    <span>✓</span>
+                    <span>+{addedLenses.length} Lens Added (+ ₹ * * * *)</span>
                   </div>
                 )}
+              </div>
+
+              {/* Review Guarantee Banner */}
+              <div className="bg-emerald-50/90 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5 text-xs text-emerald-900 shadow-sm">
+                <span className="text-base leading-none mt-0.5">⭐</span>
+                <div>
+                  <p className="font-extrabold text-emerald-950">
+                    You will get the best price after review from our team.
+                  </p>
+                  <p className="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
+                    Select your lenses below without any guesswork. Our certified camera specialists will inspect and evaluate each lens to grant you the maximum market valuation.
+                  </p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -267,11 +281,14 @@ export default function StepModelSelect({ brand, brandId, categoryId, selectedMo
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-bold text-slate-900 truncate">{lens.name}</p>
-                          <span className={`text-xs font-black ml-2 ${isSelected ? 'text-emerald-700' : 'text-slate-600'}`}>
-                            +₹{lens.price.toLocaleString('en-IN')}
+                          <span className={`text-xs font-black ml-2 tracking-widest ${isSelected ? 'text-emerald-700' : 'text-slate-500'}`}>
+                            + ₹ * * * *
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5">{lens.type}</p>
+                        <div className="flex items-center justify-between mt-0.5">
+                          <p className="text-[11px] text-slate-500">{lens.type}</p>
+                          <span className="text-[10px] font-bold text-emerald-700">Best price on review</span>
+                        </div>
                       </div>
                       <div className={`w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 mt-0.5 ${
                         isSelected ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-300 bg-white'
@@ -293,28 +310,34 @@ export default function StepModelSelect({ brand, brandId, categoryId, selectedMo
                   + Have another lens? Add custom lens
                 </button>
               ) : (
-                <div className="flex gap-2 pt-1">
-                  <input
-                    type="text"
-                    value={customLensName}
-                    onChange={e => setCustomLensName(e.target.value)}
-                    placeholder="e.g. Sigma 30mm f/1.4 DC DN Contemporary"
-                    className="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddCustomLens}
-                    className="px-3.5 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-dark transition-colors"
-                  >
-                    Add (+₹8,000)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomInput(false)}
-                    className="px-2.5 py-2 text-slate-400 hover:text-slate-600 text-xs"
-                  >
-                    Cancel
-                  </button>
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customLensName}
+                      onChange={e => setCustomLensName(e.target.value)}
+                      placeholder="e.g. Sigma 30mm f/1.4 DC DN Contemporary"
+                      className="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomLens}
+                      className="px-3.5 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-dark transition-colors whitespace-nowrap"
+                    >
+                      Add Lens (+ ₹ * * * *)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomInput(false)}
+                      className="px-2.5 py-2 text-slate-400 hover:text-slate-600 text-xs"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                    <span>⭐</span>
+                    <span>You will get the best price after review from our team</span>
+                  </p>
                 </div>
               )}
             </div>
@@ -324,13 +347,23 @@ export default function StepModelSelect({ brand, brandId, categoryId, selectedMo
 
       {canContinue && (
         <div className="mt-6 fade-in space-y-2">
-          {totalLensBonus > 0 && (
-            <div className="flex justify-between items-center text-xs px-2 py-1 bg-emerald-50 text-emerald-800 rounded-lg font-semibold">
-              <span>Base Camera + {addedLenses.length} Lens Included:</span>
-              <span className="font-black text-sm">₹{totalEstimated.toLocaleString('en-IN')}</span>
+          {addedLenses.length > 0 && (
+            <div className="flex flex-col gap-1 text-xs px-3 py-2.5 bg-emerald-50 text-emerald-900 rounded-xl font-semibold border border-emerald-200">
+              <div className="flex justify-between items-center">
+                <span>Camera Base Quote:</span>
+                <span className="font-black text-sm">₹{chosenModel!.basePrice.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between items-center text-[11px] text-emerald-800 font-bold">
+                <span>+ {addedLenses.length} Lens Included:</span>
+                <span className="tracking-widest font-black">+ ₹ * * * *</span>
+              </div>
+              <p className="text-[10.5px] text-emerald-700 mt-0.5 font-medium flex items-center gap-1">
+                <span>⭐</span>
+                <span>You will get the best price after review from our team</span>
+              </p>
             </div>
           )}
-          <button onClick={() => onSelect(chosenModel!.id, chosenModel!.name, chosenStorage!, chosenColor!, totalEstimated, addedLenses)}
+          <button onClick={() => onSelect(chosenModel!.id, chosenModel!.name, chosenStorage!, chosenColor!, chosenModel!.basePrice, addedLenses)}
             className="w-full py-3.5 gradient-green text-white rounded-xl font-bold text-sm shadow-green btn-press flex items-center justify-center gap-2">
             <span>Continue to Condition Assessment →</span>
           </button>

@@ -5,7 +5,7 @@ class ApiConstants {
   // Set to true to use your local Next.js dev server (http://127.0.0.1:4028)
   // where the newly created APIs (profile, addresses, otp, etc.) are running.
   // Set to false when targeting the remote production Vercel server.
-  static const bool useLocalBackend = true;
+  static const bool useLocalBackend = false;
   static const String serverUrl = 
   useLocalBackend
       ? "http://127.0.0.1:4028"

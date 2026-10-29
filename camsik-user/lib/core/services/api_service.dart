@@ -346,7 +346,246 @@ class ApiService {
     } catch (e) {
       appLog("⚠️ Failed to fetch questions from API: $e");
     }
-    return const [];
+    return _getDefaultQuestionsForCategory(categoryId);
+  }
+
+  static List<Map<String, dynamic>> _getDefaultQuestionsForCategory(String categoryId) {
+    final cat = categoryId.toLowerCase();
+    if (cat.contains('lens')) {
+      return [
+        {
+          'id': 'lens-glass',
+          'question': 'Optical Front & Rear Glass Element Condition?',
+          'subtext': 'Check optical glass for scratches, fungus, dust or haze.',
+          'options': [
+            {'id': 'lg-1', 'label': 'Crystal Clear (No Fungus/Scratches)', 'desc': 'Flawless optical glass', 'adj': 2000},
+            {'id': 'lg-2', 'label': 'Minor Dust (No Image Impact)', 'desc': 'Standard internal micro-dust', 'adj': 0},
+            {'id': 'lg-3', 'label': 'Fungus / Deep Scratches / Haze', 'desc': 'Coating damage or fungus', 'adj': -5500},
+          ]
+        },
+        {
+          'id': 'lens-af',
+          'question': 'Autofocus Motor & Manual Focus Ring?',
+          'subtext': 'Test AF speed, accuracy and manual ring smoothness.',
+          'options': [
+            {'id': 'laf-1', 'label': 'Fast Silent AF & Smooth Focus Ring', 'desc': '100% operational motor', 'adj': 0},
+            {'id': 'laf-2', 'label': 'Sluggish AF / Stiff Ring', 'desc': 'Slow focus acquisition', 'adj': -2500},
+            {'id': 'laf-3', 'label': 'AF Motor Failure / Non-Functional', 'desc': 'Motor repair required', 'adj': -5500},
+          ]
+        },
+        {
+          'id': 'lens-aperture',
+          'question': 'Aperture Blades & Electronic Contacts?',
+          'subtext': 'Inspect aperture actuation and metal mount electronic contacts.',
+          'options': [
+            {'id': 'lap-1', 'label': 'Clean Snappy Blades (Zero Oil)', 'desc': 'Instant aperture stop-down', 'adj': 0},
+            {'id': 'lap-2', 'label': 'Slow Blades / Oil Traces', 'desc': 'Sticky diaphragm mechanism', 'adj': -3000},
+            {'id': 'lap-3', 'label': 'Stuck Aperture / Error 01 Contact', 'desc': 'Diaphragm does not actuate', 'adj': -6000},
+          ]
+        },
+        {
+          'id': 'lens-is',
+          'question': 'Optical Image Stabilization (IS / VR / OSS)?',
+          'subtext': 'Check if gyro stabilization motor operates quietly without jitter.',
+          'options': [
+            {'id': 'lis-1', 'label': 'Quiet & Rock-Solid IS Stabilization', 'desc': 'Stabilizer functions perfectly', 'adj': 0},
+            {'id': 'lis-2', 'label': 'Buzzing / Jittery IS Mechanism', 'desc': 'Stabilizer struggling', 'adj': -3500},
+            {'id': 'lis-3', 'label': 'Lens Has No IS / Non-IS Prime', 'desc': 'Unstabilized native lens', 'adj': 0},
+          ]
+        },
+        {
+          'id': 'lens-mount',
+          'question': 'Metal Bayonet Mount & Weather Gasket?',
+          'subtext': 'Check mount locking lugs and weather gasket.',
+          'options': [
+            {'id': 'lmt-1', 'label': 'Pristine Chrome/Brass Mount & Gasket', 'desc': 'Locks firmly onto camera', 'adj': 0},
+            {'id': 'lmt-2', 'label': 'Slight Mount Rub / Scratches', 'desc': 'Normal cosmetic wear', 'adj': -1000},
+            {'id': 'lmt-3', 'label': 'Bent Mount Flange / Loose Screws', 'desc': 'Mounting instability', 'adj': -4000},
+          ]
+        },
+        {
+          'id': 'lens-hood',
+          'question': 'Original Lens Hood, Caps & Box?',
+          'subtext': 'Original lens hood, front/rear protective caps, and retail box.',
+          'options': [
+            {'id': 'lh-1', 'label': 'Complete Hood + Front & Rear Caps + Box', 'desc': 'Complete retail packaging bundle', 'adj': 2000},
+            {'id': 'lh-2', 'label': 'Front & Rear Caps Only (No Hood/Box)', 'desc': 'Essential caps only', 'adj': 0},
+            {'id': 'lh-3', 'label': 'Missing Caps / Third-Party Caps', 'desc': 'No original caps', 'adj': -1500},
+          ]
+        },
+      ];
+    } else if (cat.contains('smart') || cat.contains('phone') || cat.contains('mobile')) {
+      return [
+        {
+          'id': 'phone-power',
+          'question': 'Does the smartphone turn on & stay awake?',
+          'subtext': 'Verify device powers on without boot loops.',
+          'options': [
+            {'id': 'pp-1', 'label': 'Turns On & Works Normally', 'desc': 'Boots cleanly to home screen', 'adj': 0},
+            {'id': 'pp-2', 'label': 'Restarts Frequently / Boot Loops', 'desc': 'Software or logic board issue', 'adj': -8000},
+            {'id': 'pp-3', 'label': 'Completely Dead / Does Not Power On', 'desc': 'Unpowered device', 'adj': -18000},
+          ]
+        },
+        {
+          'id': 'phone-display',
+          'question': 'Screen Glass & Touchscreen Response?',
+          'subtext': 'Check for cracks, dead pixels, lines or touch ghosting.',
+          'options': [
+            {'id': 'pd-1', 'label': 'Flawless Display (Original Panel)', 'desc': 'Zero scratches or blemishes', 'adj': 2000},
+            {'id': 'pd-2', 'label': 'Hairline Micro Scratches', 'desc': 'Not noticeable in everyday use', 'adj': 0},
+            {'id': 'pd-3', 'label': 'Deep Scratches / Minor Chipped Glass', 'desc': 'Touch works but glass chipped', 'adj': -4500},
+            {'id': 'pd-4', 'label': 'Cracked Panel / Lines / Touch Deadzone', 'desc': 'Display replacement required', 'adj': -10000},
+          ]
+        },
+        {
+          'id': 'phone-battery',
+          'question': 'Battery Health Capacity (Above 85%)?',
+          'subtext': 'Check Settings -> Battery -> Battery Health percentage.',
+          'options': [
+            {'id': 'pb-1', 'label': 'Yes, 90% – 100% Health', 'desc': 'Outstanding battery endurance', 'adj': 2000},
+            {'id': 'pb-2', 'label': '80% – 89% Health (Normal)', 'desc': 'Standard healthy battery life', 'adj': 0},
+            {'id': 'pb-3', 'label': 'Below 80% / Service Notification', 'desc': 'Battery replacement prompt shown', 'adj': -3000},
+          ]
+        },
+        {
+          'id': 'phone-cameras',
+          'question': 'Are All Cameras & Optical Zoom Functional?',
+          'subtext': 'Test wide, telephoto, selfie cameras and autofocus.',
+          'options': [
+            {'id': 'pc-1', 'label': 'All Cameras Sharp & Fast Focus', 'desc': 'Pristine lenses and stabilization', 'adj': 0},
+            {'id': 'pc-2', 'label': 'One Camera Blurry / Scratched Glass', 'desc': 'Minor secondary lens issue', 'adj': -3000},
+            {'id': 'pc-3', 'label': 'Camera App Crashes / OIS Rattle', 'desc': 'Sensor repair needed', 'adj': -6500},
+          ]
+        },
+        {
+          'id': 'phone-bio',
+          'question': 'Face ID, Fingerprint & TrueTone Working?',
+          'subtext': 'Test biometric unlocking and true tone display calibration.',
+          'options': [
+            {'id': 'pbi-1', 'label': 'Face ID / Fingerprint & TrueTone Active', 'desc': '100% genuine sensors', 'adj': 1000},
+            {'id': 'pbi-2', 'label': 'TrueTone Disabled (Screen Changed)', 'desc': 'Display replaced previously', 'adj': -2000},
+            {'id': 'pbi-3', 'label': 'Biometric Hardware Failed', 'desc': 'Face ID or Touch ID dead', 'adj': -4500},
+          ]
+        },
+        {
+          'id': 'phone-box',
+          'question': 'Original Fast Charger & Packaging Box?',
+          'subtext': 'Original manufacturer box with matching IMEI and fast charger.',
+          'options': [
+            {'id': 'pbx-1', 'label': 'Original Box + Genuine Charger Included', 'desc': 'Complete package', 'adj': 1100},
+            {'id': 'pbx-2', 'label': 'Original Box Only (No Charger)', 'desc': 'Matching IMEI retail box', 'adj': 500},
+            {'id': 'pbx-3', 'label': 'Phone Only (No Box or Charger)', 'desc': 'Handset only', 'adj': 0},
+          ]
+        },
+      ];
+    } else if (cat.contains('laptop') || cat.contains('macbook')) {
+      return [
+        {
+          'id': 'lap-power',
+          'question': 'Does the laptop boot into OS and sleep/wake normally?',
+          'subtext': 'Powers on without chime failure or unexpected shutdowns.',
+          'options': [
+            {'id': 'lp-1', 'label': 'Boots Fast & Runs Normal', 'desc': 'No kernel panics or blue screens', 'adj': 0},
+            {'id': 'lp-2', 'label': 'Random Freezes / Throttling', 'desc': 'Thermal or logic board issue', 'adj': -7000},
+            {'id': 'lp-3', 'label': 'Black Screen / No Power', 'desc': 'Motherboard failure', 'adj': -20000},
+          ]
+        },
+        {
+          'id': 'lap-display',
+          'question': 'Screen & Anti-Reflective Coating Condition?',
+          'subtext': 'Check for keyboard marks, dead pixels, staingate or lines.',
+          'options': [
+            {'id': 'ld-1', 'label': 'Pristine Flawless Display', 'desc': 'No dead pixels or delamination', 'adj': 2000},
+            {'id': 'ld-2', 'label': 'Micro Scratches / Keyboard Imprints', 'desc': 'Normal surface wear', 'adj': 0},
+            {'id': 'ld-3', 'label': 'Cracked Panel / Lines / Staingate', 'desc': 'Screen replacement needed', 'adj': -8500},
+          ]
+        },
+        {
+          'id': 'lap-keyboard',
+          'question': 'Keyboard, Backlight & Trackpad Condition?',
+          'subtext': 'Test all keys, backlight uniformity, and trackpad haptic click.',
+          'options': [
+            {'id': 'lk-1', 'label': 'All Keys & Trackpad Perfect', 'desc': 'Smooth typing & gestures', 'adj': 0},
+            {'id': 'lk-2', 'label': 'Sticky Keys / Faded Letters', 'desc': 'Minor key wear', 'adj': -2500},
+            {'id': 'lk-3', 'label': 'Trackpad Defect / Broken Backlight', 'desc': 'Click unresponsive', 'adj': -4500},
+          ]
+        },
+        {
+          'id': 'lap-battery',
+          'question': 'Battery Health & Backup Duration?',
+          'subtext': 'Check battery cycle count and backup time.',
+          'options': [
+            {'id': 'lb-1', 'label': 'Original Battery with 6+ Hours Backup', 'desc': 'Healthy battery cycles', 'adj': 2000},
+            {'id': 'lb-2', 'label': 'Normal Backup (3-5 Hours)', 'desc': 'Standard usable condition', 'adj': 0},
+            {'id': 'lb-3', 'label': 'Service Battery Alert / Swollen', 'desc': 'Replacement required', 'adj': -5000},
+          ]
+        },
+        {
+          'id': 'lap-charger',
+          'question': 'Original High-Wattage Power Adapter & Box?',
+          'subtext': 'Original MagSafe or USB-C power brick with cable and retail box.',
+          'options': [
+            {'id': 'lc-1', 'label': 'Original OEM Fast Charger + Box', 'desc': 'Complete power & retail bundle', 'adj': 1600},
+            {'id': 'lc-2', 'label': 'Original Charger Only (No Box)', 'desc': 'Standard genuine adapter', 'adj': 1000},
+            {'id': 'lc-3', 'label': 'Third-Party Charger / No Adapter', 'desc': 'Missing OEM charger', 'adj': -1500},
+          ]
+        },
+      ];
+    }
+
+    // Default DSLR / Mirrorless camera questions
+    return [
+      {
+        'id': 'cam-power',
+        'question': 'Does the camera power on & shoot normally?',
+        'subtext': 'Check sensor readout, shutter mechanism, dials and screen.',
+        'options': [
+          {'id': 'cp-1', 'label': 'Powers on & Shoots Perfectly', 'desc': 'Normal shutter response & dials', 'adj': 0},
+          {'id': 'cp-2', 'label': 'Intermittent Shutter Lag', 'desc': 'Takes photos but occasional pause', 'adj': -3000},
+          {'id': 'cp-3', 'label': 'Does Not Power On', 'desc': 'Requires servicing / board check', 'adj': -8000},
+        ]
+      },
+      {
+        'id': 'cam-sensor',
+        'question': 'Sensor Glass & Viewfinder Condition?',
+        'subtext': 'Check sensor surface under direct light.',
+        'options': [
+          {'id': 'cs-1', 'label': 'Pristine Flawless Sensor', 'desc': 'Zero spots, dust or scratches', 'adj': 2000},
+          {'id': 'cs-2', 'label': 'Minor Dust (Easily Cleaned)', 'desc': 'Standard sensor dust specks', 'adj': 0},
+          {'id': 'cs-3', 'label': 'Visible Scratches / Fungus', 'desc': 'Coating damage or fungus mark', 'adj': -5000},
+        ]
+      },
+      {
+        'id': 'cam-shutter',
+        'question': 'Estimated Shutter Actuations?',
+        'subtext': 'Total photos clicked with this camera body.',
+        'options': [
+          {'id': 'csh-1', 'label': '< 20,000 Shutter Count', 'desc': 'Light hobbyist usage', 'adj': 1500},
+          {'id': 'csh-2', 'label': '20,000 - 60,000 Shutter Count', 'desc': 'Moderate regular use', 'adj': 0},
+          {'id': 'csh-3', 'label': '> 80,000 Shutter Count', 'desc': 'Heavy professional workload', 'adj': -4000},
+        ]
+      },
+      {
+        'id': 'cam-body',
+        'question': 'Body Cosmetic & Rubber Grip Condition?',
+        'subtext': 'Inspect body corners, tripod mount, and rubber grip.',
+        'options': [
+          {'id': 'cb-1', 'label': 'Like New / Flawless', 'desc': 'No scratches, firm rubber grips', 'adj': 1500},
+          {'id': 'cb-2', 'label': 'Good (Minor Rub Marks)', 'desc': 'Normal cosmetic edge wear', 'adj': 0},
+          {'id': 'cb-3', 'label': 'Heavy Paint Wear / Peeling', 'desc': 'Loose rubber or body dings', 'adj': -3500},
+        ]
+      },
+      {
+        'id': 'cam-accessories',
+        'question': 'Original Charger, Battery & Packaging Box?',
+        'subtext': 'Original OEM battery, dedicated charger, body cap, and retail box.',
+        'options': [
+          {'id': 'ca-1', 'label': 'Complete Original Box + OEM Charger + Battery', 'desc': 'Complete retail bundle', 'adj': 2500},
+          {'id': 'ca-2', 'label': 'Original Charger + Battery (No Box)', 'desc': 'Standard operational gear', 'adj': 0},
+          {'id': 'ca-3', 'label': 'Third-Party Charger Only / Missing Caps', 'desc': 'Incomplete accessory bundle', 'adj': -2500},
+        ]
+      },
+    ];
   }
 
   // ── REFURBISHED & RENTALS ──

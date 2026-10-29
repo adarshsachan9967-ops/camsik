@@ -123,19 +123,23 @@ export default function QuoteSummaryPanel({ sellState, currentStep }: Props) {
                     <span>🔍</span>
                     Included Lenses ({sellState.lenses.length})
                   </span>
-                  <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                    {currentStep === 2 ? '+ * * *' : `+₹${sellState.lenses.reduce((a, b) => a + b.price, 0).toLocaleString('en-IN')}`}
+                  <span className="text-[11px] font-black text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full tracking-wider">
+                    + ₹ * * * *
                   </span>
                 </div>
                 <div className="bg-slate-50 p-2.5 rounded-xl border border-border/70 space-y-1.5 text-xs">
                   {sellState.lenses.map((lens) => (
                     <div key={lens.id} className="flex justify-between items-center">
                       <span className="text-slate-600 truncate max-w-[160px]">{lens.name}</span>
-                      <span className="font-bold text-emerald-600 font-tabular">
-                        {currentStep === 2 ? '+ * * *' : `+₹${lens.price.toLocaleString('en-IN')}`}
-                      </span>
+                      <span className="font-bold text-emerald-700 tracking-wider">+ ₹ * * * *</span>
                     </div>
                   ))}
+                  <div className="pt-1.5 border-t border-slate-200/80">
+                    <p className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+                      <span>⭐</span>
+                      <span>You will get the best price after review from our team</span>
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

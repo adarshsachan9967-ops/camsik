@@ -224,8 +224,10 @@ export default function StepConditionQuestions({ sellState, onUpdate, onNext, on
             ₹{sellState.currentPrice.toLocaleString('en-IN')}
           </div>
           {sellState.lenses && sellState.lenses.length > 0 && (
-            <p className="text-xs text-emerald-700 font-semibold mt-1">
-              Includes {sellState.lenses.length} Camera Lens (+₹{sellState.lenses.reduce((a, b) => a + b.price, 0).toLocaleString('en-IN')})
+            <p className="text-xs text-emerald-800 font-semibold mt-1 flex items-center gap-1.5 flex-wrap">
+              <span>🔍 Includes {sellState.lenses.length} Camera Lens</span>
+              <span className="font-extrabold tracking-wider text-emerald-700">(+ ₹ * * * *)</span>
+              <span className="text-[11px] text-emerald-600 font-medium">• You will get the best price after review from our team</span>
             </p>
           )}
         </div>

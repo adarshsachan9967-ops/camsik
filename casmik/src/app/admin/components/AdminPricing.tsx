@@ -587,9 +587,43 @@ export default function AdminPricing({ initialTab = 'lenses' }: { initialTab?: '
               ))}
             </div>
 
-            <div className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-xl flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Live Questions API: <span className="text-primary font-black">{questions.length} Active</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={async () => {
+                  if (confirm('Re-seed all 8 categories with the official Camsik diagnostic questions template?')) {
+                    setLoadingQuestions(true);
+                    try {
+                      await fetch('/api/questions?reset=true');
+                      await fetchQuestions(selectedCategory);
+                      triggerSuccess('Diagnostic questions re-synced for all 8 categories');
+                    } catch (e) {
+                      console.error('Failed to reset questions:', e);
+                    } finally {
+                      setLoadingQuestions(false);
+                    }
+                  }
+                }}
+                className="text-xs font-bold text-slate-700 bg-white border border-gray-200 hover:bg-gray-50 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all shadow-sm"
+                title="Restore official questions for all 8 categories"
+              >
+                <RefreshCw size={13} />
+                <span>Re-sync Defaults</span>
+              </button>
+              <button
+                onClick={() => {
+                  setNewQ(p => ({ ...p, categoryId: selectedCategory }));
+                  setShowAddQuestion(true);
+                }}
+                className="text-xs font-bold text-white bg-primary hover:bg-primary-dark px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all shadow-sm shadow-primary/20"
+              >
+                <Plus size={14} />
+                <span>Add Question</span>
+              </button>
+              <div className="text-xs font-bold text-gray-600 bg-gray-100 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Category Questions:</span>
+                <span className="text-primary font-black">{questions.length}</span>
+              </div>
             </div>
           </div>
 
